@@ -135,6 +135,8 @@ If not, create:
 
 only when persistent tracking is appropriate and the repository is not sensitive.
 
+PROJECT_MEMORY.md and TASK_LOG.md are optional. Do not create or update them in sensitive repositories unless the user explicitly approves.
+
 Do not write secrets, private client data, legal evidence, family information, financial account details, API keys, or confidential documents into memory or logs.
 
 ## Safety Rules
