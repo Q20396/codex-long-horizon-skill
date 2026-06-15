@@ -40,6 +40,7 @@ README.md
       references/
         protocol.md
         safety-policy.md
+        context-compaction.md
         decision-log.md
         resume-protocol.md
       templates/
@@ -100,6 +101,8 @@ selected. This package includes:
 
 - `protocol.md` for the long-horizon engineering workflow
 - `safety-policy.md` for protected areas and safety expectations
+- `context-compaction.md` for preserving lightweight state before interruption
+  or context loss
 - `decision-log.md` for separating facts, assumptions, decisions, evidence,
   risks, and follow-ups
 - `resume-protocol.md` for safely continuing interrupted work
@@ -154,6 +157,9 @@ when a task is long-running, interrupted, or likely to continue after context
 compaction. It should capture the current goal, status, inspected and changed
 files, confirmed facts, assumptions, decisions, failed attempts, test results,
 known risks, and the next safest step.
+
+`references/context-compaction.md` describes what to preserve before a task is
+paused, interrupted, or compacted.
 
 `references/decision-log.md` helps prevent unsupported assumptions by separating
 facts, assumptions, decisions, evidence, risks, and follow-ups.
