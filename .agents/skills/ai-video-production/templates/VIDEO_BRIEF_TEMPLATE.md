@@ -25,6 +25,18 @@
 - If yes, explicit approval details:
 - Fact-check requirements:
 
+## Source Text Analysis
+
+- Core message:
+- Key facts or claims:
+- Reasonable inferences:
+- Speculative or fictional elements:
+- Emotional tone:
+- Narrative arc:
+- Visual motifs:
+- Required exclusions:
+- Viewer takeaway:
+
 ## Creative Direction
 
 - Tone:

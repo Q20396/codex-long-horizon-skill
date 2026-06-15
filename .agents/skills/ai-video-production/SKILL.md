@@ -9,6 +9,24 @@ Use this optional skill when a task involves planning or producing AI-assisted v
 
 This skill is documentation-first. It may guide scripts, storyboards, shot lists, asset manifests, preview plans, and render handoffs, but it must not automatically render, upload, publish, or post media.
 
+When turning text into video, translate the meaning of the text into matching
+visuals. Do not default to plain caption cards. If real footage or approved
+assets are unavailable, use original abstract animation, motion graphics,
+diagrams, symbolic scenes, interface mockups, kinetic typography, or other
+safe generated visuals that express the idea.
+
+When creating image or video files, generate them from explicit visual prompts
+that describe the intended subject, style, motion, composition, aspect ratio,
+and constraints. Record the prompt or prompt file in the asset manifest so the
+result can be reviewed and reproduced.
+
+Before generating images or video from text, analyze all provided text first.
+Summarize the core message, key claims, emotional tone, narrative structure,
+visual motifs, required facts, speculative boundaries, and unsafe or excluded
+content. Use that summary to create the system-facing image or video prompts.
+Do not generate media from isolated sentences without understanding the full
+context.
+
 ## Workflow
 
 1. Brief
@@ -24,6 +42,27 @@ This skill is documentation-first. It may guide scripts, storyboards, shot lists
 ## Required Gate
 
 Before final render, upload, publication, or external sharing, require explicit human approval. The handoff should show what will be rendered, what source assets are used, where outputs will be stored, and what command or tool action the human may run.
+
+## Text-To-Visual Mapping
+
+For each major script beat, plan a corresponding visual beat:
+
+- First summarize the whole source text into a visual brief before writing
+  prompts.
+- Convert claims into diagrams, timelines, maps, charts, system layers, or
+  before/after comparisons when appropriate.
+- Convert abstract ideas into visual metaphors, animation, spatial layouts,
+  icon motion, or cinematic symbolic scenes.
+- Use captions as support, not as the whole video.
+- If a scene is speculative, make the visual feel conceptual and avoid implying
+  that it is documentary footage or confirmed evidence.
+- Prefer generic placeholders when assets are missing or unapproved.
+- For generated media, write a prompt for each image, video clip, animated
+  scene, or reusable visual asset before producing the file.
+- Keep prompts aligned with the approved script, storyboard, privacy
+  boundaries, and licensing constraints.
+- Do not use copyrighted, private, client, family, legal, medical, financial,
+  identity, or confidential material without explicit approval.
 
 ## Privacy Rules
 
