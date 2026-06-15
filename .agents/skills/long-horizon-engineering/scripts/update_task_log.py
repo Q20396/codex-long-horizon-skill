@@ -39,6 +39,11 @@ def parse_args() -> argparse.Namespace:
         help="Verification command and result. Repeat for multiple checks.",
     )
     parser.add_argument("--notes", default="", help="Optional risk, note, or follow-up.")
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print the entry that would be appended without writing files.",
+    )
     return parser.parse_args()
 
 
@@ -56,6 +61,11 @@ def bullet_list(items: list[str], fallback: str) -> list[str]:
 
 
 def append_entry(path: Path, args: argparse.Namespace) -> None:
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(build_entry(args))
+
+
+def build_entry(args: argparse.Namespace) -> str:
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     notes = args.notes.strip() or "None."
     lines = [
@@ -69,15 +79,17 @@ def append_entry(path: Path, args: argparse.Namespace) -> None:
         "\n**Risks / Notes**\n\n",
         f"- {notes}\n",
     ]
-
-    with path.open("a", encoding="utf-8") as handle:
-        handle.writelines(lines)
+    return "".join(lines)
 
 
 def main() -> None:
     args = parse_args()
     if not args.title.strip() or not args.summary.strip():
         raise SystemExit("--title and --summary must be non-empty.")
+
+    if args.dry_run:
+        print(build_entry(args), end="")
+        return
 
     ensure_task_log(TASK_LOG_PATH)
     append_entry(TASK_LOG_PATH, args)

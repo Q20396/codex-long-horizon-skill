@@ -42,13 +42,16 @@ README.md
         safety-policy.md
         context-compaction.md
         decision-log.md
+        review-checklist.md
         resume-protocol.md
+        stop-conditions.md
       templates/
         PROJECT_MEMORY_TEMPLATE.md
         TASK_LOG_TEMPLATE.md
         WORKING_STATE_TEMPLATE.md
       scripts/
         append_project_memory.py
+        check_skill_package.py
         update_task_log.py
 ```
 
@@ -105,7 +108,10 @@ selected. This package includes:
   or context loss
 - `decision-log.md` for separating facts, assumptions, decisions, evidence,
   risks, and follow-ups
+- `review-checklist.md` for final scope, evidence, validation, safety, and
+  handoff checks
 - `resume-protocol.md` for safely continuing interrupted work
+- `stop-conditions.md` for knowing when to pause instead of continuing
 
 ### templates/
 
@@ -122,6 +128,7 @@ Templates are structure only. They are not a place to store sensitive content.
 Use `scripts/` for simple local helpers. This package includes:
 
 - `append_project_memory.py` to append facts to `docs/PROJECT_MEMORY.md`
+- `check_skill_package.py` to validate the package structure
 - `update_task_log.py` to append completed task entries to `docs/TASK_LOG.md`
 
 The scripts are intentionally local-only. They do not read environment
@@ -167,6 +174,12 @@ facts, assumptions, decisions, evidence, risks, and follow-ups.
 `references/resume-protocol.md` helps Codex continue safely after interruption
 by reading prior memory, task logs, working state, relevant files, and prior logs
 before planning the next change.
+
+`references/stop-conditions.md` helps Codex pause when requirements, tools,
+repository state, or safety concerns make continued edits risky.
+
+`references/review-checklist.md` helps Codex check scope, evidence, validation,
+safety, and handoff quality before finalizing work.
 
 These files are optional and safety-aware. Do not create or update
 `PROJECT_MEMORY.md`, `TASK_LOG.md`, or `WORKING_STATE.md` in sensitive
@@ -264,6 +277,12 @@ Append a fact with:
 python3 .agents/skills/long-horizon-engineering/scripts/append_project_memory.py "Use npm for frontend package management."
 ```
 
+Preview without writing:
+
+```bash
+python3 .agents/skills/long-horizon-engineering/scripts/append_project_memory.py --dry-run "Use npm for frontend package management."
+```
+
 Only add facts that are expected to remain useful across future tasks.
 
 ## Maintaining TASK_LOG.md
@@ -296,6 +315,26 @@ python3 .agents/skills/long-horizon-engineering/scripts/update_task_log.py \
   --verification "npm test passed" \
   --notes "No known follow-up."
 ```
+
+Preview without writing:
+
+```bash
+python3 .agents/skills/long-horizon-engineering/scripts/update_task_log.py \
+  --dry-run \
+  --title "Add health check endpoint" \
+  --summary "Added a lightweight API health check."
+```
+
+## Checking The Skill Package
+
+Run the local structure check before publishing changes:
+
+```bash
+python3 .agents/skills/long-horizon-engineering/scripts/check_skill_package.py
+```
+
+The check verifies the required files, `SKILL.md` front matter, and absence of
+nested `.agents` directories.
 
 ## Safe Use Warning
 

@@ -29,6 +29,11 @@ def parse_args() -> argparse.Namespace:
         nargs="+",
         help="One or more non-sensitive project facts to append.",
     )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print the entry that would be appended without writing files.",
+    )
     return parser.parse_args()
 
 
@@ -39,6 +44,11 @@ def ensure_memory_file(path: Path) -> None:
 
 
 def append_facts(path: Path, facts: list[str]) -> None:
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(build_fact_entry(facts))
+
+
+def build_fact_entry(facts: list[str]) -> str:
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     lines = [f"\n### {timestamp}\n"]
     lines.extend(f"- {fact.strip()}\n" for fact in facts if fact.strip())
@@ -46,12 +56,15 @@ def append_facts(path: Path, facts: list[str]) -> None:
     if len(lines) == 1:
         raise SystemExit("No non-empty facts were provided.")
 
-    with path.open("a", encoding="utf-8") as handle:
-        handle.writelines(lines)
+    return "".join(lines)
 
 
 def main() -> None:
     args = parse_args()
+    if args.dry_run:
+        print(build_fact_entry(args.facts), end="")
+        return
+
     ensure_memory_file(MEMORY_PATH)
     append_facts(MEMORY_PATH, args.facts)
     print(f"Appended {len(args.facts)} fact(s) to {MEMORY_PATH}")
