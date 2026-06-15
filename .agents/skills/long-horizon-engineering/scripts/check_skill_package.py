@@ -15,6 +15,7 @@ REQUIRED_FILES = [
     "README.md",
     ".agents/skills/long-horizon-engineering/SKILL.md",
     ".agents/skills/long-horizon-engineering/references/protocol.md",
+    ".agents/skills/long-horizon-engineering/references/capability-boundaries.md",
     ".agents/skills/long-horizon-engineering/references/safety-policy.md",
     ".agents/skills/long-horizon-engineering/references/context-compaction.md",
     ".agents/skills/long-horizon-engineering/references/continuous-improvement.md",
