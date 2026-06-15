@@ -27,6 +27,10 @@ Pause instead of continuing when the next step depends on unclear requirements,
 unavailable tools, conflicting repository state, sensitive data, or an
 unverified high-impact assumption.
 
+For skill self-improvement tasks, use a review-gated loop: inspect public
+sources, record evidence, adapt only small reusable patterns, run checks, and
+open a draft PR. Do not auto-merge or modify `main` directly.
+
 ## Core Rule
 
 Do not jump directly into edits on non-trivial tasks.
@@ -146,6 +150,8 @@ At the end, report:
 
 Before finalizing non-trivial work, review scope, evidence, validation, safety,
 and handoff quality.
+
+For changes to this skill package, run the local package check when available.
 
 ### 8. Update Memory / Logs / State
 
