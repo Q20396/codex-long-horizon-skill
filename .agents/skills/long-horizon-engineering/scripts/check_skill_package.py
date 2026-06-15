@@ -19,6 +19,7 @@ REQUIRED_FILES = [
     ".agents/skills/long-horizon-engineering/references/context-compaction.md",
     ".agents/skills/long-horizon-engineering/references/continuous-improvement.md",
     ".agents/skills/long-horizon-engineering/references/decision-log.md",
+    ".agents/skills/long-horizon-engineering/references/external-source-scan.md",
     ".agents/skills/long-horizon-engineering/references/resume-protocol.md",
     ".agents/skills/long-horizon-engineering/references/review-checklist.md",
     ".agents/skills/long-horizon-engineering/references/stop-conditions.md",

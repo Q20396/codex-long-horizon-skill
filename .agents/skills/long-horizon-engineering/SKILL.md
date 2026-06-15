@@ -35,6 +35,12 @@ When scanning GitHub for related Codex or Agent Skills projects, treat results
 as evidence for review. Do not copy external code into this skill without
 checking license obligations and user approval.
 
+When a task may require scanning outside the current repository, such as local
+folders, connected cloud drives, or Gmail, ask the user first. Confirm the
+source, scope, query, and whether contents or only metadata should be inspected.
+Use the least access needed, and do not store private source content in memory,
+logs, state, or reports.
+
 ## Core Rule
 
 Do not jump directly into edits on non-trivial tasks.
@@ -96,6 +102,7 @@ Look for:
 - Related modules
 - Prior task logs if present
 - Prior memory or working state files if resuming work
+- Approved external sources only when the user has explicitly allowed them
 
 ### 3. Plan
 
@@ -111,6 +118,9 @@ Include:
 - Any user confirmation needed
 
 If the task is high-risk, ask before proceeding.
+
+If the task may need local folders, connected cloud drives, Gmail, or other
+external sources, ask before scanning them and keep the approved scope narrow.
 
 ### 4. Execute
 
@@ -189,6 +199,9 @@ Never commit credentials.
 Ask for confirmation before:
 
 - deleting files
+- scanning local folders outside the repository
+- scanning connected cloud drives or document stores
+- scanning Gmail or other connected mailboxes
 - running destructive commands
 - modifying auth, payment, or security logic
 - changing database migrations
