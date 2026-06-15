@@ -43,6 +43,7 @@ README.md
         context-compaction.md
         continuous-improvement.md
         decision-log.md
+        external-source-scan.md
         review-checklist.md
         resume-protocol.md
         stop-conditions.md
@@ -112,6 +113,8 @@ selected. This package includes:
 - `continuous-improvement.md` for safe, review-gated periodic skill improvement
 - `decision-log.md` for separating facts, assumptions, decisions, evidence,
   risks, and follow-ups
+- `external-source-scan.md` for consent-gated scans of local folders, connected
+  cloud drives, Gmail, or other external sources
 - `review-checklist.md` for final scope, evidence, validation, safety, and
   handoff checks
 - `resume-protocol.md` for safely continuing interrupted work
@@ -188,6 +191,11 @@ repository state, or safety concerns make continued edits risky.
 `references/review-checklist.md` helps Codex check scope, evidence, validation,
 safety, and handoff quality before finalizing work.
 
+`references/external-source-scan.md` explains how Codex should ask before
+scanning local folders outside the repository, connected cloud drives, Gmail, or
+other external sources. External scans are optional and should use the narrowest
+approved scope.
+
 `references/continuous-improvement.md` defines a safe self-improvement loop:
 check related public skills and agent projects, record evidence, adapt only
 small reusable patterns, run checks, and open a draft PR for review.
@@ -233,6 +241,26 @@ python3 .agents/skills/long-horizon-engineering/scripts/github_skill_scan.py --d
 
 Remove `--dry-run` to write `docs/GITHUB_SKILL_SCAN.md`. Treat the report as
 evidence for review, not as permission to copy external code.
+
+## External Source Scans
+
+Codex may sometimes need to know whether related files were added, removed, or
+changed outside the current repository. For example, the user may want Codex to
+check a selected local folder, connected cloud drive, or Gmail search.
+
+This skill treats those sources as sensitive by default. Codex should ask before
+scanning them and confirm:
+
+- Source type, such as local folder, cloud drive, or Gmail
+- Exact folder, label, query, or date range
+- Whether to inspect file contents or only metadata
+- Whether results may be summarized in task notes
+
+Use repository-only scanning when that is enough. Do not scan broad personal
+folders, full mailboxes, or cloud drives without a specific approved scope. Do
+not store secrets, personal messages, private client data, financial account
+details, legal evidence, family information, API keys, or confidential documents
+in memory, logs, working state, or generated reports.
 
 ## Copying This Skill Into Another Project
 

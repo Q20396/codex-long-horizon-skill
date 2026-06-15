@@ -12,12 +12,17 @@ When a task involves multi-step engineering work, use the `long-horizon-engineer
 - Update task logs after non-trivial tasks when appropriate and safe.
 - Update project memory when discovering durable, non-sensitive project facts.
 - Do not create or update memory/log files in sensitive repositories unless the user explicitly approves.
+- Ask before scanning local folders outside the repository, connected cloud drives, or Gmail.
+- Keep any approved external scan narrow, task-specific, and privacy-aware.
 
 ## Safety
 
 Ask before:
 
 - deleting files
+- scanning local folders outside the repository
+- scanning connected cloud drives or document stores
+- scanning Gmail or other connected mailboxes
 - changing auth/payment/security logic
 - running destructive commands
 - modifying production config
