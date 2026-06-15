@@ -12,7 +12,14 @@ SKILL_DIR = ROOT / ".agents" / "skills" / "long-horizon-engineering"
 
 REQUIRED_FILES = [
     "AGENTS.md",
+    "CHANGELOG.md",
+    "INSTALL.md",
+    "LICENSE",
     "README.md",
+    ".github/workflows/check-skill.yml",
+    "examples/bug-fix-prompt.md",
+    "examples/large-migration-prompt.md",
+    "examples/resume-task-prompt.md",
     ".agents/skills/long-horizon-engineering/SKILL.md",
     ".agents/skills/long-horizon-engineering/references/protocol.md",
     ".agents/skills/long-horizon-engineering/references/capability-boundaries.md",

@@ -6,6 +6,13 @@ This repository contains the `long-horizon-engineering` skill, which can be
 copied into another coding project so Codex has a structured workflow for
 multi-step engineering tasks.
 
+## Quick Links
+
+- [Installation](INSTALL.md)
+- [Changelog](CHANGELOG.md)
+- [Examples](examples/)
+- [License](LICENSE)
+
 ## Official Codex Skill Structure
 
 A Codex skill is a directory containing a required `SKILL.md` file. It can also
@@ -32,7 +39,17 @@ The expected installed structure is:
 
 ```text
 AGENTS.md
+CHANGELOG.md
+INSTALL.md
+LICENSE
 README.md
+.github/
+  workflows/
+    check-skill.yml
+examples/
+  bug-fix-prompt.md
+  large-migration-prompt.md
+  resume-task-prompt.md
 .agents/
   skills/
     long-horizon-engineering/
@@ -73,6 +90,7 @@ This repository is a portable skill package, not an application. It contains:
 - Supporting workflow references
 - Reusable Markdown templates for project memory and task logs
 - Small local helper scripts for appending non-sensitive notes
+- Example prompts, installation instructions, CI checks, and an MIT license
 
 ## What The Skill Does
 
@@ -331,6 +349,8 @@ in memory, logs, working state, or generated reports.
 
 ## Copying This Skill Into Another Project
 
+For the short version, see [INSTALL.md](INSTALL.md).
+
 From another repository root, copy the skill directory:
 
 ```bash
@@ -478,6 +498,9 @@ python3 .agents/skills/long-horizon-engineering/scripts/check_skill_package.py
 
 The check verifies the required files, `SKILL.md` front matter, and absence of
 nested `.agents` directories.
+
+GitHub Actions also runs the package checker and helper `--help` commands on
+pull requests and pushes to `main`.
 
 ## Safe Use Warning
 
