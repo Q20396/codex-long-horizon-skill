@@ -24,6 +24,7 @@ jobs:
       - name: Check helper command help
         run: |
           python3 .agents/skills/long-horizon-engineering/scripts/check_skill_package.py --help
+          python3 .agents/skills/long-horizon-engineering/scripts/check_for_updates.py --help
           python3 .agents/skills/long-horizon-engineering/scripts/append_project_memory.py --help
           python3 .agents/skills/long-horizon-engineering/scripts/update_task_log.py --help
           python3 .agents/skills/long-horizon-engineering/scripts/github_skill_scan.py --help
