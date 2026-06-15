@@ -44,10 +44,13 @@ README.md
         continuous-improvement.md
         decision-log.md
         external-source-scan.md
+        large-migration-playbook.md
         review-checklist.md
         resume-protocol.md
         stop-conditions.md
+        validation-matrix.md
       templates/
+        HANDOFF_REPORT_TEMPLATE.md
         PROJECT_MEMORY_TEMPLATE.md
         IMPROVEMENT_SCAN_TEMPLATE.md
         TASK_LOG_TEMPLATE.md
@@ -115,15 +118,20 @@ selected. This package includes:
   risks, and follow-ups
 - `external-source-scan.md` for consent-gated scans of local folders, connected
   cloud drives, Gmail, or other external sources
+- `large-migration-playbook.md` for phased, reviewable large migrations and
+  complex multi-file implementations
 - `review-checklist.md` for final scope, evidence, validation, safety, and
   handoff checks
 - `resume-protocol.md` for safely continuing interrupted work
 - `stop-conditions.md` for knowing when to pause instead of continuing
+- `validation-matrix.md` for choosing verification steps by task type
 
 ### templates/
 
 Use `templates/` for reusable starter documents. This package includes:
 
+- `HANDOFF_REPORT_TEMPLATE.md` for substantial PR or long-running task handoff
+  summaries
 - `PROJECT_MEMORY_TEMPLATE.md` for durable, non-sensitive project facts
 - `IMPROVEMENT_SCAN_TEMPLATE.md` for periodic skill improvement scans
 - `TASK_LOG_TEMPLATE.md` for concise completed-task notes
@@ -191,6 +199,14 @@ repository state, or safety concerns make continued edits risky.
 `references/review-checklist.md` helps Codex check scope, evidence, validation,
 safety, and handoff quality before finalizing work.
 
+`references/large-migration-playbook.md` helps Codex map a codebase, divide
+large migrations into reviewable phases, preserve compatibility where possible,
+validate in layers, and stop for user confirmation on high-risk decisions.
+
+`references/validation-matrix.md` helps Codex choose verification steps that
+match the task type, such as bug fixes, refactors, migrations, UI changes,
+performance work, security-sensitive changes, or documentation-only changes.
+
 `references/external-source-scan.md` explains how Codex should ask before
 scanning local folders outside the repository, connected cloud drives, Gmail, or
 other external sources. External scans are optional and should use the narrowest
@@ -204,6 +220,23 @@ These files are optional and safety-aware. Do not create or update
 `PROJECT_MEMORY.md`, `TASK_LOG.md`, or `WORKING_STATE.md` in sensitive
 repositories unless the user explicitly approves. Do not use them to store
 private or sensitive content.
+
+## Final Long-Horizon Engineering Supports
+
+This package includes three final lightweight supports for harder engineering
+work:
+
+- `references/large-migration-playbook.md` supports large codebase migrations
+  and complex multi-file implementations.
+- `references/validation-matrix.md` helps Codex choose task-appropriate
+  verification instead of using one generic test strategy.
+- `templates/HANDOFF_REPORT_TEMPLATE.md` supports human review of substantial
+  PRs or long-running tasks.
+
+These supports are optional. They should not create sensitive logs or persistent
+handoff files by default, and they should not be used to store secrets, API
+keys, legal evidence, family information, private client data, financial account
+details, or confidential documents.
 
 ## Continuous Improvement
 

@@ -41,6 +41,15 @@ source, scope, query, and whether contents or only metadata should be inspected.
 Use the least access needed, and do not store private source content in memory,
 logs, state, or reports.
 
+For large migrations or complex multi-file changes, consult
+`references/large-migration-playbook.md` when appropriate. Use
+`references/validation-matrix.md` to choose task-appropriate verification.
+
+For substantial PRs or long-running tasks, produce a handoff summary using
+`templates/HANDOFF_REPORT_TEMPLATE.md` when appropriate. Do not require a
+handoff report for every small task. Do not create extra state, log, or handoff
+files in sensitive repositories unless the user explicitly approves.
+
 ## Core Rule
 
 Do not jump directly into edits on non-trivial tasks.
@@ -103,6 +112,8 @@ Look for:
 - Prior task logs if present
 - Prior memory or working state files if resuming work
 - Approved external sources only when the user has explicitly allowed them
+- Large-migration guidance for broad migrations or multi-file implementations
+- Validation guidance for the current task type
 
 ### 3. Plan
 
@@ -116,6 +127,7 @@ Include:
 - Important assumptions and supporting evidence
 - Rollback strategy
 - Any user confirmation needed
+- For migrations, the proposed phase boundary and compatibility approach
 
 If the task is high-risk, ask before proceeding.
 
@@ -167,6 +179,10 @@ and handoff quality.
 
 For changes to this skill package, run the local package check when available.
 
+For substantial work, include handoff-quality details: evidence used, decisions
+made, validation performed, what was not changed, known risks, reviewer focus,
+rollback plan, and the next safest step.
+
 ### 8. Update Memory / Logs / State
 
 If the repo has a project memory, task log, or working state file, update it
@@ -181,6 +197,9 @@ If not, create:
 only when persistent tracking is appropriate and the repository is not sensitive.
 
 PROJECT_MEMORY.md, TASK_LOG.md, and WORKING_STATE.md are optional. Do not create or update them in sensitive repositories unless the user explicitly approves.
+
+Handoff reports are also optional. Do not create or update persistent handoff
+files in sensitive repositories unless the user explicitly approves.
 
 When resuming work, read prior memory, task log, and working state files before
 planning. Re-check the current repository state before editing; do not blindly
