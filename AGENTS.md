@@ -9,8 +9,9 @@ When a task involves multi-step engineering work, use the `long-horizon-engineer
 - Follow existing project style.
 - Do not introduce dependencies unless necessary.
 - Run relevant tests whenever possible.
-- Update task logs after non-trivial tasks.
-- Update project memory when discovering durable project facts.
+- Update task logs after non-trivial tasks when appropriate and safe.
+- Update project memory when discovering durable, non-sensitive project facts.
+- Do not create or update memory/log files in sensitive repositories unless the user explicitly approves.
 
 ## Safety
 

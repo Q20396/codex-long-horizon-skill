@@ -170,6 +170,15 @@ Use the long-horizon-engineering skill.
 You can also describe a task that clearly matches the skill, such as a
 multi-file bug fix, migration, refactor, or long-running implementation.
 
+## Usage Example
+
+Here is an exact prompt you can give Codex:
+
+```text
+Use the long-horizon-engineering skill.
+Explore the codebase first, make a plan, then implement the change in a new branch and open a draft pull request for review.
+```
+
 ## When To Use This Skill
 
 Use this skill for:
