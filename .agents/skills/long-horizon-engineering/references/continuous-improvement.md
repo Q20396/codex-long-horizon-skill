@@ -33,6 +33,22 @@ Treat this list as a starting point, not a dependency:
 - Long-horizon software engineering benchmark projects
 - This repository's own issues, PR feedback, and task history
 
+## GitHub Scan Helper
+
+Use `scripts/github_skill_scan.py` when a GitHub-based scan is useful. It uses
+the GitHub CLI to search public repositories and inspect repository metadata and
+file-tree signals.
+
+Example:
+
+```bash
+python3 .agents/skills/long-horizon-engineering/scripts/github_skill_scan.py --dry-run --limit 3
+```
+
+The script is an evidence collector. It does not decide what to change, does not
+copy source code, and does not merge anything. Codex should review the report,
+separate facts from assumptions, and only adapt small reusable patterns.
+
 ## Evidence Table
 
 Use this shape when evaluating an upstream idea:

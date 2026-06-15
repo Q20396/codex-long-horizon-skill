@@ -31,6 +31,10 @@ For skill self-improvement tasks, use a review-gated loop: inspect public
 sources, record evidence, adapt only small reusable patterns, run checks, and
 open a draft PR. Do not auto-merge or modify `main` directly.
 
+When scanning GitHub for related Codex or Agent Skills projects, treat results
+as evidence for review. Do not copy external code into this skill without
+checking license obligations and user approval.
+
 ## Core Rule
 
 Do not jump directly into edits on non-trivial tasks.
