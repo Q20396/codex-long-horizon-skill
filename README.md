@@ -40,9 +40,12 @@ README.md
       references/
         protocol.md
         safety-policy.md
+        decision-log.md
+        resume-protocol.md
       templates/
         PROJECT_MEMORY_TEMPLATE.md
         TASK_LOG_TEMPLATE.md
+        WORKING_STATE_TEMPLATE.md
       scripts/
         append_project_memory.py
         update_task_log.py
@@ -97,6 +100,9 @@ selected. This package includes:
 
 - `protocol.md` for the long-horizon engineering workflow
 - `safety-policy.md` for protected areas and safety expectations
+- `decision-log.md` for separating facts, assumptions, decisions, evidence,
+  risks, and follow-ups
+- `resume-protocol.md` for safely continuing interrupted work
 
 ### templates/
 
@@ -104,6 +110,7 @@ Use `templates/` for reusable starter documents. This package includes:
 
 - `PROJECT_MEMORY_TEMPLATE.md` for durable, non-sensitive project facts
 - `TASK_LOG_TEMPLATE.md` for concise completed-task notes
+- `WORKING_STATE_TEMPLATE.md` for resumable in-progress task state
 
 Templates are structure only. They are not a place to store sensitive content.
 
@@ -139,6 +146,26 @@ In practice:
 - Use `SKILL.md` to define the actual long-horizon workflow.
 - Use `references/` when the workflow needs more detail.
 - Use `templates/` and `scripts/` only when persistent tracking is appropriate.
+
+## Long-Horizon Resume Support
+
+`docs/WORKING_STATE.md` is optional and can be used for resumable task state
+when a task is long-running, interrupted, or likely to continue after context
+compaction. It should capture the current goal, status, inspected and changed
+files, confirmed facts, assumptions, decisions, failed attempts, test results,
+known risks, and the next safest step.
+
+`references/decision-log.md` helps prevent unsupported assumptions by separating
+facts, assumptions, decisions, evidence, risks, and follow-ups.
+
+`references/resume-protocol.md` helps Codex continue safely after interruption
+by reading prior memory, task logs, working state, relevant files, and prior logs
+before planning the next change.
+
+These files are optional and safety-aware. Do not create or update
+`PROJECT_MEMORY.md`, `TASK_LOG.md`, or `WORKING_STATE.md` in sensitive
+repositories unless the user explicitly approves. Do not use them to store
+private or sensitive content.
 
 ## Copying This Skill Into Another Project
 
