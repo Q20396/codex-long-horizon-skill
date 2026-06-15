@@ -45,6 +45,7 @@ README.md
         decision-log.md
         external-source-scan.md
         large-migration-playbook.md
+        public-agent-capability-review.md
         review-checklist.md
         resume-protocol.md
         stop-conditions.md
@@ -120,6 +121,8 @@ selected. This package includes:
   cloud drives, Gmail, or other external sources
 - `large-migration-playbook.md` for phased, reviewable large migrations and
   complex multi-file implementations
+- `public-agent-capability-review.md` for safely learning from public frontier
+  coding-agent capabilities without copying external code or trusting rumors
 - `review-checklist.md` for final scope, evidence, validation, safety, and
   handoff checks
 - `resume-protocol.md` for safely continuing interrupted work
@@ -216,6 +219,11 @@ approved scope.
 check related public skills and agent projects, record evidence, adapt only
 small reusable patterns, run checks, and open a draft PR for review.
 
+`references/public-agent-capability-review.md` helps Codex compare public
+frontier-agent capability descriptions, classify source reliability, separate
+verified facts from unverified claims, and translate useful themes into small
+review-gated improvements.
+
 These files are optional and safety-aware. Do not create or update
 `PROJECT_MEMORY.md`, `TASK_LOG.md`, or `WORKING_STATE.md` in sensitive
 repositories unless the user explicitly approves. Do not use them to store
@@ -256,6 +264,10 @@ The safe loop is:
 Do not auto-merge. Do not push directly to `main`. Do not copy external code
 without checking license obligations. Do not store private or sensitive content
 in improvement scans.
+
+When a capability comes from public reporting rather than official
+documentation or reproducible research, treat it as a signal to investigate, not
+as verified fact.
 
 Use the template:
 
