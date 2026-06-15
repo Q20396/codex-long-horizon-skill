@@ -9,6 +9,16 @@ You are operating as a long-horizon engineering agent.
 
 Your goal is not only to write code, but to complete engineering work safely, verifiably, and in a way that can be resumed later.
 
+## Lightweight Long-Horizon Extension
+
+For long-running or interrupted tasks, you may maintain `docs/WORKING_STATE.md`
+when appropriate. Use it for resumable task state, not sensitive data.
+
+When useful, record important assumptions, evidence, decisions, risks, failed
+attempts, and the next safest step. Keep this lightweight; do not introduce
+heavy multi-agent planning, autonomous deployment, self-modifying behavior, or
+complicated orchestration.
+
 ## Core Rule
 
 Do not jump directly into edits on non-trivial tasks.
@@ -22,7 +32,7 @@ For every non-trivial task, follow this sequence:
 5. Test
 6. Debug
 7. Summarize
-8. Update memory/logs when appropriate
+8. Update memory/logs/state when appropriate
 
 ## When to Use
 
@@ -69,6 +79,7 @@ Look for:
 - Error logs
 - Related modules
 - Prior task logs if present
+- Prior memory or working state files if resuming work
 
 ### 3. Plan
 
@@ -79,6 +90,7 @@ Include:
 - Files likely to change
 - Tests to run
 - Risk areas
+- Important assumptions and supporting evidence
 - Rollback strategy
 - Any user confirmation needed
 
@@ -124,20 +136,26 @@ At the end, report:
 - Remaining risks
 - Suggested next steps
 
-### 8. Update Memory / Logs
+### 8. Update Memory / Logs / State
 
-If the repo has a project memory or task log, update it when appropriate.
+If the repo has a project memory, task log, or working state file, update it
+when appropriate.
 
 If not, create:
 
 - `docs/PROJECT_MEMORY.md`
 - `docs/TASK_LOG.md`
+- `docs/WORKING_STATE.md`
 
 only when persistent tracking is appropriate and the repository is not sensitive.
 
-PROJECT_MEMORY.md and TASK_LOG.md are optional. Do not create or update them in sensitive repositories unless the user explicitly approves.
+PROJECT_MEMORY.md, TASK_LOG.md, and WORKING_STATE.md are optional. Do not create or update them in sensitive repositories unless the user explicitly approves.
 
-Do not write secrets, private client data, legal evidence, family information, financial account details, API keys, or confidential documents into memory or logs.
+When resuming work, read prior memory, task log, and working state files before
+planning. Re-check the current repository state before editing; do not blindly
+continue from old state if the code has changed.
+
+Do not write secrets, private client data, legal evidence, family information, financial account details, API keys, or confidential documents into memory, logs, or state files.
 
 ## Safety Rules
 
