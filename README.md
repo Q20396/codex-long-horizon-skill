@@ -1,32 +1,34 @@
 # codex-long-horizon-skill
 
-Codex long-horizon engineering skill package for multi-step software work.
+Reusable Codex skill package for long-horizon software engineering work.
 
-## What This Skill Does
+This repository contains the `long-horizon-engineering` skill, which can be
+copied into another coding project so Codex has a structured workflow for
+multi-step engineering tasks.
 
-`long-horizon-engineering` gives Codex a repeatable workflow for engineering
-tasks that need more than a quick edit. It emphasizes understanding the request,
-exploring the repository, making small safe changes, validating the result, and
-recording durable context so future runs can resume with less rediscovery.
+## Official Codex Skill Structure
 
-## When To Use It
+A Codex skill is a directory containing a required `SKILL.md` file. It can also
+include optional supporting folders such as `scripts`, `references`, and
+`assets`. Codex first reads the skill metadata to decide whether the skill is
+relevant. If the skill is selected, Codex then reads the full `SKILL.md`
+instructions.
 
-Use this skill when a task involves:
+In this repository, the skill is packaged at:
 
-- Multi-file code changes
-- Refactors or migrations
-- Debugging with uncertain root cause
-- Test failure triage
-- Build, deployment, or CI changes
-- Security-sensitive or data-sensitive areas
-- Work that may need to be resumed later
+```text
+.agents/skills/long-horizon-engineering/
+```
 
-Do not use it for tiny one-line edits, simple formatting fixes, or answers that
-do not require repository changes.
+## Recommended Installation Path
 
-## Recommended Repository Structure
+Place this skill directory in the root of a coding project at:
 
-Install the skill package in the repository with this structure:
+```text
+.agents/skills/long-horizon-engineering/
+```
+
+The expected installed structure is:
 
 ```text
 AGENTS.md
@@ -46,58 +48,175 @@ README.md
         update_task_log.py
 ```
 
-Projects using the skill may also keep runtime notes in:
+## What This Repository Is
 
-```text
-docs/
-  PROJECT_MEMORY.md
-  TASK_LOG.md
+This repository is a portable skill package, not an application. It contains:
+
+- Repository-level Codex instructions in `AGENTS.md`
+- The required skill instructions in `SKILL.md`
+- Supporting workflow references
+- Reusable Markdown templates for project memory and task logs
+- Small local helper scripts for appending non-sensitive notes
+
+## What The Skill Does
+
+`long-horizon-engineering` gives Codex a repeatable workflow for engineering
+tasks that should not be handled as quick one-shot edits. It guides Codex to:
+
+1. Understand the request.
+2. Explore the repository before editing.
+3. Plan the smallest safe change.
+4. Execute with minimal scope.
+5. Test or otherwise verify the result.
+6. Debug targeted failures.
+7. Summarize the outcome.
+8. Update memory or logs only when appropriate and safe.
+
+The goal is to make long-running or multi-step work safer, easier to review, and
+easier to resume later.
+
+## Why SKILL.md Is Required
+
+`SKILL.md` anchors the skill. Its front matter provides the skill name and
+description that Codex can use to decide whether the skill is relevant. The rest
+of the file contains the full instructions Codex follows after the skill is
+selected.
+
+Do not rename the skill unless you also update every instruction that refers to
+`long-horizon-engineering`.
+
+## Optional Supporting Folders
+
+The skill can include optional folders to keep `SKILL.md` focused while still
+providing useful supporting material.
+
+### references/
+
+Use `references/` for longer guidance that Codex may consult after the skill is
+selected. This package includes:
+
+- `protocol.md` for the long-horizon engineering workflow
+- `safety-policy.md` for protected areas and safety expectations
+
+### templates/
+
+Use `templates/` for reusable starter documents. This package includes:
+
+- `PROJECT_MEMORY_TEMPLATE.md` for durable, non-sensitive project facts
+- `TASK_LOG_TEMPLATE.md` for concise completed-task notes
+
+Templates are structure only. They are not a place to store sensitive content.
+
+### scripts/
+
+Use `scripts/` for simple local helpers. This package includes:
+
+- `append_project_memory.py` to append facts to `docs/PROJECT_MEMORY.md`
+- `update_task_log.py` to append completed task entries to `docs/TASK_LOG.md`
+
+The scripts are intentionally local-only. They do not read environment
+variables, make network calls, delete files, or require external dependencies.
+
+### assets/
+
+An `assets/` folder may be added later for static support files such as images,
+fixtures, or examples. Keep assets non-sensitive and avoid adding large files
+unless they are necessary for the skill.
+
+## How AGENTS.md And SKILL.md Work Together
+
+`AGENTS.md` gives repository-level instructions to Codex. In a project using
+this package, it should tell Codex when to use the `long-horizon-engineering`
+skill and state broad expectations such as reading files before editing, making
+small verifiable changes, and avoiding secrets.
+
+`SKILL.md` is the skill-specific instruction file. When the skill is triggered,
+Codex should read it and follow its workflow for the current task.
+
+In practice:
+
+- Use `AGENTS.md` to route Codex toward the skill.
+- Use `SKILL.md` to define the actual long-horizon workflow.
+- Use `references/` when the workflow needs more detail.
+- Use `templates/` and `scripts/` only when persistent tracking is appropriate.
+
+## Copying This Skill Into Another Project
+
+From another repository root, copy the skill directory:
+
+```bash
+mkdir -p .agents/skills
+cp -R path/to/codex-long-horizon-skill/.agents/skills/long-horizon-engineering .agents/skills/
 ```
 
-Use the templates as starting points for those `docs/` files. Keep the files
-short, factual, and safe to store in the repository.
+Then add or update that project’s `AGENTS.md` with a short instruction such as:
 
-## How Codex Should Use AGENTS.md And SKILL.md
+```markdown
+When a task involves multi-step engineering work, use the
+`long-horizon-engineering` skill.
+```
 
-`AGENTS.md` is the repository-level instruction file. It tells Codex when to use
-the `long-horizon-engineering` skill and sets general expectations for safe work
-inside the repo.
+If the target repository already has a `.agents/skills/long-horizon-engineering`
+directory, review the files before overwriting local customizations.
 
-`SKILL.md` is the skill contract. When Codex uses the skill, it should read and
-follow the workflow in `SKILL.md`:
+## How To Ask Codex To Use It
 
-1. Understand the user request.
-2. Explore relevant files before editing.
-3. Plan the smallest safe change.
-4. Execute the change.
-5. Test or otherwise verify it.
-6. Debug targeted failures.
-7. Summarize what changed.
-8. Update memory or task logs when useful.
+You can ask directly:
 
-The reference files provide supporting guidance:
+```text
+Use the long-horizon-engineering skill.
+```
 
-- `references/protocol.md` describes the long-horizon engineering workflow.
-- `references/safety-policy.md` lists protected areas and safety rules.
+You can also describe a task that clearly matches the skill, such as a
+multi-file bug fix, migration, refactor, or long-running implementation.
+
+## When To Use This Skill
+
+Use this skill for:
+
+- Large codebase exploration
+- Multi-file changes
+- Refactors or migrations
+- Bug fixes with uncertain root cause
+- Test failure diagnosis
+- Security-sensitive changes
+- Performance optimization
+- API, schema, build, deployment, or CI changes
+- Work that may need to be resumed later
+
+## When Not To Use This Skill
+
+Do not use this skill for:
+
+- Simple typo fixes
+- One-line edits
+- Purely conversational answers
+- Tiny formatting-only changes
+- Tasks where persistent planning or logging would add unnecessary overhead
+- Sensitive repositories where project memory or task logs would be unsafe
 
 ## Maintaining PROJECT_MEMORY.md
 
-`docs/PROJECT_MEMORY.md` should contain durable, non-sensitive facts that future
-Codex runs should remember, such as:
+`docs/PROJECT_MEMORY.md` is optional. Create or update it only when persistent
+tracking is appropriate and the repository is not sensitive.
+
+Use it for durable, non-sensitive facts that future Codex runs should remember,
+such as:
 
 - Package manager and common commands
-- Project architecture notes
 - Stable repository conventions
+- Architecture notes
 - Important technical decisions
 - Known safe follow-ups
 
-Create it from:
+Create it from the template when appropriate:
 
 ```bash
+mkdir -p docs
 cp .agents/skills/long-horizon-engineering/templates/PROJECT_MEMORY_TEMPLATE.md docs/PROJECT_MEMORY.md
 ```
 
-You can append a fact with:
+Append a fact with:
 
 ```bash
 python3 .agents/skills/long-horizon-engineering/scripts/append_project_memory.py "Use npm for frontend package management."
@@ -107,8 +226,10 @@ Only add facts that are expected to remain useful across future tasks.
 
 ## Maintaining TASK_LOG.md
 
-`docs/TASK_LOG.md` should record completed engineering tasks in a concise,
-resumable format. Each entry should include:
+`docs/TASK_LOG.md` is optional. Create or update it only when persistent tracking
+is appropriate and the repository is not sensitive.
+
+Use it to record completed engineering tasks in a concise, resumable format:
 
 - What changed
 - Why it changed
@@ -116,13 +237,14 @@ resumable format. Each entry should include:
 - Verification commands and results
 - Remaining risks or follow-ups
 
-Create it from:
+Create it from the template when appropriate:
 
 ```bash
+mkdir -p docs
 cp .agents/skills/long-horizon-engineering/templates/TASK_LOG_TEMPLATE.md docs/TASK_LOG.md
 ```
 
-You can append a completed task entry with:
+Append a completed task entry with:
 
 ```bash
 python3 .agents/skills/long-horizon-engineering/scripts/update_task_log.py \
@@ -133,12 +255,18 @@ python3 .agents/skills/long-horizon-engineering/scripts/update_task_log.py \
   --notes "No known follow-up."
 ```
 
-## Safety Warning
+## Safe Use Warning
 
-Never store secrets, private client data, legal evidence, family information,
-API keys, tokens, credentials, or other sensitive personal data in public logs,
-templates, task history, or project memory.
+Do not store:
 
-The helper scripts are intentionally simple: they append local Markdown files
-under `docs/`, create those files if missing, do not read environment variables,
-do not make network calls, and do not delete files.
+- Secrets
+- API keys
+- Legal evidence
+- Family information
+- Private client data
+- Financial account information
+- Confidential documents
+
+Use templates only as reusable structure, not as a place for sensitive content.
+Project memory and task logs should contain durable, non-sensitive engineering
+context only.
