@@ -41,12 +41,14 @@ README.md
         protocol.md
         safety-policy.md
         context-compaction.md
+        continuous-improvement.md
         decision-log.md
         review-checklist.md
         resume-protocol.md
         stop-conditions.md
       templates/
         PROJECT_MEMORY_TEMPLATE.md
+        IMPROVEMENT_SCAN_TEMPLATE.md
         TASK_LOG_TEMPLATE.md
         WORKING_STATE_TEMPLATE.md
       scripts/
@@ -106,6 +108,7 @@ selected. This package includes:
 - `safety-policy.md` for protected areas and safety expectations
 - `context-compaction.md` for preserving lightweight state before interruption
   or context loss
+- `continuous-improvement.md` for safe, review-gated periodic skill improvement
 - `decision-log.md` for separating facts, assumptions, decisions, evidence,
   risks, and follow-ups
 - `review-checklist.md` for final scope, evidence, validation, safety, and
@@ -118,6 +121,7 @@ selected. This package includes:
 Use `templates/` for reusable starter documents. This package includes:
 
 - `PROJECT_MEMORY_TEMPLATE.md` for durable, non-sensitive project facts
+- `IMPROVEMENT_SCAN_TEMPLATE.md` for periodic skill improvement scans
 - `TASK_LOG_TEMPLATE.md` for concise completed-task notes
 - `WORKING_STATE_TEMPLATE.md` for resumable in-progress task state
 
@@ -181,10 +185,42 @@ repository state, or safety concerns make continued edits risky.
 `references/review-checklist.md` helps Codex check scope, evidence, validation,
 safety, and handoff quality before finalizing work.
 
+`references/continuous-improvement.md` defines a safe self-improvement loop:
+check related public skills and agent projects, record evidence, adapt only
+small reusable patterns, run checks, and open a draft PR for review.
+
 These files are optional and safety-aware. Do not create or update
 `PROJECT_MEMORY.md`, `TASK_LOG.md`, or `WORKING_STATE.md` in sensitive
 repositories unless the user explicitly approves. Do not use them to store
 private or sensitive content.
+
+## Continuous Improvement
+
+This skill can support a weekly improvement scan, but it should be review-gated.
+Codex may check public Codex, Agent Skills, and long-horizon coding-agent
+projects for relevant changes, then propose small updates through a draft PR.
+
+The safe loop is:
+
+1. Inspect public sources and related skill projects.
+2. Record facts, assumptions, risks, and links.
+3. Identify small reusable patterns, not code to copy.
+4. Update this repository only when the change is evidence-backed.
+5. Run `check_skill_package.py`.
+6. Open a draft PR for user review.
+
+Do not auto-merge. Do not push directly to `main`. Do not copy external code
+without checking license obligations. Do not store private or sensitive content
+in improvement scans.
+
+Use the template:
+
+```bash
+cp .agents/skills/long-horizon-engineering/templates/IMPROVEMENT_SCAN_TEMPLATE.md docs/IMPROVEMENT_SCAN.md
+```
+
+Create or update that file only when persistent tracking is appropriate and the
+repository is not sensitive.
 
 ## Copying This Skill Into Another Project
 
