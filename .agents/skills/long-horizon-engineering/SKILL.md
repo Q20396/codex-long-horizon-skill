@@ -22,7 +22,7 @@ For every non-trivial task, follow this sequence:
 5. Test
 6. Debug
 7. Summarize
-8. Update memory/logs
+8. Update memory/logs when appropriate
 
 ## When to Use
 
@@ -123,6 +123,19 @@ At the end, report:
 - Test results
 - Remaining risks
 - Suggested next steps
+
+### 8. Update Memory / Logs
+
+If the repo has a project memory or task log, update it when appropriate.
+
+If not, create:
+
+- `docs/PROJECT_MEMORY.md`
+- `docs/TASK_LOG.md`
+
+only when persistent tracking is appropriate and the repository is not sensitive.
+
+Do not write secrets, private client data, legal evidence, family information, financial account details, API keys, or confidential documents into memory or logs.
 
 ## Safety Rules
 
