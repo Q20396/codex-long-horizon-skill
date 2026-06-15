@@ -29,6 +29,7 @@ REQUIRED_FILES = [
     ".agents/skills/long-horizon-engineering/scripts/append_project_memory.py",
     ".agents/skills/long-horizon-engineering/scripts/update_task_log.py",
     ".agents/skills/long-horizon-engineering/scripts/check_skill_package.py",
+    ".agents/skills/long-horizon-engineering/scripts/github_skill_scan.py",
 ]
 
 

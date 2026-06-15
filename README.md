@@ -54,6 +54,7 @@ README.md
       scripts/
         append_project_memory.py
         check_skill_package.py
+        github_skill_scan.py
         update_task_log.py
 ```
 
@@ -133,6 +134,8 @@ Use `scripts/` for simple local helpers. This package includes:
 
 - `append_project_memory.py` to append facts to `docs/PROJECT_MEMORY.md`
 - `check_skill_package.py` to validate the package structure
+- `github_skill_scan.py` to scan public GitHub projects for review-gated
+  improvement evidence
 - `update_task_log.py` to append completed task entries to `docs/TASK_LOG.md`
 
 The scripts are intentionally local-only. They do not read environment
@@ -221,6 +224,15 @@ cp .agents/skills/long-horizon-engineering/templates/IMPROVEMENT_SCAN_TEMPLATE.m
 
 Create or update that file only when persistent tracking is appropriate and the
 repository is not sensitive.
+
+To collect public GitHub signals manually:
+
+```bash
+python3 .agents/skills/long-horizon-engineering/scripts/github_skill_scan.py --dry-run --limit 3
+```
+
+Remove `--dry-run` to write `docs/GITHUB_SKILL_SCAN.md`. Treat the report as
+evidence for review, not as permission to copy external code.
 
 ## Copying This Skill Into Another Project
 
