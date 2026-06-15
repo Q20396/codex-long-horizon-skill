@@ -110,6 +110,21 @@ tasks that should not be handled as quick one-shot edits. It guides Codex to:
 The goal is to make long-running or multi-step work safer, easier to review, and
 easier to resume later.
 
+## AI Video Production Skill
+
+`ai-video-production` is a separate optional sibling skill for AI-assisted video
+planning, storyboard design, image asset planning, and code-rendered video
+workflows.
+
+It can support Remotion-style and HyperFrames-style workflows, including
+briefing, research boundaries, scripting, storyboard and shot-list creation,
+asset manifests, preview planning, and render handoffs.
+
+This skill does not auto-render, auto-upload, auto-publish, or post media. Human
+approval is required before rendering, uploading, publishing, posting, or using
+private assets. Sensitive client, private, family, legal, medical, or financial
+material requires explicit approval before Codex reads or uses it.
+
 ## Why SKILL.md Is Required
 
 `SKILL.md` anchors the skill. Its front matter provides the skill name and
