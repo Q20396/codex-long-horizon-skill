@@ -16,6 +16,14 @@ Stop and ask the user, or summarize the blocker, when:
 - The implementation path depends on an important unverified assumption.
 - Continuing would require storing sensitive information in memory, logs, or
   working state.
+- A file appears to contain client, legal, financial, family, medical, identity,
+  private correspondence, or confidential business data.
+- The requested action could expose confidential data.
+- The user asks to push, upload, publish, or share private files without a
+  reviewed subset.
+- Codex is unsure whether a file is sensitive.
+- The staged diff includes sensitive file names, raw documents, screenshots, or
+  evidence files.
 
 When stopping, report:
 

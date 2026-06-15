@@ -60,3 +60,33 @@ For user data:
 - Avoid logging sensitive content
 - Avoid sending data to third-party services
 - Document any new data retention behavior
+
+## Client And Confidential Data
+
+Treat the following as protected by default:
+
+- Client names and contact details
+- Legal evidence and contracts
+- Financial records, bank account details, and tax documents
+- Identity documents
+- Family information
+- Medical or health information
+- Private correspondence
+- Screenshots of private systems
+- Source documents supplied by clients
+- Confidential business information
+- API keys, tokens, passwords, and credentials
+- Private research notes or corpus content
+
+Rules:
+
+- Do not put secrets in logs.
+- Do not put private evidence in reusable memory.
+- Do not store sensitive details in project memory, task logs, working state, or
+  handoff reports.
+- Do not use broad staging such as `git add .` in sensitive repositories.
+- Stage explicit reviewed paths only.
+- Ask for human approval before pushing any branch that may contain private
+  data.
+- Do not open public PRs containing private data.
+- If unsure whether data is sensitive, treat it as sensitive and ask.

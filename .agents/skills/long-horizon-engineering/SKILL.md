@@ -45,6 +45,14 @@ autonomous deployment, self-improvement, auto-merge, production execution, or
 security automation, consult `references/capability-boundaries.md`. Capability
 does not imply permission; prefer review-gated and reversible workflows.
 
+Treat client, private, legal, financial, family, medical, identity, business,
+and confidential research data as sensitive by default. Consult
+`references/client-privacy.md` when a repository may contain client or
+confidential material. Do not store client secrets, legal evidence, family
+information, financial details, medical details, identity details, private
+correspondence, or confidential source content in memory, logs, state, handoff
+files, commits, pushes, or public PRs.
+
 When a task may require scanning outside the current repository, such as local
 folders, connected cloud drives, or Gmail, ask the user first. Confirm the
 source, scope, query, and whether contents or only metadata should be inspected.
@@ -126,6 +134,7 @@ Look for:
 - Validation guidance for the current task type
 - Public agent capability review guidance for self-improvement work
 - Capability boundaries for high-impact agent behavior
+- Client privacy guidance for private or confidential repositories
 
 ### 3. Plan
 
@@ -142,6 +151,10 @@ Include:
 - For migrations, the proposed phase boundary and compatibility approach
 
 If the task is high-risk, ask before proceeding.
+
+If the repository appears sensitive, stay plan-only or ask for explicit
+confirmation before reading, modifying, staging, committing, pushing, or
+summarizing private materials.
 
 If the task may need local folders, connected cloud drives, Gmail, or other
 external sources, ask before scanning them and keep the approved scope narrow.
@@ -219,6 +232,9 @@ continue from old state if the code has changed.
 
 Do not write secrets, private client data, legal evidence, family information, financial account details, API keys, or confidential documents into memory, logs, or state files.
 
+If a task requires working with sensitive files, use minimal references and
+avoid copying content into long-term logs. If uncertain, stop and ask.
+
 ## Safety Rules
 
 Never expose secrets.
@@ -230,6 +246,8 @@ Never commit credentials.
 Ask for confirmation before:
 
 - deleting files
+- reading, modifying, staging, committing, pushing, or summarizing sensitive
+  client or confidential materials
 - using sub-agents for broad or high-impact work
 - enabling auto-merge
 - running deployment or production-affecting commands

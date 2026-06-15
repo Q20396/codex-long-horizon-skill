@@ -34,6 +34,17 @@ pull request.
   state unless the user explicitly approved it.
 - Destructive actions were not taken without explicit approval.
 
+## Privacy Review
+
+- Client data was not copied into logs, memory, state, handoff files, commits,
+  or PR text.
+- Sensitive details were not stored in `PROJECT_MEMORY.md`, `TASK_LOG.md`,
+  `WORKING_STATE.md`, or `HANDOFF_REPORT.md`.
+- Only explicit safe paths were staged.
+- Raw source documents, evidence files, screenshots, identity documents,
+  contracts, and financial records were not staged unless explicitly approved.
+- Any sensitive operation was approved by the user.
+
 ## Handoff
 
 - The final summary names files changed.
