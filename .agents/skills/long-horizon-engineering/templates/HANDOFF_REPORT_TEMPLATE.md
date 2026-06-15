@@ -1,8 +1,8 @@
 # Handoff Report
 
-Safety note: Do not include secrets, API keys, legal evidence, family
-information, private client data, financial account details, or confidential
-documents.
+Safety note: Do not include secrets, API keys, client names, legal evidence,
+family information, medical information, financial account details, identity
+documents, private correspondence, or confidential source content.
 
 ## Goal
 

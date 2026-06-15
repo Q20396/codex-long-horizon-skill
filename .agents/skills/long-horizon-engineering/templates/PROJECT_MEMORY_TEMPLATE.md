@@ -2,8 +2,9 @@
 
 This file stores durable, non-sensitive project facts for future Codex runs.
 
-Do not store secrets, private client data, legal evidence, family information,
-API keys, tokens, credentials, or other sensitive personal data here.
+Do not include secrets, API keys, client names, legal evidence, family
+information, medical information, financial account details, identity documents,
+private correspondence, or confidential source content.
 
 ## Project Overview
 

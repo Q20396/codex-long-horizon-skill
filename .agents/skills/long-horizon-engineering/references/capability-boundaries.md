@@ -7,6 +7,10 @@ production execution, or security automation.
 The principle is simple: capability does not imply permission. Prefer
 review-gated, reversible workflows over autonomous high-impact actions.
 
+For client, legal, financial, family, medical, identity, or confidential
+repositories, default to plan-only mode until the user approves the exact files,
+commands, staging paths, push target, and risk.
+
 ## Boundary Levels
 
 | Level | Meaning | Examples |
@@ -41,6 +45,9 @@ plans, and release notes. Do not deploy to production or production-like
 environments unless the user explicitly confirms the target, command, timing,
 rollback path, and acceptable risk.
 
+Do not use autonomous deployment on client or confidential repositories without
+explicit approval.
+
 ### Self-Improvement Loop
 
 Status: draft PR only.
@@ -59,6 +66,9 @@ prepare a merge checklist, but human review remains the normal gate. Auto-merge
 requires an explicit user request, a clean working tree, passing required
 checks, and a clear statement that the user accepts the risk.
 
+Do not use auto-merge for client or confidential repositories unless the user
+explicitly approves the reviewed subset and accepts the risk.
+
 ### Production Execution
 
 Status: plan only by default.
@@ -67,6 +77,9 @@ Codex may inspect configuration, identify deployment risk, propose commands, and
 prepare rollback steps. It must ask before running commands that affect
 production services, production data, billing, authentication, user permissions,
 or infrastructure.
+
+Do not execute production-affecting commands for client or confidential systems
+without explicit approval.
 
 ### Security Exploit Automation
 
@@ -80,6 +93,9 @@ Do not automate exploitation, credential theft, persistence, evasion,
 exfiltration, destructive testing, or scanning of public or third-party targets
 without clear authorization and safe scope. Prefer explaining risk and
 defensive remediation.
+
+Do not use security automation on client or confidential systems without clear
+authorization, safe scope, and defensive purpose.
 
 ## Confirmation Checklist
 
@@ -108,6 +124,8 @@ For a reusable public skill, default to:
 - No production execution without explicit confirmation
 - No offensive security automation
 - No hidden background monitoring
+- No uploading, publishing, or sharing client data unless the user explicitly
+  approves the exact reviewed subset
 
 These defaults make the skill safer to share across unknown repositories and
 teams.

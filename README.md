@@ -57,6 +57,7 @@ examples/
       references/
         protocol.md
         capability-boundaries.md
+        client-privacy.md
         safety-policy.md
         context-compaction.md
         continuous-improvement.md
@@ -132,6 +133,8 @@ selected. This package includes:
 - `protocol.md` for the long-horizon engineering workflow
 - `capability-boundaries.md` for deciding which powerful agent behaviors are
   allowed, confirmation-gated, draft-PR-only, plan-only, or forbidden
+- `client-privacy.md` for protecting client, legal, financial, family, medical,
+  identity, business, and confidential research data
 - `safety-policy.md` for protected areas and safety expectations
 - `context-compaction.md` for preserving lightweight state before interruption
   or context loss
@@ -215,6 +218,10 @@ behavior such as sub-agent orchestration, autonomous deployment,
 self-improvement loops, auto-merge, production execution, and security
 automation.
 
+`references/client-privacy.md` defines privacy rules for client and
+confidential data, including no sensitive details in memory, task logs, working
+state, handoff reports, public PRs, or this reusable skill repository.
+
 `references/decision-log.md` helps prevent unsupported assumptions by separating
 facts, assumptions, decisions, evidence, risks, and follow-ups.
 
@@ -285,6 +292,30 @@ Codex can support powerful workflows, but this public skill keeps them bounded:
 
 The default path is branch, validate, summarize, and open a draft PR for human
 review.
+
+## Client Privacy and Confidential Data Protection
+
+This skill is designed to be safer for private repositories that may contain
+client information, legal evidence, financial records, family information,
+business documents, medical or identity details, private correspondence, or
+confidential research materials.
+
+Sensitive repositories should default to plan-only mode until the user approves
+specific files, commands, edits, staging paths, and push targets. Codex should
+use the minimum necessary exposure and refer to private materials with generic
+labels such as "client contract file" or "private evidence document" instead of
+copying details.
+
+Do not store client data in memory, task logs, working state, handoff reports,
+examples, commits, public PR text, or this reusable skill repository. Public PRs
+and public repositories must never include private client data.
+
+Use explicit path staging in sensitive repositories. Do not use broad staging
+such as `git add .` when private materials may be present.
+
+This reusable skill repository must contain templates and rules only, never real
+client data, legal evidence, financial data, identity documents, family
+information, private correspondence, or confidential source content.
 
 ## Continuous Improvement
 
