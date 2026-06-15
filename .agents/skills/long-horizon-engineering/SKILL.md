@@ -35,6 +35,11 @@ When scanning GitHub for related Codex or Agent Skills projects, treat results
 as evidence for review. Do not copy external code into this skill without
 checking license obligations and user approval.
 
+When comparing public frontier-agent capabilities, including Fable-style public
+descriptions, consult `references/public-agent-capability-review.md`. Separate
+official facts, research findings, media reports, community claims, and
+unverified claims before adopting any pattern.
+
 When a task may require scanning outside the current repository, such as local
 folders, connected cloud drives, or Gmail, ask the user first. Confirm the
 source, scope, query, and whether contents or only metadata should be inspected.
@@ -114,6 +119,7 @@ Look for:
 - Approved external sources only when the user has explicitly allowed them
 - Large-migration guidance for broad migrations or multi-file implementations
 - Validation guidance for the current task type
+- Public agent capability review guidance for self-improvement work
 
 ### 3. Plan
 

@@ -6,6 +6,10 @@ skill itself.
 The goal is to learn from related Codex, agent, and Agent Skills projects
 without copying external code or weakening safety boundaries.
 
+When reviewing public frontier-agent capabilities, including Fable-style public
+descriptions, use `public-agent-capability-review.md` to classify source
+reliability and translate capability themes into small, reviewable changes.
+
 ## Safe Loop
 
 Run this loop at most weekly unless the user asks otherwise:
@@ -27,6 +31,7 @@ without checking the license and preserving attribution where required.
 Treat this list as a starting point, not a dependency:
 
 - OpenAI Codex documentation and release notes
+- Anthropic Claude Code documentation, release notes, and public agent guidance
 - Agent Skills / `SKILL.md` ecosystem projects
 - High-signal coding-agent tools that expose durable state, review, testing,
   worktree isolation, or approval gates
@@ -78,6 +83,8 @@ Skip changes that introduce:
 - Mandatory memory or logs
 - Hidden network calls
 - Vendor-specific lock-in unless documented as optional
+- Adoption of unverified claims as facts
+- Copied code, leaked internals, or license-unclear implementation details
 
 ## Weekly Automation Boundary
 
