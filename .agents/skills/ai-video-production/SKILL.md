@@ -20,6 +20,13 @@ that describe the intended subject, style, motion, composition, aspect ratio,
 and constraints. Record the prompt or prompt file in the asset manifest so the
 result can be reviewed and reproduced.
 
+Before generating images or video from text, analyze all provided text first.
+Summarize the core message, key claims, emotional tone, narrative structure,
+visual motifs, required facts, speculative boundaries, and unsafe or excluded
+content. Use that summary to create the system-facing image or video prompts.
+Do not generate media from isolated sentences without understanding the full
+context.
+
 ## Workflow
 
 1. Brief
@@ -40,6 +47,8 @@ Before final render, upload, publication, or external sharing, require explicit 
 
 For each major script beat, plan a corresponding visual beat:
 
+- First summarize the whole source text into a visual brief before writing
+  prompts.
 - Convert claims into diagrams, timelines, maps, charts, system layers, or
   before/after comparisons when appropriate.
 - Convert abstract ideas into visual metaphors, animation, spatial layouts,

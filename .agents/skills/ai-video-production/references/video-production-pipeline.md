@@ -53,7 +53,29 @@ Record:
 - Privacy restrictions
 - Claims requiring fact check
 
-## Step 4: Script
+## Step 4: Analyze Source Text
+
+Before writing image or video prompts, read all provided text and produce a
+short visual brief. Do not generate media from isolated sentences unless the
+user explicitly asks for a single-line prompt.
+
+Capture:
+
+- Core message
+- Key claims or facts
+- Reasonable inferences
+- Speculative or fictional elements
+- Emotional tone
+- Narrative arc
+- Visual motifs
+- Characters, objects, places, systems, or symbols
+- Required exclusions, privacy limits, and licensing constraints
+- What the generated media should make the viewer understand
+
+Use this analysis as the basis for script beats, storyboard scenes, visual
+prompts, and asset plans.
+
+## Step 5: Script
 
 Write a script that fits the platform and duration.
 
@@ -69,7 +91,7 @@ Include:
 
 Keep narration and visual text separate. Social video text should be short enough to read on mobile.
 
-## Step 5: Storyboard
+## Step 6: Storyboard
 
 Turn the script into scenes or shots.
 
@@ -93,7 +115,7 @@ Each storyboard row should include:
 - Asset IDs
 - Approval notes
 
-## Step 6: Asset Plan
+## Step 7: Asset Plan
 
 Plan assets before generation or render.
 
@@ -119,7 +141,7 @@ composition, aspect ratio, duration for video, negative constraints, privacy
 constraints, and licensing notes. Store the prompt text or a prompt file path in
 the asset manifest.
 
-## Step 7: Choose Tool Path
+## Step 8: Choose Tool Path
 
 Use Remotion-style production for maintainable engineering, reusable components, data-driven videos, variants, and precise render contracts.
 
@@ -129,7 +151,7 @@ Use ImageGen for covers, thumbnails, storyboard frames, scene backgrounds, visua
 
 Hybrid paths are normal: for example, generate storyboard images, assemble a HyperFrames preview, then later migrate repeatable work to a Remotion-style system.
 
-## Step 8: Preview
+## Step 9: Preview
 
 Preview before render.
 
@@ -147,7 +169,7 @@ Preview checks:
 - Sensitive-content redaction
 - Missing license or source notes
 
-## Step 9: User Approval
+## Step 10: User Approval
 
 Require approval before:
 
@@ -157,7 +179,7 @@ Require approval before:
 - Use of sensitive source material
 - Use of paid generation or paid render services
 
-## Step 10: Render
+## Step 11: Render
 
 The agent may prepare render commands or settings, but should not execute final render unless the user explicitly approves.
 
@@ -171,7 +193,7 @@ Render handoff should include:
 - Known issues
 - License and privacy checklist
 
-## Step 11: Export
+## Step 12: Export
 
 Document export settings:
 
@@ -183,7 +205,7 @@ Document export settings:
 - Thumbnail or cover
 - Filename convention
 
-## Step 12: Optional Publish Plan
+## Step 13: Optional Publish Plan
 
 Prepare a plan, not an automatic post:
 
