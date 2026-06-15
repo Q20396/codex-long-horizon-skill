@@ -19,6 +19,10 @@ attempts, and the next safest step. Keep this lightweight; do not introduce
 heavy multi-agent planning, autonomous deployment, self-modifying behavior, or
 complicated orchestration.
 
+Do not make behavioral changes based only on assumptions. Verify important
+claims with repository files, tests, logs, command output, or user-provided
+context before editing.
+
 ## Core Rule
 
 Do not jump directly into edits on non-trivial tasks.
