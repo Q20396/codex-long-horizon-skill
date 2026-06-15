@@ -39,6 +39,7 @@ README.md
       SKILL.md
       references/
         protocol.md
+        capability-boundaries.md
         safety-policy.md
         context-compaction.md
         continuous-improvement.md
@@ -111,6 +112,8 @@ Use `references/` for longer guidance that Codex may consult after the skill is
 selected. This package includes:
 
 - `protocol.md` for the long-horizon engineering workflow
+- `capability-boundaries.md` for deciding which powerful agent behaviors are
+  allowed, confirmation-gated, draft-PR-only, plan-only, or forbidden
 - `safety-policy.md` for protected areas and safety expectations
 - `context-compaction.md` for preserving lightweight state before interruption
   or context loss
@@ -189,6 +192,11 @@ known risks, and the next safest step.
 `references/context-compaction.md` describes what to preserve before a task is
 paused, interrupted, or compacted.
 
+`references/capability-boundaries.md` defines safe defaults for powerful agent
+behavior such as sub-agent orchestration, autonomous deployment,
+self-improvement loops, auto-merge, production execution, and security
+automation.
+
 `references/decision-log.md` helps prevent unsupported assumptions by separating
 facts, assumptions, decisions, evidence, risks, and follow-ups.
 
@@ -245,6 +253,20 @@ These supports are optional. They should not create sensitive logs or persistent
 handoff files by default, and they should not be used to store secrets, API
 keys, legal evidence, family information, private client data, financial account
 details, or confidential documents.
+
+## Capability Boundaries
+
+Codex can support powerful workflows, but this public skill keeps them bounded:
+
+- Sub-agent orchestration is allowed for narrow, independent research and
+  review, with the main agent retaining responsibility.
+- Self-improvement is draft-PR-only and review-gated.
+- Autonomous deployment and production execution are plan-only by default.
+- Auto-merge is disabled by default and requires explicit user authorization.
+- Security automation is defensive only and must stay within authorized scope.
+
+The default path is branch, validate, summarize, and open a draft PR for human
+review.
 
 ## Continuous Improvement
 

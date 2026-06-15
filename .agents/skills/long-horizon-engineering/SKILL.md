@@ -40,6 +40,11 @@ descriptions, consult `references/public-agent-capability-review.md`. Separate
 official facts, research findings, media reports, community claims, and
 unverified claims before adopting any pattern.
 
+When a task asks for powerful agent behavior such as sub-agent orchestration,
+autonomous deployment, self-improvement, auto-merge, production execution, or
+security automation, consult `references/capability-boundaries.md`. Capability
+does not imply permission; prefer review-gated and reversible workflows.
+
 When a task may require scanning outside the current repository, such as local
 folders, connected cloud drives, or Gmail, ask the user first. Confirm the
 source, scope, query, and whether contents or only metadata should be inspected.
@@ -120,6 +125,7 @@ Look for:
 - Large-migration guidance for broad migrations or multi-file implementations
 - Validation guidance for the current task type
 - Public agent capability review guidance for self-improvement work
+- Capability boundaries for high-impact agent behavior
 
 ### 3. Plan
 
@@ -224,6 +230,9 @@ Never commit credentials.
 Ask for confirmation before:
 
 - deleting files
+- using sub-agents for broad or high-impact work
+- enabling auto-merge
+- running deployment or production-affecting commands
 - scanning local folders outside the repository
 - scanning connected cloud drives or document stores
 - scanning Gmail or other connected mailboxes
