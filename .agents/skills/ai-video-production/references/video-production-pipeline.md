@@ -73,10 +73,18 @@ Keep narration and visual text separate. Social video text should be short enoug
 
 Turn the script into scenes or shots.
 
+For text-to-video tasks, each scene should translate the text's meaning into a
+matching visual idea. Avoid making the whole video a sequence of plain text
+cards unless the user explicitly asks for that style. When footage is not
+available, use safe original animation, abstract motion graphics, diagrams,
+maps, system layers, icon motion, interface mockups, or symbolic cinematic
+scenes.
+
 Each storyboard row should include:
 
 - Scene number
 - Time range
+- Text beat or idea being visualized
 - Visual description
 - Motion or transition
 - Narration
@@ -95,7 +103,10 @@ Asset sources:
 - Generated images
 - Generated or recorded voiceover
 - Licensed stock assets
+- Original abstract animation
+- Original motion graphics
 - Original diagrams
+- Generic interface mockups
 - Product screenshots
 - Placeholder assets
 
@@ -118,6 +129,8 @@ Preview before render.
 Preview checks:
 
 - Story clarity
+- Visuals match the script meaning
+- Captions support the visuals instead of replacing them
 - Timing
 - Readability
 - Caption placement

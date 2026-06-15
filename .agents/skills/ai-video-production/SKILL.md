@@ -9,6 +9,12 @@ Use this optional skill when a task involves planning or producing AI-assisted v
 
 This skill is documentation-first. It may guide scripts, storyboards, shot lists, asset manifests, preview plans, and render handoffs, but it must not automatically render, upload, publish, or post media.
 
+When turning text into video, translate the meaning of the text into matching
+visuals. Do not default to plain caption cards. If real footage or approved
+assets are unavailable, use original abstract animation, motion graphics,
+diagrams, symbolic scenes, interface mockups, kinetic typography, or other
+safe generated visuals that express the idea.
+
 ## Workflow
 
 1. Brief
@@ -24,6 +30,21 @@ This skill is documentation-first. It may guide scripts, storyboards, shot lists
 ## Required Gate
 
 Before final render, upload, publication, or external sharing, require explicit human approval. The handoff should show what will be rendered, what source assets are used, where outputs will be stored, and what command or tool action the human may run.
+
+## Text-To-Visual Mapping
+
+For each major script beat, plan a corresponding visual beat:
+
+- Convert claims into diagrams, timelines, maps, charts, system layers, or
+  before/after comparisons when appropriate.
+- Convert abstract ideas into visual metaphors, animation, spatial layouts,
+  icon motion, or cinematic symbolic scenes.
+- Use captions as support, not as the whole video.
+- If a scene is speculative, make the visual feel conceptual and avoid implying
+  that it is documentary footage or confirmed evidence.
+- Prefer generic placeholders when assets are missing or unapproved.
+- Do not use copyrighted, private, client, family, legal, medical, financial,
+  identity, or confidential material without explicit approval.
 
 ## Privacy Rules
 
