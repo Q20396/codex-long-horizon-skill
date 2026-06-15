@@ -15,6 +15,11 @@ assets are unavailable, use original abstract animation, motion graphics,
 diagrams, symbolic scenes, interface mockups, kinetic typography, or other
 safe generated visuals that express the idea.
 
+When creating image or video files, generate them from explicit visual prompts
+that describe the intended subject, style, motion, composition, aspect ratio,
+and constraints. Record the prompt or prompt file in the asset manifest so the
+result can be reviewed and reproduced.
+
 ## Workflow
 
 1. Brief
@@ -43,6 +48,10 @@ For each major script beat, plan a corresponding visual beat:
 - If a scene is speculative, make the visual feel conceptual and avoid implying
   that it is documentary footage or confirmed evidence.
 - Prefer generic placeholders when assets are missing or unapproved.
+- For generated media, write a prompt for each image, video clip, animated
+  scene, or reusable visual asset before producing the file.
+- Keep prompts aligned with the approved script, storyboard, privacy
+  boundaries, and licensing constraints.
 - Do not use copyrighted, private, client, family, legal, medical, financial,
   identity, or confidential material without explicit approval.
 

@@ -86,6 +86,7 @@ Each storyboard row should include:
 - Time range
 - Text beat or idea being visualized
 - Visual description
+- Visual generation prompt or prompt file when media will be generated
 - Motion or transition
 - Narration
 - On-screen text
@@ -111,6 +112,12 @@ Asset sources:
 - Placeholder assets
 
 Track every asset in the manifest.
+
+For generated image or video assets, write the prompt before creating the
+file. The prompt should include subject, scene, style, motion if applicable,
+composition, aspect ratio, duration for video, negative constraints, privacy
+constraints, and licensing notes. Store the prompt text or a prompt file path in
+the asset manifest.
 
 ## Step 7: Choose Tool Path
 
