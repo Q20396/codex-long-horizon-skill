@@ -53,6 +53,12 @@ information, financial details, medical details, identity details, private
 correspondence, or confidential source content in memory, logs, state, handoff
 files, commits, pushes, or public PRs.
 
+Before reading sensitive materials, tell the user why access is needed, which
+files or folders would be read, whether metadata is enough, whether content
+would be quoted, summarized, or recorded, and how sensitive content will be
+minimized or omitted. Wait for explicit approval before reading sensitive
+content.
+
 When a task may require scanning outside the current repository, such as local
 folders, connected cloud drives, or Gmail, ask the user first. Confirm the
 source, scope, query, and whether contents or only metadata should be inspected.

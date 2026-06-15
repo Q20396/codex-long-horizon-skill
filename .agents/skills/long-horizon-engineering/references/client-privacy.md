@@ -29,6 +29,11 @@ Sensitive data includes:
 
 - Do not store sensitive data in `PROJECT_MEMORY.md`, `TASK_LOG.md`,
   `WORKING_STATE.md`, or `HANDOFF_REPORT.md`.
+- Before reading sensitive materials, tell the user why access is needed, which
+  files or folders would be read, whether metadata is enough, whether content
+  would be quoted, summarized, or recorded, and how sensitive content will be
+  minimized or omitted. Wait for explicit approval before reading sensitive
+  content.
 - Do not quote private source material unless the user explicitly asks and it is
   necessary for the task.
 - Do not summarize sensitive documents into public or reusable logs.
@@ -61,6 +66,20 @@ into persistent files.
 For legal, financial, family, medical, client, or confidential research
 repositories, default to plan-only mode until the user approves specific files,
 commands, edits, staging paths, and push targets.
+
+## Before Reading Sensitive Content
+
+When sensitive content may need to be read, ask first and include:
+
+- Why the material is needed
+- Which files, folders, labels, or records would be read
+- Whether metadata-only review is enough
+- Whether private content would be quoted, summarized, or recorded
+- Where any summary would appear
+- How sensitive details will be minimized, omitted, or redacted
+
+Do not proceed from metadata inspection to content inspection until the user
+explicitly approves the sensitive read scope.
 
 ## Git Safety
 
