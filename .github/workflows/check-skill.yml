@@ -1,0 +1,29 @@
+name: Check skill package
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  check-skill:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Validate package structure
+        run: python3 .agents/skills/long-horizon-engineering/scripts/check_skill_package.py
+
+      - name: Check helper command help
+        run: |
+          python3 .agents/skills/long-horizon-engineering/scripts/check_skill_package.py --help
+          python3 .agents/skills/long-horizon-engineering/scripts/append_project_memory.py --help
+          python3 .agents/skills/long-horizon-engineering/scripts/update_task_log.py --help
+          python3 .agents/skills/long-horizon-engineering/scripts/github_skill_scan.py --help
