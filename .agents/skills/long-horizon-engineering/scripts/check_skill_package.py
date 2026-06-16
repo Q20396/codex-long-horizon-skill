@@ -30,6 +30,7 @@ REQUIRED_FILES = [
     ".agents/skills/long-horizon-engineering/references/continuous-improvement.md",
     ".agents/skills/long-horizon-engineering/references/decision-log.md",
     ".agents/skills/long-horizon-engineering/references/external-source-scan.md",
+    ".agents/skills/long-horizon-engineering/references/jurisdiction-industry-compliance.md",
     ".agents/skills/long-horizon-engineering/references/large-migration-playbook.md",
     ".agents/skills/long-horizon-engineering/references/public-agent-capability-review.md",
     ".agents/skills/long-horizon-engineering/references/resume-protocol.md",

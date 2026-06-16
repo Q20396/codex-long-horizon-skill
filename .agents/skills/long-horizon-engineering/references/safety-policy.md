@@ -60,6 +60,22 @@ For user data:
 - Avoid logging sensitive content
 - Avoid sending data to third-party services
 - Document any new data retention behavior
+- Treat precise location, GPS data, addresses, travel history, and client
+  operating locations as sensitive unless the user explicitly approves use.
+
+## Location And Jurisdiction
+
+Do not silently enable GPS, read device location, infer precise location from
+private files, or store precise location in reusable memory, logs, working
+state, or handoff reports.
+
+For location-aware legal, regulatory, or industry-rule guidance:
+
+- Ask the user to provide or approve the jurisdiction.
+- Confirm the relevant industry or business activity.
+- Use current reliable public sources for jurisdiction-specific claims.
+- State that the output is informational and not legal advice.
+- Ask whether the user wants cross-region comparison before expanding scope.
 
 ## Client And Confidential Data
 

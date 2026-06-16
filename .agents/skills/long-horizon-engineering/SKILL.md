@@ -65,6 +65,17 @@ source, scope, query, and whether contents or only metadata should be inspected.
 Use the least access needed, and do not store private source content in memory,
 logs, state, or reports.
 
+When a task needs location-aware or industry-aware legal, regulatory, or
+industry-rule context, consult
+`references/jurisdiction-industry-compliance.md`. Do not silently enable GPS or
+infer precise location from private files. Ask whether the user wants to approve
+device/GPS location use or manually provide the country, state/province, city,
+or region. Identify the relevant industry, use current public sources for legal
+and regulatory facts, state that the output is not legal advice, and ask whether
+cross-region rules should also be checked. If cross-region rules may matter, ask
+whether the user wants Codex to load approved skills or reference files for other
+regions while excluding private client materials unless explicitly approved.
+
 For large migrations or complex multi-file changes, consult
 `references/large-migration-playbook.md` when appropriate. Use
 `references/validation-matrix.md` to choose task-appropriate verification.
@@ -141,6 +152,8 @@ Look for:
 - Public agent capability review guidance for self-improvement work
 - Capability boundaries for high-impact agent behavior
 - Client privacy guidance for private or confidential repositories
+- Jurisdiction and industry compliance guidance for location-aware regulatory
+  questions
 
 ### 3. Plan
 
@@ -260,6 +273,9 @@ Ask for confirmation before:
 - scanning local folders outside the repository
 - scanning connected cloud drives or document stores
 - scanning Gmail or other connected mailboxes
+- using device location, GPS, or precise location data
+- giving jurisdiction-specific legal, regulatory, or industry-rule guidance
+  without a confirmed jurisdiction and current source check
 - running destructive commands
 - modifying auth, payment, or security logic
 - changing database migrations

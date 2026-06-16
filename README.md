@@ -458,6 +458,26 @@ not store secrets, personal messages, private client data, financial account
 details, legal evidence, family information, API keys, or confidential documents
 in memory, logs, working state, or generated reports.
 
+## Location And Industry Compliance
+
+`references/jurisdiction-industry-compliance.md` guides tasks that need
+location-aware or industry-aware legal, regulatory, or rule-of-practice context.
+
+Codex should not silently enable GPS, read device location, infer precise
+location from private files, or store precise location in reusable memory or
+logs. It should ask whether the user wants to approve device/GPS location use or
+manually provide the country, state/province, city, or region. It should confirm
+the customer's industry or business activity and use current public sources for
+jurisdiction-specific legal or regulatory facts.
+
+Outputs should clearly separate public facts, practical implications, and
+recommendations. They should say that the response is informational and not
+legal advice. After a local answer, Codex should ask whether the user wants to
+compare cross-region laws, regulations, or industry rules before expanding the
+scope. It should also ask whether the user wants to load approved skills or
+reference files for other regions, using public or non-sensitive sources by
+default and excluding private client materials unless explicitly approved.
+
 ## Copying This Skill Into Another Project
 
 For the short version, see [INSTALL.md](INSTALL.md).

@@ -22,6 +22,8 @@ Sensitive data includes:
 - Screenshots of private systems
 - Source documents supplied by clients
 - Confidential business information
+- Precise locations, GPS data, addresses, travel history, and client operating
+  locations
 - API keys, tokens, passwords, and credentials
 - Private research notes or corpus content
 
@@ -46,6 +48,9 @@ Sensitive data includes:
 - Never push private client data to GitHub unless the user explicitly approves
   the exact reviewed subset.
 - If unsure whether data is sensitive, treat it as sensitive and ask.
+- Do not use GPS, device location, addresses, or client operating locations for
+  legal, regulatory, or industry guidance unless the user explicitly approves
+  the jurisdiction and scope.
 
 ## Repository Modes
 
@@ -75,6 +80,7 @@ When sensitive content may need to be read, ask first and include:
 - Which files, folders, labels, or records would be read
 - Whether metadata-only review is enough
 - Whether private content would be quoted, summarized, or recorded
+- Whether location or jurisdiction data would be used
 - Where any summary would appear
 - How sensitive details will be minimized, omitted, or redacted
 
