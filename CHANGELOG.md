@@ -4,6 +4,8 @@ All notable changes to this project are summarized here.
 
 ## Unreleased
 
+- Added optional content-quality, research, notebook, presentation, and video
+  design protocols with lightweight templates and package-check coverage.
 - Added follow-up methodology and search integration guidance: skill authoring
   methodology, provider-neutral external search protocol, implementation and
   verification templates, description audit checks, and richer trigger fixtures.

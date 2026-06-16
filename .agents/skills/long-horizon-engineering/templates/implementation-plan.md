@@ -21,6 +21,11 @@
 | --- | --- | --- | --- |
 
 ## Task Breakdown
+Keep tasks small enough that each can be reviewed and validated independently.
+Each task should name exact file paths, expected edits, validation, and rollback.
+Avoid broad tasks such as "update docs" or "refactor module" unless they are
+split into concrete file-level steps.
+
 ### Task 1: <name>
 **Files**
 - Create:
@@ -40,6 +45,10 @@
 ## Risks
 - Risk:
 - Mitigation:
+
+## Validation Matrix
+| Task | Command or Check | Expected Result | Required Before Completion |
+| --- | --- | --- | --- |
 
 ## Rollback
 - Revert path:

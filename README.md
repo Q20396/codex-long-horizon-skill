@@ -64,10 +64,14 @@ examples/
         context-compaction.md
         continuous-improvement.md
         decision-log.md
+        evidence-backed-writing-protocol.md
         external-search-protocol.md
         external-source-scan.md
+        ideation-to-plan-protocol.md
         jurisdiction-industry-compliance.md
         large-migration-playbook.md
+        notebook-data-analysis-protocol.md
+        presentation-delivery-protocol.md
         public-agent-capability-review.md
         repomix-codebase-context.md
         review-checklist.md
@@ -75,6 +79,7 @@ examples/
         skill-authoring-methodology.md
         stop-conditions.md
         validation-matrix.md
+        writing-humanization-protocol.md
       prompt-styles/
         concise.md
         evidence-first.md
@@ -84,8 +89,12 @@ examples/
         PROJECT_MEMORY_TEMPLATE.md
         IMPROVEMENT_SCAN_TEMPLATE.md
         implementation-plan.md
+        notebook-analysis-plan.md
+        presentation-outline.md
+        research-claim-evidence.md
         TASK_LOG_TEMPLATE.md
         verification-evidence.md
+        voice-calibration.md
         WORKING_STATE_TEMPLATE.md
       scripts/
         append_project_memory.py
@@ -173,6 +182,11 @@ Optional prompt styles under `ai-video-production/prompt-styles/` can steer
 short-form cinematic planning or production handoff formatting without changing
 privacy, licensing, or approval gates.
 
+For longer video projects, `references/video-design-system.md` and the
+`VIDEO_DESIGN_SYSTEM_TEMPLATE.md` / `STYLE_BOARD_TEMPLATE.md` templates help
+define typography, colors, spacing, motion language, component patterns,
+responsive behavior, and design rationale without copying external brands.
+
 For media-skill improvement review, the video module includes a manual scan
 helper:
 
@@ -222,13 +236,21 @@ selected. This package includes:
 - `continuous-improvement.md` for safe, review-gated periodic skill improvement
 - `decision-log.md` for separating facts, assumptions, decisions, evidence,
   risks, and follow-ups
+- `evidence-backed-writing-protocol.md` for claim-evidence alignment, section
+  intent, reviewer mindset, and pre-submission review
 - `external-search-protocol.md` for provider-neutral, privacy-first public
   source search planning across web, GitHub, docs, package registries, CVEs, and
   standards
 - `external-source-scan.md` for consent-gated scans of local folders, connected
   cloud drives, Gmail, or other external sources
+- `ideation-to-plan-protocol.md` for divergent options, tradeoffs, selection
+  criteria, and plan conversion
 - `large-migration-playbook.md` for phased, reviewable large migrations and
   complex multi-file implementations
+- `notebook-data-analysis-protocol.md` for stateful exploratory analysis,
+  incremental notebook work, and clean reruns before claims
+- `presentation-delivery-protocol.md` for deck outlines, source-to-slide
+  transformation, slide QA, export checks, and handoff
 - `public-agent-capability-review.md` for safely learning from public frontier
   coding-agent capabilities without copying external code or trusting rumors
 - `repomix-codebase-context.md` for optional Repomix-based compressed codebase
@@ -240,6 +262,8 @@ selected. This package includes:
   trigger examples, description quality, and package verification
 - `stop-conditions.md` for knowing when to pause instead of continuing
 - `validation-matrix.md` for choosing verification steps by task type
+- `writing-humanization-protocol.md` for voice calibration, AI-pattern audits,
+  and meaning-preserving rewrites
 
 ### templates/
 
@@ -250,8 +274,12 @@ Use `templates/` for reusable starter documents. This package includes:
 - `PROJECT_MEMORY_TEMPLATE.md` for durable, non-sensitive project facts
 - `IMPROVEMENT_SCAN_TEMPLATE.md` for periodic skill improvement scans
 - `implementation-plan.md` for scoped implementation plans
+- `notebook-analysis-plan.md` for exploratory data-analysis work
+- `presentation-outline.md` for source-to-slide planning and slide QA
+- `research-claim-evidence.md` for evidence-backed writing
 - `TASK_LOG_TEMPLATE.md` for concise completed-task notes
 - `verification-evidence.md` for merge-readiness and validation evidence
+- `voice-calibration.md` for writing humanization and tone calibration
 - `WORKING_STATE_TEMPLATE.md` for resumable in-progress task state
 
 Templates are structure only. They are not a place to store sensitive content.

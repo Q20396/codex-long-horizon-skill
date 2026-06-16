@@ -84,6 +84,8 @@ files or private data.
 - Use dry-run update mode before applying changes to another project.
 - If optional tools such as Repomix are unavailable, use normal codebase
   exploration instead.
+- If content, research, notebook, presentation, or video design protocols are
+  not needed, ignore them; they are optional references and templates.
 - If the target project is sensitive, ask before reading, copying, staging, or
   summarizing private materials.
 

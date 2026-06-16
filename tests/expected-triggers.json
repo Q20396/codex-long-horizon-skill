@@ -25,7 +25,12 @@
       ],
       "methodology_triggers": [
         "Update this skill description and add trigger tests for the new behavior.",
-        "Search public docs and GitHub issues before changing this dependency integration."
+        "Search public docs and GitHub issues before changing this dependency integration.",
+        "Humanize this PR summary without changing technical meaning or caveats.",
+        "Create an implementation plan with exact file paths and validation per task.",
+        "Turn this research note into claim-evidence aligned writing.",
+        "Plan a notebook analysis and require a clean rerun before reporting results.",
+        "Create a presentation outline from these source notes with slide QA."
       ],
       "description_expectations": [
         "trigger-focused",
@@ -58,7 +63,9 @@
       ],
       "methodology_triggers": [
         "Audit whether this video skill description triggers on storyboard and render handoff tasks.",
-        "Add expected trigger examples for image-to-video planning without publishing."
+        "Add expected trigger examples for image-to-video planning without publishing.",
+        "Create a video design system with typography, colors, spacing, motion, and responsive rules.",
+        "Build a style board for this social video using placeholder assets only."
       ],
       "description_expectations": [
         "trigger-focused",

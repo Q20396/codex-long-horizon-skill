@@ -38,6 +38,7 @@ Before searching:
    - GitHub repos/issues
    - package registries
    - security advisories/CVEs
+   - academic papers and preprints
    - standards/specs
    - vendor changelogs
    - broad web only if needed
@@ -68,6 +69,7 @@ checked_at:
 | Library or API usage is uncertain | Search official docs only |
 | Behavior may be affected by known bugs | Search GitHub repos/issues |
 | Security impact is possible | Search security advisories/CVEs |
+| Research claim needs scholarly support | Search academic metadata or paper indexes |
 | Current rules, standards, or vendor behavior may have changed | Search official standards, specs, or vendor changelogs |
 | Authoritative sources are insufficient | Search broad web |
 | Query would expose private data | Do not search externally because data is private |
@@ -86,3 +88,25 @@ checked_at:
 Treat search as evidence, not permission to change code. Before editing, connect
 external findings back to local files, tests, and user requirements. If sources
 conflict, name the conflict and prefer official or primary sources.
+
+## Academic Source Pattern
+
+Use low-dependency academic search when a task needs scholarly context. Search
+public metadata first; do not download or process full papers unless needed and
+allowed.
+
+Record:
+
+- Title
+- Authors
+- Date or version
+- Venue or repository
+- Source URL or identifier
+- Main claim relevant to the task
+- Limitation or uncertainty
+- BibTeX or citation handle when useful
+
+Prefer paper metadata, abstracts, official publisher pages, arXiv pages,
+standards bodies, and institutional repositories. Do not fabricate citations,
+authors, dates, or BibTeX. If a paper is paywalled or inaccessible, say so and
+avoid guessing from the title alone.

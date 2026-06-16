@@ -71,3 +71,6 @@ Do not restore unrelated private files or broad repository snapshots.
   repository's `AGENTS.md` and ask before changing it.
 - If optional tools such as Repomix are unavailable, continue with normal file
   exploration.
+- If adopting the content, research, notebook, presentation, or video design
+  protocols, review whether the target project should copy all templates or only
+  the ones it will actually use.
