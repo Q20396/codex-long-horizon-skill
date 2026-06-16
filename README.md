@@ -463,8 +463,9 @@ location-aware or industry-aware legal, regulatory, or rule-of-practice context.
 
 Codex should not silently enable GPS, read device location, infer precise
 location from private files, or store precise location in reusable memory or
-logs. It should ask the user to provide or approve the jurisdiction, confirm the
-customer's industry or business activity, and use current public sources for
+logs. It should ask whether the user wants to approve device/GPS location use or
+manually provide the country, state/province, city, or region. It should confirm
+the customer's industry or business activity and use current public sources for
 jurisdiction-specific legal or regulatory facts.
 
 Outputs should clearly separate public facts, practical implications, and

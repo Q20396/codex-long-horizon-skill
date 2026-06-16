@@ -21,6 +21,12 @@ Before using location, ask the user to provide or approve:
 - Whether cross-region comparison is needed
 - Whether the location may be mentioned in the output
 
+Use an explicit choice prompt:
+
+"To provide relevant legal, regulatory, and industry-rule context, should I use
+your approved device/GPS location, or would you prefer to manually provide the
+country, state/province, and city or region?"
+
 If a location tool is available, request explicit permission before using it.
 If no approved location is available, ask the user to provide the jurisdiction
 manually.

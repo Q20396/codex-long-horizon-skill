@@ -68,10 +68,11 @@ logs, state, or reports.
 When a task needs location-aware or industry-aware legal, regulatory, or
 industry-rule context, consult
 `references/jurisdiction-industry-compliance.md`. Do not silently enable GPS or
-infer precise location from private files. Ask the user to provide or approve
-the jurisdiction, identify the relevant industry, use current public sources for
-legal and regulatory facts, state that the output is not legal advice, and ask
-whether cross-region rules should also be checked.
+infer precise location from private files. Ask whether the user wants to approve
+device/GPS location use or manually provide the country, state/province, city,
+or region. Identify the relevant industry, use current public sources for legal
+and regulatory facts, state that the output is not legal advice, and ask whether
+cross-region rules should also be checked.
 
 For large migrations or complex multi-file changes, consult
 `references/large-migration-playbook.md` when appropriate. Use
