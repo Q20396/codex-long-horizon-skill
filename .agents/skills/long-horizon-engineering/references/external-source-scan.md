@@ -7,6 +7,11 @@ email.
 External source scans are optional. Do not scan outside the current repository
 unless the user explicitly asks for it or approves a clear request.
 
+For provider-neutral web, GitHub, package registry, documentation, or unified
+search planning, see `external-search-protocol.md`. Keep this file focused on
+consent-gated scanning of local folders, connected drives, mailboxes, and other
+external source locations.
+
 ## Supported Source Types
 
 Codex may ask permission to scan:

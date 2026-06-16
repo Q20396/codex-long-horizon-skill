@@ -4,6 +4,9 @@ All notable changes to this project are summarized here.
 
 ## Unreleased
 
+- Added follow-up methodology and search integration guidance: skill authoring
+  methodology, provider-neutral external search protocol, implementation and
+  verification templates, description audit checks, and richer trigger fixtures.
 - Added productized package pieces: optional Repomix context protocol, doctor
   and backup-first update scripts, prompt styles, trigger fixture checks, and
   upgrade documentation.

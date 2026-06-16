@@ -64,6 +64,7 @@ examples/
         context-compaction.md
         continuous-improvement.md
         decision-log.md
+        external-search-protocol.md
         external-source-scan.md
         jurisdiction-industry-compliance.md
         large-migration-playbook.md
@@ -71,6 +72,7 @@ examples/
         repomix-codebase-context.md
         review-checklist.md
         resume-protocol.md
+        skill-authoring-methodology.md
         stop-conditions.md
         validation-matrix.md
       prompt-styles/
@@ -81,10 +83,13 @@ examples/
         HANDOFF_REPORT_TEMPLATE.md
         PROJECT_MEMORY_TEMPLATE.md
         IMPROVEMENT_SCAN_TEMPLATE.md
+        implementation-plan.md
         TASK_LOG_TEMPLATE.md
+        verification-evidence.md
         WORKING_STATE_TEMPLATE.md
       scripts/
         append_project_memory.py
+        audit_skill_descriptions.py
         check_for_updates.py
         check_skill_package.py
         doctor.py
@@ -217,6 +222,9 @@ selected. This package includes:
 - `continuous-improvement.md` for safe, review-gated periodic skill improvement
 - `decision-log.md` for separating facts, assumptions, decisions, evidence,
   risks, and follow-ups
+- `external-search-protocol.md` for provider-neutral, privacy-first public
+  source search planning across web, GitHub, docs, package registries, CVEs, and
+  standards
 - `external-source-scan.md` for consent-gated scans of local folders, connected
   cloud drives, Gmail, or other external sources
 - `large-migration-playbook.md` for phased, reviewable large migrations and
@@ -228,6 +236,8 @@ selected. This package includes:
 - `review-checklist.md` for final scope, evidence, validation, safety, and
   handoff checks
 - `resume-protocol.md` for safely continuing interrupted work
+- `skill-authoring-methodology.md` for eval-driven skill maintenance,
+  trigger examples, description quality, and package verification
 - `stop-conditions.md` for knowing when to pause instead of continuing
 - `validation-matrix.md` for choosing verification steps by task type
 
@@ -239,7 +249,9 @@ Use `templates/` for reusable starter documents. This package includes:
   summaries
 - `PROJECT_MEMORY_TEMPLATE.md` for durable, non-sensitive project facts
 - `IMPROVEMENT_SCAN_TEMPLATE.md` for periodic skill improvement scans
+- `implementation-plan.md` for scoped implementation plans
 - `TASK_LOG_TEMPLATE.md` for concise completed-task notes
+- `verification-evidence.md` for merge-readiness and validation evidence
 - `WORKING_STATE_TEMPLATE.md` for resumable in-progress task state
 
 Templates are structure only. They are not a place to store sensitive content.
@@ -255,6 +267,8 @@ without weakening safety rules.
 Use `scripts/` for simple local helpers. This package includes:
 
 - `append_project_memory.py` to append facts to `docs/PROJECT_MEMORY.md`
+- `audit_skill_descriptions.py` to check skill descriptions for trigger-focused
+  metadata
 - `check_for_updates.py` to check whether GitHub has a newer package revision
 - `check_skill_package.py` to validate the package structure
 - `doctor.py` to run product-readiness checks for local installs
@@ -289,8 +303,9 @@ python3 .agents/skills/long-horizon-engineering/scripts/test_expected_triggers.p
 ```
 
 `check_skill_package.py` validates required files. `doctor.py` checks
-productized package readiness. `test_expected_triggers.py` validates static
-trigger examples without calling a model.
+productized package readiness. `audit_skill_descriptions.py` checks description
+metadata. `test_expected_triggers.py` validates static trigger examples without
+calling a model.
 
 ## Update And Rollback
 

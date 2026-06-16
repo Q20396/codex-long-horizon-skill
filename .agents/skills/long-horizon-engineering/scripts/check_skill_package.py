@@ -31,6 +31,7 @@ REQUIRED_FILES = [
     ".agents/skills/long-horizon-engineering/references/context-compaction.md",
     ".agents/skills/long-horizon-engineering/references/continuous-improvement.md",
     ".agents/skills/long-horizon-engineering/references/decision-log.md",
+    ".agents/skills/long-horizon-engineering/references/external-search-protocol.md",
     ".agents/skills/long-horizon-engineering/references/external-source-scan.md",
     ".agents/skills/long-horizon-engineering/references/jurisdiction-industry-compliance.md",
     ".agents/skills/long-horizon-engineering/references/large-migration-playbook.md",
@@ -39,6 +40,7 @@ REQUIRED_FILES = [
     ".agents/skills/long-horizon-engineering/references/review-checklist.md",
     ".agents/skills/long-horizon-engineering/references/repomix-codebase-context.md",
     ".agents/skills/long-horizon-engineering/references/stop-conditions.md",
+    ".agents/skills/long-horizon-engineering/references/skill-authoring-methodology.md",
     ".agents/skills/long-horizon-engineering/references/validation-matrix.md",
     ".agents/skills/long-horizon-engineering/prompt-styles/concise.md",
     ".agents/skills/long-horizon-engineering/prompt-styles/evidence-first.md",
@@ -46,7 +48,9 @@ REQUIRED_FILES = [
     ".agents/skills/long-horizon-engineering/templates/HANDOFF_REPORT_TEMPLATE.md",
     ".agents/skills/long-horizon-engineering/templates/PROJECT_MEMORY_TEMPLATE.md",
     ".agents/skills/long-horizon-engineering/templates/IMPROVEMENT_SCAN_TEMPLATE.md",
+    ".agents/skills/long-horizon-engineering/templates/implementation-plan.md",
     ".agents/skills/long-horizon-engineering/templates/TASK_LOG_TEMPLATE.md",
+    ".agents/skills/long-horizon-engineering/templates/verification-evidence.md",
     ".agents/skills/long-horizon-engineering/templates/WORKING_STATE_TEMPLATE.md",
     ".agents/skills/long-horizon-engineering/scripts/append_project_memory.py",
     ".agents/skills/long-horizon-engineering/scripts/update_task_log.py",
@@ -57,6 +61,7 @@ REQUIRED_FILES = [
     ".agents/skills/long-horizon-engineering/scripts/doctor.py",
     ".agents/skills/long-horizon-engineering/scripts/update_installed_skill.py",
     ".agents/skills/long-horizon-engineering/scripts/test_expected_triggers.py",
+    ".agents/skills/long-horizon-engineering/scripts/audit_skill_descriptions.py",
 ]
 
 AI_VIDEO_REQUIRED_FILES = [
