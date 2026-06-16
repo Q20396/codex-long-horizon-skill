@@ -18,6 +18,10 @@ Stop and ask the user, or summarize the blocker, when:
   working state.
 - A file appears to contain client, legal, financial, family, medical, identity,
   private correspondence, or confidential business data.
+- The task requires GPS, precise address, travel history, client operating
+  location, or other sensitive location data without explicit approval.
+- The task asks for jurisdiction-specific legal, regulatory, or industry-rule
+  guidance but the jurisdiction, industry, or source quality is unclear.
 - The requested action could expose confidential data.
 - The user asks to push, upload, publish, or share private files without a
   reviewed subset.

@@ -45,6 +45,16 @@ pull request.
   contracts, and financial records were not staged unless explicitly approved.
 - Any sensitive operation was approved by the user.
 
+## Location And Compliance Review
+
+- GPS, device location, precise address, travel history, or client operating
+  location was not used without explicit approval.
+- Jurisdiction and industry were confirmed before giving legal, regulatory, or
+  industry-rule guidance.
+- Current public sources were used for jurisdiction-specific facts when needed.
+- Output was framed as informational support, not legal advice.
+- Cross-region comparison was offered as an option instead of assumed.
+
 ## Handoff
 
 - The final summary names files changed.
