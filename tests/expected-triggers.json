@@ -1,0 +1,44 @@
+{
+  "skills": [
+    {
+      "name": "long-horizon-engineering",
+      "path": ".agents/skills/long-horizon-engineering/SKILL.md",
+      "should_trigger": [
+        "Explore the codebase first, make a plan, implement the change, run tests, and open a draft PR.",
+        "Continue the interrupted migration and preserve working state.",
+        "Debug a failing integration test across multiple files."
+      ],
+      "should_not_trigger": [
+        "Fix one typo in README.md.",
+        "Tell me the current time."
+      ],
+      "required_phrases": [
+        "Understand",
+        "Explore",
+        "Plan",
+        "Test",
+        "Do not auto-merge"
+      ]
+    },
+    {
+      "name": "ai-video-production",
+      "path": ".agents/skills/ai-video-production/SKILL.md",
+      "should_trigger": [
+        "Create a 60-second vertical video brief, script, storyboard, shot list, asset manifest, and render handoff.",
+        "Plan an AI-assisted explainer video with placeholder assets and human approval gates.",
+        "Turn this article into image and video prompts without rendering."
+      ],
+      "should_not_trigger": [
+        "Refactor the backend database migration.",
+        "Deploy the production API."
+      ],
+      "required_phrases": [
+        "Brief",
+        "Storyboard",
+        "Asset",
+        "Render",
+        "Human approval"
+      ]
+    }
+  ]
+}

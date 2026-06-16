@@ -9,6 +9,7 @@ multi-step engineering tasks.
 ## Quick Links
 
 - [Installation](INSTALL.md)
+- [Upgrade Guide](UPGRADE_GUIDE.md)
 - [Changelog](CHANGELOG.md)
 - [Examples](examples/)
 - [License](LICENSE)
@@ -43,6 +44,7 @@ CHANGELOG.md
 INSTALL.md
 LICENSE
 README.md
+UPGRADE_GUIDE.md
 .github/
   workflows/
     check-skill.yml
@@ -63,12 +65,18 @@ examples/
         continuous-improvement.md
         decision-log.md
         external-source-scan.md
+        jurisdiction-industry-compliance.md
         large-migration-playbook.md
         public-agent-capability-review.md
+        repomix-codebase-context.md
         review-checklist.md
         resume-protocol.md
         stop-conditions.md
         validation-matrix.md
+      prompt-styles/
+        concise.md
+        evidence-first.md
+        product-review.md
       templates/
         HANDOFF_REPORT_TEMPLATE.md
         PROJECT_MEMORY_TEMPLATE.md
@@ -77,9 +85,16 @@ examples/
         WORKING_STATE_TEMPLATE.md
       scripts/
         append_project_memory.py
+        check_for_updates.py
         check_skill_package.py
+        doctor.py
         github_skill_scan.py
+        scan_top_related_skills.py
+        test_expected_triggers.py
+        update_installed_skill.py
         update_task_log.py
+tests/
+  expected-triggers.json
 ```
 
 ## What This Repository Is
@@ -119,6 +134,10 @@ workflows.
 It can support Remotion-style and HyperFrames-style workflows, including
 briefing, research boundaries, scripting, storyboard and shot-list creation,
 asset manifests, preview planning, and render handoffs.
+
+Optional prompt styles under `ai-video-production/prompt-styles/` can steer
+short-form cinematic planning or production handoff formatting without changing
+privacy, licensing, or approval gates.
 
 For media-skill improvement review, the video module includes a manual scan
 helper:
@@ -175,6 +194,8 @@ selected. This package includes:
   complex multi-file implementations
 - `public-agent-capability-review.md` for safely learning from public frontier
   coding-agent capabilities without copying external code or trusting rumors
+- `repomix-codebase-context.md` for optional Repomix-based compressed codebase
+  context on large, unfamiliar, or multi-language repositories
 - `review-checklist.md` for final scope, evidence, validation, safety, and
   handoff checks
 - `resume-protocol.md` for safely continuing interrupted work
@@ -194,6 +215,12 @@ Use `templates/` for reusable starter documents. This package includes:
 
 Templates are structure only. They are not a place to store sensitive content.
 
+### prompt-styles/
+
+Use `prompt-styles/` for optional presentation styles. They can make Codex more
+concise, evidence-first, product-review oriented, cinematic, or handoff-focused
+without weakening safety rules.
+
 ### scripts/
 
 Use `scripts/` for simple local helpers. This package includes:
@@ -201,10 +228,14 @@ Use `scripts/` for simple local helpers. This package includes:
 - `append_project_memory.py` to append facts to `docs/PROJECT_MEMORY.md`
 - `check_for_updates.py` to check whether GitHub has a newer package revision
 - `check_skill_package.py` to validate the package structure
+- `doctor.py` to run product-readiness checks for local installs
 - `github_skill_scan.py` to scan public GitHub projects for review-gated
   improvement evidence
 - `scan_top_related_skills.py` to review the top related public skill projects
   for safe manual upgrade ideas
+- `test_expected_triggers.py` to validate packaged trigger fixtures
+- `update_installed_skill.py` to update installed skills with dry-run and
+  backup-first behavior
 - `update_task_log.py` to append completed task entries to `docs/TASK_LOG.md`
 
 The memory and task-log helpers are intentionally local-only. They do not read
@@ -217,6 +248,62 @@ metadata only when the user runs them.
 An `assets/` folder may be added later for static support files such as images,
 fixtures, or examples. Keep assets non-sensitive and avoid adding large files
 unless they are necessary for the skill.
+
+## Verify And Doctor
+
+From this package repository, run:
+
+```bash
+python3 .agents/skills/long-horizon-engineering/scripts/check_skill_package.py
+python3 .agents/skills/long-horizon-engineering/scripts/doctor.py
+python3 .agents/skills/long-horizon-engineering/scripts/test_expected_triggers.py
+```
+
+`check_skill_package.py` validates required files. `doctor.py` checks
+productized package readiness. `test_expected_triggers.py` validates static
+trigger examples without calling a model.
+
+## Update And Rollback
+
+Use the backup-first update helper from this package repository:
+
+```bash
+python3 .agents/skills/long-horizon-engineering/scripts/update_installed_skill.py \
+  --target-root /path/to/project \
+  --skill long-horizon-engineering
+```
+
+The default mode is dry-run. To apply after review:
+
+```bash
+python3 .agents/skills/long-horizon-engineering/scripts/update_installed_skill.py \
+  --target-root /path/to/project \
+  --skill long-horizon-engineering \
+  --apply
+```
+
+Existing installed skills are backed up under `.codex-skill-backups/` before
+files are copied. The helper does not make network calls, delete files, or
+modify `main`.
+
+For more detail, see [UPGRADE_GUIDE.md](UPGRADE_GUIDE.md).
+
+## Optional Repomix Context
+
+For large or unfamiliar repositories, Codex may use
+`references/repomix-codebase-context.md` to create a compressed codebase map
+before planning. Repomix is optional and not bundled as a dependency. Exclude
+secrets, `.env` files, credentials, private client data, legal evidence,
+financial documents, generated outputs, dependency folders, and other sensitive
+content.
+
+Example:
+
+```bash
+npx repomix --compress
+```
+
+Ask before running commands that download or execute packages.
 
 ## How AGENTS.md And SKILL.md Work Together
 

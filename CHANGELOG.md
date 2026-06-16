@@ -4,6 +4,9 @@ All notable changes to this project are summarized here.
 
 ## Unreleased
 
+- Added productized package pieces: optional Repomix context protocol, doctor
+  and backup-first update scripts, prompt styles, trigger fixture checks, and
+  upgrade documentation.
 - Added public project polish: MIT license, installation guide, examples, and CI
   package checks.
 

@@ -29,4 +29,12 @@ jobs:
           python3 .agents/skills/long-horizon-engineering/scripts/update_task_log.py --help
           python3 .agents/skills/long-horizon-engineering/scripts/github_skill_scan.py --help
           python3 .agents/skills/long-horizon-engineering/scripts/scan_top_related_skills.py --help
+          python3 .agents/skills/long-horizon-engineering/scripts/doctor.py --help
+          python3 .agents/skills/long-horizon-engineering/scripts/update_installed_skill.py --help
+          python3 .agents/skills/long-horizon-engineering/scripts/test_expected_triggers.py --help
           python3 .agents/skills/ai-video-production/scripts/scan_top_media_skills.py --help
+
+      - name: Run productized package checks
+        run: |
+          python3 .agents/skills/long-horizon-engineering/scripts/doctor.py
+          python3 .agents/skills/long-horizon-engineering/scripts/test_expected_triggers.py
