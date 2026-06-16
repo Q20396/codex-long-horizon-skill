@@ -18,7 +18,9 @@
         "Use validation-first or TDD-style checks before changing this shared workflow.",
         "Audit this skill trigger behavior and update the expected trigger fixture.",
         "Search external public sources with a provider-neutral plan without leaking private repository data.",
-        "Use an AnySearch-style provider only if available and optional."
+        "Use an AnySearch-style provider only if available and optional.",
+        "Debug this failing integration test by finding the root cause before changing code.",
+        "Respond to these PR review comments one item at a time and verify each fix."
       ],
       "should_not_trigger": [
         "Fix one typo in README.md.",
@@ -53,7 +55,9 @@
         "Create an implementation plan with exact file paths and validation per task.",
         "Turn this research note into claim-evidence aligned writing.",
         "Plan a notebook analysis and require a clean rerun before reporting results.",
-        "Create a presentation outline from these source notes with slide QA."
+        "Create a presentation outline from these source notes with slide QA.",
+        "Create a debugging runbook for this flaky test without storing private logs.",
+        "Evaluate reviewer feedback against the codebase before applying changes."
       ],
       "description_expectations": [
         "trigger-focused",

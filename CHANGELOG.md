@@ -10,6 +10,7 @@ All notable changes to this project are summarized here.
 - Added notebook/data analysis protocol and analysis run log.
 - Added presentation delivery protocol and deck QA templates.
 - Added video design system reference and `DESIGN.md` templates.
+- Added systematic debugging and reviewer-response protocol templates.
 - Extended academic source pattern in external search protocol.
 - Extended trigger fixtures.
 - Added follow-up methodology and search integration guidance: skill authoring
