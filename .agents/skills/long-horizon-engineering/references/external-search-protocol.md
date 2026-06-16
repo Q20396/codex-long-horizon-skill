@@ -89,24 +89,21 @@ Treat search as evidence, not permission to change code. Before editing, connect
 external findings back to local files, tests, and user requirements. If sources
 conflict, name the conflict and prefer official or primary sources.
 
-## Academic Source Pattern
+## Academic Search Pattern
 
-Use low-dependency academic search when a task needs scholarly context. Search
-public metadata first; do not download or process full papers unless needed and
-allowed.
+When research-backed technical or scientific analysis is needed:
 
-Record:
+1. Prefer public academic sources such as arXiv, DOI pages, publisher pages,
+   official PDFs, Semantic Scholar, and conference proceedings.
+2. Record title, authors, date, venue/source, URL/identifier, and checked_at
+   date.
+3. Extract the paper's claim, method, evidence, and limitations.
+4. Do not cite papers that were not opened or inspected.
+5. Separate paper claims from your own inference.
+6. Generate BibTeX only from verified metadata.
+7. Prefer primary papers over blog summaries.
+8. Flag retracted, superseded, non-peer-reviewed, or preprint-only status when
+   known.
 
-- Title
-- Authors
-- Date or version
-- Venue or repository
-- Source URL or identifier
-- Main claim relevant to the task
-- Limitation or uncertainty
-- BibTeX or citation handle when useful
-
-Prefer paper metadata, abstracts, official publisher pages, arXiv pages,
-standards bodies, and institutional repositories. Do not fabricate citations,
-authors, dates, or BibTeX. If a paper is paywalled or inaccessible, say so and
-avoid guessing from the title alone.
+Do not fabricate citations, authors, dates, or BibTeX. If a paper is paywalled
+or inaccessible, say so and avoid guessing from the title alone.

@@ -20,11 +20,24 @@
 | Path | Action | Purpose | Risk |
 | --- | --- | --- | --- |
 
+## Task Granularity Rules
+
+Each task should be small enough to review independently.
+
+A good task includes:
+- exact files to create or modify
+- exact behavior or documentation change
+- validation command
+- expected result
+- rollback note
+
+Avoid vague tasks:
+- "improve docs"
+- "clean up scripts"
+- "make tests better"
+- "refactor everything"
+
 ## Task Breakdown
-Keep tasks small enough that each can be reviewed and validated independently.
-Each task should name exact file paths, expected edits, validation, and rollback.
-Avoid broad tasks such as "update docs" or "refactor module" unless they are
-split into concrete file-level steps.
 
 ### Task 1: <name>
 **Files**
@@ -41,6 +54,9 @@ split into concrete file-level steps.
 ```bash
 <command>
 ```
+
+**Rollback**
+-
 
 ## Risks
 - Risk:

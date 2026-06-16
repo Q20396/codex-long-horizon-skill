@@ -1,11 +1,11 @@
 # Writing Humanization Protocol
 
-Use this protocol for PR summaries, README text, docs, client handoffs, reports,
-scripts, and client-facing copy.
+Use this protocol for PR summaries, README edits, documentation, client
+handoffs, reports, scripts, and client-facing copy when the user asks for
+clearer, more natural, or less AI-like writing.
 
-This protocol must not be used to hide authorship, misrepresent provenance, or
-make generated text appear to be written by a specific person without consent.
-It improves clarity and fit after diagnosis; it is not blind polish.
+This protocol must not be used to hide authorship, fabricate personal style,
+misrepresent provenance, or make unsupported claims sound more persuasive.
 
 ## Workflow
 
@@ -20,30 +20,29 @@ It improves clarity and fit after diagnosis; it is not blind polish.
 3. Audit AI-like patterns:
    - generic transitions
    - inflated adjectives
-   - vague attributions
+   - vague attribution
    - repetitive sentence structure
    - over-polished marketing tone
    - filler phrases
    - unsupported certainty
 4. Rewrite while preserving meaning, facts, constraints, and coverage.
-5. Re-check factual claims and technical terms.
+5. Re-check factual claims, technical terms, caveats, and scope.
 
 ## Modes
 
-| Mode | Use For | Style |
+| Mode | Use For | Notes |
 | --- | --- | --- |
-| technical-neutral | Engineering docs, PRs, runbooks | Clear, precise, low drama |
-| client-friendly | Handoffs, status updates | Plain language, calm, helpful |
-| Chinese concise | Chinese-facing summaries | Direct, compact, natural |
-| marketing but factual | Landing copy, product notes | Polished but evidence-bound |
-| reviewer-facing | Review notes, merge readiness | Evidence-first, risk-aware |
+| technical-neutral | PRs, engineering docs, changelogs | Clear and direct; avoid hype |
+| client-friendly | client handoffs, proposals | Natural but precise |
+| Chinese concise | Chinese user-facing output | Keep technical identifiers unchanged |
+| marketing but factual | landing copy, video copy | Persuasive but evidence-bounded |
+| reviewer-facing | PR reviews, audit notes | Explicit claims and evidence |
 
-## Safety
+## Safety Rules
 
 - Do not fabricate personal voice.
-- Do not alter quoted text.
-- Do not remove legal, safety, or technical caveats.
+- Do not alter quoted text unless asked.
+- Do not remove legal, financial, medical, or technical caveats.
 - Do not make regulated claims more persuasive than evidence allows.
 - For legal, medical, financial, or technical reports, clarity beats
   personality.
-- Preserve uncertainty and source limitations.

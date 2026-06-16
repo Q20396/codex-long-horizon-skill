@@ -1,42 +1,43 @@
 # Presentation Delivery Protocol
 
-Use this protocol for slide decks, executive summaries, source-to-slide
-transformation, presentation QA, and export handoffs.
+Use this protocol when converting source material into slide outlines, decks,
+speaker notes, pitch decks, board reports, training decks, or client
+presentations.
+
+Do not create binary PPTX files unless explicitly requested and appropriate
+tooling is available.
 
 ## Pipeline
 
-1. Define audience, purpose, and decision needed.
-2. Build a deck outline before slide production.
-3. Map source material to slide claims.
-4. Create slide-by-slide intent.
-5. Check visuals, hierarchy, and density.
-6. QA factual claims, citations, spelling, and alignment.
-7. Export or hand off with fidelity checks.
+1. Identify audience and decision.
+2. Extract source claims.
+3. Build storyline.
+4. Choose slide archetypes.
+5. Draft deck outline.
+6. Add speaker notes if requested.
+7. Run slide QA.
+8. If generating PPTX, verify layout, fonts, images, links, and export.
 
-## Slide QA
+## Slide Archetypes
 
-For each slide, check:
+- title
+- executive summary
+- agenda
+- problem
+- insight
+- evidence
+- comparison
+- roadmap
+- risk
+- decision
+- appendix
 
-- Title states the point.
-- Body supports the title.
-- Data and claims have sources.
-- Visuals are readable at presentation size.
-- Layout is consistent.
-- Speaker notes or handoff notes are included when useful.
+## QA Rules
 
-## Source-To-Slide Rules
-
-- Do not copy private source content into public decks.
-- Preserve important caveats and limitations.
-- Use charts or diagrams only when they clarify the decision.
-- Keep one main idea per slide where possible.
-
-## Export And Handoff
-
-Record:
-
-- Source files used
-- Export format
-- QA checks run
-- Known fidelity risks
-- Approval status
+- One main message per slide.
+- Evidence supports the slide claim.
+- No crowded slide.
+- Consistent typography.
+- Charts include units, sources, and dates.
+- Speaker notes do not contradict slides.
+- Export is verified if a binary file is generated.

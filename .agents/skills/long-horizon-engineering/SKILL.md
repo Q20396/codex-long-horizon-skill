@@ -47,8 +47,8 @@ repository content to external search providers.
 
 For writing, research, analysis, and presentation work, consult the relevant
 optional protocol: `writing-humanization-protocol.md`,
-`ideation-to-plan-protocol.md`, `evidence-backed-writing-protocol.md`,
-`notebook-data-analysis-protocol.md`, or `presentation-delivery-protocol.md`.
+`ideation-to-plan-protocol.md`, `evidence-backed-writing.md`,
+`notebook-analysis-protocol.md`, or `presentation-delivery-protocol.md`.
 Preserve facts, evidence, caveats, and privacy boundaries.
 
 When comparing public frontier-agent capabilities, including Fable-style public

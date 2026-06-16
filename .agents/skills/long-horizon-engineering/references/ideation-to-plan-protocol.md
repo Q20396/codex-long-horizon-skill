@@ -1,44 +1,40 @@
-# Ideation To Plan Protocol
+# Ideation to Plan Protocol
 
-Use this protocol when the best implementation path is not obvious, when design
-or product tradeoffs matter, or when the user asks for options before execution.
+Use this protocol when the user asks for architecture, product direction, skill
+improvement, repository upgrades, ambiguous multi-path work, or strategic
+implementation choices.
 
 ## Workflow
 
-1. Restate the goal and constraints.
-2. Generate multiple viable options.
-3. Compare tradeoffs before selecting one.
-4. Define explicit selection criteria.
-5. Choose or ask the user to choose.
-6. Convert the selected option into a small implementation plan.
-7. Attach validation and rollback steps to each task.
-
-## Option Shape
-
-For each option, record:
-
-- Summary
-- Files or areas likely affected
-- Benefits
-- Costs
-- Risks
-- Validation needed
-- When to choose it
+1. Define the problem.
+2. Identify constraints.
+3. Generate 3-5 viable options.
+4. Score options using explicit criteria.
+5. Recommend one option.
+6. Explain why the other options were not chosen.
+7. Convert the chosen option into an implementation plan.
 
 ## Selection Criteria
 
-Use criteria such as:
+Use criteria that fit the task:
 
 - User value
-- Safety and privacy impact
-- Compatibility with existing architecture
-- Testability
-- Time to review
-- Rollback simplicity
-- Maintenance cost
+- implementation effort
+- safety risk
+- maintenance cost
+- reversibility
+- testability
+- customer clarity
+- delivery speed
+- compatibility with existing architecture
 
-## Stop Conditions
+## Anti-Patterns
 
-Pause if the options depend on unknown business rules, sensitive data,
-unverified external facts, or high-impact behavior such as deployment,
-auto-merge, security automation, or production execution.
+Avoid:
+
+- one-option thinking
+- executing before choosing
+- overbuilding
+- unclear success metrics
+- hiding tradeoffs
+- treating brainstorming as final implementation

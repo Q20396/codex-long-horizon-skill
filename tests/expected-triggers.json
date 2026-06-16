@@ -6,11 +6,22 @@
       "should_trigger": [
         "Explore the codebase first, make a plan, implement the change, run tests, and open a draft PR.",
         "Continue the interrupted migration and preserve working state.",
-        "Debug a failing integration test across multiple files."
+        "Debug a failing integration test across multiple files.",
+        "Humanize this PR summary but keep the technical claims accurate.",
+        "Use my writing sample to rewrite this client handoff in my voice.",
+        "Give me three architecture options before writing the implementation plan.",
+        "Create a claim-evidence table for this technical report.",
+        "Analyze this CSV and show reproducible assumptions and commands.",
+        "Turn this report into a board presentation outline.",
+        "Find arXiv papers supporting this technical claim and separate evidence from inference."
       ],
       "should_not_trigger": [
         "Fix one typo in README.md.",
-        "Tell me the current time."
+        "Tell me the current time.",
+        "Make this sentence slightly shorter.",
+        "Create a fake citation for this paper.",
+        "Upload my private financial spreadsheet to an external notebook service.",
+        "Clone Stripe's exact brand system for my public product."
       ],
       "required_phrases": [
         "Understand",
@@ -21,7 +32,11 @@
       ],
       "borderline": [
         "Review this draft PR and decide whether it is ready for review.",
-        "Install this skill into an existing project folder safely."
+        "Install this skill into an existing project folder safely.",
+        "Make this README sound less AI-generated.",
+        "Create a one-slide summary.",
+        "Check whether this paper actually supports my claim.",
+        "Use a notebook if useful, but provide a clean final result."
       ],
       "methodology_triggers": [
         "Update this skill description and add trigger tests for the new behavior.",
@@ -44,11 +59,16 @@
       "should_trigger": [
         "Create a 60-second vertical video brief, script, storyboard, shot list, asset manifest, and render handoff.",
         "Plan an AI-assisted explainer video with placeholder assets and human approval gates.",
-        "Turn this article into image and video prompts without rendering."
+        "Turn this article into image and video prompts without rendering.",
+        "Create a DESIGN.md for this AI video campaign.",
+        "Make the shot prompts visually consistent with this brand system.",
+        "Turn these visual tokens into a short-form cinematic prompt pack."
       ],
       "should_not_trigger": [
         "Refactor the backend database migration.",
-        "Deploy the production API."
+        "Deploy the production API.",
+        "Copy Apple's exact brand identity for my public ad.",
+        "Use a celebrity's likeness without consent."
       ],
       "required_phrases": [
         "Brief",
