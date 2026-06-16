@@ -9,10 +9,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[4]
-SKILL_FILES = [
-    ROOT / ".agents" / "skills" / "long-horizon-engineering" / "SKILL.md",
-    ROOT / ".agents" / "skills" / "ai-video-production" / "SKILL.md",
-]
+SKILLS_ROOT = ROOT / ".agents" / "skills"
 WORKFLOW_WORDS = {
     "first",
     "then",
@@ -79,13 +76,20 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def skill_files() -> list[Path]:
+    if not SKILLS_ROOT.is_dir():
+        return []
+    return sorted(SKILLS_ROOT.glob("*/SKILL.md"))
+
+
 def main() -> None:
     args = parse_args()
     errors = []
-    for path in SKILL_FILES:
-        if not path.is_file():
-            errors.append(f"Missing skill file: {path.relative_to(ROOT)}")
-            continue
+    files = skill_files()
+    if not files:
+        errors.append("No skill files found under .agents/skills/*/SKILL.md.")
+
+    for path in files:
         errors.extend(audit_description(path))
 
     if args.json:

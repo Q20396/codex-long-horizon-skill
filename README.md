@@ -153,6 +153,13 @@ This repository is a portable skill package, not an application. It contains:
 - Small local helper scripts for appending non-sensitive notes
 - Example prompts, installation instructions, CI checks, and an MIT license
 
+## Productized Skill Package v2
+
+This package includes product-grade install, verification, update, rollback,
+trigger-test, and review-support pieces around the skills. These additions are
+documentation, templates, static checks, and local helper scripts; they do not
+patch Codex or add required external services.
+
 ## What The Skill Does
 
 `long-horizon-engineering` gives Codex a repeatable workflow for engineering
@@ -396,6 +403,15 @@ npx repomix --compress
 ```
 
 Ask before running commands that download or execute packages.
+
+## Methodology and Search Protocols
+
+The package includes optional methodology and search guidance for skill
+authoring, trigger audits, implementation planning, verification evidence, and
+privacy-first external source review. External search is optional,
+provider-neutral, and should never receive secrets, private client data, legal
+evidence, financial records, or confidential source material without explicit
+approval.
 
 ## Content, Research, Design, and Presentation Protocols
 
