@@ -18,7 +18,7 @@ implementation choices.
 
 Use criteria that fit the task:
 
-- User value
+- user value
 - implementation effort
 - safety risk
 - maintenance cost

@@ -40,7 +40,7 @@ misrepresent provenance, or make unsupported claims sound more persuasive.
 
 ## Safety Rules
 
-- Do not fabricate personal voice.
+- Do not fabricate personal voice traits.
 - Do not alter quoted text unless asked.
 - Do not remove legal, financial, medical, or technical caveats.
 - Do not make regulated claims more persuasive than evidence allows.
