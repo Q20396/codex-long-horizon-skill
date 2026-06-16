@@ -190,6 +190,8 @@ Use `scripts/` for simple local helpers. This package includes:
 - `check_skill_package.py` to validate the package structure
 - `github_skill_scan.py` to scan public GitHub projects for review-gated
   improvement evidence
+- `scan_top_related_skills.py` to review the top related public skill projects
+  for safe self-update ideas
 - `update_task_log.py` to append completed task entries to `docs/TASK_LOG.md`
 
 The memory and task-log helpers are intentionally local-only. They do not read
@@ -375,6 +377,21 @@ python3 .agents/skills/long-horizon-engineering/scripts/github_skill_scan.py --d
 
 Remove `--dry-run` to write `docs/GITHUB_SKILL_SCAN.md`. Treat the report as
 evidence for review, not as permission to copy external code.
+
+To inspect the top three related public skill repositories for review-gated
+self-update ideas:
+
+```bash
+python3 .agents/skills/long-horizon-engineering/scripts/scan_top_related_skills.py --dry-run
+```
+
+Remove `--dry-run` to write `docs/TOP_RELATED_SKILLS_SCAN.md`. The report
+summarizes repository signals such as `SKILL.md` files, references, templates,
+scripts, workflows, examples, and safety files. It does not copy code, execute
+remote code, modify this repository, or update the skill automatically.
+
+Use the report to decide whether Codex should propose an original small change
+in a draft PR. Do not auto-merge or directly edit `main`.
 
 ## Checking For Skill Updates
 

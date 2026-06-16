@@ -28,3 +28,4 @@ jobs:
           python3 .agents/skills/long-horizon-engineering/scripts/append_project_memory.py --help
           python3 .agents/skills/long-horizon-engineering/scripts/update_task_log.py --help
           python3 .agents/skills/long-horizon-engineering/scripts/github_skill_scan.py --help
+          python3 .agents/skills/long-horizon-engineering/scripts/scan_top_related_skills.py --help
