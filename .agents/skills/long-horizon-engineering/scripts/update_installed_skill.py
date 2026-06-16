@@ -93,11 +93,21 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Apply the update. Without this flag the script only prints a plan.",
     )
+    parser.add_argument(
+        "--list-skills",
+        action="store_true",
+        help="List skills that can be updated, then exit.",
+    )
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
+    if args.list_skills:
+        for skill in ALLOWED_SKILLS:
+            print(skill)
+        return
+
     target_root = Path(args.target_root).expanduser().resolve()
     skills = args.skill or list(ALLOWED_SKILLS)
 

@@ -38,3 +38,4 @@ jobs:
         run: |
           python3 .agents/skills/long-horizon-engineering/scripts/doctor.py
           python3 .agents/skills/long-horizon-engineering/scripts/test_expected_triggers.py
+          python3 .agents/skills/long-horizon-engineering/scripts/update_installed_skill.py --list-skills

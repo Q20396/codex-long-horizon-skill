@@ -97,6 +97,35 @@ tests/
   expected-triggers.json
 ```
 
+## Customer Quick Start
+
+1. Copy the skill into a target project:
+
+   ```bash
+   mkdir -p .agents/skills
+   cp -R path/to/codex-long-horizon-skill/.agents/skills/long-horizon-engineering .agents/skills/
+   ```
+
+2. Add a short instruction to the target project's `AGENTS.md`:
+
+   ```markdown
+   When a task involves multi-step engineering work, use the
+   `long-horizon-engineering` skill.
+   ```
+
+3. Verify this package before copying updates:
+
+   ```bash
+   python3 .agents/skills/long-horizon-engineering/scripts/doctor.py
+   ```
+
+4. Ask Codex to use the skill:
+
+   ```text
+   Use the long-horizon-engineering skill.
+   Explore the codebase first, make a plan, then implement the change in a new branch and open a draft pull request for review.
+   ```
+
 ## What This Repository Is
 
 This repository is a portable skill package, not an application. It contains:
@@ -268,6 +297,10 @@ trigger examples without calling a model.
 Use the backup-first update helper from this package repository:
 
 ```bash
+python3 .agents/skills/long-horizon-engineering/scripts/update_installed_skill.py --list-skills
+```
+
+```bash
 python3 .agents/skills/long-horizon-engineering/scripts/update_installed_skill.py \
   --target-root /path/to/project \
   --skill long-horizon-engineering
@@ -287,6 +320,18 @@ files are copied. The helper does not make network calls, delete files, or
 modify `main`.
 
 For more detail, see [UPGRADE_GUIDE.md](UPGRADE_GUIDE.md).
+
+## Reviewer Checklist
+
+Before marking a productization PR ready for review:
+
+- Package checks pass locally and in CI.
+- `doctor.py` and `test_expected_triggers.py` pass.
+- Update helper defaults to dry-run and backup-first behavior.
+- README, INSTALL, and UPGRADE_GUIDE explain install, verify, update, rollback,
+  and troubleshooting.
+- No secrets, private client data, legal evidence, financial records, or
+  hidden/bidirectional Unicode controls were added.
 
 ## Optional Repomix Context
 
