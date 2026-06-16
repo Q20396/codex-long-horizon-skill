@@ -78,6 +78,7 @@ examples/
         resume-protocol.md
         skill-authoring-methodology.md
         stop-conditions.md
+        ui-ux-review-protocol.md
         validation-matrix.md
         writing-humanization-protocol.md
       prompt-styles/
@@ -88,13 +89,18 @@ examples/
         HANDOFF_REPORT_TEMPLATE.md
         PROJECT_MEMORY_TEMPLATE.md
         IMPROVEMENT_SCAN_TEMPLATE.md
+        accessibility-checklist.md
         implementation-plan.md
         analysis-run-log.md
         claim-evidence-table.md
         deck-outline.md
+        frontend-handoff.md
+        new-skill-brief.md
         option-analysis.md
         slide-qa-checklist.md
+        skill-evaluation-plan.md
         TASK_LOG_TEMPLATE.md
+        ui-ux-audit.md
         verification-evidence.md
         voice-calibration.md
         WORKING_STATE_TEMPLATE.md
@@ -274,6 +280,9 @@ selected. This package includes:
 - `stop-conditions.md` for knowing when to pause instead of continuing
 - `systematic-debugging-protocol.md` for root-cause-first debugging of bugs,
   failing tests, regressions, and unexpected behavior
+- `ui-ux-review-protocol.md` for accessibility, responsive behavior,
+  interaction states, visual-system consistency, and evidence-backed frontend
+  handoff review
 - `validation-matrix.md` for choosing verification steps by task type
 - `writing-humanization-protocol.md` for voice calibration, AI-pattern audits,
   and meaning-preserving rewrites
@@ -286,17 +295,26 @@ Use `templates/` for reusable starter documents. This package includes:
   summaries
 - `PROJECT_MEMORY_TEMPLATE.md` for durable, non-sensitive project facts
 - `IMPROVEMENT_SCAN_TEMPLATE.md` for periodic skill improvement scans
+- `accessibility-checklist.md` for practical keyboard, focus, semantics,
+  contrast, motion, form, and responsive accessibility checks
 - `implementation-plan.md` for scoped implementation plans
 - `analysis-run-log.md` for reproducible analysis records
 - `claim-evidence-table.md` for evidence-backed writing
 - `deck-outline.md` for source-to-slide planning
 - `debugging-runbook.md` for recording root-cause investigations and final
   verification
+- `frontend-handoff.md` for UI implementation handoffs with design decisions,
+  states, accessibility notes, validation, and reviewer focus
+- `new-skill-brief.md` for defining trigger scope, source material, safety
+  boundaries, package shape, and validation before creating a skill
 - `option-analysis.md` for comparing implementation or product directions
 - `slide-qa-checklist.md` for presentation QA
 - `reviewer-response.md` for tracking review comments, decisions, validation,
   and response drafts
+- `skill-evaluation-plan.md` for skill trigger coverage, instruction quality,
+  safety review, validation commands, and reviewer notes
 - `TASK_LOG_TEMPLATE.md` for concise completed-task notes
+- `ui-ux-audit.md` for evidence-backed frontend findings and recommendations
 - `verification-evidence.md` for merge-readiness and validation evidence
 - `voice-calibration.md` for writing humanization and tone calibration
 - `WORKING_STATE_TEMPLATE.md` for resumable in-progress task state
@@ -431,6 +449,8 @@ This package includes additive protocols for:
 - notebook/data analysis run logs
 - presentation delivery and slide QA
 - AI video design systems
+- UI/UX review, accessibility checks, and frontend handoffs
+- skill brief and skill evaluation planning
 - academic source search patterns
 
 These protocols do not add external dependencies. They are guidance, templates,

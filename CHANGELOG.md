@@ -4,6 +4,9 @@ All notable changes to this project are summarized here.
 
 ## Unreleased
 
+- Added lightweight UI/UX review protocol, accessibility checklist, frontend
+  handoff template, and UI/UX audit template.
+- Added skill brief and skill evaluation planning templates.
 - Added writing humanization protocol and voice calibration template.
 - Added ideation-to-plan protocol and option analysis template.
 - Added evidence-backed writing protocol and claim-evidence table.

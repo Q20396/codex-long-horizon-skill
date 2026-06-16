@@ -17,6 +17,9 @@
         "Create a verification evidence report before claiming this upgrade is complete.",
         "Use validation-first or TDD-style checks before changing this shared workflow.",
         "Audit this skill trigger behavior and update the expected trigger fixture.",
+        "Review this frontend change for accessibility, responsive behavior, and interaction states.",
+        "Create a UI/UX audit with evidence before changing this customer-facing dashboard.",
+        "Draft a new skill brief with trigger examples, safety boundaries, and validation steps.",
         "Search external public sources with a provider-neutral plan without leaking private repository data.",
         "Use an AnySearch-style provider only if available and optional.",
         "Debug this failing integration test by finding the root cause before changing code.",
@@ -57,7 +60,9 @@
         "Plan a notebook analysis and require a clean rerun before reporting results.",
         "Create a presentation outline from these source notes with slide QA.",
         "Create a debugging runbook for this flaky test without storing private logs.",
-        "Evaluate reviewer feedback against the codebase before applying changes."
+        "Evaluate reviewer feedback against the codebase before applying changes.",
+        "Create a frontend handoff for this UI change with design decisions and accessibility notes.",
+        "Evaluate this new skill with trigger tests, package checks, and safety review."
       ],
       "description_expectations": [
         "trigger-focused",

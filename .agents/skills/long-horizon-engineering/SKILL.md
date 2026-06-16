@@ -53,6 +53,12 @@ optional protocol: `references/writing-humanization-protocol.md`,
 `references/presentation-delivery-protocol.md`. Preserve facts, evidence,
 caveats, and privacy boundaries.
 
+For frontend UI/UX review, accessibility checks, responsive behavior, or
+customer-facing interface handoffs, consult
+`references/ui-ux-review-protocol.md` when useful. Prefer evidence-backed
+findings over taste-only feedback, and do not copy another product's exact
+brand or interface identity.
+
 When comparing public frontier-agent capabilities, including Fable-style public
 descriptions, consult `references/public-agent-capability-review.md`. Separate
 official facts, research findings, media reports, community claims, and
@@ -125,6 +131,11 @@ Use the writing, research, notebook, and presentation templates only when they
 fit the task and the repository is not sensitive, or when the user approves.
 Use `templates/debugging-runbook.md` or `templates/reviewer-response.md` only
 when a written debugging or review-response record would help and is safe.
+Use `templates/ui-ux-audit.md`, `templates/accessibility-checklist.md`, or
+`templates/frontend-handoff.md` only for UI work that benefits from a written
+review record. Use `templates/new-skill-brief.md` or
+`templates/skill-evaluation-plan.md` for skill creation or evaluation tasks
+that need explicit trigger, safety, and validation coverage.
 
 ## Core Rule
 
@@ -195,6 +206,8 @@ Look for:
 - External search protocol for provider-neutral public source research
 - Writing, ideation, evidence-backed writing, notebook, and presentation
   protocols when those outputs are in scope
+- UI/UX review guidance when frontend, accessibility, responsive, interaction,
+  or visual-system quality is in scope
 - Capability boundaries for high-impact agent behavior
 - Client privacy guidance for private or confidential repositories
 - Jurisdiction and industry compliance guidance for location-aware regulatory
