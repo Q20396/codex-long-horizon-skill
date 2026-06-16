@@ -120,6 +120,17 @@ It can support Remotion-style and HyperFrames-style workflows, including
 briefing, research boundaries, scripting, storyboard and shot-list creation,
 asset manifests, preview planning, and render handoffs.
 
+For media-skill improvement review, the video module includes a manual scan
+helper:
+
+```bash
+python3 .agents/skills/ai-video-production/scripts/scan_top_media_skills.py --dry-run --top 3
+```
+
+It checks public GitHub repositories related to video/image generation skills,
+analyzes code and workflow signals, and gives customers manual upgrade options.
+It does not copy external code, run remote code, auto-upgrade, or modify `main`.
+
 This skill does not auto-render, auto-upload, auto-publish, or post media. Human
 approval is required before rendering, uploading, publishing, posting, or using
 private assets. Sensitive client, private, family, legal, medical, or financial
