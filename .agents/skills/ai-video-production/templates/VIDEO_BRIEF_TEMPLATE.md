@@ -28,12 +28,18 @@
 ## Source Text Analysis
 
 - Core message:
+- Central idea:
+- Relevant industry or domain:
+- Audience expectations:
+- Industry vocabulary or claims to verify:
+- Industry visual language:
 - Key facts or claims:
 - Reasonable inferences:
 - Speculative or fictional elements:
 - Emotional tone:
 - Narrative arc:
 - Visual motifs:
+- Credible metaphors or systems:
 - Required exclusions:
 - Viewer takeaway:
 
