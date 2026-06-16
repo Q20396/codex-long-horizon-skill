@@ -55,6 +55,9 @@ Avoid vague tasks:
 <command>
 ```
 
+**Expected Result**
+-
+
 **Rollback**
 -
 
@@ -65,6 +68,11 @@ Avoid vague tasks:
 ## Validation Matrix
 | Task | Command or Check | Expected Result | Required Before Completion |
 | --- | --- | --- | --- |
+
+## Verification Gate
+- Required checks before claiming completion:
+- Evidence to include in final summary:
+- Checks intentionally skipped and why:
 
 ## Rollback
 - Revert path:

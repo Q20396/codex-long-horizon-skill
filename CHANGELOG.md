@@ -16,8 +16,10 @@ All notable changes to this project are summarized here.
   methodology, provider-neutral external search protocol, implementation and
   verification templates, description audit checks, and richer trigger fixtures.
 - Added productized package pieces: optional Repomix context protocol, doctor
-  and backup-first update scripts, prompt styles, trigger fixture checks, and
+  and backup-first update scripts, prompt-styles, trigger fixture checks, and
   upgrade documentation.
+- Added implementation plan and verification evidence templates.
+- Added skill description audit script.
 - Added public project polish: MIT license, installation guide, examples, and CI
   package checks.
 

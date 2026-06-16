@@ -46,10 +46,12 @@ Use provider-neutral, privacy-first search planning and do not send private
 repository content to external search providers.
 
 For writing, research, analysis, and presentation work, consult the relevant
-optional protocol: `writing-humanization-protocol.md`,
-`ideation-to-plan-protocol.md`, `evidence-backed-writing.md`,
-`notebook-analysis-protocol.md`, or `presentation-delivery-protocol.md`.
-Preserve facts, evidence, caveats, and privacy boundaries.
+optional protocol: `references/writing-humanization-protocol.md`,
+`references/ideation-to-plan-protocol.md`,
+`references/evidence-backed-writing.md`,
+`references/notebook-analysis-protocol.md`, or
+`references/presentation-delivery-protocol.md`. Preserve facts, evidence,
+caveats, and privacy boundaries.
 
 When comparing public frontier-agent capabilities, including Fable-style public
 descriptions, consult `references/public-agent-capability-review.md`. Separate

@@ -5,6 +5,16 @@ This repository contains reusable Codex skills:
 - `long-horizon-engineering`
 - `ai-video-production`
 
+## Install By Git Clone
+
+Clone this package into a reviewable local folder, then copy only the skill
+folder you want into the target project:
+
+```bash
+git clone https://github.com/Q20396/codex-long-horizon-skill.git
+cd codex-long-horizon-skill
+```
+
 ## Copy Into A Project
 
 From the target project root:
@@ -32,6 +42,9 @@ Optional sibling skill:
 ```text
 .agents/skills/ai-video-production/
 ```
+
+After installing or updating a skill, restart Codex or start a new Codex session
+so the changed skill metadata and instructions are reloaded.
 
 ## Verify The Package
 
@@ -84,8 +97,11 @@ files or private data.
 - Use dry-run update mode before applying changes to another project.
 - If optional tools such as Repomix are unavailable, use normal codebase
   exploration instead.
+- No external search provider is required; external search remains optional and
+  privacy-first.
 - If content, research, notebook, presentation, or video design protocols are
-  not needed, ignore them; they are optional references and templates.
+  not needed, ignore them; they are additive optional references and templates
+  and require no new dependencies.
 - If the target project is sensitive, ask before reading, copying, staging, or
   summarizing private materials.
 
