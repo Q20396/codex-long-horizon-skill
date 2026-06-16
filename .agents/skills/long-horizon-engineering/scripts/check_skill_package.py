@@ -46,6 +46,7 @@ REQUIRED_FILES = [
     ".agents/skills/long-horizon-engineering/scripts/check_skill_package.py",
     ".agents/skills/long-horizon-engineering/scripts/check_for_updates.py",
     ".agents/skills/long-horizon-engineering/scripts/github_skill_scan.py",
+    ".agents/skills/long-horizon-engineering/scripts/scan_top_related_skills.py",
 ]
 
 AI_VIDEO_REQUIRED_FILES = [
