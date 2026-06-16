@@ -4,6 +4,8 @@ All notable changes to this project are summarized here.
 
 ## Unreleased
 
+- Added lightweight financial research report and defensive security review
+  protocols with source, valuation, risk, and secrets-scan templates.
 - Added adversarial review, TDD, API integration, ship-readiness, and data
   cleaning protocols with evidence templates.
 - Added lightweight UI/UX review protocol, accessibility checklist, frontend

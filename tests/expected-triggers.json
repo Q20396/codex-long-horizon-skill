@@ -28,7 +28,9 @@
         "Search external public sources with a provider-neutral plan without leaking private repository data.",
         "Use an AnySearch-style provider only if available and optional.",
         "Debug this failing integration test by finding the root cause before changing code.",
-        "Respond to these PR review comments one item at a time and verify each fix."
+        "Respond to these PR review comments one item at a time and verify each fix.",
+        "Create a source-backed stock research report with valuation assumptions and risk disclosure.",
+        "Run a defensive security review and secrets-scan checklist before opening this PR."
       ],
       "should_not_trigger": [
         "Fix one typo in README.md.",
@@ -71,7 +73,9 @@
         "Create an adversarial risk challenge table for this architecture decision.",
         "Prepare an API contract test plan for this connector change.",
         "Prepare a ship checklist with blockers, warnings, rollback, and post-release checks.",
-        "Profile and clean this dataset with before and after quality evidence."
+        "Profile and clean this dataset with before and after quality evidence.",
+        "Prepare a market data source log before writing this A-share sector report.",
+        "Threat-model this auth change and keep the review defensive only."
       ],
       "description_expectations": [
         "trigger-focused",
