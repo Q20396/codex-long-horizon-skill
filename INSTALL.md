@@ -1,6 +1,9 @@
 # Installation
 
-This repository contains the reusable `long-horizon-engineering` Codex skill.
+This repository contains reusable Codex skills:
+
+- `long-horizon-engineering`
+- `ai-video-production`
 
 ## Copy Into A Project
 
@@ -24,13 +27,65 @@ When a task involves multi-step engineering work, use the
 .agents/skills/long-horizon-engineering/
 ```
 
+Optional sibling skill:
+
+```text
+.agents/skills/ai-video-production/
+```
+
 ## Verify The Package
 
 From this repository root:
 
 ```bash
 python3 .agents/skills/long-horizon-engineering/scripts/check_skill_package.py
+python3 .agents/skills/long-horizon-engineering/scripts/doctor.py
+python3 .agents/skills/long-horizon-engineering/scripts/test_expected_triggers.py
 ```
+
+## Update An Installed Skill
+
+Dry-run first:
+
+```bash
+python3 .agents/skills/long-horizon-engineering/scripts/update_installed_skill.py \
+  --target-root /path/to/project \
+  --skill long-horizon-engineering
+```
+
+Apply after review:
+
+```bash
+python3 .agents/skills/long-horizon-engineering/scripts/update_installed_skill.py \
+  --target-root /path/to/project \
+  --skill long-horizon-engineering \
+  --apply
+```
+
+The updater backs up the existing installed skill under `.codex-skill-backups/`
+before copying package files. It does not delete files, make network calls, or
+modify `main`.
+
+## Rollback
+
+Restore the reviewed backup skill directory from `.codex-skill-backups/` to:
+
+```text
+.agents/skills/<skill-name>/
+```
+
+Keep rollback scoped to the skill directory. Do not overwrite unrelated project
+files or private data.
+
+## Troubleshooting
+
+- Run `doctor.py` if the package appears incomplete.
+- Run `check_skill_package.py` before opening a PR.
+- Use dry-run update mode before applying changes to another project.
+- If optional tools such as Repomix are unavailable, use normal codebase
+  exploration instead.
+- If the target project is sensitive, ask before reading, copying, staging, or
+  summarizing private materials.
 
 ## Prompt Example
 

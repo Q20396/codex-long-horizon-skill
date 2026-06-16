@@ -65,6 +65,12 @@ source, scope, query, and whether contents or only metadata should be inspected.
 Use the least access needed, and do not store private source content in memory,
 logs, state, or reports.
 
+When the repository is large, unfamiliar, or multi-language, Codex may consult
+`references/repomix-codebase-context.md` for an optional Repomix-based codebase
+context protocol. Prefer report-first behavior, exclude secrets and private
+materials, and do not treat generated context as a substitute for inspecting the
+specific files being edited.
+
 When a task needs location-aware or industry-aware legal, regulatory, or
 industry-rule context, consult
 `references/jurisdiction-industry-compliance.md`. Do not silently enable GPS or
@@ -79,6 +85,10 @@ regions while excluding private client materials unless explicitly approved.
 For large migrations or complex multi-file changes, consult
 `references/large-migration-playbook.md` when appropriate. Use
 `references/validation-matrix.md` to choose task-appropriate verification.
+
+Optional prompt styles live in `prompt-styles/`. Use them only when the user
+asks for a particular response style or when a task clearly benefits from one.
+Prompt styles change presentation, not safety rules or required verification.
 
 For substantial PRs or long-running tasks, produce a handoff summary using
 `templates/HANDOFF_REPORT_TEMPLATE.md` when appropriate. Do not require a
@@ -154,6 +164,7 @@ Look for:
 - Client privacy guidance for private or confidential repositories
 - Jurisdiction and industry compliance guidance for location-aware regulatory
   questions
+- Repomix codebase context guidance for large or unfamiliar repositories
 
 ### 3. Plan
 
