@@ -40,6 +40,12 @@ When maintaining this repository's own skills, consult
 metadata, keep workflows in the body or references, and update trigger examples
 when trigger behavior changes.
 
+For evidence-based skill improvement, consult
+`references/skill-optimization-protocol.md`. Use rollout evidence, bounded
+edits, validation gates, and rejected-edit notes when useful. Do not create
+autonomous self-improvement loops or generated deployment artifacts unless the
+user explicitly asks for them.
+
 When current public facts, docs, GitHub issues, package data, standards, CVEs,
 or vendor changes are needed, consult `references/external-search-protocol.md`.
 Use provider-neutral, privacy-first search planning and do not send private

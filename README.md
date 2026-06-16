@@ -83,6 +83,7 @@ examples/
         security-review-protocol.md
         ship-readiness-protocol.md
         skill-authoring-methodology.md
+        skill-optimization-protocol.md
         stop-conditions.md
         tdd-protocol.md
         ui-ux-review-protocol.md
@@ -107,11 +108,15 @@ examples/
         market-data-source-log.md
         new-skill-brief.md
         option-analysis.md
+        bounded-skill-edit.md
         regression-test-record.md
+        rejected-skill-edit-log.md
         risk-challenge-table.md
         slide-qa-checklist.md
         ship-checklist.md
         skill-evaluation-plan.md
+        skill-rollout-log.md
+        skill-validation-gate.md
         secrets-scan-checklist.md
         stock-research-report.md
         TASK_LOG_TEMPLATE.md
@@ -121,6 +126,7 @@ examples/
         risk-disclosure.md
         voice-calibration.md
         WORKING_STATE_TEMPLATE.md
+        bounded-skill-edit.md
       scripts/
         append_project_memory.py
         audit_skill_descriptions.py
@@ -182,6 +188,18 @@ This package includes product-grade install, verification, update, rollback,
 trigger-test, and review-support pieces around the skills. These additions are
 documentation, templates, static checks, and local helper scripts; they do not
 patch Codex or add required external services.
+
+## Skill Optimization Discipline
+
+This repository includes an optional, manual skill optimization protocol for
+improving skills from evidence. It helps Codex compare baseline and candidate
+behavior, propose bounded skill edits, run validation gates, and record rejected
+edits when that helps future review.
+
+The protocol is review-gated and privacy-first. It does not add a model
+training loop, hidden network calls, autonomous self-improvement, generated
+deployment artifacts, or automatic updates. Human-reviewed branches and pull
+requests remain the source of truth.
 
 ## What The Skill Does
 
