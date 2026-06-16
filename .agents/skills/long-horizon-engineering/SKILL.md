@@ -31,6 +31,12 @@ For skill self-improvement tasks, use a review-gated loop: inspect public
 sources, record evidence, adapt only small reusable patterns, run checks, and
 open a draft PR. Do not auto-merge or modify `main` directly.
 
+When improving a skill based on observed task outcomes, trigger failures, or
+reviewer feedback, consult `references/skill-optimization-protocol.md`. Treat
+SkillOpt-style optimization as lightweight methodology only: collect rollout
+evidence, reflect on success and failure, propose bounded edits, validate, log
+rejected changes when useful, and keep human review before deployment.
+
 When scanning GitHub for related Codex or Agent Skills projects, treat results
 as evidence for review. Do not copy external code into this skill without
 checking license obligations and user approval.
@@ -175,6 +181,12 @@ external app uploads need an explicit approval record. Use
 `templates/paper-evidence-card.md` for academic claims that need paper-level
 traceability. Use `templates/memory-review-checklist.md` before updating
 persistent memory, logs, state, or handoff files when sensitivity is uncertain.
+Use `templates/skill-rollout-log.md`,
+`templates/skill-reflection-report.md`,
+`templates/bounded-skill-edit.md`,
+`templates/skill-validation-gate.md`, or
+`templates/rejected-skill-edit-log.md` only when skill optimization evidence
+needs a written, non-sensitive review record.
 Use `templates/risk-challenge-table.md`,
 `templates/regression-test-record.md`, `templates/ship-checklist.md`,
 `templates/api-contract-test-plan.md`, or

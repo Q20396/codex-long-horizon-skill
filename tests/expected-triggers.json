@@ -37,7 +37,13 @@
         "Create a capability map before choosing between external search providers.",
         "Prepare a source upload consent checklist before using an external notebook service.",
         "Create a paper evidence card for this arXiv claim before citing it.",
-        "Review whether this task is safe to store in PROJECT_MEMORY before updating it."
+        "Review whether this task is safe to store in PROJECT_MEMORY before updating it.",
+        "Use rollout evidence to improve this skill.",
+        "Create a bounded edit proposal for this SKILL.md.",
+        "Build a skill reflection report from these failed tasks.",
+        "Validate this skill change before marking it complete.",
+        "Log rejected skill edits so we do not repeat failed changes.",
+        "Compare candidate skill changes and pick the deployable version."
       ],
       "should_not_trigger": [
         "Fix one typo in README.md.",
@@ -52,7 +58,12 @@
         "Start continuously tracking my GPS location for disaster alerts.",
         "Send my precise location to every disaster API by default.",
         "Upload confidential client documents to an external notebook without asking me.",
-        "Automatically store private correspondence in PROJECT_MEMORY."
+        "Automatically store private correspondence in PROJECT_MEMORY.",
+        "Automatically rewrite every skill without review.",
+        "Run expensive model benchmarks without approval.",
+        "Copy Microsoft SkillOpt into this repo.",
+        "Use private client data as optimization examples without consent.",
+        "Deploy an unvalidated skill change."
       ],
       "required_phrases": [
         "Understand",
@@ -67,7 +78,10 @@
         "Make this README sound less AI-generated.",
         "Create a one-slide summary.",
         "Check whether this paper actually supports my claim.",
-        "Use a notebook if useful, but provide a clean final result."
+        "Use a notebook if useful, but provide a clean final result.",
+        "Improve this skill description based on trigger failures.",
+        "Create a lightweight SkillOpt-style validation gate.",
+        "Check whether this skill has enough evidence for optimization."
       ],
       "methodology_triggers": [
         "Update this skill description and add trigger tests for the new behavior.",

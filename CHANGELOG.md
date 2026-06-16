@@ -7,6 +7,9 @@ All notable changes to this project are summarized here.
 - Added privacy-first disaster monitoring enablement guidance with manual
   monitored locations, optional one-time approximate current location, and
   alert-rule/runbook templates.
+- Added lightweight SkillOpt-inspired skill optimization protocol and templates
+  for rollout evidence, reflection, bounded edits, validation gates, and
+  rejected edit logs without adding a runtime dependency.
 - Added external tool provider and external app runtime boundary guidance with
   provider capability, source upload consent, paper evidence, and memory review
   templates.

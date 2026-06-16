@@ -86,6 +86,7 @@ examples/
         security-review-protocol.md
         ship-readiness-protocol.md
         skill-authoring-methodology.md
+        skill-optimization-protocol.md
         stop-conditions.md
         tdd-protocol.md
         ui-ux-review-protocol.md
@@ -101,6 +102,7 @@ examples/
         IMPROVEMENT_SCAN_TEMPLATE.md
         accessibility-checklist.md
         api-contract-test-plan.md
+        bounded-skill-edit.md
         implementation-plan.md
         analysis-run-log.md
         claim-evidence-table.md
@@ -115,10 +117,14 @@ examples/
         option-analysis.md
         paper-evidence-card.md
         regression-test-record.md
+        rejected-skill-edit-log.md
         risk-challenge-table.md
         slide-qa-checklist.md
         ship-checklist.md
         skill-evaluation-plan.md
+        skill-reflection-report.md
+        skill-rollout-log.md
+        skill-validation-gate.md
         secrets-scan-checklist.md
         source-upload-consent-checklist.md
         stock-research-report.md
@@ -321,6 +327,9 @@ selected. This package includes:
   merge, release, deployment planning, or reviewer handoff
 - `skill-authoring-methodology.md` for eval-driven skill maintenance,
   trigger examples, description quality, and package verification
+- `skill-optimization-protocol.md` for lightweight SkillOpt-inspired skill
+  improvement using rollout evidence, reflections, bounded edits, validation
+  gates, rejected edit logs, and human review
 - `stop-conditions.md` for knowing when to pause instead of continuing
 - `systematic-debugging-protocol.md` for root-cause-first debugging of bugs,
   failing tests, regressions, and unexpected behavior
@@ -345,6 +354,8 @@ Use `templates/` for reusable starter documents. This package includes:
   contrast, motion, form, and responsive accessibility checks
 - `api-contract-test-plan.md` for API endpoint, auth, request/response, error,
   retry, and contract-test planning
+- `bounded-skill-edit.md` for small, reviewable skill edit proposals with
+  expected improvement, regression risk, validation, and rollback plans
 - `implementation-plan.md` for scoped implementation plans
 - `analysis-run-log.md` for reproducible analysis records
 - `claim-evidence-table.md` for evidence-backed writing
@@ -366,6 +377,8 @@ Use `templates/` for reusable starter documents. This package includes:
   limitations, and citation-risk review
 - `regression-test-record.md` for bug reproduction, failing tests, fixes, and
   passing evidence
+- `rejected-skill-edit-log.md` for recording skill edits that were rejected and
+  the evidence behind the rejection
 - `risk-challenge-table.md` for adversarial review of assumptions, evidence,
   risks, recommended defaults, and open decisions
 - `slide-qa-checklist.md` for presentation QA
@@ -377,6 +390,12 @@ Use `templates/` for reusable starter documents. This package includes:
   exposing secrets or confidential files
 - `skill-evaluation-plan.md` for skill trigger coverage, instruction quality,
   safety review, validation commands, and reviewer notes
+- `skill-reflection-report.md` for reflecting on skill successes, failures,
+  recurring patterns, root causes, risks, and proposed improvements
+- `skill-rollout-log.md` for recording non-sensitive task evidence, expected
+  behavior, actual behavior, results, and failure modes
+- `skill-validation-gate.md` for checking candidate skill changes before
+  marking them deployable or ready for review
 - `source-upload-consent-checklist.md` for explicit approval before uploading,
   importing, pasting, or syncing private source material into an external app
 - `stock-research-report.md` for source-backed company, sector, market, and
@@ -603,6 +622,14 @@ approved scope.
 `references/continuous-improvement.md` defines a safe self-improvement loop:
 check related public skills and agent projects, record evidence, adapt only
 small reusable patterns, run checks, and open a draft PR for review.
+
+`references/skill-optimization-protocol.md` defines a lightweight
+SkillOpt-inspired skill optimization loop. It treats skill text as an
+improvable artifact, but it does not add the Microsoft SkillOpt runtime, hard
+dependencies, hidden optimizer runs, paid model calls, or automatic skill
+mutation. Use rollout evidence, reflection reports, bounded edit proposals,
+validation gates, rejected edit logs, and human review before selecting a
+deployable skill change.
 
 `references/public-agent-capability-review.md` helps Codex compare public
 frontier-agent capability descriptions, classify source reliability, separate
