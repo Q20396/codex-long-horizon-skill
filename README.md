@@ -70,6 +70,7 @@ examples/
         evidence-backed-writing.md
         external-search-protocol.md
         external-source-scan.md
+        financial-research-report-protocol.md
         ideation-to-plan-protocol.md
         jurisdiction-industry-compliance.md
         large-migration-playbook.md
@@ -79,6 +80,7 @@ examples/
         repomix-codebase-context.md
         review-checklist.md
         resume-protocol.md
+        security-review-protocol.md
         ship-readiness-protocol.md
         skill-authoring-methodology.md
         stop-conditions.md
@@ -102,6 +104,7 @@ examples/
         data-quality-report.md
         deck-outline.md
         frontend-handoff.md
+        market-data-source-log.md
         new-skill-brief.md
         option-analysis.md
         regression-test-record.md
@@ -109,9 +112,13 @@ examples/
         slide-qa-checklist.md
         ship-checklist.md
         skill-evaluation-plan.md
+        secrets-scan-checklist.md
+        stock-research-report.md
         TASK_LOG_TEMPLATE.md
         ui-ux-audit.md
+        valuation-assumption-table.md
         verification-evidence.md
+        risk-disclosure.md
         voice-calibration.md
         WORKING_STATE_TEMPLATE.md
       scripts/
