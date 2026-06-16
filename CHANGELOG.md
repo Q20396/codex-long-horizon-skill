@@ -4,6 +4,8 @@ All notable changes to this project are summarized here.
 
 ## Unreleased
 
+- Added lightweight skill optimization protocol and templates for rollout
+  evidence, bounded skill edits, validation gates, and rejected edit notes.
 - Added lightweight financial research report and defensive security review
   protocols with source, valuation, risk, and secrets-scan templates.
 - Added adversarial review, TDD, API integration, ship-readiness, and data
