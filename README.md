@@ -186,13 +186,16 @@ Templates are structure only. They are not a place to store sensitive content.
 Use `scripts/` for simple local helpers. This package includes:
 
 - `append_project_memory.py` to append facts to `docs/PROJECT_MEMORY.md`
+- `check_for_updates.py` to check whether GitHub has a newer package revision
 - `check_skill_package.py` to validate the package structure
 - `github_skill_scan.py` to scan public GitHub projects for review-gated
   improvement evidence
 - `update_task_log.py` to append completed task entries to `docs/TASK_LOG.md`
 
-The scripts are intentionally local-only. They do not read environment
-variables, make network calls, delete files, or require external dependencies.
+The memory and task-log helpers are intentionally local-only. They do not read
+environment variables, make network calls, delete files, or require external
+dependencies. The GitHub scan and update-check helpers access public GitHub
+metadata only when the user runs them.
 
 ### assets/
 
@@ -372,6 +375,37 @@ python3 .agents/skills/long-horizon-engineering/scripts/github_skill_scan.py --d
 
 Remove `--dry-run` to write `docs/GITHUB_SKILL_SCAN.md`. Treat the report as
 evidence for review, not as permission to copy external code.
+
+## Checking For Skill Updates
+
+Clients can check whether this local skill package may be behind the GitHub
+version by running:
+
+```bash
+python3 .agents/skills/long-horizon-engineering/scripts/check_for_updates.py
+```
+
+The update check queries the public GitHub repository and compares the latest
+`main` commit with the local checkout when this directory is a clone of the
+skill repository. It reports status only. It does not pull, overwrite files,
+modify local projects, or update installed skills automatically.
+
+If the skill was copied into another project without git metadata, the script
+cannot safely compare the installed copy to GitHub. In that case, it prints the
+latest remote commit and tells the user to review the GitHub repository before
+copying updates.
+
+Use the result as a review signal:
+
+- `Status: up to date.` means the local clone matches the checked GitHub branch.
+- `Status: update may be available.` means review the GitHub changes before
+  updating.
+- `cannot safely compare` means the local copy is not enough to prove whether it
+  is current.
+
+Never auto-update skills inside private repositories without human review.
+Never overwrite local project instructions, private data, logs, or client
+materials.
 
 ## External Source Scans
 
