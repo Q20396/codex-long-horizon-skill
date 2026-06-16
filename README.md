@@ -472,7 +472,9 @@ Outputs should clearly separate public facts, practical implications, and
 recommendations. They should say that the response is informational and not
 legal advice. After a local answer, Codex should ask whether the user wants to
 compare cross-region laws, regulations, or industry rules before expanding the
-scope.
+scope. It should also ask whether the user wants to load approved skills or
+reference files for other regions, using public or non-sensitive sources by
+default and excluding private client materials unless explicitly approved.
 
 ## Copying This Skill Into Another Project
 

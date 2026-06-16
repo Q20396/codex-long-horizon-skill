@@ -54,6 +54,8 @@ pull request.
 - Current public sources were used for jurisdiction-specific facts when needed.
 - Output was framed as informational support, not legal advice.
 - Cross-region comparison was offered as an option instead of assumed.
+- Additional regional skills, folders, files, connectors, or private references
+  were loaded only after the user approved the source and scope.
 
 ## Handoff
 

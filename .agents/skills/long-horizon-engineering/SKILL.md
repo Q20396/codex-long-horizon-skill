@@ -72,7 +72,9 @@ infer precise location from private files. Ask whether the user wants to approve
 device/GPS location use or manually provide the country, state/province, city,
 or region. Identify the relevant industry, use current public sources for legal
 and regulatory facts, state that the output is not legal advice, and ask whether
-cross-region rules should also be checked.
+cross-region rules should also be checked. If cross-region rules may matter, ask
+whether the user wants Codex to load approved skills or reference files for other
+regions while excluding private client materials unless explicitly approved.
 
 For large migrations or complex multi-file changes, consult
 `references/large-migration-playbook.md` when appropriate. Use

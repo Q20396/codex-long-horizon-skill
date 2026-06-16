@@ -34,6 +34,34 @@ manually.
 Do not store precise location, addresses, client locations, travel history, or
 private operational locations in memory, logs, working state, or handoff files.
 
+## Optional Regional Skill Loading
+
+When cross-region rules may matter, ask whether the user wants Codex to load or
+read additional legal, regulatory, or industry-rule skills or reference files for
+other regions.
+
+Use an explicit privacy-preserving prompt:
+
+"Would you like me to load any approved skills or reference files for other
+regions' laws, regulations, or industry rules? I can use public/non-sensitive
+sources only, or you can name the exact skill, folder, or file to read. I will
+not read private client materials, precise locations, legal evidence, or
+confidential documents unless you explicitly approve the exact scope."
+
+Before loading any additional skill or reference source, confirm:
+
+- Region or jurisdiction to compare
+- Industry or rule category to check
+- Skill, folder, file, connector, or public source to read
+- Whether metadata-only review is enough
+- Whether any private client material is excluded
+- Whether findings may be summarized in the answer
+
+Do not load broad local folders, cloud drives, Gmail, private legal files, or
+client documents merely to find regional rules. Prefer public official sources
+or user-approved reusable skills. If the requested source may contain sensitive
+material, stop and ask for narrower approval.
+
 ## Industry Context
 
 Before giving legal, regulatory, or industry-rule guidance, identify the user's
