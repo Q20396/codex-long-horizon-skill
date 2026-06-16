@@ -27,6 +27,13 @@ content. Use that summary to create the system-facing image or video prompts.
 Do not generate media from isolated sentences without understanding the full
 context.
 
+For client-provided text, identify the central idea first, then place it in the
+relevant industry context before generating visuals. Summarize the audience,
+industry vocabulary, common visual language, credible metaphors, and claims
+that need fact-checking. Use the industry-aware summary to create image and
+video prompts. Do not copy private client wording into reusable prompts, logs,
+or public examples unless explicitly approved.
+
 ## Workflow
 
 1. Brief
@@ -49,6 +56,8 @@ For each major script beat, plan a corresponding visual beat:
 
 - First summarize the whole source text into a visual brief before writing
   prompts.
+- For client text, extract the central idea and relevant industry context before
+  choosing visual metaphors, style, or generated assets.
 - Convert claims into diagrams, timelines, maps, charts, system layers, or
   before/after comparisons when appropriate.
 - Convert abstract ideas into visual metaphors, animation, spatial layouts,

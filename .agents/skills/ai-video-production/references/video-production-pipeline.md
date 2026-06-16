@@ -62,18 +62,29 @@ user explicitly asks for a single-line prompt.
 Capture:
 
 - Core message
+- Central idea of client-provided text
+- Relevant industry or domain context
+- Target audience expectations
+- Industry vocabulary and claims that need checking
+- Common visual language for the industry
 - Key claims or facts
 - Reasonable inferences
 - Speculative or fictional elements
 - Emotional tone
 - Narrative arc
 - Visual motifs
+- Credible industry metaphors or systems
 - Characters, objects, places, systems, or symbols
 - Required exclusions, privacy limits, and licensing constraints
 - What the generated media should make the viewer understand
 
 Use this analysis as the basis for script beats, storyboard scenes, visual
 prompts, and asset plans.
+
+For client-provided text, summarize rather than copy. Keep proprietary wording,
+client names, private documents, screenshots, contracts, legal evidence,
+financial details, family information, and confidential research out of public
+or reusable prompts unless the user explicitly approves the exact content.
 
 ## Step 5: Script
 
