@@ -45,6 +45,7 @@ INSTALLED_REQUIRED_PATHS = [
     ".agents/skills/long-horizon-engineering/references/writing-humanization-protocol.md",
     ".agents/skills/long-horizon-engineering/scripts/check_skill_package.py",
     ".agents/skills/long-horizon-engineering/scripts/audit_skill_descriptions.py",
+    ".agents/skills/long-horizon-engineering/scripts/audit_skill_safety.py",
     ".agents/skills/long-horizon-engineering/scripts/update_installed_skill.py",
     ".agents/skills/long-horizon-engineering/scripts/test_expected_triggers.py",
     ".agents/skills/long-horizon-engineering/templates/implementation-plan.md",

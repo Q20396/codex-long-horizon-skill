@@ -5,6 +5,8 @@ from __future__ import annotations
 
 import argparse
 import shutil
+import subprocess
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -36,6 +38,26 @@ def backup_skill(target_root: Path, target: Path, skill: str) -> Path | None:
     return backup_path
 
 
+def run_pre_upgrade_safety_audit() -> None:
+    audit_script = (
+        SKILLS_ROOT
+        / "long-horizon-engineering"
+        / "scripts"
+        / "audit_skill_safety.py"
+    )
+    if not audit_script.is_file():
+        raise SystemExit(f"ERROR: safety audit script not found: {audit_script}")
+    result = subprocess.run(
+        [sys.executable, str(audit_script), "--root", str(PACKAGE_ROOT)],
+        check=False,
+    )
+    if result.returncode != 0:
+        raise SystemExit(
+            "ERROR: pre-upgrade skill safety audit failed. "
+            "Review the audit findings before applying updates."
+        )
+
+
 def update_skill(target_root: Path, skill: str, apply: bool) -> None:
     source = source_skill_path(skill)
     target = target_skill_path(target_root, skill)
@@ -45,7 +67,7 @@ def update_skill(target_root: Path, skill: str, apply: bool) -> None:
 
     print(f"Skill: {skill}")
     print(f"Source: {source}")
-    print(f"Target: {target}")
+    print(f"Target: {target}", flush=True)
 
     if not apply:
         print("Mode: dry-run")
@@ -53,10 +75,13 @@ def update_skill(target_root: Path, skill: str, apply: bool) -> None:
             print("Plan: back up existing target, then copy package files over it.")
         else:
             print("Plan: create target skill directory and copy package files.")
+        print("Pre-upgrade safety audit will run before --apply copies files.")
         print("No files were changed. Re-run with --apply to update.")
         return
 
     print("Mode: apply")
+    print("Pre-upgrade safety audit:", flush=True)
+    run_pre_upgrade_safety_audit()
     backup_path = backup_skill(target_root, target, skill)
     if backup_path:
         print(f"Backup: {backup_path}")
@@ -114,7 +139,7 @@ def main() -> None:
     skills = args.skill or list(ALLOWED_SKILLS)
 
     print("Safe skill update")
-    print(f"Target root: {target_root}")
+    print(f"Target root: {target_root}", flush=True)
     for skill in skills:
         print()
         update_skill(target_root, skill, args.apply)

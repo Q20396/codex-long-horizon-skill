@@ -76,8 +76,9 @@ python3 .agents/skills/long-horizon-engineering/scripts/update_installed_skill.p
 ```
 
 The updater backs up the existing installed skill under `.codex-skill-backups/`
-before copying package files. It does not delete files, make network calls, or
-modify `main`.
+before copying package files. Before `--apply` copies files, it runs the local
+read-only `audit_skill_safety.py` check against the package skills. It does not
+delete files, make network calls, or modify `main`.
 
 ## Rollback
 

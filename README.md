@@ -139,6 +139,7 @@ examples/
         WORKING_STATE_TEMPLATE.md
       scripts/
         append_project_memory.py
+        audit_skill_safety.py
         audit_skill_descriptions.py
         check_for_updates.py
         check_skill_package.py
@@ -429,6 +430,9 @@ Use `scripts/` for simple local helpers. This package includes:
 - `append_project_memory.py` to append facts to `docs/PROJECT_MEMORY.md`
 - `audit_skill_descriptions.py` to check skill descriptions for trigger-focused
   metadata
+- `audit_skill_safety.py` to run a read-only pre-upgrade safety audit for risky
+  skill instructions, missing safety metadata, nested skill paths, and
+  unguarded destructive or data-exposure patterns
 - `check_for_updates.py` to check whether GitHub has a newer package revision
 - `check_skill_package.py` to validate the package structure
 - `doctor.py` to run product-readiness checks for local installs
