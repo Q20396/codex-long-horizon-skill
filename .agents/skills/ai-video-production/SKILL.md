@@ -96,6 +96,15 @@ For each major script beat, plan a corresponding visual beat:
 - Choose a HyperFrames-style workflow for fast agent-authored HTML/CSS/JS animation, browser preview, lint-before-render loops, and manual rendering from an inspectable `index.html`.
 - Choose image generation for covers, thumbnails, storyboard frames, scene backgrounds, visual assets, style exploration, and image-to-video seed frames.
 
+## Manual Media Skill Upgrade Scan
+
+When asked to check related video or image skills, Codex may run
+`scripts/scan_top_media_skills.py` to inspect the top public GitHub repositories
+for video/image generation skill signals. The scan should produce customer
+upgrade options only. Do not copy external code, prompts, templates, or media.
+Do not auto-upgrade. The user must manually choose whether to click a PR,
+request an original change, copy reviewed material, or skip.
+
 ## Reference Files
 
 - `references/remotion-patterns.md`
@@ -112,3 +121,7 @@ For each major script beat, plan a corresponding visual beat:
 - `templates/SHOT_LIST_TEMPLATE.md`
 - `templates/ASSET_MANIFEST_TEMPLATE.md`
 - `templates/RENDER_HANDOFF_TEMPLATE.md`
+
+## Scripts
+
+- `scripts/scan_top_media_skills.py`

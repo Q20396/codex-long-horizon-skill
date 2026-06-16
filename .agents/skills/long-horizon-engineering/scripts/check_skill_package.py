@@ -62,6 +62,7 @@ AI_VIDEO_REQUIRED_FILES = [
     ".agents/skills/ai-video-production/templates/SHOT_LIST_TEMPLATE.md",
     ".agents/skills/ai-video-production/templates/ASSET_MANIFEST_TEMPLATE.md",
     ".agents/skills/ai-video-production/templates/RENDER_HANDOFF_TEMPLATE.md",
+    ".agents/skills/ai-video-production/scripts/scan_top_media_skills.py",
 ]
 
 
