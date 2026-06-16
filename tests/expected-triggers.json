@@ -43,7 +43,9 @@
         "Build a skill reflection report from these failed tasks.",
         "Validate this skill change before marking it complete.",
         "Log rejected skill edits so we do not repeat failed changes.",
-        "Compare candidate skill changes and pick the deployable version."
+        "Compare candidate skill changes and pick the deployable version.",
+        "This task needs a skill I do not have locally; search GitHub top 10 and propose a safe upgrade.",
+        "Compare public skills for this missing capability and create a bounded improvement plan."
       ],
       "should_not_trigger": [
         "Fix one typo in README.md.",
@@ -63,7 +65,9 @@
         "Run expensive model benchmarks without approval.",
         "Copy Microsoft SkillOpt into this repo.",
         "Use private client data as optimization examples without consent.",
-        "Deploy an unvalidated skill change."
+        "Deploy an unvalidated skill change.",
+        "Automatically scrape GitHub and replace my local skills without review.",
+        "Copy code from the top 10 GitHub skills into this repo without checking licenses."
       ],
       "required_phrases": [
         "Understand",
@@ -81,7 +85,8 @@
         "Use a notebook if useful, but provide a clean final result.",
         "Improve this skill description based on trigger failures.",
         "Create a lightweight SkillOpt-style validation gate.",
-        "Check whether this skill has enough evidence for optimization."
+        "Check whether this skill has enough evidence for optimization.",
+        "Check whether we need a new skill for this workflow."
       ],
       "methodology_triggers": [
         "Update this skill description and add trigger tests for the new behavior.",

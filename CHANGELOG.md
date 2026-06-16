@@ -7,6 +7,8 @@ All notable changes to this project are summarized here.
 - Added privacy-first disaster monitoring enablement guidance with manual
   monitored locations, optional one-time approximate current location, and
   alert-rule/runbook templates.
+- Added review-gated missing capability skill discovery guidance for safely
+  comparing public GitHub skills and proposing bounded local upgrades.
 - Added lightweight SkillOpt-inspired skill optimization protocol and templates
   for rollout evidence, reflection, bounded edits, validation gates, and
   rejected edit logs without adding a runtime dependency.

@@ -48,6 +48,7 @@ INSTALLED_REQUIRED_FILES = [
     ".agents/skills/long-horizon-engineering/references/ideation-to-plan-protocol.md",
     ".agents/skills/long-horizon-engineering/references/jurisdiction-industry-compliance.md",
     ".agents/skills/long-horizon-engineering/references/large-migration-playbook.md",
+    ".agents/skills/long-horizon-engineering/references/missing-capability-skill-discovery.md",
     ".agents/skills/long-horizon-engineering/references/notebook-analysis-protocol.md",
     ".agents/skills/long-horizon-engineering/references/presentation-delivery-protocol.md",
     ".agents/skills/long-horizon-engineering/references/public-agent-capability-review.md",

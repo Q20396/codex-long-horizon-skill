@@ -77,6 +77,7 @@ examples/
         ideation-to-plan-protocol.md
         jurisdiction-industry-compliance.md
         large-migration-playbook.md
+        missing-capability-skill-discovery.md
         notebook-analysis-protocol.md
         presentation-delivery-protocol.md
         public-agent-capability-review.md
@@ -310,6 +311,8 @@ selected. This package includes:
   criteria, and plan conversion
 - `large-migration-playbook.md` for phased, reviewable large migrations and
   complex multi-file implementations
+- `missing-capability-skill-discovery.md` for review-gated discovery of public
+  skills when local skills are missing, too generic, or repeatedly failing
 - `notebook-analysis-protocol.md` for stateful exploratory analysis,
   incremental notebook work, and clean reruns before claims
 - `presentation-delivery-protocol.md` for deck outlines, source-to-slide
@@ -630,6 +633,12 @@ dependencies, hidden optimizer runs, paid model calls, or automatic skill
 mutation. Use rollout evidence, reflection reports, bounded edit proposals,
 validation gates, rejected edit logs, and human review before selecting a
 deployable skill change.
+
+`references/missing-capability-skill-discovery.md` explains how Codex should
+handle local skill gaps. It asks before searching public GitHub, compares top
+related repositories as evidence, extracts only general patterns, checks license
+and safety risk, and proposes bounded updates or a new-skill brief for human
+review.
 
 `references/public-agent-capability-review.md` helps Codex compare public
 frontier-agent capability descriptions, classify source reliability, separate

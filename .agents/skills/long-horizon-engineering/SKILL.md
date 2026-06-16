@@ -41,6 +41,12 @@ When scanning GitHub for related Codex or Agent Skills projects, treat results
 as evidence for review. Do not copy external code into this skill without
 checking license obligations and user approval.
 
+When the local skill set appears insufficient for a task, or a new domain skill
+may be needed, consult `references/missing-capability-skill-discovery.md`.
+Ask before searching public GitHub, compare top related repositories as
+evidence, extract only general patterns, and propose bounded, validation-gated
+updates or a new-skill brief for human review.
+
 When maintaining this repository's own skills, consult
 `references/skill-authoring-methodology.md`. Treat skill descriptions as trigger
 metadata, keep workflows in the body or references, and update trigger examples

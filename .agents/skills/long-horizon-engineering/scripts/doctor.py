@@ -31,6 +31,7 @@ INSTALLED_REQUIRED_PATHS = [
     ".agents/skills/long-horizon-engineering/references/external-search-protocol.md",
     ".agents/skills/long-horizon-engineering/references/financial-research-report-protocol.md",
     ".agents/skills/long-horizon-engineering/references/ideation-to-plan-protocol.md",
+    ".agents/skills/long-horizon-engineering/references/missing-capability-skill-discovery.md",
     ".agents/skills/long-horizon-engineering/references/notebook-analysis-protocol.md",
     ".agents/skills/long-horizon-engineering/references/presentation-delivery-protocol.md",
     ".agents/skills/long-horizon-engineering/references/repomix-codebase-context.md",
