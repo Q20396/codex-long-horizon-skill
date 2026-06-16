@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Scan top public video/image skill repositories for manual upgrade options."""
+"""Scan top public video/image skill repositories for manual upgrade review."""
 
 from __future__ import annotations
 
@@ -19,9 +19,10 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
             "Find top public video/image generation skill or agent repositories, "
-            "analyze code and workflow signals, and produce customer-facing "
-            "manual upgrade options. This does not copy code, execute remote "
-            "code, merge PRs, or update the skill package."
+            "self-check code and workflow signals, and produce customer-facing "
+            "optimization suggestions, impact notes, and manual upgrade options. "
+            "This does not copy code, execute remote code, merge PRs, or update "
+            "the skill package."
         )
     )
     parser.add_argument(
@@ -157,11 +158,69 @@ def analyze_paths(paths: list[str]) -> dict[str, Any]:
     }
 
 
+def code_self_check(analysis: dict[str, Any]) -> list[str]:
+    checks = [
+        f"Scanned {analysis['files_scanned']} repository files from the public tree.",
+    ]
+    if analysis["skill_files"]:
+        checks.append("Skill-style instruction files are present.")
+    else:
+        checks.append("No SKILL.md file was observed; treat this as a general media repository, not a Codex skill.")
+    if analysis["package_files"] or analysis["source_files_count"]:
+        checks.append("Implementation files are present; review patterns conceptually and do not copy code.")
+    else:
+        checks.append("No implementation package or source files were observed in the scanned paths.")
+    if analysis["media_files"]:
+        checks.append("Media, prompt, render, storyboard, or asset-related paths are present.")
+    else:
+        checks.append("Few media-specific paths were observed; relevance may be weak.")
+    if analysis["safety_files"]:
+        checks.append("Safety, privacy, review, policy, or license files are present and should be compared.")
+    else:
+        checks.append("No obvious safety, privacy, review, policy, or license paths were observed.")
+    if analysis["workflows_count"]:
+        checks.append("CI workflow files are present; consider whether similar checks would help this skill.")
+    return checks
+
+
+def optimization_suggestions(analysis: dict[str, Any]) -> list[str]:
+    suggestions = [
+        "Keep any upgrade original: use observed patterns only as inspiration after license review.",
+        "Check whether the local skill needs clearer text-to-visual analysis, asset provenance, or approval-gate wording.",
+    ]
+    if analysis["media_files"]:
+        suggestions.append("Compare storyboard, prompt, asset-manifest, render-handoff, and preview-review coverage.")
+    if analysis["package_files"] or analysis["source_files_count"]:
+        suggestions.append("Look for small verification ideas, not reusable code: help text, checker coverage, or dry-run reporting.")
+    if analysis["safety_files"]:
+        suggestions.append("Compare privacy, licensing, publishing, and human-approval safeguards against the local policy.")
+    else:
+        suggestions.append("Treat the repository as higher risk until privacy, licensing, and approval safeguards are manually checked.")
+    if analysis["examples_count"]:
+        suggestions.append("Consider whether non-sensitive example outputs would make the local skill easier to test.")
+    return suggestions
+
+
+def upgrade_impact_notes(analysis: dict[str, Any]) -> list[str]:
+    notes = [
+        "Documentation impact: accepted upgrades may change SKILL.md, README.md, references, or templates.",
+        "Workflow impact: accepted upgrades may add extra review gates, prompt summaries, provenance fields, or checklist items.",
+        "Operational impact: this scan does not change runtime behavior until the user approves a separate implementation.",
+        "Maintenance impact: new checker rules or templates may require future self-check updates.",
+        "Risk impact: external ideas need license, privacy, and originality review before any local change.",
+    ]
+    if analysis["workflows_count"]:
+        notes.append("CI impact: adopting similar verification may add or adjust repository checks.")
+    if analysis["package_files"] or analysis["source_files_count"]:
+        notes.append("Engineering impact: code-like ideas should be reimplemented locally rather than copied.")
+    return notes
+
+
 def media_upgrade_options(analysis: dict[str, Any]) -> list[str]:
     options = [
-        "Manual review only: read the report and make no changes.",
-        "Request a draft PR: ask Codex to propose an original small improvement based on selected signals.",
-        "Manual copy after approval: copy only reviewed wording or structure that is license-safe and non-sensitive.",
+        "No upgrade: read the report and make no changes.",
+        "Request a draft PR: ask Codex to propose an original small improvement based on selected signals and impact notes.",
+        "Manual copy after approval: copy only reviewed structure that is license-safe and non-sensitive.",
         "Skip: ignore repositories with unclear license, weak relevance, or risky media handling.",
     ]
     if analysis["media_files"]:
@@ -181,8 +240,9 @@ def render_report(repositories: list[dict[str, Any]], query: str) -> str:
         "# Top Video/Image Skills Scan\n\n",
         f"Scan time: {timestamp}\n\n",
         f"Query: `{query}`\n\n",
-        "Purpose: analyze public video/image skill and agent repositories, then "
-        "offer manual upgrade options for customers.\n\n",
+        "Purpose: self-check public video/image skill and agent repositories, "
+        "identify optimization ideas, explain upgrade impact, then offer manual "
+        "upgrade options for customer review.\n\n",
         "This report is evidence only. Do not copy code, prompts, templates, README text, "
         "assets, model settings, or media without license review and user approval.\n\n",
         "## Top Repositories\n\n",
@@ -208,7 +268,7 @@ def render_report(repositories: list[dict[str, Any]], query: str) -> str:
             f"{details.get('stargazerCount', 0)} | {language} | {license_name} | {signals} |\n"
         )
 
-    lines.append("\n## Code And Workflow Signals\n\n")
+    lines.append("\n## Code Self-Check And Upgrade Review\n\n")
     for repo in repositories:
         details = repo["details"]
         analysis = repo["analysis"]
@@ -224,7 +284,19 @@ def render_report(repositories: list[dict[str, Any]], query: str) -> str:
         if analysis["safety_files"]:
             lines.append(f"- Safety/license/review files observed: {', '.join(analysis['safety_files'])}\n")
 
-        lines.append("\nManual upgrade options for customer review:\n")
+        lines.append("\nCode self-check:\n")
+        for check in code_self_check(analysis):
+            lines.append(f"- {check}\n")
+
+        lines.append("\nOptimization suggestions:\n")
+        for suggestion in optimization_suggestions(analysis):
+            lines.append(f"- {suggestion}\n")
+
+        lines.append("\nUpgrade impact if accepted:\n")
+        for note in upgrade_impact_notes(analysis):
+            lines.append(f"- {note}\n")
+
+        lines.append("\nManual upgrade decision for customer review:\n")
         for option in media_upgrade_options(analysis):
             lines.append(f"- {option}\n")
         lines.append("\n")
