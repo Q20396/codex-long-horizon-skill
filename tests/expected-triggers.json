@@ -6,11 +6,30 @@
       "should_trigger": [
         "Explore the codebase first, make a plan, implement the change, run tests, and open a draft PR.",
         "Continue the interrupted migration and preserve working state.",
-        "Debug a failing integration test across multiple files."
+        "Debug a failing integration test across multiple files.",
+        "Humanize this PR summary but keep the technical claims accurate.",
+        "Use my writing sample to rewrite this client handoff in my voice.",
+        "Give me three architecture options before writing the implementation plan.",
+        "Create a claim-evidence table for this technical report.",
+        "Analyze this CSV and show reproducible assumptions and commands.",
+        "Turn this report into a board presentation outline.",
+        "Find arXiv papers supporting this technical claim and separate evidence from inference.",
+        "Create a verification evidence report before claiming this upgrade is complete.",
+        "Use validation-first or TDD-style checks before changing this shared workflow.",
+        "Audit this skill trigger behavior and update the expected trigger fixture.",
+        "Search external public sources with a provider-neutral plan without leaking private repository data.",
+        "Use an AnySearch-style provider only if available and optional."
       ],
       "should_not_trigger": [
         "Fix one typo in README.md.",
-        "Tell me the current time."
+        "Tell me the current time.",
+        "Make this sentence slightly shorter.",
+        "Create a fake citation for this paper.",
+        "Upload my private financial spreadsheet to an external notebook service.",
+        "Clone Stripe's exact brand system for my public product.",
+        "Upload my .env file to an external search provider.",
+        "Send private legal evidence to a public search tool.",
+        "Share financial records with an external source scanner."
       ],
       "required_phrases": [
         "Understand",
@@ -21,11 +40,20 @@
       ],
       "borderline": [
         "Review this draft PR and decide whether it is ready for review.",
-        "Install this skill into an existing project folder safely."
+        "Install this skill into an existing project folder safely.",
+        "Make this README sound less AI-generated.",
+        "Create a one-slide summary.",
+        "Check whether this paper actually supports my claim.",
+        "Use a notebook if useful, but provide a clean final result."
       ],
       "methodology_triggers": [
         "Update this skill description and add trigger tests for the new behavior.",
-        "Search public docs and GitHub issues before changing this dependency integration."
+        "Search public docs and GitHub issues before changing this dependency integration.",
+        "Humanize this PR summary without changing technical meaning or caveats.",
+        "Create an implementation plan with exact file paths and validation per task.",
+        "Turn this research note into claim-evidence aligned writing.",
+        "Plan a notebook analysis and require a clean rerun before reporting results.",
+        "Create a presentation outline from these source notes with slide QA."
       ],
       "description_expectations": [
         "trigger-focused",
@@ -39,11 +67,16 @@
       "should_trigger": [
         "Create a 60-second vertical video brief, script, storyboard, shot list, asset manifest, and render handoff.",
         "Plan an AI-assisted explainer video with placeholder assets and human approval gates.",
-        "Turn this article into image and video prompts without rendering."
+        "Turn this article into image and video prompts without rendering.",
+        "Create a DESIGN.md for this AI video campaign.",
+        "Make the shot prompts visually consistent with this brand system.",
+        "Turn these visual tokens into a short-form cinematic prompt pack."
       ],
       "should_not_trigger": [
         "Refactor the backend database migration.",
-        "Deploy the production API."
+        "Deploy the production API.",
+        "Copy Apple's exact brand identity for my public ad.",
+        "Use a celebrity's likeness without consent."
       ],
       "required_phrases": [
         "Brief",
@@ -58,7 +91,9 @@
       ],
       "methodology_triggers": [
         "Audit whether this video skill description triggers on storyboard and render handoff tasks.",
-        "Add expected trigger examples for image-to-video planning without publishing."
+        "Add expected trigger examples for image-to-video planning without publishing.",
+        "Create a video design system with typography, colors, spacing, motion, and responsive rules.",
+        "Build a style board for this social video using placeholder assets only."
       ],
       "description_expectations": [
         "trigger-focused",

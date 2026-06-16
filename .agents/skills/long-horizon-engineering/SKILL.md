@@ -45,6 +45,14 @@ or vendor changes are needed, consult `references/external-search-protocol.md`.
 Use provider-neutral, privacy-first search planning and do not send private
 repository content to external search providers.
 
+For writing, research, analysis, and presentation work, consult the relevant
+optional protocol: `references/writing-humanization-protocol.md`,
+`references/ideation-to-plan-protocol.md`,
+`references/evidence-backed-writing.md`,
+`references/notebook-analysis-protocol.md`, or
+`references/presentation-delivery-protocol.md`. Preserve facts, evidence,
+caveats, and privacy boundaries.
+
 When comparing public frontier-agent capabilities, including Fable-style public
 descriptions, consult `references/public-agent-capability-review.md`. Separate
 official facts, research findings, media reports, community claims, and
@@ -108,6 +116,8 @@ files in sensitive repositories unless the user explicitly approves.
 For complex implementation work, use `templates/implementation-plan.md` when a
 written plan would reduce risk. For merge-readiness or validation-heavy work,
 use `templates/verification-evidence.md` when evidence needs to be reviewed.
+Use the writing, research, notebook, and presentation templates only when they
+fit the task and the repository is not sensitive, or when the user approves.
 
 ## Core Rule
 
@@ -176,6 +186,8 @@ Look for:
 - Public agent capability review guidance for self-improvement work
 - Skill authoring methodology for skill maintenance work
 - External search protocol for provider-neutral public source research
+- Writing, ideation, evidence-backed writing, notebook, and presentation
+  protocols when those outputs are in scope
 - Capability boundaries for high-impact agent behavior
 - Client privacy guidance for private or confidential repositories
 - Jurisdiction and industry compliance guidance for location-aware regulatory

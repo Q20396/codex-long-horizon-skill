@@ -38,6 +38,7 @@ Before searching:
    - GitHub repos/issues
    - package registries
    - security advisories/CVEs
+   - academic papers and preprints
    - standards/specs
    - vendor changelogs
    - broad web only if needed
@@ -68,6 +69,7 @@ checked_at:
 | Library or API usage is uncertain | Search official docs only |
 | Behavior may be affected by known bugs | Search GitHub repos/issues |
 | Security impact is possible | Search security advisories/CVEs |
+| Research claim needs scholarly support | Search academic metadata or paper indexes |
 | Current rules, standards, or vendor behavior may have changed | Search official standards, specs, or vendor changelogs |
 | Authoritative sources are insufficient | Search broad web |
 | Query would expose private data | Do not search externally because data is private |
@@ -86,3 +88,22 @@ checked_at:
 Treat search as evidence, not permission to change code. Before editing, connect
 external findings back to local files, tests, and user requirements. If sources
 conflict, name the conflict and prefer official or primary sources.
+
+## Academic Search Pattern
+
+When research-backed technical or scientific analysis is needed:
+
+1. Prefer public academic sources such as arXiv, DOI pages, publisher pages,
+   official PDFs, Semantic Scholar, and conference proceedings.
+2. Record title, authors, date, venue/source, URL/identifier, and checked_at
+   date.
+3. Extract the paper's claim, method, evidence, and limitations.
+4. Do not cite papers that were not opened or inspected.
+5. Separate paper claims from your own inference.
+6. Generate BibTeX only from verified metadata.
+7. Prefer primary papers over blog summaries.
+8. Flag retracted, superseded, non-peer-reviewed, or preprint-only status when
+   known.
+
+Do not fabricate citations, authors, dates, or BibTeX. If a paper is paywalled
+or inaccessible, say so and avoid guessing from the title alone.

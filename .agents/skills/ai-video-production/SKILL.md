@@ -27,6 +27,12 @@ content. Use that summary to create the system-facing image or video prompts.
 Do not generate media from isolated sentences without understanding the full
 context.
 
+For projects that need a consistent visual system, consult
+`references/design-system-for-video.md`. Use `templates/DESIGN.md` and
+`templates/visual-style-tokens.md` before generating prompts when visual
+consistency matters. Do not clone protected brand systems unless the user owns
+rights or explicitly asks for internal/inspirational analysis.
+
 For client-provided text, identify the central idea first, then place it in the
 relevant industry context before generating visuals. Summarize the audience,
 industry vocabulary, common visual language, credible metaphors, and claims
@@ -114,10 +120,14 @@ to click a PR, request an original change, copy reviewed material, or skip.
 - `references/video-production-pipeline.md`
 - `references/privacy-media-policy.md`
 - `references/licensing-notes.md`
+- `references/design-system-for-video.md`
 
 ## Templates
 
 - `templates/VIDEO_BRIEF_TEMPLATE.md`
+- `templates/DESIGN.md`
+- `templates/visual-style-tokens.md`
+- `templates/brand-system-for-video.md`
 - `templates/STORYBOARD_TEMPLATE.md`
 - `templates/SHOT_LIST_TEMPLATE.md`
 - `templates/ASSET_MANIFEST_TEMPLATE.md`

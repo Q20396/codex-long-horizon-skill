@@ -8,6 +8,8 @@ repository.
 - Review changes before applying them.
 - Back up the existing installed skill first.
 - Preserve local project instructions and private project data.
+- Preserve local customizations unless the user explicitly chooses to replace
+  them.
 - Do not run broad copy commands over a target repository.
 - Do not auto-merge or deploy as part of a skill upgrade.
 
@@ -71,3 +73,8 @@ Do not restore unrelated private files or broad repository snapshots.
   repository's `AGENTS.md` and ask before changing it.
 - If optional tools such as Repomix are unavailable, continue with normal file
   exploration.
+- If adopting the content, research, notebook, presentation, or video design
+  protocols, review whether the target project should copy all templates or only
+  the ones it will actually use.
+- The methodology, search, content, design, notebook, presentation, and video
+  protocols are additive. They do not require new external dependencies.
