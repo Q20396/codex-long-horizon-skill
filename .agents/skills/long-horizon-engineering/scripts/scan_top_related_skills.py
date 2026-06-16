@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Scan the top related public skill repositories for review-gated updates."""
+"""Scan top related public skill repositories for manual upgrade review."""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
             "Find top related public skill repositories, analyze repository "
-            "signals, and produce a review-gated self-update report. This does "
+            "signals, and produce a manual upgrade review report. This does "
             "not copy code, edit files, merge PRs, or update the skill package."
         )
     )
@@ -154,7 +154,7 @@ def render_report(repositories: list[dict[str, Any]], query: str) -> str:
         "# Top Related Skills Scan\n\n",
         f"Scan time: {timestamp}\n\n",
         f"Query: `{query}`\n\n",
-        "Purpose: identify review-gated self-update ideas from public repositories.\n\n",
+        "Purpose: identify manual-upgrade ideas from public repositories.\n\n",
         "This report is evidence only. Do not copy code, templates, prompts, README text, "
         "or assets without license review and user approval.\n\n",
         "## Top Repositories\n\n",
@@ -180,7 +180,7 @@ def render_report(repositories: list[dict[str, Any]], query: str) -> str:
             f"{details.get('stargazerCount', 0)} | {language} | {license_name} | {signals} |\n"
         )
 
-    lines.append("\n## Self-Update Review\n\n")
+    lines.append("\n## Manual Upgrade Review\n\n")
     for repo in repositories:
         details = repo["details"]
         analysis = repo["analysis"]
@@ -193,7 +193,7 @@ def render_report(repositories: list[dict[str, Any]], query: str) -> str:
             lines.append(f"- Safety-related files observed: {', '.join(analysis['safety_files'])}\n")
         for signal in improvement_signals(analysis):
             lines.append(f"- Possible learning: {signal}\n")
-        lines.append("- Self-update action: propose a small original change in a draft PR, or skip.\n")
+        lines.append("- Manual action: user may review, click a PR, request an original change, or skip.\n")
         lines.append("- Risk note: license, attribution, privacy, and factual claims must be reviewed first.\n\n")
 
     lines.append("## Guardrails\n\n")
@@ -202,7 +202,7 @@ def render_report(repositories: list[dict[str, Any]], query: str) -> str:
     lines.append("- Do not copy external code or project prose.\n")
     lines.append("- Do not run remote code from scanned repositories.\n")
     lines.append("- Do not store secrets, client data, legal evidence, family information, API keys, or confidential documents.\n")
-    lines.append("- Treat this scan as input to human review, not permission to self-update automatically.\n")
+    lines.append("- Treat this scan as input to human review, not permission to update automatically.\n")
     return "".join(lines)
 
 
