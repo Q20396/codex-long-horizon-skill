@@ -45,6 +45,14 @@ or vendor changes are needed, consult `references/external-search-protocol.md`.
 Use provider-neutral, privacy-first search planning and do not send private
 repository content to external search providers.
 
+For adversarial review, TDD, API integration, ship-readiness, or data-cleaning
+work, consult the relevant optional protocol:
+`references/adversarial-review-protocol.md`, `references/tdd-protocol.md`,
+`references/api-integration-protocol.md`,
+`references/ship-readiness-protocol.md`, or
+`references/data-cleaning-protocol.md`. Keep these flows lightweight,
+evidence-backed, and safety-aware; do not make them mandatory for every task.
+
 For writing, research, analysis, and presentation work, consult the relevant
 optional protocol: `references/writing-humanization-protocol.md`,
 `references/ideation-to-plan-protocol.md`,
@@ -52,6 +60,12 @@ optional protocol: `references/writing-humanization-protocol.md`,
 `references/notebook-analysis-protocol.md`, or
 `references/presentation-delivery-protocol.md`. Preserve facts, evidence,
 caveats, and privacy boundaries.
+
+For frontend UI/UX review, accessibility checks, responsive behavior, or
+customer-facing interface handoffs, consult
+`references/ui-ux-review-protocol.md` when useful. Prefer evidence-backed
+findings over taste-only feedback, and do not copy another product's exact
+brand or interface identity.
 
 When comparing public frontier-agent capabilities, including Fable-style public
 descriptions, consult `references/public-agent-capability-review.md`. Separate
@@ -125,6 +139,17 @@ Use the writing, research, notebook, and presentation templates only when they
 fit the task and the repository is not sensitive, or when the user approves.
 Use `templates/debugging-runbook.md` or `templates/reviewer-response.md` only
 when a written debugging or review-response record would help and is safe.
+Use `templates/ui-ux-audit.md`, `templates/accessibility-checklist.md`, or
+`templates/frontend-handoff.md` only for UI work that benefits from a written
+review record. Use `templates/new-skill-brief.md` or
+`templates/skill-evaluation-plan.md` for skill creation or evaluation tasks
+that need explicit trigger, safety, and validation coverage.
+Use `templates/risk-challenge-table.md`,
+`templates/regression-test-record.md`, `templates/ship-checklist.md`,
+`templates/api-contract-test-plan.md`, or
+`templates/data-quality-report.md` only when the corresponding task benefits
+from a written evidence record and the repository is not sensitive, or when the
+user approves.
 
 ## Core Rule
 
@@ -193,8 +218,12 @@ Look for:
 - Public agent capability review guidance for self-improvement work
 - Skill authoring methodology for skill maintenance work
 - External search protocol for provider-neutral public source research
+- Adversarial review, TDD, API integration, ship-readiness, or data-cleaning
+  guidance when those task types are in scope
 - Writing, ideation, evidence-backed writing, notebook, and presentation
   protocols when those outputs are in scope
+- UI/UX review guidance when frontend, accessibility, responsive, interaction,
+  or visual-system quality is in scope
 - Capability boundaries for high-impact agent behavior
 - Client privacy guidance for private or confidential repositories
 - Jurisdiction and industry compliance guidance for location-aware regulatory
