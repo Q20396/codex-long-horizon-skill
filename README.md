@@ -269,6 +269,9 @@ selected. This package includes:
   risks, and follow-ups
 - `evidence-backed-writing.md` for claim-evidence alignment, section
   intent, reviewer mindset, and pre-submission review
+- `financial-research-report-protocol.md` for stock, company, sector, market,
+  valuation, watchlist, and financial research reports with source and risk
+  discipline
 - `code-review-response-protocol.md` for evaluating and responding to reviewer
   feedback without blind implementation
 - `external-search-protocol.md` for provider-neutral, privacy-first public
@@ -291,6 +294,8 @@ selected. This package includes:
 - `review-checklist.md` for final scope, evidence, validation, safety, and
   handoff checks
 - `resume-protocol.md` for safely continuing interrupted work
+- `security-review-protocol.md` for defensive security review, secrets checks,
+  threat modeling, and security-sensitive PR review
 - `ship-readiness-protocol.md` for PASS/WARN/FAIL/SKIP readiness reviews before
   merge, release, deployment planning, or reviewer handoff
 - `skill-authoring-methodology.md` for eval-driven skill maintenance,
@@ -329,6 +334,8 @@ Use `templates/` for reusable starter documents. This package includes:
   verification
 - `frontend-handoff.md` for UI implementation handoffs with design decisions,
   states, accessibility notes, validation, and reviewer focus
+- `market-data-source-log.md` for market data sources, dates, units,
+  transformations, limitations, and reproducibility notes
 - `new-skill-brief.md` for defining trigger scope, source material, safety
   boundaries, package shape, and validation before creating a skill
 - `option-analysis.md` for comparing implementation or product directions
@@ -341,11 +348,18 @@ Use `templates/` for reusable starter documents. This package includes:
   and response drafts
 - `ship-checklist.md` for pre-merge or release-readiness blockers, warnings,
   rollback, and post-release checks
+- `secrets-scan-checklist.md` for pre-commit and pre-PR checks that avoid
+  exposing secrets or confidential files
 - `skill-evaluation-plan.md` for skill trigger coverage, instruction quality,
   safety review, validation commands, and reviewer notes
+- `stock-research-report.md` for source-backed company, sector, market, and
+  watchlist research reports
 - `TASK_LOG_TEMPLATE.md` for concise completed-task notes
 - `ui-ux-audit.md` for evidence-backed frontend findings and recommendations
+- `valuation-assumption-table.md` for valuation inputs, sensitivity, evidence,
+  caveats, and sanity checks
 - `verification-evidence.md` for merge-readiness and validation evidence
+- `risk-disclosure.md` for financial research disclaimers and limitations
 - `voice-calibration.md` for writing humanization and tone calibration
 - `WORKING_STATE_TEMPLATE.md` for resumable in-progress task state
 
@@ -481,6 +495,9 @@ This package includes additive protocols for:
 - API integration and contract-test planning
 - ship-readiness checks
 - data cleaning and data quality reporting
+- financial research reports, valuation assumptions, market data source logs,
+  and risk disclosures
+- defensive security review and secrets-scan checklists
 - notebook/data analysis run logs
 - presentation delivery and slide QA
 - AI video design systems

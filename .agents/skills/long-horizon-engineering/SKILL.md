@@ -67,6 +67,16 @@ customer-facing interface handoffs, consult
 findings over taste-only feedback, and do not copy another product's exact
 brand or interface identity.
 
+For financial, stock, market, sector, valuation, or watchlist research, consult
+`references/financial-research-report-protocol.md` when useful. Treat outputs
+as data analysis, not investment advice; cite sources, validate numbers, record
+assumptions, and do not create deterministic buy/sell recommendations.
+
+For defensive security review, secrets checks, threat modeling, or
+security-sensitive PR review, consult `references/security-review-protocol.md`
+when useful. Stay within authorized scope and do not provide exploit,
+credential, stealth, bypass, exfiltration, or unauthorized-access guidance.
+
 When comparing public frontier-agent capabilities, including Fable-style public
 descriptions, consult `references/public-agent-capability-review.md`. Separate
 official facts, research findings, media reports, community claims, and
@@ -150,6 +160,12 @@ Use `templates/risk-challenge-table.md`,
 `templates/data-quality-report.md` only when the corresponding task benefits
 from a written evidence record and the repository is not sensitive, or when the
 user approves.
+Use `templates/stock-research-report.md`,
+`templates/market-data-source-log.md`,
+`templates/valuation-assumption-table.md`, or
+`templates/risk-disclosure.md` only for financial research tasks that need a
+written, source-backed record. Use `templates/secrets-scan-checklist.md` before
+committing or sharing changes when secrets or confidential files may be present.
 
 ## Core Rule
 
@@ -224,6 +240,10 @@ Look for:
   protocols when those outputs are in scope
 - UI/UX review guidance when frontend, accessibility, responsive, interaction,
   or visual-system quality is in scope
+- Financial research guidance when stock, market, valuation, watchlist, or
+  securities-report outputs are in scope
+- Defensive security review guidance when secrets, auth, data exposure,
+  dependency, configuration, or security-sensitive diffs are in scope
 - Capability boundaries for high-impact agent behavior
 - Client privacy guidance for private or confidential repositories
 - Jurisdiction and industry compliance guidance for location-aware regulatory
