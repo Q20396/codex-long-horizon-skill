@@ -10,7 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[4]
 
-REQUIRED_PATHS = [
+PACKAGE_ONLY_PATHS = [
     "AGENTS.md",
     "CHANGELOG.md",
     "INSTALL.md",
@@ -18,14 +18,20 @@ REQUIRED_PATHS = [
     "README.md",
     "UPGRADE_GUIDE.md",
     ".github/workflows/check-skill.yml",
+    "tests/expected-triggers.json",
+]
+
+INSTALLED_REQUIRED_PATHS = [
     ".agents/skills/long-horizon-engineering/SKILL.md",
     ".agents/skills/long-horizon-engineering/references/evidence-backed-writing.md",
+    ".agents/skills/long-horizon-engineering/references/code-review-response-protocol.md",
     ".agents/skills/long-horizon-engineering/references/external-search-protocol.md",
     ".agents/skills/long-horizon-engineering/references/ideation-to-plan-protocol.md",
     ".agents/skills/long-horizon-engineering/references/notebook-analysis-protocol.md",
     ".agents/skills/long-horizon-engineering/references/presentation-delivery-protocol.md",
     ".agents/skills/long-horizon-engineering/references/repomix-codebase-context.md",
     ".agents/skills/long-horizon-engineering/references/skill-authoring-methodology.md",
+    ".agents/skills/long-horizon-engineering/references/systematic-debugging-protocol.md",
     ".agents/skills/long-horizon-engineering/references/writing-humanization-protocol.md",
     ".agents/skills/long-horizon-engineering/scripts/check_skill_package.py",
     ".agents/skills/long-horizon-engineering/scripts/audit_skill_descriptions.py",
@@ -35,7 +41,9 @@ REQUIRED_PATHS = [
     ".agents/skills/long-horizon-engineering/templates/analysis-run-log.md",
     ".agents/skills/long-horizon-engineering/templates/claim-evidence-table.md",
     ".agents/skills/long-horizon-engineering/templates/deck-outline.md",
+    ".agents/skills/long-horizon-engineering/templates/debugging-runbook.md",
     ".agents/skills/long-horizon-engineering/templates/option-analysis.md",
+    ".agents/skills/long-horizon-engineering/templates/reviewer-response.md",
     ".agents/skills/long-horizon-engineering/templates/verification-evidence.md",
     ".agents/skills/long-horizon-engineering/templates/slide-qa-checklist.md",
     ".agents/skills/long-horizon-engineering/templates/voice-calibration.md",
@@ -49,7 +57,6 @@ REQUIRED_PATHS = [
     ".agents/skills/ai-video-production/templates/DESIGN.md",
     ".agents/skills/ai-video-production/templates/visual-style-tokens.md",
     ".agents/skills/ai-video-production/templates/brand-system-for-video.md",
-    "tests/expected-triggers.json",
 ]
 
 
@@ -57,10 +64,14 @@ def read_text(relative_path: str) -> str:
     return (ROOT / relative_path).read_text(encoding="utf-8")
 
 
-def check_required_paths() -> list[str]:
+def package_mode() -> bool:
+    return all((ROOT / relative_path).is_file() for relative_path in PACKAGE_ONLY_PATHS)
+
+
+def check_required_paths(required_paths: list[str], label: str) -> list[str]:
     return [
-        f"Missing required product file: {relative_path}"
-        for relative_path in REQUIRED_PATHS
+        f"Missing required {label} file: {relative_path}"
+        for relative_path in required_paths
         if not (ROOT / relative_path).is_file()
     ]
 
@@ -92,6 +103,8 @@ def check_nested_agents() -> list[str]:
 
 def check_trigger_fixture() -> list[str]:
     path = ROOT / "tests" / "expected-triggers.json"
+    if not path.is_file():
+        return []
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as error:
@@ -115,9 +128,19 @@ def check_trigger_fixture() -> list[str]:
     return errors
 
 
-def run_checks() -> list[str]:
+def run_checks() -> tuple[list[str], list[str]]:
     errors = []
-    errors.extend(check_required_paths())
+    warnings = []
+    errors.extend(check_required_paths(INSTALLED_REQUIRED_PATHS, "installed skill"))
+    if package_mode():
+        errors.extend(check_required_paths(PACKAGE_ONLY_PATHS, "package"))
+    else:
+        warnings.append(
+            "Package-level files not found; running installed-skill checks only."
+        )
+        warnings.append(
+            "Skipped tests/expected-triggers.json trigger fixture check."
+        )
     errors.extend(check_front_matter(
         ".agents/skills/long-horizon-engineering/SKILL.md",
         "long-horizon-engineering",
@@ -127,8 +150,9 @@ def run_checks() -> list[str]:
         "ai-video-production",
     ))
     errors.extend(check_nested_agents())
-    errors.extend(check_trigger_fixture())
-    return errors
+    if package_mode():
+        errors.extend(check_trigger_fixture())
+    return errors, warnings
 
 
 def parse_args() -> argparse.Namespace:
@@ -148,13 +172,17 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    errors = run_checks()
+    errors, warnings = run_checks()
     if args.json:
-        print(json.dumps({"ok": not errors, "errors": errors}, indent=2))
+        print(json.dumps({"ok": not errors, "errors": errors, "warnings": warnings}, indent=2))
     elif errors:
+        for warning in warnings:
+            print(f"WARNING: {warning}")
         for error in errors:
             print(f"ERROR: {error}")
     else:
+        for warning in warnings:
+            print(f"WARNING: {warning}")
         print("Doctor check passed.")
 
     if errors:

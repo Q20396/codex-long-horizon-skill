@@ -247,6 +247,8 @@ selected. This package includes:
   risks, and follow-ups
 - `evidence-backed-writing.md` for claim-evidence alignment, section
   intent, reviewer mindset, and pre-submission review
+- `code-review-response-protocol.md` for evaluating and responding to reviewer
+  feedback without blind implementation
 - `external-search-protocol.md` for provider-neutral, privacy-first public
   source search planning across web, GitHub, docs, package registries, CVEs, and
   standards
@@ -270,6 +272,8 @@ selected. This package includes:
 - `skill-authoring-methodology.md` for eval-driven skill maintenance,
   trigger examples, description quality, and package verification
 - `stop-conditions.md` for knowing when to pause instead of continuing
+- `systematic-debugging-protocol.md` for root-cause-first debugging of bugs,
+  failing tests, regressions, and unexpected behavior
 - `validation-matrix.md` for choosing verification steps by task type
 - `writing-humanization-protocol.md` for voice calibration, AI-pattern audits,
   and meaning-preserving rewrites
@@ -286,8 +290,12 @@ Use `templates/` for reusable starter documents. This package includes:
 - `analysis-run-log.md` for reproducible analysis records
 - `claim-evidence-table.md` for evidence-backed writing
 - `deck-outline.md` for source-to-slide planning
+- `debugging-runbook.md` for recording root-cause investigations and final
+  verification
 - `option-analysis.md` for comparing implementation or product directions
 - `slide-qa-checklist.md` for presentation QA
+- `reviewer-response.md` for tracking review comments, decisions, validation,
+  and response drafts
 - `TASK_LOG_TEMPLATE.md` for concise completed-task notes
 - `verification-evidence.md` for merge-readiness and validation evidence
 - `voice-calibration.md` for writing humanization and tone calibration

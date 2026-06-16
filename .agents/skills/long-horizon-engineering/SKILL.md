@@ -103,6 +103,11 @@ regions while excluding private client materials unless explicitly approved.
 For large migrations or complex multi-file changes, consult
 `references/large-migration-playbook.md` when appropriate. Use
 `references/validation-matrix.md` to choose task-appropriate verification.
+For bugs, failing tests, build failures, regressions, or unexpected behavior,
+consult `references/systematic-debugging-protocol.md` when a root-cause
+investigation would reduce risk. For review comments or CI feedback, consult
+`references/code-review-response-protocol.md` before applying unclear or
+potentially risky suggestions.
 
 Optional prompt styles live in `prompt-styles/`. Use them only when the user
 asks for a particular response style or when a task clearly benefits from one.
@@ -118,6 +123,8 @@ written plan would reduce risk. For merge-readiness or validation-heavy work,
 use `templates/verification-evidence.md` when evidence needs to be reviewed.
 Use the writing, research, notebook, and presentation templates only when they
 fit the task and the repository is not sensitive, or when the user approves.
+Use `templates/debugging-runbook.md` or `templates/reviewer-response.md` only
+when a written debugging or review-response record would help and is safe.
 
 ## Core Rule
 

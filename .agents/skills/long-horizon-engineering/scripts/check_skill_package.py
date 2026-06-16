@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[4]
 SKILL_DIR = ROOT / ".agents" / "skills" / "long-horizon-engineering"
 AI_VIDEO_SKILL_DIR = ROOT / ".agents" / "skills" / "ai-video-production"
 
-REQUIRED_FILES = [
+PACKAGE_ONLY_FILES = [
     "AGENTS.md",
     "CHANGELOG.md",
     "INSTALL.md",
@@ -23,10 +23,14 @@ REQUIRED_FILES = [
     "examples/large-migration-prompt.md",
     "examples/resume-task-prompt.md",
     "tests/expected-triggers.json",
+]
+
+INSTALLED_REQUIRED_FILES = [
     ".agents/skills/long-horizon-engineering/SKILL.md",
     ".agents/skills/long-horizon-engineering/references/protocol.md",
     ".agents/skills/long-horizon-engineering/references/capability-boundaries.md",
     ".agents/skills/long-horizon-engineering/references/client-privacy.md",
+    ".agents/skills/long-horizon-engineering/references/code-review-response-protocol.md",
     ".agents/skills/long-horizon-engineering/references/safety-policy.md",
     ".agents/skills/long-horizon-engineering/references/context-compaction.md",
     ".agents/skills/long-horizon-engineering/references/continuous-improvement.md",
@@ -46,6 +50,7 @@ REQUIRED_FILES = [
     ".agents/skills/long-horizon-engineering/references/stop-conditions.md",
     ".agents/skills/long-horizon-engineering/references/skill-authoring-methodology.md",
     ".agents/skills/long-horizon-engineering/references/validation-matrix.md",
+    ".agents/skills/long-horizon-engineering/references/systematic-debugging-protocol.md",
     ".agents/skills/long-horizon-engineering/references/writing-humanization-protocol.md",
     ".agents/skills/long-horizon-engineering/prompt-styles/concise.md",
     ".agents/skills/long-horizon-engineering/prompt-styles/evidence-first.md",
@@ -57,7 +62,9 @@ REQUIRED_FILES = [
     ".agents/skills/long-horizon-engineering/templates/analysis-run-log.md",
     ".agents/skills/long-horizon-engineering/templates/claim-evidence-table.md",
     ".agents/skills/long-horizon-engineering/templates/deck-outline.md",
+    ".agents/skills/long-horizon-engineering/templates/debugging-runbook.md",
     ".agents/skills/long-horizon-engineering/templates/option-analysis.md",
+    ".agents/skills/long-horizon-engineering/templates/reviewer-response.md",
     ".agents/skills/long-horizon-engineering/templates/TASK_LOG_TEMPLATE.md",
     ".agents/skills/long-horizon-engineering/templates/verification-evidence.md",
     ".agents/skills/long-horizon-engineering/templates/slide-qa-checklist.md",
@@ -137,18 +144,43 @@ def check_nested_agents() -> list[str]:
     return [f"Nested .agents path found: {path.relative_to(ROOT)}" for path in nested]
 
 
+def package_mode() -> bool:
+    return all((ROOT / relative_path).is_file() for relative_path in PACKAGE_ONLY_FILES)
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Validate the Codex skill package structure."
+        description=(
+            "Validate the Codex skill package structure. By default, this auto-detects "
+            "whether it is running in the source package or an installed project."
+        )
+    )
+    parser.add_argument(
+        "--package",
+        action="store_true",
+        help="Require source-package files such as README, tests, examples, and CI workflow.",
+    )
+    parser.add_argument(
+        "--installed",
+        action="store_true",
+        help="Check only installed skill files under .agents/skills.",
     )
     return parser.parse_args()
 
 
 def main() -> None:
-    parse_args()
+    args = parse_args()
+    if args.package and args.installed:
+        raise SystemExit("ERROR: choose only one of --package or --installed.")
+
+    check_package_files = args.package or (not args.installed and package_mode())
 
     errors = []
-    errors.extend(check_required_files(REQUIRED_FILES))
+    if check_package_files:
+        errors.extend(check_required_files(PACKAGE_ONLY_FILES))
+    else:
+        print("Installed-skill mode: skipping package-only files.")
+    errors.extend(check_required_files(INSTALLED_REQUIRED_FILES))
     errors.extend(check_required_files(AI_VIDEO_REQUIRED_FILES))
     errors.extend(check_skill_front_matter(SKILL_DIR, "long-horizon-engineering"))
     errors.extend(check_skill_front_matter(AI_VIDEO_SKILL_DIR, "ai-video-production"))
@@ -159,7 +191,10 @@ def main() -> None:
             print(f"ERROR: {error}")
         raise SystemExit(1)
 
-    print("Skill package check passed for long-horizon-engineering and ai-video-production.")
+    if check_package_files:
+        print("Skill package check passed for long-horizon-engineering and ai-video-production.")
+    else:
+        print("Installed skill check passed for long-horizon-engineering and ai-video-production.")
 
 
 if __name__ == "__main__":
