@@ -94,6 +94,8 @@ def check_required_paths(required_paths: list[str], label: str) -> list[str]:
 
 def check_front_matter(relative_path: str, expected_name: str) -> list[str]:
     path = ROOT / relative_path
+    if not path.is_file():
+        return [f"Missing required skill file: {relative_path}"]
     text = path.read_text(encoding="utf-8")
     if not text.startswith("---\n"):
         return [f"{relative_path} is missing YAML front matter."]
@@ -147,8 +149,18 @@ def check_trigger_fixture() -> list[str]:
 def run_checks() -> tuple[list[str], list[str]]:
     errors = []
     warnings = []
-    errors.extend(check_required_paths(INSTALLED_REQUIRED_PATHS, "installed skill"))
-    if package_mode():
+    is_package = package_mode()
+    ai_video_path = ROOT / ".agents/skills/ai-video-production/SKILL.md"
+
+    required_paths = [
+        path for path in INSTALLED_REQUIRED_PATHS
+        if is_package
+        or ai_video_path.exists()
+        or not path.startswith(".agents/skills/ai-video-production/")
+    ]
+    errors.extend(check_required_paths(required_paths, "installed skill"))
+
+    if is_package:
         errors.extend(check_required_paths(PACKAGE_ONLY_PATHS, "package"))
     else:
         warnings.append(
@@ -161,12 +173,13 @@ def run_checks() -> tuple[list[str], list[str]]:
         ".agents/skills/long-horizon-engineering/SKILL.md",
         "long-horizon-engineering",
     ))
-    errors.extend(check_front_matter(
-        ".agents/skills/ai-video-production/SKILL.md",
-        "ai-video-production",
-    ))
+    if is_package or ai_video_path.exists():
+        errors.extend(check_front_matter(
+            ".agents/skills/ai-video-production/SKILL.md",
+            "ai-video-production",
+        ))
     errors.extend(check_nested_agents())
-    if package_mode():
+    if is_package:
         errors.extend(check_trigger_fixture())
     return errors, warnings
 

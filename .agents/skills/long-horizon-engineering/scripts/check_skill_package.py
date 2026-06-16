@@ -131,6 +131,8 @@ def check_required_files(required_files: list[str]) -> list[str]:
 
 def check_skill_front_matter(skill_dir: Path, expected_name: str) -> list[str]:
     path = skill_dir / "SKILL.md"
+    if not path.is_file():
+        return [f"Missing required file: {path.relative_to(ROOT)}"]
     text = path.read_text(encoding="utf-8")
     if not text.startswith("---\n"):
         return [f"{path.relative_to(ROOT)} is missing YAML front matter."]
@@ -197,9 +199,13 @@ def main() -> None:
     else:
         print("Installed-skill mode: skipping package-only files.")
     errors.extend(check_required_files(INSTALLED_REQUIRED_FILES))
-    errors.extend(check_required_files(AI_VIDEO_REQUIRED_FILES))
     errors.extend(check_skill_front_matter(SKILL_DIR, "long-horizon-engineering"))
-    errors.extend(check_skill_front_matter(AI_VIDEO_SKILL_DIR, "ai-video-production"))
+    if check_package_files:
+        errors.extend(check_required_files(AI_VIDEO_REQUIRED_FILES))
+        errors.extend(check_skill_front_matter(AI_VIDEO_SKILL_DIR, "ai-video-production"))
+    elif AI_VIDEO_SKILL_DIR.exists():
+        errors.extend(check_required_files(AI_VIDEO_REQUIRED_FILES))
+        errors.extend(check_skill_front_matter(AI_VIDEO_SKILL_DIR, "ai-video-production"))
     errors.extend(check_nested_agents())
 
     if errors:
@@ -209,8 +215,10 @@ def main() -> None:
 
     if check_package_files:
         print("Skill package check passed for long-horizon-engineering and ai-video-production.")
-    else:
+    elif AI_VIDEO_SKILL_DIR.exists():
         print("Installed skill check passed for long-horizon-engineering and ai-video-production.")
+    else:
+        print("Installed skill check passed for long-horizon-engineering.")
 
 
 if __name__ == "__main__":
