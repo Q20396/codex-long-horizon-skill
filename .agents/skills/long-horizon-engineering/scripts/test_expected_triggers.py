@@ -13,6 +13,11 @@ FIXTURE = ROOT / "tests" / "expected-triggers.json"
 
 
 def load_fixture(path: Path) -> dict:
+    if not path.is_file():
+        raise SystemExit(
+            f"ERROR: trigger fixture not found: {path}. "
+            "Run this from the source package or pass --fixture /path/to/tests/expected-triggers.json."
+        )
     return json.loads(path.read_text(encoding="utf-8"))
 
 

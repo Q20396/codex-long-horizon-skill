@@ -4,12 +4,20 @@ All notable changes to this project are summarized here.
 
 ## Unreleased
 
+- Added lightweight financial research report and defensive security review
+  protocols with source, valuation, risk, and secrets-scan templates.
+- Added adversarial review, TDD, API integration, ship-readiness, and data
+  cleaning protocols with evidence templates.
+- Added lightweight UI/UX review protocol, accessibility checklist, frontend
+  handoff template, and UI/UX audit template.
+- Added skill brief and skill evaluation planning templates.
 - Added writing humanization protocol and voice calibration template.
 - Added ideation-to-plan protocol and option analysis template.
 - Added evidence-backed writing protocol and claim-evidence table.
 - Added notebook/data analysis protocol and analysis run log.
 - Added presentation delivery protocol and deck QA templates.
 - Added video design system reference and `DESIGN.md` templates.
+- Added systematic debugging and reviewer-response protocol templates.
 - Extended academic source pattern in external search protocol.
 - Extended trigger fixtures.
 - Added follow-up methodology and search integration guidance: skill authoring

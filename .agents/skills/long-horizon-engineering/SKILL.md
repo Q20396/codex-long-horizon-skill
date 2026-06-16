@@ -45,6 +45,14 @@ or vendor changes are needed, consult `references/external-search-protocol.md`.
 Use provider-neutral, privacy-first search planning and do not send private
 repository content to external search providers.
 
+For adversarial review, TDD, API integration, ship-readiness, or data-cleaning
+work, consult the relevant optional protocol:
+`references/adversarial-review-protocol.md`, `references/tdd-protocol.md`,
+`references/api-integration-protocol.md`,
+`references/ship-readiness-protocol.md`, or
+`references/data-cleaning-protocol.md`. Keep these flows lightweight,
+evidence-backed, and safety-aware; do not make them mandatory for every task.
+
 For writing, research, analysis, and presentation work, consult the relevant
 optional protocol: `references/writing-humanization-protocol.md`,
 `references/ideation-to-plan-protocol.md`,
@@ -52,6 +60,22 @@ optional protocol: `references/writing-humanization-protocol.md`,
 `references/notebook-analysis-protocol.md`, or
 `references/presentation-delivery-protocol.md`. Preserve facts, evidence,
 caveats, and privacy boundaries.
+
+For frontend UI/UX review, accessibility checks, responsive behavior, or
+customer-facing interface handoffs, consult
+`references/ui-ux-review-protocol.md` when useful. Prefer evidence-backed
+findings over taste-only feedback, and do not copy another product's exact
+brand or interface identity.
+
+For financial, stock, market, sector, valuation, or watchlist research, consult
+`references/financial-research-report-protocol.md` when useful. Treat outputs
+as data analysis, not investment advice; cite sources, validate numbers, record
+assumptions, and do not create deterministic buy/sell recommendations.
+
+For defensive security review, secrets checks, threat modeling, or
+security-sensitive PR review, consult `references/security-review-protocol.md`
+when useful. Stay within authorized scope and do not provide exploit,
+credential, stealth, bypass, exfiltration, or unauthorized-access guidance.
 
 When comparing public frontier-agent capabilities, including Fable-style public
 descriptions, consult `references/public-agent-capability-review.md`. Separate
@@ -103,6 +127,11 @@ regions while excluding private client materials unless explicitly approved.
 For large migrations or complex multi-file changes, consult
 `references/large-migration-playbook.md` when appropriate. Use
 `references/validation-matrix.md` to choose task-appropriate verification.
+For bugs, failing tests, build failures, regressions, or unexpected behavior,
+consult `references/systematic-debugging-protocol.md` when a root-cause
+investigation would reduce risk. For review comments or CI feedback, consult
+`references/code-review-response-protocol.md` before applying unclear or
+potentially risky suggestions.
 
 Optional prompt styles live in `prompt-styles/`. Use them only when the user
 asks for a particular response style or when a task clearly benefits from one.
@@ -118,6 +147,25 @@ written plan would reduce risk. For merge-readiness or validation-heavy work,
 use `templates/verification-evidence.md` when evidence needs to be reviewed.
 Use the writing, research, notebook, and presentation templates only when they
 fit the task and the repository is not sensitive, or when the user approves.
+Use `templates/debugging-runbook.md` or `templates/reviewer-response.md` only
+when a written debugging or review-response record would help and is safe.
+Use `templates/ui-ux-audit.md`, `templates/accessibility-checklist.md`, or
+`templates/frontend-handoff.md` only for UI work that benefits from a written
+review record. Use `templates/new-skill-brief.md` or
+`templates/skill-evaluation-plan.md` for skill creation or evaluation tasks
+that need explicit trigger, safety, and validation coverage.
+Use `templates/risk-challenge-table.md`,
+`templates/regression-test-record.md`, `templates/ship-checklist.md`,
+`templates/api-contract-test-plan.md`, or
+`templates/data-quality-report.md` only when the corresponding task benefits
+from a written evidence record and the repository is not sensitive, or when the
+user approves.
+Use `templates/stock-research-report.md`,
+`templates/market-data-source-log.md`,
+`templates/valuation-assumption-table.md`, or
+`templates/risk-disclosure.md` only for financial research tasks that need a
+written, source-backed record. Use `templates/secrets-scan-checklist.md` before
+committing or sharing changes when secrets or confidential files may be present.
 
 ## Core Rule
 
@@ -186,8 +234,16 @@ Look for:
 - Public agent capability review guidance for self-improvement work
 - Skill authoring methodology for skill maintenance work
 - External search protocol for provider-neutral public source research
+- Adversarial review, TDD, API integration, ship-readiness, or data-cleaning
+  guidance when those task types are in scope
 - Writing, ideation, evidence-backed writing, notebook, and presentation
   protocols when those outputs are in scope
+- UI/UX review guidance when frontend, accessibility, responsive, interaction,
+  or visual-system quality is in scope
+- Financial research guidance when stock, market, valuation, watchlist, or
+  securities-report outputs are in scope
+- Defensive security review guidance when secrets, auth, data exposure,
+  dependency, configuration, or security-sensitive diffs are in scope
 - Capability boundaries for high-impact agent behavior
 - Client privacy guidance for private or confidential repositories
 - Jurisdiction and industry compliance guidance for location-aware regulatory

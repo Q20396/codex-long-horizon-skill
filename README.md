@@ -58,15 +58,19 @@ examples/
       SKILL.md
       references/
         protocol.md
+        adversarial-review-protocol.md
+        api-integration-protocol.md
         capability-boundaries.md
         client-privacy.md
         safety-policy.md
         context-compaction.md
         continuous-improvement.md
+        data-cleaning-protocol.md
         decision-log.md
         evidence-backed-writing.md
         external-search-protocol.md
         external-source-scan.md
+        financial-research-report-protocol.md
         ideation-to-plan-protocol.md
         jurisdiction-industry-compliance.md
         large-migration-playbook.md
@@ -76,8 +80,12 @@ examples/
         repomix-codebase-context.md
         review-checklist.md
         resume-protocol.md
+        security-review-protocol.md
+        ship-readiness-protocol.md
         skill-authoring-methodology.md
         stop-conditions.md
+        tdd-protocol.md
+        ui-ux-review-protocol.md
         validation-matrix.md
         writing-humanization-protocol.md
       prompt-styles/
@@ -88,14 +96,29 @@ examples/
         HANDOFF_REPORT_TEMPLATE.md
         PROJECT_MEMORY_TEMPLATE.md
         IMPROVEMENT_SCAN_TEMPLATE.md
+        accessibility-checklist.md
+        api-contract-test-plan.md
         implementation-plan.md
         analysis-run-log.md
         claim-evidence-table.md
+        data-quality-report.md
         deck-outline.md
+        frontend-handoff.md
+        market-data-source-log.md
+        new-skill-brief.md
         option-analysis.md
+        regression-test-record.md
+        risk-challenge-table.md
         slide-qa-checklist.md
+        ship-checklist.md
+        skill-evaluation-plan.md
+        secrets-scan-checklist.md
+        stock-research-report.md
         TASK_LOG_TEMPLATE.md
+        ui-ux-audit.md
+        valuation-assumption-table.md
         verification-evidence.md
+        risk-disclosure.md
         voice-calibration.md
         WORKING_STATE_TEMPLATE.md
       scripts/
@@ -235,6 +258,10 @@ Use `references/` for longer guidance that Codex may consult after the skill is
 selected. This package includes:
 
 - `protocol.md` for the long-horizon engineering workflow
+- `adversarial-review-protocol.md` for stress-testing plans, claims,
+  architectures, launches, and risky assumptions before implementation
+- `api-integration-protocol.md` for endpoint mapping, auth boundaries, schema
+  handling, retries, rate limits, and contract testing
 - `capability-boundaries.md` for deciding which powerful agent behaviors are
   allowed, confirmation-gated, draft-PR-only, plan-only, or forbidden
 - `client-privacy.md` for protecting client, legal, financial, family, medical,
@@ -243,10 +270,17 @@ selected. This package includes:
 - `context-compaction.md` for preserving lightweight state before interruption
   or context loss
 - `continuous-improvement.md` for safe, review-gated periodic skill improvement
+- `data-cleaning-protocol.md` for privacy-first data profiling, cleaning,
+  normalization, before/after summaries, and reproducible evidence
 - `decision-log.md` for separating facts, assumptions, decisions, evidence,
   risks, and follow-ups
 - `evidence-backed-writing.md` for claim-evidence alignment, section
   intent, reviewer mindset, and pre-submission review
+- `financial-research-report-protocol.md` for stock, company, sector, market,
+  valuation, watchlist, and financial research reports with source and risk
+  discipline
+- `code-review-response-protocol.md` for evaluating and responding to reviewer
+  feedback without blind implementation
 - `external-search-protocol.md` for provider-neutral, privacy-first public
   source search planning across web, GitHub, docs, package registries, CVEs, and
   standards
@@ -267,9 +301,20 @@ selected. This package includes:
 - `review-checklist.md` for final scope, evidence, validation, safety, and
   handoff checks
 - `resume-protocol.md` for safely continuing interrupted work
+- `security-review-protocol.md` for defensive security review, secrets checks,
+  threat modeling, and security-sensitive PR review
+- `ship-readiness-protocol.md` for PASS/WARN/FAIL/SKIP readiness reviews before
+  merge, release, deployment planning, or reviewer handoff
 - `skill-authoring-methodology.md` for eval-driven skill maintenance,
   trigger examples, description quality, and package verification
 - `stop-conditions.md` for knowing when to pause instead of continuing
+- `systematic-debugging-protocol.md` for root-cause-first debugging of bugs,
+  failing tests, regressions, and unexpected behavior
+- `tdd-protocol.md` for optional Red/Green/Refactor and regression-test
+  workflows when test-first development reduces risk
+- `ui-ux-review-protocol.md` for accessibility, responsive behavior,
+  interaction states, visual-system consistency, and evidence-backed frontend
+  handoff review
 - `validation-matrix.md` for choosing verification steps by task type
 - `writing-humanization-protocol.md` for voice calibration, AI-pattern audits,
   and meaning-preserving rewrites
@@ -282,14 +327,46 @@ Use `templates/` for reusable starter documents. This package includes:
   summaries
 - `PROJECT_MEMORY_TEMPLATE.md` for durable, non-sensitive project facts
 - `IMPROVEMENT_SCAN_TEMPLATE.md` for periodic skill improvement scans
+- `accessibility-checklist.md` for practical keyboard, focus, semantics,
+  contrast, motion, form, and responsive accessibility checks
+- `api-contract-test-plan.md` for API endpoint, auth, request/response, error,
+  retry, and contract-test planning
 - `implementation-plan.md` for scoped implementation plans
 - `analysis-run-log.md` for reproducible analysis records
 - `claim-evidence-table.md` for evidence-backed writing
+- `data-quality-report.md` for schema summaries, data quality findings,
+  cleaning decisions, before/after evidence, and reproducibility notes
 - `deck-outline.md` for source-to-slide planning
+- `debugging-runbook.md` for recording root-cause investigations and final
+  verification
+- `frontend-handoff.md` for UI implementation handoffs with design decisions,
+  states, accessibility notes, validation, and reviewer focus
+- `market-data-source-log.md` for market data sources, dates, units,
+  transformations, limitations, and reproducibility notes
+- `new-skill-brief.md` for defining trigger scope, source material, safety
+  boundaries, package shape, and validation before creating a skill
 - `option-analysis.md` for comparing implementation or product directions
+- `regression-test-record.md` for bug reproduction, failing tests, fixes, and
+  passing evidence
+- `risk-challenge-table.md` for adversarial review of assumptions, evidence,
+  risks, recommended defaults, and open decisions
 - `slide-qa-checklist.md` for presentation QA
+- `reviewer-response.md` for tracking review comments, decisions, validation,
+  and response drafts
+- `ship-checklist.md` for pre-merge or release-readiness blockers, warnings,
+  rollback, and post-release checks
+- `secrets-scan-checklist.md` for pre-commit and pre-PR checks that avoid
+  exposing secrets or confidential files
+- `skill-evaluation-plan.md` for skill trigger coverage, instruction quality,
+  safety review, validation commands, and reviewer notes
+- `stock-research-report.md` for source-backed company, sector, market, and
+  watchlist research reports
 - `TASK_LOG_TEMPLATE.md` for concise completed-task notes
+- `ui-ux-audit.md` for evidence-backed frontend findings and recommendations
+- `valuation-assumption-table.md` for valuation inputs, sensitivity, evidence,
+  caveats, and sanity checks
 - `verification-evidence.md` for merge-readiness and validation evidence
+- `risk-disclosure.md` for financial research disclaimers and limitations
 - `voice-calibration.md` for writing humanization and tone calibration
 - `WORKING_STATE_TEMPLATE.md` for resumable in-progress task state
 
@@ -420,9 +497,19 @@ This package includes additive protocols for:
 - writing humanization and voice calibration
 - ideation-to-plan option analysis
 - evidence-backed writing and claim-evidence alignment
+- adversarial review and risk challenge tables
+- TDD and regression-test evidence
+- API integration and contract-test planning
+- ship-readiness checks
+- data cleaning and data quality reporting
+- financial research reports, valuation assumptions, market data source logs,
+  and risk disclosures
+- defensive security review and secrets-scan checklists
 - notebook/data analysis run logs
 - presentation delivery and slide QA
 - AI video design systems
+- UI/UX review, accessibility checks, and frontend handoffs
+- skill brief and skill evaluation planning
 - academic source search patterns
 
 These protocols do not add external dependencies. They are guidance, templates,

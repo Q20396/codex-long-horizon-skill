@@ -67,6 +67,8 @@ def update_skill(target_root: Path, skill: str, apply: bool) -> None:
     shutil.copytree(source, target, dirs_exist_ok=True)
     print("Update complete.")
     print("Note: extra files already present in the target skill were not deleted.")
+    print("Installed-project check: run .agents/skills/long-horizon-engineering/scripts/check_skill_package.py --installed from the target root.")
+    print("Source-package checks such as trigger fixtures should be run from the skill source repository.")
 
 
 def parse_args() -> argparse.Namespace:

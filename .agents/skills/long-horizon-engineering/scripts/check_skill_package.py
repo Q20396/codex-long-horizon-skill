@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[4]
 SKILL_DIR = ROOT / ".agents" / "skills" / "long-horizon-engineering"
 AI_VIDEO_SKILL_DIR = ROOT / ".agents" / "skills" / "ai-video-production"
 
-REQUIRED_FILES = [
+PACKAGE_ONLY_FILES = [
     "AGENTS.md",
     "CHANGELOG.md",
     "INSTALL.md",
@@ -23,10 +23,17 @@ REQUIRED_FILES = [
     "examples/large-migration-prompt.md",
     "examples/resume-task-prompt.md",
     "tests/expected-triggers.json",
+]
+
+INSTALLED_REQUIRED_FILES = [
     ".agents/skills/long-horizon-engineering/SKILL.md",
     ".agents/skills/long-horizon-engineering/references/protocol.md",
+    ".agents/skills/long-horizon-engineering/references/adversarial-review-protocol.md",
+    ".agents/skills/long-horizon-engineering/references/api-integration-protocol.md",
     ".agents/skills/long-horizon-engineering/references/capability-boundaries.md",
     ".agents/skills/long-horizon-engineering/references/client-privacy.md",
+    ".agents/skills/long-horizon-engineering/references/code-review-response-protocol.md",
+    ".agents/skills/long-horizon-engineering/references/data-cleaning-protocol.md",
     ".agents/skills/long-horizon-engineering/references/safety-policy.md",
     ".agents/skills/long-horizon-engineering/references/context-compaction.md",
     ".agents/skills/long-horizon-engineering/references/continuous-improvement.md",
@@ -34,6 +41,7 @@ REQUIRED_FILES = [
     ".agents/skills/long-horizon-engineering/references/external-search-protocol.md",
     ".agents/skills/long-horizon-engineering/references/external-source-scan.md",
     ".agents/skills/long-horizon-engineering/references/evidence-backed-writing.md",
+    ".agents/skills/long-horizon-engineering/references/financial-research-report-protocol.md",
     ".agents/skills/long-horizon-engineering/references/ideation-to-plan-protocol.md",
     ".agents/skills/long-horizon-engineering/references/jurisdiction-industry-compliance.md",
     ".agents/skills/long-horizon-engineering/references/large-migration-playbook.md",
@@ -43,10 +51,17 @@ REQUIRED_FILES = [
     ".agents/skills/long-horizon-engineering/references/resume-protocol.md",
     ".agents/skills/long-horizon-engineering/references/review-checklist.md",
     ".agents/skills/long-horizon-engineering/references/repomix-codebase-context.md",
+    ".agents/skills/long-horizon-engineering/references/security-review-protocol.md",
     ".agents/skills/long-horizon-engineering/references/stop-conditions.md",
     ".agents/skills/long-horizon-engineering/references/skill-authoring-methodology.md",
+    ".agents/skills/long-horizon-engineering/references/ship-readiness-protocol.md",
+    ".agents/skills/long-horizon-engineering/references/tdd-protocol.md",
+    ".agents/skills/long-horizon-engineering/references/ui-ux-review-protocol.md",
     ".agents/skills/long-horizon-engineering/references/validation-matrix.md",
+    ".agents/skills/long-horizon-engineering/references/systematic-debugging-protocol.md",
     ".agents/skills/long-horizon-engineering/references/writing-humanization-protocol.md",
+    ".agents/skills/long-horizon-engineering/templates/accessibility-checklist.md",
+    ".agents/skills/long-horizon-engineering/templates/frontend-handoff.md",
     ".agents/skills/long-horizon-engineering/prompt-styles/concise.md",
     ".agents/skills/long-horizon-engineering/prompt-styles/evidence-first.md",
     ".agents/skills/long-horizon-engineering/prompt-styles/product-review.md",
@@ -55,11 +70,26 @@ REQUIRED_FILES = [
     ".agents/skills/long-horizon-engineering/templates/IMPROVEMENT_SCAN_TEMPLATE.md",
     ".agents/skills/long-horizon-engineering/templates/implementation-plan.md",
     ".agents/skills/long-horizon-engineering/templates/analysis-run-log.md",
+    ".agents/skills/long-horizon-engineering/templates/api-contract-test-plan.md",
     ".agents/skills/long-horizon-engineering/templates/claim-evidence-table.md",
+    ".agents/skills/long-horizon-engineering/templates/data-quality-report.md",
     ".agents/skills/long-horizon-engineering/templates/deck-outline.md",
+    ".agents/skills/long-horizon-engineering/templates/debugging-runbook.md",
+    ".agents/skills/long-horizon-engineering/templates/market-data-source-log.md",
+    ".agents/skills/long-horizon-engineering/templates/new-skill-brief.md",
     ".agents/skills/long-horizon-engineering/templates/option-analysis.md",
+    ".agents/skills/long-horizon-engineering/templates/regression-test-record.md",
+    ".agents/skills/long-horizon-engineering/templates/reviewer-response.md",
+    ".agents/skills/long-horizon-engineering/templates/risk-challenge-table.md",
+    ".agents/skills/long-horizon-engineering/templates/ship-checklist.md",
+    ".agents/skills/long-horizon-engineering/templates/skill-evaluation-plan.md",
+    ".agents/skills/long-horizon-engineering/templates/secrets-scan-checklist.md",
+    ".agents/skills/long-horizon-engineering/templates/stock-research-report.md",
     ".agents/skills/long-horizon-engineering/templates/TASK_LOG_TEMPLATE.md",
+    ".agents/skills/long-horizon-engineering/templates/ui-ux-audit.md",
+    ".agents/skills/long-horizon-engineering/templates/valuation-assumption-table.md",
     ".agents/skills/long-horizon-engineering/templates/verification-evidence.md",
+    ".agents/skills/long-horizon-engineering/templates/risk-disclosure.md",
     ".agents/skills/long-horizon-engineering/templates/slide-qa-checklist.md",
     ".agents/skills/long-horizon-engineering/templates/voice-calibration.md",
     ".agents/skills/long-horizon-engineering/templates/WORKING_STATE_TEMPLATE.md",
@@ -108,6 +138,8 @@ def check_required_files(required_files: list[str]) -> list[str]:
 
 def check_skill_front_matter(skill_dir: Path, expected_name: str) -> list[str]:
     path = skill_dir / "SKILL.md"
+    if not path.is_file():
+        return [f"Missing required file: {path.relative_to(ROOT)}"]
     text = path.read_text(encoding="utf-8")
     if not text.startswith("---\n"):
         return [f"{path.relative_to(ROOT)} is missing YAML front matter."]
@@ -137,21 +169,50 @@ def check_nested_agents() -> list[str]:
     return [f"Nested .agents path found: {path.relative_to(ROOT)}" for path in nested]
 
 
+def package_mode() -> bool:
+    return all((ROOT / relative_path).is_file() for relative_path in PACKAGE_ONLY_FILES)
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Validate the Codex skill package structure."
+        description=(
+            "Validate the Codex skill package structure. By default, this auto-detects "
+            "whether it is running in the source package or an installed project."
+        )
+    )
+    parser.add_argument(
+        "--package",
+        action="store_true",
+        help="Require source-package files such as README, tests, examples, and CI workflow.",
+    )
+    parser.add_argument(
+        "--installed",
+        action="store_true",
+        help="Check only installed skill files under .agents/skills.",
     )
     return parser.parse_args()
 
 
 def main() -> None:
-    parse_args()
+    args = parse_args()
+    if args.package and args.installed:
+        raise SystemExit("ERROR: choose only one of --package or --installed.")
+
+    check_package_files = args.package or (not args.installed and package_mode())
 
     errors = []
-    errors.extend(check_required_files(REQUIRED_FILES))
-    errors.extend(check_required_files(AI_VIDEO_REQUIRED_FILES))
+    if check_package_files:
+        errors.extend(check_required_files(PACKAGE_ONLY_FILES))
+    else:
+        print("Installed-skill mode: skipping package-only files.")
+    errors.extend(check_required_files(INSTALLED_REQUIRED_FILES))
     errors.extend(check_skill_front_matter(SKILL_DIR, "long-horizon-engineering"))
-    errors.extend(check_skill_front_matter(AI_VIDEO_SKILL_DIR, "ai-video-production"))
+    if check_package_files:
+        errors.extend(check_required_files(AI_VIDEO_REQUIRED_FILES))
+        errors.extend(check_skill_front_matter(AI_VIDEO_SKILL_DIR, "ai-video-production"))
+    elif AI_VIDEO_SKILL_DIR.exists():
+        errors.extend(check_required_files(AI_VIDEO_REQUIRED_FILES))
+        errors.extend(check_skill_front_matter(AI_VIDEO_SKILL_DIR, "ai-video-production"))
     errors.extend(check_nested_agents())
 
     if errors:
@@ -159,7 +220,12 @@ def main() -> None:
             print(f"ERROR: {error}")
         raise SystemExit(1)
 
-    print("Skill package check passed for long-horizon-engineering and ai-video-production.")
+    if check_package_files:
+        print("Skill package check passed for long-horizon-engineering and ai-video-production.")
+    elif AI_VIDEO_SKILL_DIR.exists():
+        print("Installed skill check passed for long-horizon-engineering and ai-video-production.")
+    else:
+        print("Installed skill check passed for long-horizon-engineering.")
 
 
 if __name__ == "__main__":
