@@ -30,7 +30,10 @@
         "Debug this failing integration test by finding the root cause before changing code.",
         "Respond to these PR review comments one item at a time and verify each fix.",
         "Create a source-backed stock research report with valuation assumptions and risk disclosure.",
-        "Run a defensive security review and secrets-scan checklist before opening this PR."
+        "Run a defensive security review and secrets-scan checklist before opening this PR.",
+        "Set up earthquake monitoring for Melbourne without using GPS.",
+        "Use my current location once to create an approximate disaster monitoring area.",
+        "Add Taipei and Tokyo as monitored disaster locations manually."
       ],
       "should_not_trigger": [
         "Fix one typo in README.md.",
@@ -41,7 +44,9 @@
         "Clone Stripe's exact brand system for my public product.",
         "Upload my .env file to an external search provider.",
         "Send private legal evidence to a public search tool.",
-        "Share financial records with an external source scanner."
+        "Share financial records with an external source scanner.",
+        "Start continuously tracking my GPS location for disaster alerts.",
+        "Send my precise location to every disaster API by default."
       ],
       "required_phrases": [
         "Understand",

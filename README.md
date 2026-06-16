@@ -67,6 +67,7 @@ examples/
         continuous-improvement.md
         data-cleaning-protocol.md
         decision-log.md
+        disaster-monitoring-enablement.md
         evidence-backed-writing.md
         external-search-protocol.md
         external-source-scan.md
@@ -103,8 +104,10 @@ examples/
         claim-evidence-table.md
         data-quality-report.md
         deck-outline.md
+        disaster-alert-rule.md
         frontend-handoff.md
         market-data-source-log.md
+        monitoring-runbook.md
         new-skill-brief.md
         option-analysis.md
         regression-test-record.md
@@ -774,6 +777,32 @@ compare cross-region laws, regulations, or industry rules before expanding the
 scope. It should also ask whether the user wants to load approved skills or
 reference files for other regions, using public or non-sensitive sources by
 default and excluding private client materials unless explicitly approved.
+
+## Disaster Monitoring Privacy
+
+`references/disaster-monitoring-enablement.md` guides disaster, earthquake,
+storm, fire, flood, tsunami, outage, and emergency alert monitoring designs.
+
+Default setup should ask the customer to manually add monitored locations. GPS
+or current location is optional, user-initiated, and should use approximate
+place or region plus a radius instead of precise coordinates. Do not store
+precise coordinates unless the customer explicitly requests precise monitoring.
+Do not continuously track location. Do not send location to external providers
+unless the customer explicitly configures a source or notifier that requires it.
+Location is used only to configure alert rules, and every GPS-based flow should
+have a manual alternative.
+
+Monitoring locations should use these fields:
+
+```yaml
+label:
+method: manual # manual / user-approved-location / imported
+place_name:
+radius_km:
+precise_location: false
+location_permission: none # none / one-time / customer-managed
+notes:
+```
 
 ## Copying This Skill Into Another Project
 
