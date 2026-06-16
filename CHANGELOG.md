@@ -4,6 +4,8 @@ All notable changes to this project are summarized here.
 
 ## Unreleased
 
+- Added adversarial review, TDD, API integration, ship-readiness, and data
+  cleaning protocols with evidence templates.
 - Added lightweight UI/UX review protocol, accessibility checklist, frontend
   handoff template, and UI/UX audit template.
 - Added skill brief and skill evaluation planning templates.

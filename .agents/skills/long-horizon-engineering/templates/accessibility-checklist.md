@@ -50,4 +50,3 @@ private correspondence, or confidential source content.
 - Screenshots or observations:
 - Commands run:
 - Remaining risks:
-

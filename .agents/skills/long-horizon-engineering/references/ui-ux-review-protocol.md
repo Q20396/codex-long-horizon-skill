@@ -70,4 +70,3 @@ Pause and ask the user when:
 - A finding depends on private customer data or unreleased client material.
 - Fixing the issue would require a redesign beyond the requested scope.
 - The user asks to clone another product's exact visual identity.
-

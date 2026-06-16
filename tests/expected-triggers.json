@@ -20,6 +20,11 @@
         "Review this frontend change for accessibility, responsive behavior, and interaction states.",
         "Create a UI/UX audit with evidence before changing this customer-facing dashboard.",
         "Draft a new skill brief with trigger examples, safety boundaries, and validation steps.",
+        "Stress-test this migration plan and challenge the riskiest assumptions before implementation.",
+        "Use a red green refactor loop and record the regression test before fixing this bug.",
+        "Map this third-party API integration, including auth, errors, retries, and contract tests.",
+        "Run a ship-readiness review before marking this branch ready to merge.",
+        "Create a data quality report and reproducible cleaning plan for this CSV.",
         "Search external public sources with a provider-neutral plan without leaking private repository data.",
         "Use an AnySearch-style provider only if available and optional.",
         "Debug this failing integration test by finding the root cause before changing code.",
@@ -62,7 +67,11 @@
         "Create a debugging runbook for this flaky test without storing private logs.",
         "Evaluate reviewer feedback against the codebase before applying changes.",
         "Create a frontend handoff for this UI change with design decisions and accessibility notes.",
-        "Evaluate this new skill with trigger tests, package checks, and safety review."
+        "Evaluate this new skill with trigger tests, package checks, and safety review.",
+        "Create an adversarial risk challenge table for this architecture decision.",
+        "Prepare an API contract test plan for this connector change.",
+        "Prepare a ship checklist with blockers, warnings, rollback, and post-release checks.",
+        "Profile and clean this dataset with before and after quality evidence."
       ],
       "description_expectations": [
         "trigger-focused",
