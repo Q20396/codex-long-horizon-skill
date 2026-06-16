@@ -99,6 +99,10 @@ files or private data.
   exploration instead.
 - No external search provider is required; external search remains optional and
   privacy-first.
+- External apps, hosted notebooks, browser sessions, provider CLIs, and
+  connected services are optional and approval-gated. Use local or metadata-only
+  review first, and do not upload private source material without explicit
+  customer approval for the exact subset and purpose.
 - If content, research, notebook, presentation, or video design protocols are
   not needed, ignore them; they are additive optional references and templates
   and require no new dependencies.

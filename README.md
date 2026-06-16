@@ -69,8 +69,10 @@ examples/
         decision-log.md
         disaster-monitoring-enablement.md
         evidence-backed-writing.md
+        external-app-runtime-boundary.md
         external-search-protocol.md
         external-source-scan.md
+        external-tool-provider-protocol.md
         financial-research-report-protocol.md
         ideation-to-plan-protocol.md
         jurisdiction-industry-compliance.md
@@ -108,16 +110,20 @@ examples/
         frontend-handoff.md
         market-data-source-log.md
         monitoring-runbook.md
+        memory-review-checklist.md
         new-skill-brief.md
         option-analysis.md
+        paper-evidence-card.md
         regression-test-record.md
         risk-challenge-table.md
         slide-qa-checklist.md
         ship-checklist.md
         skill-evaluation-plan.md
         secrets-scan-checklist.md
+        source-upload-consent-checklist.md
         stock-research-report.md
         TASK_LOG_TEMPLATE.md
+        tool-provider-capability-map.md
         ui-ux-audit.md
         valuation-assumption-table.md
         verification-evidence.md
@@ -289,6 +295,11 @@ selected. This package includes:
   standards
 - `external-source-scan.md` for consent-gated scans of local folders, connected
   cloud drives, Gmail, or other external sources
+- `external-tool-provider-protocol.md` for mapping optional external tools,
+  provider CLIs, connected apps, MCP servers, fallback behavior, and approval
+  requirements before use
+- `external-app-runtime-boundary.md` for source upload, browser automation,
+  hosted notebook, cloud app, and account-session approval boundaries
 - `ideation-to-plan-protocol.md` for divergent options, tradeoffs, selection
   criteria, and plan conversion
 - `large-migration-playbook.md` for phased, reviewable large migrations and
@@ -346,9 +357,13 @@ Use `templates/` for reusable starter documents. This package includes:
   states, accessibility notes, validation, and reviewer focus
 - `market-data-source-log.md` for market data sources, dates, units,
   transformations, limitations, and reproducibility notes
+- `memory-review-checklist.md` for checking whether persistent memory, logs,
+  working state, or handoff files are appropriate and free of sensitive content
 - `new-skill-brief.md` for defining trigger scope, source material, safety
   boundaries, package shape, and validation before creating a skill
 - `option-analysis.md` for comparing implementation or product directions
+- `paper-evidence-card.md` for paper-level metadata, claims, evidence,
+  limitations, and citation-risk review
 - `regression-test-record.md` for bug reproduction, failing tests, fixes, and
   passing evidence
 - `risk-challenge-table.md` for adversarial review of assumptions, evidence,
@@ -362,9 +377,13 @@ Use `templates/` for reusable starter documents. This package includes:
   exposing secrets or confidential files
 - `skill-evaluation-plan.md` for skill trigger coverage, instruction quality,
   safety review, validation commands, and reviewer notes
+- `source-upload-consent-checklist.md` for explicit approval before uploading,
+  importing, pasting, or syncing private source material into an external app
 - `stock-research-report.md` for source-backed company, sector, market, and
   watchlist research reports
 - `TASK_LOG_TEMPLATE.md` for concise completed-task notes
+- `tool-provider-capability-map.md` for comparing optional providers, required
+  data, approval gates, privacy risks, and fallbacks
 - `ui-ux-audit.md` for evidence-backed frontend findings and recommendations
 - `valuation-assumption-table.md` for valuation inputs, sensitivity, evidence,
   caveats, and sanity checks
@@ -757,6 +776,26 @@ folders, full mailboxes, or cloud drives without a specific approved scope. Do
 not store secrets, personal messages, private client data, financial account
 details, legal evidence, family information, API keys, or confidential documents
 in memory, logs, working state, or generated reports.
+
+## External Tool And Source Boundaries
+
+The skill can help Codex reason about optional external tools, provider CLIs,
+connected apps, hosted notebooks, browser sessions, and source-grounded research
+tools without making any of them required.
+
+Use `references/external-tool-provider-protocol.md` and
+`templates/tool-provider-capability-map.md` when a task needs to compare
+providers, understand fallback behavior, or decide what approval is required
+before using a tool. Use `references/external-app-runtime-boundary.md` and
+`templates/source-upload-consent-checklist.md` before any private source
+material would be uploaded, pasted, imported, synced, or summarized in an
+external app.
+
+The default remains local, dry-run, metadata-only, and approval-gated. Do not
+send private source content, client material, legal evidence, family
+information, medical data, financial records, identity documents, secrets, or
+confidential research to external providers unless the user explicitly approves
+the exact subset and purpose.
 
 ## Location And Industry Compliance
 

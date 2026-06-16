@@ -7,6 +7,9 @@ All notable changes to this project are summarized here.
 - Added privacy-first disaster monitoring enablement guidance with manual
   monitored locations, optional one-time approximate current location, and
   alert-rule/runbook templates.
+- Added external tool provider and external app runtime boundary guidance with
+  provider capability, source upload consent, paper evidence, and memory review
+  templates.
 - Added lightweight financial research report and defensive security review
   protocols with source, valuation, risk, and secrets-scan templates.
 - Added adversarial review, TDD, API integration, ship-readiness, and data

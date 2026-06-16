@@ -45,6 +45,14 @@ or vendor changes are needed, consult `references/external-search-protocol.md`.
 Use provider-neutral, privacy-first search planning and do not send private
 repository content to external search providers.
 
+When a task may use optional external tools, connected apps, provider CLIs, MCP
+servers, browser sessions, cloud notebooks, or source-grounded research tools,
+consult `references/external-tool-provider-protocol.md` and
+`references/external-app-runtime-boundary.md` when useful. Prefer local,
+metadata-only, dry-run, or approval-gated modes. Do not upload, paste, import,
+or sync private source material into external apps unless the user explicitly
+approves the exact source subset and purpose.
+
 For adversarial review, TDD, API integration, ship-readiness, or data-cleaning
 work, consult the relevant optional protocol:
 `references/adversarial-review-protocol.md`, `references/tdd-protocol.md`,
@@ -161,6 +169,12 @@ Use `templates/ui-ux-audit.md`, `templates/accessibility-checklist.md`, or
 review record. Use `templates/new-skill-brief.md` or
 `templates/skill-evaluation-plan.md` for skill creation or evaluation tasks
 that need explicit trigger, safety, and validation coverage.
+Use `templates/tool-provider-capability-map.md` or
+`templates/source-upload-consent-checklist.md` when external providers or
+external app uploads need an explicit approval record. Use
+`templates/paper-evidence-card.md` for academic claims that need paper-level
+traceability. Use `templates/memory-review-checklist.md` before updating
+persistent memory, logs, state, or handoff files when sensitivity is uncertain.
 Use `templates/risk-challenge-table.md`,
 `templates/regression-test-record.md`, `templates/ship-checklist.md`,
 `templates/api-contract-test-plan.md`, or
