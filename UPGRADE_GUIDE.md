@@ -24,6 +24,10 @@ repository.
 3. Dry-run an update against the target project:
 
    ```bash
+   python3 .agents/skills/long-horizon-engineering/scripts/update_installed_skill.py --list-skills
+   ```
+
+   ```bash
    python3 .agents/skills/long-horizon-engineering/scripts/update_installed_skill.py \
      --target-root /path/to/project \
      --skill long-horizon-engineering

@@ -39,7 +39,15 @@ def validate_skill(skill: dict) -> list[str]:
     if f"name: {name}" not in parts[1]:
         errors.append(f"{name}: SKILL.md front matter does not match fixture name.")
 
-    for key in ("should_trigger", "should_not_trigger", "required_phrases"):
+    list_fields = (
+        "should_trigger",
+        "should_not_trigger",
+        "required_phrases",
+        "borderline",
+        "methodology_triggers",
+        "description_expectations",
+    )
+    for key in list_fields:
         values = skill.get(key)
         if not isinstance(values, list) or not values:
             errors.append(f"{name}: {key} must be a non-empty list.")

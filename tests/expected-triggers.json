@@ -18,6 +18,19 @@
         "Plan",
         "Test",
         "Do not auto-merge"
+      ],
+      "borderline": [
+        "Review this draft PR and decide whether it is ready for review.",
+        "Install this skill into an existing project folder safely."
+      ],
+      "methodology_triggers": [
+        "Update this skill description and add trigger tests for the new behavior.",
+        "Search public docs and GitHub issues before changing this dependency integration."
+      ],
+      "description_expectations": [
+        "trigger-focused",
+        "not a workflow summary",
+        "concise"
       ]
     },
     {
@@ -38,6 +51,19 @@
         "Asset",
         "Render",
         "Human approval"
+      ],
+      "borderline": [
+        "Plan a video project but do not render anything.",
+        "Turn text into visual prompts using placeholder assets only."
+      ],
+      "methodology_triggers": [
+        "Audit whether this video skill description triggers on storyboard and render handoff tasks.",
+        "Add expected trigger examples for image-to-video planning without publishing."
+      ],
+      "description_expectations": [
+        "trigger-focused",
+        "media task situations",
+        "concise"
       ]
     }
   ]

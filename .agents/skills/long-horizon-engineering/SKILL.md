@@ -35,6 +35,16 @@ When scanning GitHub for related Codex or Agent Skills projects, treat results
 as evidence for review. Do not copy external code into this skill without
 checking license obligations and user approval.
 
+When maintaining this repository's own skills, consult
+`references/skill-authoring-methodology.md`. Treat skill descriptions as trigger
+metadata, keep workflows in the body or references, and update trigger examples
+when trigger behavior changes.
+
+When current public facts, docs, GitHub issues, package data, standards, CVEs,
+or vendor changes are needed, consult `references/external-search-protocol.md`.
+Use provider-neutral, privacy-first search planning and do not send private
+repository content to external search providers.
+
 When comparing public frontier-agent capabilities, including Fable-style public
 descriptions, consult `references/public-agent-capability-review.md`. Separate
 official facts, research findings, media reports, community claims, and
@@ -94,6 +104,10 @@ For substantial PRs or long-running tasks, produce a handoff summary using
 `templates/HANDOFF_REPORT_TEMPLATE.md` when appropriate. Do not require a
 handoff report for every small task. Do not create extra state, log, or handoff
 files in sensitive repositories unless the user explicitly approves.
+
+For complex implementation work, use `templates/implementation-plan.md` when a
+written plan would reduce risk. For merge-readiness or validation-heavy work,
+use `templates/verification-evidence.md` when evidence needs to be reviewed.
 
 ## Core Rule
 
@@ -160,6 +174,8 @@ Look for:
 - Large-migration guidance for broad migrations or multi-file implementations
 - Validation guidance for the current task type
 - Public agent capability review guidance for self-improvement work
+- Skill authoring methodology for skill maintenance work
+- External search protocol for provider-neutral public source research
 - Capability boundaries for high-impact agent behavior
 - Client privacy guidance for private or confidential repositories
 - Jurisdiction and industry compliance guidance for location-aware regulatory
