@@ -100,10 +100,11 @@ For each major script beat, plan a corresponding visual beat:
 
 When asked to check related video or image skills, Codex may run
 `scripts/scan_top_media_skills.py` to inspect the top public GitHub repositories
-for video/image generation skill signals. The scan should produce customer
-upgrade options only. Do not copy external code, prompts, templates, or media.
-Do not auto-upgrade. The user must manually choose whether to click a PR,
-request an original change, copy reviewed material, or skip.
+for video/image generation skill signals. The scan should self-check code and
+workflow signals, suggest possible optimizations, explain upgrade impact, and
+produce customer upgrade options only. Do not copy external code, prompts,
+templates, or media. Do not auto-upgrade. The user must manually choose whether
+to click a PR, request an original change, copy reviewed material, or skip.
 
 ## Reference Files
 

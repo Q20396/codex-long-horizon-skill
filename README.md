@@ -128,8 +128,10 @@ python3 .agents/skills/ai-video-production/scripts/scan_top_media_skills.py --dr
 ```
 
 It checks public GitHub repositories related to video/image generation skills,
-analyzes code and workflow signals, and gives customers manual upgrade options.
-It does not copy external code, run remote code, auto-upgrade, or modify `main`.
+self-checks code and workflow signals, suggests possible optimizations, explains
+upgrade impact, and gives customers manual upgrade options. It does not copy
+external code, run remote code, auto-upgrade, or modify `main`; the user decides
+whether any upgrade should happen.
 
 This skill does not auto-render, auto-upload, auto-publish, or post media. Human
 approval is required before rendering, uploading, publishing, posting, or using
