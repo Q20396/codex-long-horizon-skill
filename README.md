@@ -867,6 +867,13 @@ manually provide the country, state/province, city, or region. It should confirm
 the customer's industry or business activity and use current public sources for
 jurisdiction-specific legal or regulatory facts.
 
+If local references do not cover the requested country, region, tax topic,
+legal rule, or industry rule, Codex should identify the source gap and ask
+whether the customer wants an online search of current public sources. Search
+queries should stay generic and exclude private client details, legal evidence,
+financial account information, family information, precise addresses, and
+confidential documents.
+
 Outputs should clearly separate public facts, practical implications, and
 recommendations. They should say that the response is informational and not
 legal advice. After a local answer, Codex should ask whether the user wants to

@@ -149,6 +149,9 @@ and regulatory facts, state that the output is not legal advice, and ask whether
 cross-region rules should also be checked. If cross-region rules may matter, ask
 whether the user wants Codex to load approved skills or reference files for other
 regions while excluding private client materials unless explicitly approved.
+If local references do not contain current rules for the requested jurisdiction,
+tax topic, or industry, identify the source gap and ask whether the user wants
+Codex to search current public sources online before making or updating claims.
 
 For disaster, emergency, earthquake, flood, fire, storm, tsunami, outage, or
 similar alert monitoring designs, consult

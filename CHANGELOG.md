@@ -9,6 +9,8 @@ All notable changes to this project are summarized here.
   alert-rule/runbook templates.
 - Added external skill candidate safety review guidance and a read-only local
   audit helper for customer-reviewed adoption decisions.
+- Added a source-gap prompt for jurisdiction, tax, regulatory, and industry-rule
+  tasks so Codex asks before searching current public sources online.
 - Added a read-only skill safety audit and wired it into the apply path before
   installed skills are upgraded.
 - Added review-gated missing capability skill discovery guidance for safely
