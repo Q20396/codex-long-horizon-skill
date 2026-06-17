@@ -505,6 +505,16 @@ productized package readiness. `audit_skill_descriptions.py` checks description
 metadata. `test_expected_triggers.py` validates static trigger examples without
 calling a model.
 
+For a broader local audit before review, run:
+
+```bash
+python3 scripts/full_skill_validation.py
+```
+
+This full validation command is intentionally local-only because it includes
+apply and backup smoke tests under temporary directories. CI runs the lighter
+structure, trigger, compile, whitespace, and update dry-run checks.
+
 ## Update And Rollback
 
 Use the backup-first update helper from this package repository:

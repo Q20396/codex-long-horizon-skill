@@ -49,3 +49,35 @@ jobs:
           python3 .agents/skills/long-horizon-engineering/scripts/manage_skill_lifecycle.py suggest-freeze --include-never-used
           python3 .agents/skills/long-horizon-engineering/scripts/test_expected_triggers.py
           python3 .agents/skills/long-horizon-engineering/scripts/update_installed_skill.py --list-skills
+
+      - name: Compile Python helper scripts
+        run: |
+          scripts_to_compile="
+          .agents/skills/long-horizon-engineering/scripts/doctor.py
+          .agents/skills/long-horizon-engineering/scripts/update_installed_skill.py
+          .agents/skills/long-horizon-engineering/scripts/test_expected_triggers.py
+          .agents/skills/long-horizon-engineering/scripts/check_skill_package.py
+          .agents/skills/long-horizon-engineering/scripts/audit_skill_descriptions.py
+          scripts/full_skill_validation.py
+          "
+          if [ -f .agents/skills/long-horizon-engineering/scripts/audit_skill_optimization_readiness.py ]; then
+            scripts_to_compile="$scripts_to_compile .agents/skills/long-horizon-engineering/scripts/audit_skill_optimization_readiness.py"
+          fi
+          if [ -f .agents/skills/long-horizon-engineering/scripts/enable_disaster_monitoring.py ]; then
+            scripts_to_compile="$scripts_to_compile .agents/skills/long-horizon-engineering/scripts/enable_disaster_monitoring.py"
+          fi
+          PYTHONPYCACHEPREFIX=/tmp/codex-pycache python3 -m py_compile $scripts_to_compile
+
+      - name: Check whitespace in diff
+        run: git diff --check
+
+      - name: Smoke test update dry-run
+        run: |
+          rm -rf /tmp/codex-skill-ci-dry-run
+          mkdir -p /tmp/codex-skill-ci-dry-run
+          python3 .agents/skills/long-horizon-engineering/scripts/update_installed_skill.py \
+            --target-root /tmp/codex-skill-ci-dry-run \
+            --skill long-horizon-engineering
+          python3 .agents/skills/long-horizon-engineering/scripts/update_installed_skill.py \
+            --target-root /tmp/codex-skill-ci-dry-run \
+            --skill ai-video-production
