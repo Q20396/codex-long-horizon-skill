@@ -104,6 +104,10 @@ files or private data.
   and require no new dependencies.
 - If the target project is sensitive, ask before reading, copying, staging, or
   summarizing private materials.
+- Disaster monitoring setup is privacy-first: manually add monitored locations
+  by default, use GPS/current location only as a one-time customer-approved
+  option, prefer approximate place and radius, and do not enable continuous
+  tracking or location sharing by default.
 
 ## Prompt Example
 

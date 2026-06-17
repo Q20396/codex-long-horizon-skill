@@ -124,6 +124,13 @@ cross-region rules should also be checked. If cross-region rules may matter, ask
 whether the user wants Codex to load approved skills or reference files for other
 regions while excluding private client materials unless explicitly approved.
 
+For disaster, emergency, earthquake, flood, fire, storm, tsunami, outage, or
+similar alert monitoring designs, consult
+`references/disaster-monitoring-enablement.md`. Default to manually added
+monitored locations. GPS or current location must be optional, user-initiated,
+approximate, and used only to configure alert rules. Do not enable continuous
+tracking or send location to external providers by default.
+
 For large migrations or complex multi-file changes, consult
 `references/large-migration-playbook.md` when appropriate. Use
 `references/validation-matrix.md` to choose task-appropriate verification.
