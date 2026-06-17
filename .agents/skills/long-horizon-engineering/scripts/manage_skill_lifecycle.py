@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import shutil
 from datetime import datetime, timezone
 from pathlib import Path
@@ -13,6 +14,7 @@ from pathlib import Path
 DEFAULT_TARGET_ROOT = Path(".")
 DEFAULT_USAGE_PATH = Path(".codex") / "skill-usage.json"
 CORE_SKILLS = {"long-horizon-engineering"}
+SKILL_NAME_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 
 
 def now_iso() -> str:
@@ -35,6 +37,21 @@ def usage_path(root: Path, usage_file: str | None) -> Path:
     if usage_file:
         return Path(usage_file).expanduser().resolve()
     return root / DEFAULT_USAGE_PATH
+
+
+def validate_skill_name(skill: str) -> None:
+    if not SKILL_NAME_PATTERN.fullmatch(skill):
+        raise SystemExit(
+            "ERROR: invalid skill name. Use a single lowercase skill folder name "
+            "containing only letters, digits, and hyphens."
+        )
+
+
+def require_skill_root(path: Path, label: str) -> None:
+    if not path.is_dir():
+        raise SystemExit(f"ERROR: {label} skill not found: {path}")
+    if not (path / "SKILL.md").is_file():
+        raise SystemExit(f"ERROR: {label} path is not a skill root: {path}")
 
 
 def list_skill_dirs(path: Path) -> list[str]:
@@ -96,6 +113,7 @@ def print_skills(args: argparse.Namespace) -> None:
 
 
 def record_usage(args: argparse.Namespace) -> None:
+    validate_skill_name(args.skill)
     root = target_root(args.target_root)
     path = usage_path(root, args.usage_file)
     payload = load_usage(path)
@@ -140,6 +158,7 @@ def suggest_freeze(args: argparse.Namespace) -> None:
 
 
 def freeze_skill(args: argparse.Namespace) -> None:
+    validate_skill_name(args.skill)
     root = target_root(args.target_root)
     if args.skill in CORE_SKILLS:
         raise SystemExit(f"ERROR: refusing to freeze core skill: {args.skill}")
@@ -148,8 +167,7 @@ def freeze_skill(args: argparse.Namespace) -> None:
     print(f"Skill: {args.skill}")
     print(f"Source: {source}")
     print(f"Frozen target: {target}")
-    if not source.is_dir():
-        raise SystemExit(f"ERROR: active skill not found: {source}")
+    require_skill_root(source, "active")
     if target.exists():
         raise SystemExit(f"ERROR: frozen target already exists: {target}")
     if not args.apply:
@@ -163,14 +181,14 @@ def freeze_skill(args: argparse.Namespace) -> None:
 
 
 def restore_skill(args: argparse.Namespace) -> None:
+    validate_skill_name(args.skill)
     root = target_root(args.target_root)
     source = frozen_root(root) / args.skill
     target = active_root(root) / args.skill
     print(f"Skill: {args.skill}")
     print(f"Frozen source: {source}")
     print(f"Active target: {target}")
-    if not source.is_dir():
-        raise SystemExit(f"ERROR: frozen skill not found: {source}")
+    require_skill_root(source, "frozen")
     if target.exists():
         raise SystemExit(f"ERROR: active target already exists: {target}")
     if not args.apply:

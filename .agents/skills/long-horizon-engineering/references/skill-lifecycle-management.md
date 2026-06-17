@@ -90,6 +90,10 @@ python3 .agents/skills/long-horizon-engineering/scripts/manage_skill_lifecycle.p
 The `freeze` and `restore` commands default to dry-run. Use `--apply` only after
 the customer approves.
 
+The helper accepts only single-component lowercase skill names with letters,
+digits, and hyphens. It refuses nested paths such as `skill-name/scripts` and
+requires the target directory to contain `SKILL.md`.
+
 ## Stop Conditions
 
 Stop and ask when:
