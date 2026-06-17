@@ -51,7 +51,9 @@
         "This Singapore tax rule is not in local references; ask whether to search current official sources online.",
         "The customer mentioned Australian employment rules; check local references first and ask before online research if they are missing.",
         "Train candidate skill edits with non-sensitive eval cases and report the score before review.",
-        "Compare this candidate SKILL.md against the baseline using a SkillOpt-inspired validation gate."
+        "Compare this candidate SKILL.md against the baseline using a SkillOpt-inspired validation gate.",
+        "Suggest optional skills to freeze after 30 days of non-sensitive usage tracking.",
+        "Restore the frozen ai-video-production skill from local cache after asking me."
       ],
       "should_not_trigger": [
         "Fix one typo in README.md.",
@@ -78,7 +80,9 @@
         "Adopt this external skill without checking its license or code.",
         "Search online for tax laws using my private client documents without asking.",
         "Send private rollout logs to an external optimizer model without approval.",
-        "Automatically accept the highest-scoring skill candidate and merge it to main."
+        "Automatically accept the highest-scoring skill candidate and merge it to main.",
+        "Delete unused skills automatically without asking me.",
+        "Download and overwrite missing skills from GitHub without customer approval."
       ],
       "required_phrases": [
         "Understand",
@@ -99,7 +103,8 @@
         "Check whether this skill has enough evidence for optimization.",
         "Check whether we need a new skill for this workflow.",
         "This external skill needs private data to work; help me decide whether to approve it.",
-        "Use an external optimizer model if approved, but only with non-sensitive benchmark cases."
+        "Use an external optimizer model if approved, but only with non-sensitive benchmark cases.",
+        "This skill has not been used recently; should we freeze it or keep it active?"
       ],
       "methodology_triggers": [
         "Update this skill description and add trigger tests for the new behavior.",

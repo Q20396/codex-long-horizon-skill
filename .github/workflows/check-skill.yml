@@ -33,6 +33,7 @@ jobs:
           python3 .agents/skills/long-horizon-engineering/scripts/audit_skill_descriptions.py --help
           python3 .agents/skills/long-horizon-engineering/scripts/audit_external_skill_candidate.py --help
           python3 .agents/skills/long-horizon-engineering/scripts/audit_skill_safety.py --help
+          python3 .agents/skills/long-horizon-engineering/scripts/manage_skill_lifecycle.py --help
           python3 .agents/skills/long-horizon-engineering/scripts/score_skill_candidate.py --help
           python3 .agents/skills/long-horizon-engineering/scripts/update_installed_skill.py --help
           python3 .agents/skills/long-horizon-engineering/scripts/test_expected_triggers.py --help
@@ -44,5 +45,7 @@ jobs:
           python3 .agents/skills/long-horizon-engineering/scripts/audit_skill_descriptions.py
           python3 .agents/skills/long-horizon-engineering/scripts/audit_skill_safety.py
           python3 .agents/skills/long-horizon-engineering/scripts/score_skill_candidate.py --fail-on-regression
+          python3 .agents/skills/long-horizon-engineering/scripts/manage_skill_lifecycle.py list
+          python3 .agents/skills/long-horizon-engineering/scripts/manage_skill_lifecycle.py suggest-freeze --include-never-used
           python3 .agents/skills/long-horizon-engineering/scripts/test_expected_triggers.py
           python3 .agents/skills/long-horizon-engineering/scripts/update_installed_skill.py --list-skills

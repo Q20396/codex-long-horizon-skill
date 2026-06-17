@@ -88,6 +88,7 @@ examples/
         security-review-protocol.md
         ship-readiness-protocol.md
         skill-authoring-methodology.md
+        skill-lifecycle-management.md
         skill-optimization-protocol.md
         skillopt-training-layer.md
         stop-conditions.md
@@ -130,6 +131,7 @@ examples/
         skill-rollout-log.md
         skill-eval-cases.json
         skill-training-report.md
+        skill-usage-report.md
         skill-validation-gate.md
         secrets-scan-checklist.md
         source-upload-consent-checklist.md
@@ -151,6 +153,7 @@ examples/
         check_skill_package.py
         doctor.py
         github_skill_scan.py
+        manage_skill_lifecycle.py
         scan_top_related_skills.py
         score_skill_candidate.py
         test_expected_triggers.py
@@ -341,6 +344,9 @@ selected. This package includes:
   merge, release, deployment planning, or reviewer handoff
 - `skill-authoring-methodology.md` for eval-driven skill maintenance,
   trigger examples, description quality, and package verification
+- `skill-lifecycle-management.md` for keeping installed skill sets lean by
+  tracking non-sensitive usage, suggesting reversible freezes, and restoring
+  frozen skills with customer approval
 - `skill-optimization-protocol.md` for lightweight SkillOpt-inspired skill
   improvement using rollout evidence, reflections, bounded edits, validation
   gates, rejected edit logs, and human review
@@ -417,6 +423,8 @@ Use `templates/` for reusable starter documents. This package includes:
   SkillOpt-inspired candidate scoring
 - `skill-training-report.md` for reporting baseline score, candidate score,
   failed cases, safety notes, and human-review recommendation
+- `skill-usage-report.md` for reporting active, frozen, unused, and
+  restore-candidate skills without storing private prompts or source content
 - `skill-validation-gate.md` for checking candidate skill changes before
   marking them deployable or ready for review
 - `source-upload-consent-checklist.md` for explicit approval before uploading,
@@ -460,6 +468,8 @@ Use `scripts/` for simple local helpers. This package includes:
 - `doctor.py` to run product-readiness checks for local installs
 - `github_skill_scan.py` to scan public GitHub projects for review-gated
   improvement evidence
+- `manage_skill_lifecycle.py` to list active/frozen skills, record
+  non-sensitive usage, suggest freeze candidates, and dry-run freeze/restore
 - `scan_top_related_skills.py` to review the top related public skill projects
   for safe manual upgrade ideas
 - `score_skill_candidate.py` to score baseline or candidate skill text against
@@ -674,6 +684,25 @@ Run the local static score with:
 ```bash
 python3 .agents/skills/long-horizon-engineering/scripts/score_skill_candidate.py
 ```
+
+`references/skill-lifecycle-management.md` keeps large installed skill sets
+lean without deleting user data. Codex can record non-sensitive usage metadata,
+suggest optional skills to freeze, move approved skills into
+`.agents/skills.disabled/`, and restore them later from the local frozen cache.
+Remote GitHub checks or reinstalls require customer approval and should use the
+existing safety review and update flow.
+
+Useful local commands:
+
+```bash
+python3 .agents/skills/long-horizon-engineering/scripts/manage_skill_lifecycle.py list
+python3 .agents/skills/long-horizon-engineering/scripts/manage_skill_lifecycle.py suggest-freeze --include-never-used
+python3 .agents/skills/long-horizon-engineering/scripts/manage_skill_lifecycle.py freeze ai-video-production
+python3 .agents/skills/long-horizon-engineering/scripts/manage_skill_lifecycle.py restore ai-video-production
+```
+
+`freeze` and `restore` are dry-run by default. Re-run with `--apply` only after
+the customer approves the exact skill and target project root.
 
 `references/missing-capability-skill-discovery.md` explains how Codex should
 handle local skill gaps. It asks before searching public GitHub, compares top

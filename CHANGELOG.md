@@ -13,6 +13,8 @@ All notable changes to this project are summarized here.
   tasks so Codex asks before searching current public sources online.
 - Added a SkillOpt-inspired training layer with non-sensitive eval cases, a
   local static skill scorer, and a candidate training report template.
+- Added skill lifecycle management guidance and a local helper for non-sensitive
+  usage tracking, freeze suggestions, and reversible freeze/restore workflows.
 - Added a read-only skill safety audit and wired it into the apply path before
   installed skills are upgraded.
 - Added review-gated missing capability skill discovery guidance for safely

@@ -59,6 +59,13 @@ local candidate folder, use `scripts/audit_external_skill_candidate.py` to scan
 its code, docs, scripts, templates, and license signals for security, privacy,
 and operational risks, then present the tradeoff for customer decision.
 
+When an installed project has many optional skills, consult
+`references/skill-lifecycle-management.md`. Prefer freezing unused optional
+skills into `.agents/skills.disabled/` over deleting them. Use
+`scripts/manage_skill_lifecycle.py` for local list, usage, suggest-freeze,
+freeze, and restore workflows. Do not download, restore, overwrite, or freeze
+skills without customer approval.
+
 When maintaining this repository's own skills, consult
 `references/skill-authoring-methodology.md`. Treat skill descriptions as trigger
 metadata, keep workflows in the body or references, and update trigger examples
@@ -212,6 +219,8 @@ Use `templates/skill-rollout-log.md`,
 needs a written, non-sensitive review record.
 Use `templates/skill-training-report.md` when comparing baseline and candidate
 skill text with benchmark scores or optimizer-model suggestions.
+Use `templates/skill-usage-report.md` when reporting active, frozen, unused, or
+restore-candidate skills.
 Use `templates/risk-challenge-table.md`,
 `templates/regression-test-record.md`, `templates/ship-checklist.md`,
 `templates/api-contract-test-plan.md`, or
