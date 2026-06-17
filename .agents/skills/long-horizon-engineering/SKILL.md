@@ -37,6 +37,12 @@ SkillOpt-style optimization as lightweight methodology only: collect rollout
 evidence, reflect on success and failure, propose bounded edits, validate, log
 rejected changes when useful, and keep human review before deployment.
 
+For SkillOpt-inspired training runs that compare baseline and candidate skill
+text, consult `references/skillopt-training-layer.md` and use
+`scripts/score_skill_candidate.py` for local static scoring when useful. External
+optimizer models require explicit approval and may receive only non-sensitive
+skill text, abstracted failure modes, and approved benchmark cases.
+
 When scanning GitHub for related Codex or Agent Skills projects, treat results
 as evidence for review. Do not copy external code into this skill without
 checking license obligations and user approval.
@@ -204,6 +210,8 @@ Use `templates/skill-rollout-log.md`,
 `templates/skill-validation-gate.md`, or
 `templates/rejected-skill-edit-log.md` only when skill optimization evidence
 needs a written, non-sensitive review record.
+Use `templates/skill-training-report.md` when comparing baseline and candidate
+skill text with benchmark scores or optimizer-model suggestions.
 Use `templates/risk-challenge-table.md`,
 `templates/regression-test-record.md`, `templates/ship-checklist.md`,
 `templates/api-contract-test-plan.md`, or

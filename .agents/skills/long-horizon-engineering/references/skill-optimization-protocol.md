@@ -50,6 +50,10 @@ Use `templates/skill-rollout-log.md`,
 `templates/skill-validation-gate.md`, and
 `templates/rejected-skill-edit-log.md` when a written record would help.
 
+For a more automated training-style loop that compares baseline and candidate
+skill text, consult `references/skillopt-training-layer.md` and use
+`scripts/score_skill_candidate.py` as a local first-pass scoring gate.
+
 ## Artifact Expectations
 
 ### Rollout Log

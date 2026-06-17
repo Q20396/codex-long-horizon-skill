@@ -23,6 +23,7 @@ PACKAGE_ONLY_FILES = [
     "examples/large-migration-prompt.md",
     "examples/resume-task-prompt.md",
     "tests/expected-triggers.json",
+    "tests/skill-eval-cases.json",
 ]
 
 INSTALLED_REQUIRED_FILES = [
@@ -60,6 +61,7 @@ INSTALLED_REQUIRED_FILES = [
     ".agents/skills/long-horizon-engineering/references/stop-conditions.md",
     ".agents/skills/long-horizon-engineering/references/skill-authoring-methodology.md",
     ".agents/skills/long-horizon-engineering/references/skill-optimization-protocol.md",
+    ".agents/skills/long-horizon-engineering/references/skillopt-training-layer.md",
     ".agents/skills/long-horizon-engineering/references/ship-readiness-protocol.md",
     ".agents/skills/long-horizon-engineering/references/tdd-protocol.md",
     ".agents/skills/long-horizon-engineering/references/ui-ux-review-protocol.md",
@@ -97,6 +99,8 @@ INSTALLED_REQUIRED_FILES = [
     ".agents/skills/long-horizon-engineering/templates/skill-evaluation-plan.md",
     ".agents/skills/long-horizon-engineering/templates/skill-reflection-report.md",
     ".agents/skills/long-horizon-engineering/templates/skill-rollout-log.md",
+    ".agents/skills/long-horizon-engineering/templates/skill-training-report.md",
+    ".agents/skills/long-horizon-engineering/templates/skill-eval-cases.json",
     ".agents/skills/long-horizon-engineering/templates/skill-validation-gate.md",
     ".agents/skills/long-horizon-engineering/templates/secrets-scan-checklist.md",
     ".agents/skills/long-horizon-engineering/templates/rejected-skill-edit-log.md",
@@ -119,6 +123,7 @@ INSTALLED_REQUIRED_FILES = [
     ".agents/skills/long-horizon-engineering/scripts/check_for_updates.py",
     ".agents/skills/long-horizon-engineering/scripts/github_skill_scan.py",
     ".agents/skills/long-horizon-engineering/scripts/scan_top_related_skills.py",
+    ".agents/skills/long-horizon-engineering/scripts/score_skill_candidate.py",
     ".agents/skills/long-horizon-engineering/scripts/doctor.py",
     ".agents/skills/long-horizon-engineering/scripts/update_installed_skill.py",
     ".agents/skills/long-horizon-engineering/scripts/test_expected_triggers.py",

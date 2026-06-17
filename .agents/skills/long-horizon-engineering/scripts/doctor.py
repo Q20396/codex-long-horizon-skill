@@ -19,6 +19,7 @@ PACKAGE_ONLY_PATHS = [
     "UPGRADE_GUIDE.md",
     ".github/workflows/check-skill.yml",
     "tests/expected-triggers.json",
+    "tests/skill-eval-cases.json",
 ]
 
 INSTALLED_REQUIRED_PATHS = [
@@ -40,6 +41,7 @@ INSTALLED_REQUIRED_PATHS = [
     ".agents/skills/long-horizon-engineering/references/ship-readiness-protocol.md",
     ".agents/skills/long-horizon-engineering/references/skill-authoring-methodology.md",
     ".agents/skills/long-horizon-engineering/references/skill-optimization-protocol.md",
+    ".agents/skills/long-horizon-engineering/references/skillopt-training-layer.md",
     ".agents/skills/long-horizon-engineering/references/systematic-debugging-protocol.md",
     ".agents/skills/long-horizon-engineering/references/tdd-protocol.md",
     ".agents/skills/long-horizon-engineering/references/ui-ux-review-protocol.md",
@@ -48,6 +50,7 @@ INSTALLED_REQUIRED_PATHS = [
     ".agents/skills/long-horizon-engineering/scripts/audit_skill_descriptions.py",
     ".agents/skills/long-horizon-engineering/scripts/audit_external_skill_candidate.py",
     ".agents/skills/long-horizon-engineering/scripts/audit_skill_safety.py",
+    ".agents/skills/long-horizon-engineering/scripts/score_skill_candidate.py",
     ".agents/skills/long-horizon-engineering/scripts/update_installed_skill.py",
     ".agents/skills/long-horizon-engineering/scripts/test_expected_triggers.py",
     ".agents/skills/long-horizon-engineering/templates/implementation-plan.md",
@@ -72,6 +75,8 @@ INSTALLED_REQUIRED_PATHS = [
     ".agents/skills/long-horizon-engineering/templates/skill-evaluation-plan.md",
     ".agents/skills/long-horizon-engineering/templates/skill-reflection-report.md",
     ".agents/skills/long-horizon-engineering/templates/skill-rollout-log.md",
+    ".agents/skills/long-horizon-engineering/templates/skill-training-report.md",
+    ".agents/skills/long-horizon-engineering/templates/skill-eval-cases.json",
     ".agents/skills/long-horizon-engineering/templates/skill-validation-gate.md",
     ".agents/skills/long-horizon-engineering/templates/secrets-scan-checklist.md",
     ".agents/skills/long-horizon-engineering/templates/stock-research-report.md",

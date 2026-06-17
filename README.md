@@ -89,6 +89,7 @@ examples/
         ship-readiness-protocol.md
         skill-authoring-methodology.md
         skill-optimization-protocol.md
+        skillopt-training-layer.md
         stop-conditions.md
         tdd-protocol.md
         ui-ux-review-protocol.md
@@ -127,6 +128,8 @@ examples/
         skill-evaluation-plan.md
         skill-reflection-report.md
         skill-rollout-log.md
+        skill-eval-cases.json
+        skill-training-report.md
         skill-validation-gate.md
         secrets-scan-checklist.md
         source-upload-consent-checklist.md
@@ -149,11 +152,13 @@ examples/
         doctor.py
         github_skill_scan.py
         scan_top_related_skills.py
+        score_skill_candidate.py
         test_expected_triggers.py
         update_installed_skill.py
         update_task_log.py
 tests/
   expected-triggers.json
+  skill-eval-cases.json
 ```
 
 ## Customer Quick Start
@@ -339,6 +344,9 @@ selected. This package includes:
 - `skill-optimization-protocol.md` for lightweight SkillOpt-inspired skill
   improvement using rollout evidence, reflections, bounded edits, validation
   gates, rejected edit logs, and human review
+- `skillopt-training-layer.md` for optional baseline-vs-candidate skill
+  training runs with non-sensitive benchmark cases, local scoring, and
+  approval-gated optimizer-model use
 - `stop-conditions.md` for knowing when to pause instead of continuing
 - `systematic-debugging-protocol.md` for root-cause-first debugging of bugs,
   failing tests, regressions, and unexpected behavior
@@ -405,6 +413,10 @@ Use `templates/` for reusable starter documents. This package includes:
   recurring patterns, root causes, risks, and proposed improvements
 - `skill-rollout-log.md` for recording non-sensitive task evidence, expected
   behavior, actual behavior, results, and failure modes
+- `skill-eval-cases.json` as an installed starter validation set for
+  SkillOpt-inspired candidate scoring
+- `skill-training-report.md` for reporting baseline score, candidate score,
+  failed cases, safety notes, and human-review recommendation
 - `skill-validation-gate.md` for checking candidate skill changes before
   marking them deployable or ready for review
 - `source-upload-consent-checklist.md` for explicit approval before uploading,
@@ -450,6 +462,8 @@ Use `scripts/` for simple local helpers. This package includes:
   improvement evidence
 - `scan_top_related_skills.py` to review the top related public skill projects
   for safe manual upgrade ideas
+- `score_skill_candidate.py` to score baseline or candidate skill text against
+  non-sensitive static eval cases before recommending an upgrade
 - `test_expected_triggers.py` to validate packaged trigger fixtures
 - `update_installed_skill.py` to update installed skills with dry-run and
   backup-first behavior
@@ -647,6 +661,19 @@ dependencies, hidden optimizer runs, paid model calls, or automatic skill
 mutation. Use rollout evidence, reflection reports, bounded edit proposals,
 validation gates, rejected edit logs, and human review before selecting a
 deployable skill change.
+
+`references/skillopt-training-layer.md` adds an optional training-style layer:
+generate bounded candidate edits, score baseline versus candidate skill text
+against `tests/skill-eval-cases.json`, reject unsafe regressions, and produce a
+human-review recommendation. External optimizer models are optional and require
+explicit approval; they may receive only non-sensitive skill text, abstracted
+failure modes, and approved benchmark cases.
+
+Run the local static score with:
+
+```bash
+python3 .agents/skills/long-horizon-engineering/scripts/score_skill_candidate.py
+```
 
 `references/missing-capability-skill-discovery.md` explains how Codex should
 handle local skill gaps. It asks before searching public GitHub, compares top

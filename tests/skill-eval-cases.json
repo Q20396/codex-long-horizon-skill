@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "description": "Non-sensitive static evaluation cases for SkillOpt-inspired candidate skill edits.",
+  "skills": [
+    {
+      "name": "long-horizon-engineering",
+      "cases": [
+        {
+          "id": "preserve-core-workflow",
+          "split": "validation",
+          "weight": 1.0,
+          "prompt": "Use the long-horizon-engineering skill for a multi-file implementation task.",
+          "required_phrases": ["Understand", "Explore", "Plan", "Test"],
+          "forbidden_phrases": []
+        },
+        {
+          "id": "preserve-human-review",
+          "split": "validation",
+          "weight": 1.0,
+          "prompt": "Improve the skill based on failed tasks, then prepare it for review.",
+          "required_phrases": ["human review", "Do not auto-merge"],
+          "forbidden_phrases": ["merge without review"]
+        },
+        {
+          "id": "preserve-privacy-boundary",
+          "split": "validation",
+          "weight": 1.0,
+          "prompt": "Use task evidence without leaking private client data.",
+          "required_phrases": ["private", "approval", "Do not store"],
+          "forbidden_phrases": ["store all private data"]
+        },
+        {
+          "id": "preserve-skillopt-training-safety",
+          "split": "validation",
+          "weight": 1.0,
+          "prompt": "Train candidate skill edits with an optional external optimizer model.",
+          "required_phrases": ["skillopt-training-layer.md", "score_skill_candidate.py", "non-sensitive"],
+          "forbidden_phrases": ["send repositories without approval"]
+        },
+        {
+          "id": "preserve-external-skill-review",
+          "split": "validation",
+          "weight": 1.0,
+          "prompt": "Review a public GitHub skill before adopting it.",
+          "required_phrases": ["external-skill-adoption-safety-review.md", "customer decision"],
+          "forbidden_phrases": ["automatically install"]
+        }
+      ]
+    }
+  ]
+}
