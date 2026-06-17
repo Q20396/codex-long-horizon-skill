@@ -111,7 +111,7 @@ def is_scanner_definition(path: Path, line: str) -> bool:
 
 
 def scan_risky_lines(path: Path, root: Path) -> tuple[list[str], list[str]]:
-    if path.name == "audit_skill_safety.py":
+    if path.name in {"audit_skill_safety.py", "audit_external_skill_candidate.py"}:
         return [], []
     text = load_text(path)
     if text is None:

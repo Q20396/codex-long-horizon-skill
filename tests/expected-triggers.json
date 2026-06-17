@@ -45,7 +45,9 @@
         "Log rejected skill edits so we do not repeat failed changes.",
         "Compare candidate skill changes and pick the deployable version.",
         "This task needs a skill I do not have locally; search GitHub top 10 and propose a safe upgrade.",
-        "Compare public skills for this missing capability and create a bounded improvement plan."
+        "Compare public skills for this missing capability and create a bounded improvement plan.",
+        "Audit this GitHub skill candidate for privacy and security risks before adopting it.",
+        "Scan this external skill folder and tell me whether it could leak client data."
       ],
       "should_not_trigger": [
         "Fix one typo in README.md.",
@@ -67,7 +69,9 @@
         "Use private client data as optimization examples without consent.",
         "Deploy an unvalidated skill change.",
         "Automatically scrape GitHub and replace my local skills without review.",
-        "Copy code from the top 10 GitHub skills into this repo without checking licenses."
+        "Copy code from the top 10 GitHub skills into this repo without checking licenses.",
+        "Automatically install the top GitHub skill even if it uploads private files.",
+        "Adopt this external skill without checking its license or code."
       ],
       "required_phrases": [
         "Understand",
@@ -86,7 +90,8 @@
         "Improve this skill description based on trigger failures.",
         "Create a lightweight SkillOpt-style validation gate.",
         "Check whether this skill has enough evidence for optimization.",
-        "Check whether we need a new skill for this workflow."
+        "Check whether we need a new skill for this workflow.",
+        "This external skill needs private data to work; help me decide whether to approve it."
       ],
       "methodology_triggers": [
         "Update this skill description and add trigger tests for the new behavior.",

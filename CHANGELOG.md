@@ -7,6 +7,8 @@ All notable changes to this project are summarized here.
 - Added privacy-first disaster monitoring enablement guidance with manual
   monitored locations, optional one-time approximate current location, and
   alert-rule/runbook templates.
+- Added external skill candidate safety review guidance and a read-only local
+  audit helper for customer-reviewed adoption decisions.
 - Added a read-only skill safety audit and wired it into the apply path before
   installed skills are upgraded.
 - Added review-gated missing capability skill discovery guidance for safely

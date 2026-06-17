@@ -71,6 +71,7 @@ examples/
         evidence-backed-writing.md
         external-app-runtime-boundary.md
         external-search-protocol.md
+        external-skill-adoption-safety-review.md
         external-source-scan.md
         external-tool-provider-protocol.md
         financial-research-report-protocol.md
@@ -110,6 +111,7 @@ examples/
         data-quality-report.md
         deck-outline.md
         disaster-alert-rule.md
+        external-skill-adoption-review.md
         frontend-handoff.md
         market-data-source-log.md
         monitoring-runbook.md
@@ -139,6 +141,7 @@ examples/
         WORKING_STATE_TEMPLATE.md
       scripts/
         append_project_memory.py
+        audit_external_skill_candidate.py
         audit_skill_safety.py
         audit_skill_descriptions.py
         check_for_updates.py
@@ -301,6 +304,8 @@ selected. This package includes:
 - `external-search-protocol.md` for provider-neutral, privacy-first public
   source search planning across web, GitHub, docs, package registries, CVEs, and
   standards
+- `external-skill-adoption-safety-review.md` for scanning and reviewing public
+  or third-party skill candidates before recommending adoption
 - `external-source-scan.md` for consent-gated scans of local folders, connected
   cloud drives, Gmail, or other external sources
 - `external-tool-provider-protocol.md` for mapping optional external tools,
@@ -368,6 +373,8 @@ Use `templates/` for reusable starter documents. This package includes:
 - `deck-outline.md` for source-to-slide planning
 - `debugging-runbook.md` for recording root-cause investigations and final
   verification
+- `external-skill-adoption-review.md` for reporting security, privacy,
+  licensing, and operational risks before adopting a public or third-party skill
 - `frontend-handoff.md` for UI implementation handoffs with design decisions,
   states, accessibility notes, validation, and reviewer focus
 - `market-data-source-log.md` for market data sources, dates, units,
@@ -433,6 +440,9 @@ Use `scripts/` for simple local helpers. This package includes:
 - `audit_skill_safety.py` to run a read-only pre-upgrade safety audit for risky
   skill instructions, missing safety metadata, nested skill paths, and
   unguarded destructive or data-exposure patterns
+- `audit_external_skill_candidate.py` to scan a user-approved local external
+  skill candidate for security, privacy, licensing, and operational risks before
+  the customer decides whether to adopt it
 - `check_for_updates.py` to check whether GitHub has a newer package revision
 - `check_skill_package.py` to validate the package structure
 - `doctor.py` to run product-readiness checks for local installs
@@ -643,6 +653,14 @@ handle local skill gaps. It asks before searching public GitHub, compares top
 related repositories as evidence, extracts only general patterns, checks license
 and safety risk, and proposes bounded updates or a new-skill brief for human
 review.
+
+`references/external-skill-adoption-safety-review.md` adds a customer decision
+gate before adopting a GitHub or third-party skill. If the customer approves a
+local candidate folder, `scripts/audit_external_skill_candidate.py` can scan its
+code, docs, scripts, templates, and license signals for privacy, security, and
+operational risks. Some useful skills legitimately require sensitive inputs, so
+the report should explain the risk and let the customer decide whether to
+approve, reject, or adopt with conditions.
 
 `references/public-agent-capability-review.md` helps Codex compare public
 frontier-agent capability descriptions, classify source reliability, separate

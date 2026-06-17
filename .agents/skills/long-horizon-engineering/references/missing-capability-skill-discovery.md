@@ -86,9 +86,16 @@ Prefer the smallest change that addresses the observed capability gap.
 
 Use `references/skill-optimization-protocol.md`,
 `references/external-search-protocol.md`,
+`references/external-skill-adoption-safety-review.md`,
 `templates/bounded-skill-edit.md`,
 `templates/skill-validation-gate.md`, and
 `templates/new-skill-brief.md` when useful.
+
+Before recommending adoption of a public or third-party skill, review the
+candidate with the external skill adoption safety protocol. If the user approves
+a local clone or downloaded candidate folder, run
+`scripts/audit_external_skill_candidate.py` and report any security, privacy,
+licensing, or operational risks for customer decision.
 
 ## Do Not Add
 

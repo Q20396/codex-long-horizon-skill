@@ -47,6 +47,12 @@ Ask before searching public GitHub, compare top related repositories as
 evidence, extract only general patterns, and propose bounded, validation-gated
 updates or a new-skill brief for human review.
 
+Before adopting or adapting an external public skill, consult
+`references/external-skill-adoption-safety-review.md`. If the user approves a
+local candidate folder, use `scripts/audit_external_skill_candidate.py` to scan
+its code, docs, scripts, templates, and license signals for security, privacy,
+and operational risks, then present the tradeoff for customer decision.
+
 When maintaining this repository's own skills, consult
 `references/skill-authoring-methodology.md`. Treat skill descriptions as trigger
 metadata, keep workflows in the body or references, and update trigger examples
@@ -181,6 +187,8 @@ Use `templates/ui-ux-audit.md`, `templates/accessibility-checklist.md`, or
 review record. Use `templates/new-skill-brief.md` or
 `templates/skill-evaluation-plan.md` for skill creation or evaluation tasks
 that need explicit trigger, safety, and validation coverage.
+Use `templates/external-skill-adoption-review.md` when reviewing a public or
+third-party skill candidate before recommending adoption.
 Use `templates/tool-provider-capability-map.md` or
 `templates/source-upload-consent-checklist.md` when external providers or
 external app uploads need an explicit approval record. Use
