@@ -141,7 +141,7 @@ CORE_COMMANDS = [
     [PYTHON, "scripts/generate_skill_catalog.py", "--check"],
     [PYTHON, "scripts/validate_plugin_package.py"],
     [PYTHON, "scripts/test_fresh_install.py", "--skip-codex-cli"],
-    [PYTHON, "scripts/check_release_readiness.py", "--version", "0.1.0"],
+    [PYTHON, "scripts/check_release_readiness.py", "--version", "0.1.0", "--allow-existing-tag"],
     ["git", "diff", "--check"],
 ]
 
@@ -155,7 +155,10 @@ CI_EXPECTED = [
     ("generate_skill_catalog.py --check", ["generate_skill_catalog.py", "--check"]),
     ("validate_plugin_package.py", ["validate_plugin_package.py"]),
     ("test_fresh_install.py --skip-codex-cli", ["test_fresh_install.py", "--skip-codex-cli"]),
-    ("check_release_readiness.py", ["check_release_readiness.py", "--version", "0.1.0"]),
+    (
+        "check_release_readiness.py --allow-existing-tag",
+        ["check_release_readiness.py", "--version", "0.1.0", "--allow-existing-tag"],
+    ),
     ("Python compile check", ["py_compile"]),
     ("git diff --check", ["git", "diff", "--check"]),
     ("update dry-run smoke test", ["update_installed_skill.py", "--target-root"]),

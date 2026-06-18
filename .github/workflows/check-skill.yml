@@ -59,7 +59,7 @@ jobs:
           python3 -m unittest discover -s tests -p "test_*.py"
           python3 scripts/validate_plugin_package.py
           python3 scripts/test_fresh_install.py --skip-codex-cli
-          python3 scripts/check_release_readiness.py --version 0.1.0
+          python3 scripts/check_release_readiness.py --version 0.1.0 --allow-existing-tag
 
       - name: Compile Python helper scripts
         run: |

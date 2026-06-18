@@ -4,6 +4,10 @@ All notable changes to this project are summarized here.
 
 ## Unreleased
 
+No unreleased changes.
+
+## 0.1.0 - 2026-06-18
+
 - Narrowed `long-horizon-engineering` routing scope to non-trivial software
   engineering and moved adjacent optional workflows behind an explicit-only
   extension index.
@@ -73,6 +77,14 @@ All notable changes to this project are summarized here.
 - Added productized package pieces: optional Repomix context protocol, doctor
   and backup-first update scripts, prompt-styles, trigger fixture checks, and
   upgrade documentation.
+- Added plugin manifest packaging and a Git-backed repository marketplace for
+  Codex plugin installation.
+- Added fresh-install tooling for project-scoped direct skill installation,
+  user-scoped direct skill installation, remote marketplace discovery, actual
+  isolated plugin installation, and installed package identity verification.
+- Added malformed front-matter handling and marketplace/plugin false-positive
+  regression coverage.
+- Added v0.1.0 release-readiness tooling.
 - Added implementation plan and verification evidence templates.
 - Added skill description audit script.
 - Added public project polish: MIT license, installation guide, examples, and CI
