@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -69,7 +71,15 @@ jobs:
           PYTHONPYCACHEPREFIX=/tmp/codex-pycache python3 -m py_compile $scripts_to_compile
 
       - name: Check whitespace in diff
-        run: git diff --check
+        run: |
+          if [ -n "${{ github.base_ref }}" ]; then
+            git fetch origin "${{ github.base_ref }}:refs/remotes/origin/${{ github.base_ref }}"
+            git diff --check "origin/${{ github.base_ref }}...HEAD"
+          elif git rev-parse --verify HEAD~1 >/dev/null 2>&1; then
+            git diff --check HEAD~1...HEAD
+          else
+            git diff --check HEAD
+          fi
 
       - name: Smoke test update dry-run
         run: |
