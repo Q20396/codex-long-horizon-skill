@@ -5,8 +5,35 @@ This repository contains reusable Codex skills:
 - `long-horizon-engineering`
 - `ai-video-production`
 
+## Install As A Plugin
+
+Plugin installation is the preferred reusable distribution path.
+
+Add this repository marketplace:
+
+```bash
+codex plugin marketplace add Q20396/codex-long-horizon-skill --ref main
+```
+
+Refresh after updates:
+
+```bash
+codex plugin marketplace upgrade codex-long-horizon-skills
+```
+
+Remove when no longer needed:
+
+```bash
+codex plugin marketplace remove codex-long-horizon-skills
+```
+
+The tested CLI exposes marketplace `add`, `upgrade`, and `remove`. If your
+Codex surface does not show the plugin immediately, restart Codex. Detailed
+notes are in [docs/plugin-install.md](docs/plugin-install.md).
+
 ## Install By Git Clone
 
+Direct skill installation is useful for authoring and repository-scoped use.
 Clone this package into a reviewable local folder, then copy only the skill
 folder you want into the target project:
 
@@ -54,6 +81,8 @@ From this repository root:
 python3 .agents/skills/long-horizon-engineering/scripts/check_skill_package.py
 python3 .agents/skills/long-horizon-engineering/scripts/doctor.py
 python3 .agents/skills/long-horizon-engineering/scripts/test_expected_triggers.py
+python3 scripts/validate_plugin_package.py
+python3 scripts/test_fresh_install.py
 ```
 
 ## Update An Installed Skill

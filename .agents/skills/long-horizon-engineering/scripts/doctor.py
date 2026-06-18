@@ -21,6 +21,8 @@ PACKAGE_ONLY_PATHS = [
     "README.md",
     "SECURITY.md",
     "UPGRADE_GUIDE.md",
+    ".codex-plugin/plugin.json",
+    ".agents/plugins/marketplace.json",
     ".github/ISSUE_TEMPLATE/bug_report.md",
     ".github/ISSUE_TEMPLATE/config.yml",
     ".github/ISSUE_TEMPLATE/feature_request.md",
@@ -28,6 +30,12 @@ PACKAGE_ONLY_PATHS = [
     ".github/pull_request_template.md",
     ".github/workflows/check-skill.yml",
     "docs/demo/README.md",
+    "docs/demo/recording-script.md",
+    "docs/evals/live-routing.md",
+    "docs/first-contribution.md",
+    "docs/maintainers/release-checklist.md",
+    "docs/plugin-install.md",
+    "docs/releases/v0.1.0.md",
     "examples/bug-investigation/expected-output.md",
     "examples/bug-investigation/prompt.md",
     "examples/bug-investigation/workflow.md",
@@ -51,6 +59,9 @@ PACKAGE_ONLY_PATHS = [
     "templates/validation-report.md",
     "scripts/generate_skill_catalog.py",
     "scripts/full_skill_validation.py",
+    "scripts/validate_plugin_package.py",
+    "scripts/test_fresh_install.py",
+    "scripts/check_release_readiness.py",
     "tests/expected-triggers.json",
     "tests/skill-eval-cases.json",
 ]
@@ -63,6 +74,7 @@ INSTALLED_REQUIRED_PATHS = [
     ".agents/skills/long-horizon-engineering/references/evidence-backed-writing.md",
     ".agents/skills/long-horizon-engineering/references/code-review-response-protocol.md",
     ".agents/skills/long-horizon-engineering/references/external-search-protocol.md",
+    ".agents/skills/long-horizon-engineering/references/explicit-only-extensions.md",
     ".agents/skills/long-horizon-engineering/references/external-skill-adoption-safety-review.md",
     ".agents/skills/long-horizon-engineering/references/financial-research-report-protocol.md",
     ".agents/skills/long-horizon-engineering/references/ideation-to-plan-protocol.md",
@@ -188,20 +200,21 @@ def check_trigger_fixture() -> list[str]:
         return [f"tests/expected-triggers.json is invalid JSON: {error}"]
 
     errors = []
-    skills = payload.get("skills")
-    if not isinstance(skills, list) or not skills:
-        return ["tests/expected-triggers.json must contain a non-empty skills list."]
+    cases = payload.get("cases")
+    if payload.get("schema_version") != 2:
+        errors.append("tests/expected-triggers.json schema_version must be 2.")
+    if not isinstance(cases, list) or not cases:
+        return ["tests/expected-triggers.json must contain a non-empty cases list."]
 
-    for index, skill in enumerate(skills):
-        if not isinstance(skill, dict):
-            errors.append(f"Trigger fixture entry {index} must be an object.")
+    for index, case in enumerate(cases):
+        if not isinstance(case, dict):
+            errors.append(f"Trigger fixture case {index} must be an object.")
             continue
-        for key in ("name", "path", "should_trigger", "should_not_trigger", "required_phrases"):
-            if key not in skill:
-                errors.append(f"Trigger fixture entry {index} is missing {key}.")
-        skill_path = skill.get("path")
-        if isinstance(skill_path, str) and not (ROOT / skill_path).is_file():
-            errors.append(f"Trigger fixture path does not exist: {skill_path}")
+        for key in ("id", "prompt", "invocation_mode", "expected_skill", "category", "rationale", "tags"):
+            if key not in case:
+                errors.append(f"Trigger fixture case {index} is missing {key}.")
+        if case.get("expected_skill") not in {"long-horizon-engineering", "ai-video-production", "none"}:
+            errors.append(f"Trigger fixture case {case.get('id', index)} has invalid expected_skill.")
     return errors
 
 

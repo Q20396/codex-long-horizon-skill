@@ -48,6 +48,12 @@ REQUIRED_CORE_FILES = [
     Path(".github/ISSUE_TEMPLATE/skill_proposal.md"),
     Path(".github/pull_request_template.md"),
     Path("docs/demo/README.md"),
+    Path("docs/demo/recording-script.md"),
+    Path("docs/evals/live-routing.md"),
+    Path("docs/first-contribution.md"),
+    Path("docs/maintainers/release-checklist.md"),
+    Path("docs/plugin-install.md"),
+    Path("docs/releases/v0.1.0.md"),
     Path("examples/bug-investigation/expected-output.md"),
     Path("examples/bug-investigation/prompt.md"),
     Path("examples/bug-investigation/workflow.md"),
@@ -61,6 +67,11 @@ REQUIRED_CORE_FILES = [
     Path("examples/resume-work/prompt.md"),
     Path("examples/resume-work/workflow.md"),
     Path("scripts/generate_skill_catalog.py"),
+    Path("scripts/validate_plugin_package.py"),
+    Path("scripts/test_fresh_install.py"),
+    Path("scripts/check_release_readiness.py"),
+    Path(".codex-plugin/plugin.json"),
+    Path(".agents/plugins/marketplace.json"),
     Path("prompts/bug-investigation.md"),
     Path("prompts/large-refactor.md"),
     Path("prompts/pr-review.md"),
@@ -76,6 +87,7 @@ PRODUCTIZED_FILES = [
     LHE / "references/repomix-codebase-context.md",
     LHE / "references/skill-authoring-methodology.md",
     LHE / "references/external-search-protocol.md",
+    LHE / "references/explicit-only-extensions.md",
     LHE / "templates/implementation-plan.md",
     LHE / "templates/verification-evidence.md",
 ]
@@ -125,6 +137,9 @@ CORE_COMMANDS = [
     [PYTHON, str(LHE_SCRIPTS / "audit_skill_descriptions.py"), "--help"],
     [PYTHON, str(LHE_SCRIPTS / "update_installed_skill.py"), "--list-skills"],
     [PYTHON, "scripts/generate_skill_catalog.py", "--check"],
+    [PYTHON, "scripts/validate_plugin_package.py"],
+    [PYTHON, "scripts/test_fresh_install.py"],
+    [PYTHON, "scripts/check_release_readiness.py", "--version", "0.1.0"],
     ["git", "diff", "--check"],
 ]
 
@@ -135,6 +150,9 @@ CI_EXPECTED = [
     ("audit_skill_descriptions.py", ["audit_skill_descriptions.py"]),
     ("update_installed_skill.py --list-skills", ["update_installed_skill.py", "--list-skills"]),
     ("generate_skill_catalog.py --check", ["generate_skill_catalog.py", "--check"]),
+    ("validate_plugin_package.py", ["validate_plugin_package.py"]),
+    ("test_fresh_install.py", ["test_fresh_install.py"]),
+    ("check_release_readiness.py", ["check_release_readiness.py", "--version", "0.1.0"]),
     ("Python compile check", ["py_compile"]),
     ("git diff --check", ["git", "diff", "--check"]),
     ("update dry-run smoke test", ["update_installed_skill.py", "--target-root"]),
@@ -458,6 +476,9 @@ def run_optional_skillopt(report: Report) -> None:
 
 def run_python_compile(report: Report) -> None:
     scripts = sorted((ROOT / LHE_SCRIPTS).glob("*.py"))
+    ai_video_scripts = ROOT / AI_VIDEO / "scripts"
+    if ai_video_scripts.is_dir():
+        scripts.extend(sorted(ai_video_scripts.glob("*.py")))
     scripts_dir = ROOT / "scripts"
     if scripts_dir.is_dir():
         scripts.extend(sorted(scripts_dir.glob("*.py")))

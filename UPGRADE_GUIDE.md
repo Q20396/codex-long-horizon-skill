@@ -3,6 +3,8 @@
 Use this guide when updating an installed copy of these skills in another
 repository.
 
+For plugin-based installs, see [docs/plugin-install.md](docs/plugin-install.md).
+
 ## Upgrade Principles
 
 - Review changes before applying them.
@@ -14,6 +16,19 @@ repository.
 - Do not auto-merge or deploy as part of a skill upgrade.
 
 ## Recommended Upgrade Flow
+
+### Plugin Upgrade
+
+Refresh the configured marketplace:
+
+```bash
+codex plugin marketplace upgrade codex-long-horizon-skills
+```
+
+If your Codex surface does not show the refreshed plugin immediately, restart
+Codex.
+
+### Direct Skill Upgrade
 
 1. Update this public package repository in a separate branch or review the
    latest release diff.
@@ -83,3 +98,10 @@ Do not restore unrelated private files or broad repository snapshots.
   skill edits, validation gates, and rejected edit logs. It does not require the
   Microsoft SkillOpt runtime, paid model calls, or automatic skill mutation.
   Human review and validation remain required before adopting a skill change.
+
+## Release Preparedness
+
+v0.1.0 release notes are prepared in
+[docs/releases/v0.1.0.md](docs/releases/v0.1.0.md), but the release is not
+published until a maintainer reviews, merges, validates from `origin/main`,
+creates the tag, and publishes the GitHub Release.

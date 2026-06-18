@@ -1,0 +1,29 @@
+{
+  "name": "codex-long-horizon-skill",
+  "version": "0.1.0",
+  "description": "Production-oriented Codex skills for long-running engineering work and AI video planning.",
+  "author": {
+    "name": "Q20396"
+  },
+  "repository": "https://github.com/Q20396/codex-long-horizon-skill",
+  "license": "MIT",
+  "keywords": [
+    "codex",
+    "skills",
+    "engineering",
+    "validation",
+    "video"
+  ],
+  "skills": "./.agents/skills/",
+  "interface": {
+    "displayName": "Codex Long Horizon Skills",
+    "shortDescription": "Long-horizon engineering and AI video planning skills.",
+    "longDescription": "Reusable Codex skills for evidence-backed engineering workflows, safe resumption, validation, PR handoff, and AI video planning artifacts.",
+    "developerName": "Q20396",
+    "category": "Productivity",
+    "defaultPrompt": [
+      "Use the long-horizon-engineering skill. Explore the repository, plan the change, validate it, and open a draft PR.",
+      "Use the ai-video-production skill. Create a video brief, storyboard, shot list, asset manifest, and render handoff using placeholder assets."
+    ]
+  }
+}

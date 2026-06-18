@@ -4,6 +4,22 @@ All notable changes to this project are summarized here.
 
 ## Unreleased
 
+- Narrowed `long-horizon-engineering` routing scope to non-trivial software
+  engineering and moved adjacent optional workflows behind an explicit-only
+  extension index.
+- Clarified `ai-video-production` routing boundaries for storyboard, shot list,
+  visual prompt, asset manifest, and render handoff tasks.
+- Expanded deterministic routing contract cases with positive, negative,
+  overlap, and explicit invocation coverage.
+- Added optional live routing evaluation documentation with clear limitations.
+- Added Codex plugin manifest and repository marketplace files for reusable
+  plugin distribution without duplicating canonical skill directories.
+- Added plugin package validation, fresh isolated install verification, and
+  deterministic release-readiness checks.
+- Updated README trust wording from production-grade claims to
+  production-oriented positioning and added plugin installation navigation.
+- Added first-contribution guide, demo recording script, and v0.1.0 release
+  preparation notes without publishing a tag or GitHub Release.
 - Added open-source growth scaffolding: issue templates, pull request template,
   educational workflow examples, demo recording guidance, community skills
   registry, security policy, code of conduct, and validation coverage.

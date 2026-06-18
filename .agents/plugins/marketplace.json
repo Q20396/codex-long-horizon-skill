@@ -1,0 +1,20 @@
+{
+  "name": "codex-long-horizon-skills",
+  "interface": {
+    "displayName": "Codex Long Horizon Skills"
+  },
+  "plugins": [
+    {
+      "name": "codex-long-horizon-skill",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
