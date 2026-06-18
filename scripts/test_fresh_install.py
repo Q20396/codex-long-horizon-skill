@@ -19,6 +19,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PYTHON = sys.executable
 SKILLS = ["long-horizon-engineering", "ai-video-production"]
+EXPECTED_REPOSITORY = "https://github.com/Q20396/codex-long-horizon-skill"
 
 PASSED = "passed"
 FAILED = "failed"
@@ -322,6 +323,15 @@ def verify_marketplace_root(
     source = plugin_entry.get("source", {})
     if not isinstance(source, dict):
         return None
+    source_type = source.get("source")
+    if source_type in {"url", "git"}:
+        url = source.get("url")
+        if url not in {EXPECTED_REPOSITORY, EXPECTED_REPOSITORY + ".git"}:
+            return None
+        ref = source.get("ref")
+        if ref not in {None, "main"}:
+            return None
+        return str(root)
     plugin_path_value = source.get("path", "./")
     if not isinstance(plugin_path_value, str):
         return None

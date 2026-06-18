@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import os
 import shutil
 import subprocess
@@ -358,6 +359,24 @@ class FrontMatterParserTests(unittest.TestCase):
         self.assertIn("missing opening delimiter", output)
         self.assertNotIn("Traceback", output)
         self.assertNotIn("IndexError", output)
+
+    def test_validator_rejects_root_local_marketplace_source(self) -> None:
+        repo = self.temp / "repo-local-source"
+        shutil.copytree(ROOT, repo, ignore=shutil.ignore_patterns(".git", "__pycache__"))
+        marketplace = repo / ".agents" / "plugins" / "marketplace.json"
+        data = json.loads(marketplace.read_text(encoding="utf-8"))
+        data["plugins"][0]["source"] = {"source": "local", "path": "./"}
+        marketplace.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+        result = subprocess.run(
+            [sys.executable, "scripts/validate_plugin_package.py"],
+            cwd=repo,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        output = result.stdout + result.stderr
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("marketplace source.source must be url for root plugin CLI installs", output)
 
 
 class FreshInstallCliTests(unittest.TestCase):

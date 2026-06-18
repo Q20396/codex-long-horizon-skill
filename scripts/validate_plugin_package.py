@@ -196,20 +196,14 @@ def validate_marketplace(errors: list[str], manifest: dict) -> dict:
     if not isinstance(source, dict):
         errors.append("marketplace source must be an object")
     else:
-        if source.get("source") != "local":
-            errors.append("marketplace source.source must be local")
-        path_value = source.get("path")
-        if not isinstance(path_value, str):
-            errors.append("marketplace source.path must be a string")
+        source_type = source.get("source")
+        if source_type == "url":
+            if source.get("url") != EXPECTED_REPOSITORY + ".git":
+                errors.append(f"marketplace source.url must be {EXPECTED_REPOSITORY}.git")
+            if source.get("ref") != "main":
+                errors.append("marketplace source.ref must be main")
         else:
-            try:
-                plugin_root = resolve_plugin_path(path_value)
-                if plugin_root != ROOT.resolve():
-                    errors.append("marketplace source.path should resolve to repository root plugin")
-                if not (plugin_root / ".codex-plugin" / "plugin.json").is_file():
-                    errors.append("marketplace source.path does not contain .codex-plugin/plugin.json")
-            except ValueError as exc:
-                errors.append(f"invalid marketplace source path: {exc}")
+            errors.append("marketplace source.source must be url for root plugin CLI installs")
 
     policy = plugin.get("policy")
     if not isinstance(policy, dict):

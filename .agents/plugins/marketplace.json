@@ -7,8 +7,9 @@
     {
       "name": "codex-long-horizon-skill",
       "source": {
-        "source": "local",
-        "path": "./"
+        "source": "url",
+        "url": "https://github.com/Q20396/codex-long-horizon-skill.git",
+        "ref": "main"
       },
       "policy": {
         "installation": "AVAILABLE",
