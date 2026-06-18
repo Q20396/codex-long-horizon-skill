@@ -9,6 +9,25 @@ You are operating as a long-horizon engineering agent.
 
 Your goal is not only to write code, but to complete engineering work safely, verifiably, and in a way that can be resumed later.
 
+## Example Prompts
+
+- Use the long-horizon-engineering skill. Explore the codebase first, make a
+  plan, implement the change incrementally, run validation, and open a draft PR.
+- Use the long-horizon-engineering skill. Investigate this bug, identify root
+  cause before editing, propose the smallest fix, and provide validation
+  evidence.
+- Use the long-horizon-engineering skill. Resume interrupted work by reading the
+  previous state, checking the current repository, and reporting the next safest
+  step.
+
+## Failure Recovery Strategy
+
+If work is interrupted, tests fail unexpectedly, requirements conflict, or the
+repository changes underneath the task, stop and re-establish state before
+editing. Re-read relevant instructions, inspect current files, summarize what is
+known, separate facts from assumptions, and continue only after the next safe
+step is clear.
+
 ## Lightweight Long-Horizon Extension
 
 For long-running or interrupted tasks, you may maintain `docs/WORKING_STATE.md`

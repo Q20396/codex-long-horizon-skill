@@ -40,9 +40,11 @@ jobs:
           python3 .agents/skills/long-horizon-engineering/scripts/update_installed_skill.py --help
           python3 .agents/skills/long-horizon-engineering/scripts/test_expected_triggers.py --help
           python3 .agents/skills/ai-video-production/scripts/scan_top_media_skills.py --help
+          python3 scripts/generate_skill_catalog.py --help
 
       - name: Run productized package checks
         run: |
+          python3 scripts/generate_skill_catalog.py --check
           python3 .agents/skills/long-horizon-engineering/scripts/doctor.py
           python3 .agents/skills/long-horizon-engineering/scripts/audit_skill_descriptions.py
           python3 .agents/skills/long-horizon-engineering/scripts/audit_skill_safety.py
@@ -61,6 +63,7 @@ jobs:
           .agents/skills/long-horizon-engineering/scripts/check_skill_package.py
           .agents/skills/long-horizon-engineering/scripts/audit_skill_descriptions.py
           scripts/full_skill_validation.py
+          scripts/generate_skill_catalog.py
           "
           if [ -f .agents/skills/long-horizon-engineering/scripts/audit_skill_optimization_readiness.py ]; then
             scripts_to_compile="$scripts_to_compile .agents/skills/long-horizon-engineering/scripts/audit_skill_optimization_readiness.py"

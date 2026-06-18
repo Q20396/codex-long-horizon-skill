@@ -38,6 +38,17 @@ REQUIRED_CORE_FILES = [
     Path("INSTALL.md"),
     Path("UPGRADE_GUIDE.md"),
     Path("CHANGELOG.md"),
+    Path("CONTRIBUTING.md"),
+    Path("scripts/generate_skill_catalog.py"),
+    Path("prompts/bug-investigation.md"),
+    Path("prompts/large-refactor.md"),
+    Path("prompts/pr-review.md"),
+    Path("prompts/repository-migration.md"),
+    Path("prompts/resume-work.md"),
+    Path("templates/findings-report.md"),
+    Path("templates/migration-report.md"),
+    Path("templates/project-plan.md"),
+    Path("templates/validation-report.md"),
 ]
 
 PRODUCTIZED_FILES = [
@@ -92,6 +103,7 @@ CORE_COMMANDS = [
     [PYTHON, str(LHE_SCRIPTS / "audit_skill_descriptions.py"), "--json"],
     [PYTHON, str(LHE_SCRIPTS / "audit_skill_descriptions.py"), "--help"],
     [PYTHON, str(LHE_SCRIPTS / "update_installed_skill.py"), "--list-skills"],
+    [PYTHON, "scripts/generate_skill_catalog.py", "--check"],
     ["git", "diff", "--check"],
 ]
 
@@ -101,6 +113,7 @@ CI_EXPECTED = [
     ("test_expected_triggers.py", ["test_expected_triggers.py"]),
     ("audit_skill_descriptions.py", ["audit_skill_descriptions.py"]),
     ("update_installed_skill.py --list-skills", ["update_installed_skill.py", "--list-skills"]),
+    ("generate_skill_catalog.py --check", ["generate_skill_catalog.py", "--check"]),
     ("Python compile check", ["py_compile"]),
     ("git diff --check", ["git", "diff", "--check"]),
     ("update dry-run smoke test", ["update_installed_skill.py", "--target-root"]),
@@ -481,10 +494,11 @@ def run_static_checks(report: Report) -> None:
         )
     else:
         report.warn("Static Checks", "skill-local prompt-styles", "no prompt-styles directories found")
-    if (ROOT / "prompts").exists():
-        report.fail("Static Checks", "canonical prompt style directory", "root prompts/ exists")
+    prompt_library = ROOT / "prompts"
+    if prompt_library.is_dir() and any(prompt_library.glob("*.md")):
+        report.pass_("Static Checks", "root prompt library", "prompts/ contains copy-paste prompts")
     else:
-        report.pass_("Static Checks", "canonical prompt style directory", "no root prompts/ directory")
+        report.fail("Static Checks", "root prompt library", "prompts/ is missing markdown prompts")
     if (ROOT / "tests" / "expected-triggers.json").is_file():
         report.pass_("Static Checks", "canonical trigger fixture", "tests/expected-triggers.json exists")
     else:
