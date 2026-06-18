@@ -8,13 +8,18 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
 PYTHON = sys.executable
-TMP_ROOT = Path("/private/tmp")
+TMP_ROOT = (
+    Path(os.environ.get("CODEX_SKILL_TMP_ROOT", tempfile.gettempdir()))
+    .expanduser()
+    .resolve()
+)
 
 LHE = Path(".agents/skills/long-horizon-engineering")
 AI_VIDEO = Path(".agents/skills/ai-video-production")
@@ -33,6 +38,38 @@ REQUIRED_CORE_FILES = [
     Path("INSTALL.md"),
     Path("UPGRADE_GUIDE.md"),
     Path("CHANGELOG.md"),
+    Path("CODE_OF_CONDUCT.md"),
+    Path("COMMUNITY_SKILLS.md"),
+    Path("CONTRIBUTING.md"),
+    Path("SECURITY.md"),
+    Path(".github/ISSUE_TEMPLATE/bug_report.md"),
+    Path(".github/ISSUE_TEMPLATE/config.yml"),
+    Path(".github/ISSUE_TEMPLATE/feature_request.md"),
+    Path(".github/ISSUE_TEMPLATE/skill_proposal.md"),
+    Path(".github/pull_request_template.md"),
+    Path("docs/demo/README.md"),
+    Path("examples/bug-investigation/expected-output.md"),
+    Path("examples/bug-investigation/prompt.md"),
+    Path("examples/bug-investigation/workflow.md"),
+    Path("examples/large-refactor/expected-output.md"),
+    Path("examples/large-refactor/prompt.md"),
+    Path("examples/large-refactor/workflow.md"),
+    Path("examples/repository-migration/expected-output.md"),
+    Path("examples/repository-migration/prompt.md"),
+    Path("examples/repository-migration/workflow.md"),
+    Path("examples/resume-work/expected-output.md"),
+    Path("examples/resume-work/prompt.md"),
+    Path("examples/resume-work/workflow.md"),
+    Path("scripts/generate_skill_catalog.py"),
+    Path("prompts/bug-investigation.md"),
+    Path("prompts/large-refactor.md"),
+    Path("prompts/pr-review.md"),
+    Path("prompts/repository-migration.md"),
+    Path("prompts/resume-work.md"),
+    Path("templates/findings-report.md"),
+    Path("templates/migration-report.md"),
+    Path("templates/project-plan.md"),
+    Path("templates/validation-report.md"),
 ]
 
 PRODUCTIZED_FILES = [
@@ -87,6 +124,7 @@ CORE_COMMANDS = [
     [PYTHON, str(LHE_SCRIPTS / "audit_skill_descriptions.py"), "--json"],
     [PYTHON, str(LHE_SCRIPTS / "audit_skill_descriptions.py"), "--help"],
     [PYTHON, str(LHE_SCRIPTS / "update_installed_skill.py"), "--list-skills"],
+    [PYTHON, "scripts/generate_skill_catalog.py", "--check"],
     ["git", "diff", "--check"],
 ]
 
@@ -96,6 +134,7 @@ CI_EXPECTED = [
     ("test_expected_triggers.py", ["test_expected_triggers.py"]),
     ("audit_skill_descriptions.py", ["audit_skill_descriptions.py"]),
     ("update_installed_skill.py --list-skills", ["update_installed_skill.py", "--list-skills"]),
+    ("generate_skill_catalog.py --check", ["generate_skill_catalog.py", "--check"]),
     ("Python compile check", ["py_compile"]),
     ("git diff --check", ["git", "diff", "--check"]),
     ("update dry-run smoke test", ["update_installed_skill.py", "--target-root"]),
@@ -423,7 +462,7 @@ def run_python_compile(report: Report) -> None:
     if scripts_dir.is_dir():
         scripts.extend(sorted(scripts_dir.glob("*.py")))
     env = os.environ.copy()
-    env["PYTHONPYCACHEPREFIX"] = "/private/tmp/codex-pycache"
+    env["PYTHONPYCACHEPREFIX"] = str(TMP_ROOT / "codex-pycache")
     args = [PYTHON, "-m", "py_compile", *[str(path) for path in scripts]]
     result = subprocess.run(
         args,
@@ -476,10 +515,11 @@ def run_static_checks(report: Report) -> None:
         )
     else:
         report.warn("Static Checks", "skill-local prompt-styles", "no prompt-styles directories found")
-    if (ROOT / "prompts").exists():
-        report.fail("Static Checks", "canonical prompt style directory", "root prompts/ exists")
+    prompt_library = ROOT / "prompts"
+    if prompt_library.is_dir() and any(prompt_library.glob("*.md")):
+        report.pass_("Static Checks", "root prompt library", "prompts/ contains copy-paste prompts")
     else:
-        report.pass_("Static Checks", "canonical prompt style directory", "no root prompts/ directory")
+        report.fail("Static Checks", "root prompt library", "prompts/ is missing markdown prompts")
     if (ROOT / "tests" / "expected-triggers.json").is_file():
         report.pass_("Static Checks", "canonical trigger fixture", "tests/expected-triggers.json exists")
     else:

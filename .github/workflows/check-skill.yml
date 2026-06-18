@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -38,9 +40,11 @@ jobs:
           python3 .agents/skills/long-horizon-engineering/scripts/update_installed_skill.py --help
           python3 .agents/skills/long-horizon-engineering/scripts/test_expected_triggers.py --help
           python3 .agents/skills/ai-video-production/scripts/scan_top_media_skills.py --help
+          python3 scripts/generate_skill_catalog.py --help
 
       - name: Run productized package checks
         run: |
+          python3 scripts/generate_skill_catalog.py --check
           python3 .agents/skills/long-horizon-engineering/scripts/doctor.py
           python3 .agents/skills/long-horizon-engineering/scripts/audit_skill_descriptions.py
           python3 .agents/skills/long-horizon-engineering/scripts/audit_skill_safety.py
@@ -59,6 +63,7 @@ jobs:
           .agents/skills/long-horizon-engineering/scripts/check_skill_package.py
           .agents/skills/long-horizon-engineering/scripts/audit_skill_descriptions.py
           scripts/full_skill_validation.py
+          scripts/generate_skill_catalog.py
           "
           if [ -f .agents/skills/long-horizon-engineering/scripts/audit_skill_optimization_readiness.py ]; then
             scripts_to_compile="$scripts_to_compile .agents/skills/long-horizon-engineering/scripts/audit_skill_optimization_readiness.py"
@@ -69,7 +74,15 @@ jobs:
           PYTHONPYCACHEPREFIX=/tmp/codex-pycache python3 -m py_compile $scripts_to_compile
 
       - name: Check whitespace in diff
-        run: git diff --check
+        run: |
+          if [ -n "${{ github.base_ref }}" ]; then
+            git fetch origin "${{ github.base_ref }}:refs/remotes/origin/${{ github.base_ref }}"
+            git diff --check "origin/${{ github.base_ref }}...HEAD"
+          elif git rev-parse --verify HEAD~1 >/dev/null 2>&1; then
+            git diff --check HEAD~1...HEAD
+          else
+            git diff --check HEAD
+          fi
 
       - name: Smoke test update dry-run
         run: |

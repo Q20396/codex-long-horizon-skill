@@ -9,6 +9,29 @@ Use this optional skill when a task involves planning or producing AI-assisted v
 
 This skill is documentation-first. It may guide scripts, storyboards, shot lists, asset manifests, preview plans, and render handoffs, but it must not automatically render, upload, publish, or post media.
 
+## Example Prompts
+
+- Use the ai-video-production skill. Create a 60-second vertical video brief,
+  script outline, storyboard, shot list, asset manifest, and render handoff
+  using placeholder assets only.
+- Use the ai-video-production skill. Turn this article into visual prompts and
+  a storyboard, but do not render or upload anything.
+- Use the ai-video-production skill. Build a design system for this short-form
+  explainer and require human approval before render.
+
+## Validation Guidance
+
+Before claiming a video plan is ready, verify that the brief, script,
+storyboard, shot list, asset manifest, render handoff, privacy notes, licensing
+notes, and human approval gate are present. For rendered projects, preview and
+inspect outputs before publication.
+
+## Failure Recovery Strategy
+
+If assets are missing, source text is unclear, private material appears, or a
+render step is not approved, stop and produce a handoff with what is known,
+what remains blocked, and the next safe approval-gated action.
+
 When turning text into video, translate the meaning of the text into matching
 visuals. Do not default to plain caption cards. If real footage or approved
 assets are unavailable, use original abstract animation, motion graphics,

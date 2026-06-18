@@ -4,6 +4,12 @@ All notable changes to this project are summarized here.
 
 ## Unreleased
 
+- Added open-source growth scaffolding: issue templates, pull request template,
+  educational workflow examples, demo recording guidance, community skills
+  registry, security policy, code of conduct, and validation coverage.
+- Redesigned README for catalog-first onboarding, added root prompt and report
+  templates, added contributor guidance, and added automated catalog/link/skill
+  quality checks.
 - Added privacy-first disaster monitoring enablement guidance with manual
   monitored locations, optional one-time approximate current location, and
   alert-rule/runbook templates.
