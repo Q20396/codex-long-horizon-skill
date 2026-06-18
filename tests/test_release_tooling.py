@@ -378,6 +378,236 @@ class FrontMatterParserTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("marketplace source.source must be url for root plugin CLI installs", output)
 
+    def test_validator_rejects_wrong_marketplace_url(self) -> None:
+        repo = self.temp / "repo-wrong-url"
+        shutil.copytree(ROOT, repo, ignore=shutil.ignore_patterns(".git", "__pycache__"))
+        marketplace = repo / ".agents" / "plugins" / "marketplace.json"
+        data = json.loads(marketplace.read_text(encoding="utf-8"))
+        data["plugins"][0]["source"]["url"] = "https://github.com/example/not-this-plugin.git"
+        marketplace.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+        result = subprocess.run(
+            [sys.executable, "scripts/validate_plugin_package.py"],
+            cwd=repo,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        output = result.stdout + result.stderr
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("marketplace source.url must be https://github.com/Q20396/codex-long-horizon-skill.git", output)
+
+    def test_validator_rejects_wrong_marketplace_ref(self) -> None:
+        repo = self.temp / "repo-wrong-ref"
+        shutil.copytree(ROOT, repo, ignore=shutil.ignore_patterns(".git", "__pycache__"))
+        marketplace = repo / ".agents" / "plugins" / "marketplace.json"
+        data = json.loads(marketplace.read_text(encoding="utf-8"))
+        data["plugins"][0]["source"]["ref"] = "release-candidate"
+        marketplace.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+        result = subprocess.run(
+            [sys.executable, "scripts/validate_plugin_package.py"],
+            cwd=repo,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        output = result.stdout + result.stderr
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("marketplace source.ref must be main", output)
+
+
+class ReleaseReadinessTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.temp = Path(tempfile.mkdtemp(prefix="release-readiness-test-"))
+
+    def tearDown(self) -> None:
+        shutil.rmtree(self.temp, ignore_errors=True)
+
+    def copy_repo(self, name: str) -> Path:
+        repo = self.temp / name
+        shutil.copytree(ROOT, repo, ignore=shutil.ignore_patterns(".git", "__pycache__"))
+        return repo
+
+    def run_readiness(
+        self,
+        repo: Path,
+        *args: str,
+        env: dict[str, str] | None = None,
+    ) -> subprocess.CompletedProcess[str]:
+        run_env = os.environ.copy()
+        if env:
+            run_env.update(env)
+        return subprocess.run(
+            [sys.executable, "scripts/check_release_readiness.py", "--version", "0.1.0", *args],
+            cwd=repo,
+            env=run_env,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+
+    def release_notes(self, repo: Path) -> Path:
+        return repo / "docs" / "releases" / "v0.1.0.md"
+
+    def changelog(self, repo: Path) -> Path:
+        return repo / "CHANGELOG.md"
+
+    def init_repo_with_tag(self, repo: Path) -> None:
+        subprocess.run(["git", "init"], cwd=repo, check=True, capture_output=True, text=True)
+        subprocess.run(
+            ["git", "-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "--allow-empty", "-m", "initial"],
+            cwd=repo,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        subprocess.run(["git", "tag", "v0.1.0"], cwd=repo, check=True, capture_output=True, text=True)
+
+    def assert_failed_without_traceback(self, result: subprocess.CompletedProcess[str], expected: str) -> None:
+        output = result.stdout + result.stderr
+        self.assertNotEqual(result.returncode, 0, output)
+        self.assertIn(expected, output)
+        self.assertNotIn("Traceback", output)
+
+    def test_publishable_final_release_notes_pass(self) -> None:
+        repo = self.copy_repo("publishable")
+        result = self.run_readiness(repo, "--allow-existing-tag")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("allow-existing-tag", result.stdout)
+
+    def test_prepared_not_released_marker_fails(self) -> None:
+        repo = self.copy_repo("prepared-marker")
+        self.release_notes(repo).write_text(
+            self.release_notes(repo).read_text(encoding="utf-8") + "\nStatus: prepared, not released.\n",
+            encoding="utf-8",
+        )
+        result = self.run_readiness(repo, "--allow-existing-tag")
+        self.assert_failed_without_traceback(result, "prepared, not released")
+
+    def test_not_yet_released_marker_fails(self) -> None:
+        repo = self.copy_repo("not-yet-marker")
+        self.release_notes(repo).write_text(
+            self.release_notes(repo).read_text(encoding="utf-8") + "\nThis is not yet released.\n",
+            encoding="utf-8",
+        )
+        result = self.run_readiness(repo, "--allow-existing-tag")
+        self.assert_failed_without_traceback(result, "not yet released")
+
+    def test_release_should_happen_only_after_marker_fails(self) -> None:
+        repo = self.copy_repo("release-after-marker")
+        self.release_notes(repo).write_text(
+            self.release_notes(repo).read_text(encoding="utf-8") + "\nRelease should happen only after review.\n",
+            encoding="utf-8",
+        )
+        result = self.run_readiness(repo, "--allow-existing-tag")
+        self.assert_failed_without_traceback(result, "release should happen only after")
+
+    def test_do_not_publish_yet_marker_fails(self) -> None:
+        repo = self.copy_repo("do-not-publish-marker")
+        self.release_notes(repo).write_text(
+            self.release_notes(repo).read_text(encoding="utf-8") + "\nDo not publish yet.\n",
+            encoding="utf-8",
+        )
+        result = self.run_readiness(repo, "--allow-existing-tag")
+        self.assert_failed_without_traceback(result, "do not publish yet")
+
+    def test_missing_dated_changelog_heading_fails(self) -> None:
+        repo = self.copy_repo("missing-changelog-heading")
+        self.changelog(repo).write_text(
+            self.changelog(repo).read_text(encoding="utf-8").replace("## 0.1.0 - 2026-06-18", "## 0.1.0"),
+            encoding="utf-8",
+        )
+        result = self.run_readiness(repo, "--allow-existing-tag")
+        self.assert_failed_without_traceback(result, "CHANGELOG missing dated version section")
+
+    def test_empty_dated_changelog_section_fails(self) -> None:
+        repo = self.copy_repo("empty-changelog")
+        self.changelog(repo).write_text(
+            "# Changelog\n\nAll notable changes to this project are summarized here.\n\n"
+            "## Unreleased\n\nNo unreleased changes.\n\n"
+            "## 0.1.0 - 2026-06-18\n\n"
+            "## 2026-06-15\n\n- Older work.\n",
+            encoding="utf-8",
+        )
+        result = self.run_readiness(repo, "--allow-existing-tag")
+        self.assert_failed_without_traceback(result, "CHANGELOG version section is empty")
+
+    def test_valid_dated_changelog_section_passes(self) -> None:
+        repo = self.copy_repo("valid-changelog")
+        result = self.run_readiness(repo, "--allow-existing-tag")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_manifest_version_mismatch_fails(self) -> None:
+        repo = self.copy_repo("manifest-mismatch")
+        manifest = repo / ".codex-plugin" / "plugin.json"
+        data = json.loads(manifest.read_text(encoding="utf-8"))
+        data["version"] = "9.9.9"
+        manifest.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+        result = self.run_readiness(repo, "--allow-existing-tag")
+        self.assert_failed_without_traceback(result, "plugin version '9.9.9' does not match '0.1.0'")
+
+    def test_pre_tag_passes_without_local_tag(self) -> None:
+        repo = self.copy_repo("pre-tag-no-tag")
+        result = self.run_readiness(repo, "--pre-tag")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_pre_tag_fails_with_local_tag(self) -> None:
+        repo = self.copy_repo("pre-tag-with-tag")
+        self.init_repo_with_tag(repo)
+        result = self.run_readiness(repo, "--pre-tag")
+        self.assert_failed_without_traceback(result, "local tag already exists")
+
+    def test_allow_existing_tag_passes_without_local_tag(self) -> None:
+        repo = self.copy_repo("allow-no-tag")
+        result = self.run_readiness(repo, "--allow-existing-tag")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_allow_existing_tag_passes_with_local_tag(self) -> None:
+        repo = self.copy_repo("allow-with-tag")
+        self.init_repo_with_tag(repo)
+        result = self.run_readiness(repo, "--allow-existing-tag")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_default_mode_matches_allow_existing_tag(self) -> None:
+        repo = self.copy_repo("default-with-tag")
+        self.init_repo_with_tag(repo)
+        result = self.run_readiness(repo)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("allow-existing-tag", result.stdout)
+
+    def test_both_mode_flags_fail_cleanly(self) -> None:
+        repo = self.copy_repo("both-flags")
+        result = self.run_readiness(repo, "--pre-tag", "--allow-existing-tag")
+        output = result.stdout + result.stderr
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("not allowed with argument", output)
+        self.assertNotIn("Traceback", output)
+
+    def test_routine_mode_performs_no_remote_or_network_check(self) -> None:
+        repo = self.copy_repo("no-remote-check")
+        fake_bin = self.temp / "fake-bin"
+        fake_bin.mkdir()
+        fake_git = fake_bin / "git"
+        fake_git.write_text("#!/bin/sh\necho git should not run >&2\nexit 99\n", encoding="utf-8")
+        fake_git.chmod(0o755)
+        env = {"PATH": str(fake_bin) + os.pathsep + os.environ.get("PATH", "")}
+        result = self.run_readiness(repo, "--allow-existing-tag", env=env)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_duplicate_release_content_under_unreleased_fails(self) -> None:
+        repo = self.copy_repo("duplicated-changelog")
+        text = self.changelog(repo).read_text(encoding="utf-8")
+        duplicated = "- Added plugin manifest packaging and a Git-backed repository marketplace for\n"
+        text = text.replace("No unreleased changes.\n", "No unreleased changes.\n\n" + duplicated)
+        self.changelog(repo).write_text(text, encoding="utf-8")
+        result = self.run_readiness(repo, "--allow-existing-tag")
+        self.assert_failed_without_traceback(result, "CHANGELOG duplicates release content under Unreleased")
+
+    def test_malformed_release_inputs_fail_without_traceback(self) -> None:
+        repo = self.copy_repo("malformed-release")
+        self.release_notes(repo).write_bytes(b"# bad\n\xff\n")
+        result = self.run_readiness(repo, "--allow-existing-tag")
+        self.assert_failed_without_traceback(result, "release notes are not valid UTF-8")
+
 
 class FreshInstallCliTests(unittest.TestCase):
     def setUp(self) -> None:
