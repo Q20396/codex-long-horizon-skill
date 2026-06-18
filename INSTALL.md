@@ -81,9 +81,14 @@ From this repository root:
 python3 .agents/skills/long-horizon-engineering/scripts/check_skill_package.py
 python3 .agents/skills/long-horizon-engineering/scripts/doctor.py
 python3 .agents/skills/long-horizon-engineering/scripts/test_expected_triggers.py
+python3 -m unittest discover -s tests -p "test_*.py"
 python3 scripts/validate_plugin_package.py
-python3 scripts/test_fresh_install.py
+python3 scripts/test_fresh_install.py --skip-codex-cli
 ```
+
+For a local release smoke test with your installed Codex CLI, run
+`python3 scripts/test_fresh_install.py --require-codex-cli --verbose`. Add
+`--require-plugin-install` only when your CLI exposes `codex plugin add`.
 
 ## Update An Installed Skill
 

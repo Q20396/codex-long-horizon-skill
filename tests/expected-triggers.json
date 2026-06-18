@@ -319,12 +319,21 @@
     },
     {
       "id": "boundary-asset-licensing",
-      "prompt": "Review the planned video assets for licensing and privacy risks before the producer replaces placeholders.",
+      "prompt": "Create an inventory of the planned video assets, record known license and attribution status, flag privacy concerns, and identify which items still require producer or legal approval. Do not make legal conclusions.",
       "invocation_mode": "implicit",
       "expected_skill": "ai-video-production",
       "category": "boundary-overlap",
-      "rationale": "Video asset licensing and privacy review belongs to the video workflow.",
-      "tags": ["licensing", "privacy", "assets"]
+      "rationale": "This is a video-production asset manifest and approval workflow, not a legal determination.",
+      "tags": ["licensing", "privacy", "assets", "approval-checklist"]
+    },
+    {
+      "id": "none-implicit-copyright-legal-conclusion",
+      "prompt": "Determine whether this copyrighted footage is legally cleared for commercial use and give me a definitive legal conclusion.",
+      "invocation_mode": "implicit",
+      "expected_skill": "none",
+      "category": "boundary-overlap",
+      "rationale": "A definitive copyright or legal-rights determination is outside the implicit scope of both bundled skills.",
+      "tags": ["copyright", "legal", "licensing"]
     },
     {
       "id": "explicit-lhe-unusual-safe",

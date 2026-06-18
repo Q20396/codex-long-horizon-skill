@@ -43,6 +43,65 @@ def resolve_plugin_path(relative_path: str) -> Path:
     return resolved
 
 
+def relative(path: Path, root: Path = ROOT) -> str:
+    try:
+        return str(path.relative_to(root))
+    except ValueError:
+        return str(path)
+
+
+def parse_skill_frontmatter(path: Path, root: Path = ROOT) -> dict[str, str]:
+    try:
+        text = path.read_text(encoding="utf-8")
+    except UnicodeDecodeError as exc:
+        raise ValueError(f"{relative(path, root)} bundled skill is not valid UTF-8") from exc
+
+    normalized = text.replace("\r\n", "\n")
+    lines = normalized.split("\n")
+    if not lines or lines[0] != "---":
+        raise ValueError(f"{relative(path, root)} bundled skill front matter is missing opening delimiter")
+
+    closing_index = None
+    for index, line in enumerate(lines[1:], start=1):
+        if line == "---":
+            closing_index = index
+            break
+    if closing_index is None:
+        raise ValueError(f"{relative(path, root)} bundled skill front matter is missing closing delimiter")
+
+    data: dict[str, str] = {}
+    for raw_line in lines[1:closing_index]:
+        if ":" not in raw_line:
+            continue
+        key, value = raw_line.split(":", 1)
+        data[key.strip()] = value.strip().strip('"').strip("'")
+
+    if "name" not in data:
+        raise ValueError(f"{relative(path, root)} bundled skill front matter is missing name")
+    if not data["name"].strip():
+        raise ValueError(f"{relative(path, root)} bundled skill front matter name is empty")
+    return data
+
+
+def bundled_skill_names(skills_root: Path, errors: list[str], root: Path = ROOT) -> list[str]:
+    skill_names = []
+    for skill_dir in sorted(path for path in skills_root.iterdir() if path.is_dir()):
+        skill_md = skill_dir / "SKILL.md"
+        if not skill_md.is_file():
+            errors.append(f"bundled skill missing SKILL.md: {relative(skill_dir, root)}")
+            continue
+        try:
+            metadata = parse_skill_frontmatter(skill_md, root)
+        except (OSError, ValueError) as exc:
+            errors.append(str(exc))
+            continue
+        skill_names.append(metadata["name"].strip())
+    duplicates = sorted(name for name in set(skill_names) if skill_names.count(name) > 1)
+    if duplicates:
+        errors.append(f"duplicate bundled skill name: {', '.join(duplicates)}")
+    return skill_names
+
+
 def validate_manifest(errors: list[str]) -> dict:
     try:
         manifest = load_json(MANIFEST)
@@ -95,18 +154,8 @@ def validate_manifest(errors: list[str]) -> dict:
             skills_root = resolve_plugin_path(skills_path)
             if not skills_root.is_dir():
                 errors.append(f"skills path does not exist: {skills_path}")
-            skill_names = []
-            for skill_dir in sorted(path for path in skills_root.iterdir() if path.is_dir()):
-                skill_md = skill_dir / "SKILL.md"
-                if not skill_md.is_file():
-                    errors.append(f"bundled skill missing SKILL.md: {skill_dir.relative_to(ROOT)}")
-                    continue
-                text = skill_md.read_text(encoding="utf-8")
-                match = re.search(r"^name:\s*(.+)$", text.split("---\n", 2)[1], re.MULTILINE)
-                skill_names.append(match.group(1).strip() if match else skill_dir.name)
-            duplicates = sorted(name for name in set(skill_names) if skill_names.count(name) > 1)
-            if duplicates:
-                errors.append(f"duplicate skill names: {', '.join(duplicates)}")
+            else:
+                bundled_skill_names(skills_root, errors)
         except (OSError, ValueError) as exc:
             errors.append(f"invalid skills path: {exc}")
     else:

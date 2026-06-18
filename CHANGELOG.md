@@ -16,6 +16,10 @@ All notable changes to this project are summarized here.
   plugin distribution without duplicating canonical skill directories.
 - Added plugin package validation, fresh isolated install verification, and
   deterministic release-readiness checks.
+- Hardened release tooling so marketplace registration is tested independently
+  from listing, failed advertised CLI commands fail, malformed skill front matter
+  reports clean validation errors, and video licensing routing avoids legal
+  conclusions.
 - Updated README trust wording from production-grade claims to
   production-oriented positioning and added plugin installation navigation.
 - Added first-contribution guide, demo recording script, and v0.1.0 release

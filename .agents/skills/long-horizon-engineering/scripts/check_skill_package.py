@@ -68,6 +68,7 @@ PACKAGE_ONLY_FILES = [
     "scripts/check_release_readiness.py",
     "tests/expected-triggers.json",
     "tests/skill-eval-cases.json",
+    "tests/test_release_tooling.py",
 ]
 
 INSTALLED_REQUIRED_FILES = [

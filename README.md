@@ -189,6 +189,11 @@ includes `.codex-plugin/plugin.json` and a repo marketplace at
 `.agents/plugins/marketplace.json` so the canonical skills can be distributed
 without duplicating the skill directories.
 
+Release checks distinguish static plugin package validation, direct skill
+installation, marketplace registration, and actual plugin installation. Actual
+plugin installation is claimed only when the installed Codex CLI exposes and
+passes `codex plugin add`.
+
 Recommended installation path:
 
 ```text

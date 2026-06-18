@@ -56,8 +56,9 @@ jobs:
           python3 .agents/skills/long-horizon-engineering/scripts/manage_skill_lifecycle.py suggest-freeze --include-never-used
           python3 .agents/skills/long-horizon-engineering/scripts/test_expected_triggers.py
           python3 .agents/skills/long-horizon-engineering/scripts/update_installed_skill.py --list-skills
+          python3 -m unittest discover -s tests -p "test_*.py"
           python3 scripts/validate_plugin_package.py
-          python3 scripts/test_fresh_install.py
+          python3 scripts/test_fresh_install.py --skip-codex-cli
           python3 scripts/check_release_readiness.py --version 0.1.0
 
       - name: Compile Python helper scripts
@@ -74,6 +75,7 @@ jobs:
           scripts/validate_plugin_package.py
           scripts/test_fresh_install.py
           scripts/check_release_readiness.py
+          tests/test_release_tooling.py
           "
           if [ -f .agents/skills/long-horizon-engineering/scripts/audit_skill_optimization_readiness.py ]; then
             scripts_to_compile="$scripts_to_compile .agents/skills/long-horizon-engineering/scripts/audit_skill_optimization_readiness.py"

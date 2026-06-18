@@ -25,10 +25,11 @@ Remove the marketplace when you no longer want it:
 codex plugin marketplace remove codex-long-horizon-skills
 ```
 
-The current CLI exposes `marketplace add`, `marketplace upgrade`, and
-`marketplace remove`. It does not expose a `marketplace list` command in the
-tested CLI version, so use Codex's plugin UI or the marketplace file to verify
-configuration when list output is unavailable.
+Codex CLI capabilities vary by installed version. Current official
+documentation describes marketplace add/list and plugin add/list commands, while
+older installed CLIs may expose only marketplace add/upgrade/remove. Treat these
+as capability differences: marketplace registration is not the same as actual
+plugin installation.
 
 After adding or upgrading the marketplace, restart Codex if the plugin or skills
 do not appear immediately.
@@ -63,8 +64,18 @@ From this repository, run:
 
 ```bash
 python3 scripts/validate_plugin_package.py
-python3 scripts/test_fresh_install.py
+python3 -m unittest discover -s tests -p "test_*.py"
+python3 scripts/test_fresh_install.py --skip-codex-cli
 ```
 
-The fresh-install test uses temporary directories and does not modify your real
-home directory.
+The deterministic fresh-install test verifies package validation and direct
+skill installation without requiring Codex CLI. To test the locally installed
+Codex CLI as a pre-release gate, run:
+
+```bash
+python3 scripts/test_fresh_install.py --require-codex-cli --verbose
+```
+
+Add `--require-plugin-install` only when the installed CLI exposes
+`codex plugin add`. All Codex CLI smoke tests use temporary `HOME`,
+`CODEX_HOME`, and XDG paths, and must not modify your real Codex configuration.

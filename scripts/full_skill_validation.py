@@ -70,6 +70,7 @@ REQUIRED_CORE_FILES = [
     Path("scripts/validate_plugin_package.py"),
     Path("scripts/test_fresh_install.py"),
     Path("scripts/check_release_readiness.py"),
+    Path("tests/test_release_tooling.py"),
     Path(".codex-plugin/plugin.json"),
     Path(".agents/plugins/marketplace.json"),
     Path("prompts/bug-investigation.md"),
@@ -136,9 +137,10 @@ CORE_COMMANDS = [
     [PYTHON, str(LHE_SCRIPTS / "audit_skill_descriptions.py"), "--json"],
     [PYTHON, str(LHE_SCRIPTS / "audit_skill_descriptions.py"), "--help"],
     [PYTHON, str(LHE_SCRIPTS / "update_installed_skill.py"), "--list-skills"],
+    [PYTHON, "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py"],
     [PYTHON, "scripts/generate_skill_catalog.py", "--check"],
     [PYTHON, "scripts/validate_plugin_package.py"],
-    [PYTHON, "scripts/test_fresh_install.py"],
+    [PYTHON, "scripts/test_fresh_install.py", "--skip-codex-cli"],
     [PYTHON, "scripts/check_release_readiness.py", "--version", "0.1.0"],
     ["git", "diff", "--check"],
 ]
@@ -149,9 +151,10 @@ CI_EXPECTED = [
     ("test_expected_triggers.py", ["test_expected_triggers.py"]),
     ("audit_skill_descriptions.py", ["audit_skill_descriptions.py"]),
     ("update_installed_skill.py --list-skills", ["update_installed_skill.py", "--list-skills"]),
+    ("release tooling unit tests", ["unittest", "discover"]),
     ("generate_skill_catalog.py --check", ["generate_skill_catalog.py", "--check"]),
     ("validate_plugin_package.py", ["validate_plugin_package.py"]),
-    ("test_fresh_install.py", ["test_fresh_install.py"]),
+    ("test_fresh_install.py --skip-codex-cli", ["test_fresh_install.py", "--skip-codex-cli"]),
     ("check_release_readiness.py", ["check_release_readiness.py", "--version", "0.1.0"]),
     ("Python compile check", ["py_compile"]),
     ("git diff --check", ["git", "diff", "--check"]),
@@ -482,6 +485,9 @@ def run_python_compile(report: Report) -> None:
     scripts_dir = ROOT / "scripts"
     if scripts_dir.is_dir():
         scripts.extend(sorted(scripts_dir.glob("*.py")))
+    tests_dir = ROOT / "tests"
+    if tests_dir.is_dir():
+        scripts.extend(sorted(tests_dir.glob("*.py")))
     env = os.environ.copy()
     env["PYTHONPYCACHEPREFIX"] = str(TMP_ROOT / "codex-pycache")
     args = [PYTHON, "-m", "py_compile", *[str(path) for path in scripts]]

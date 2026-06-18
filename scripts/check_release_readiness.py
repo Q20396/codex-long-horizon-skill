@@ -66,6 +66,7 @@ def main() -> None:
         ROOT / "scripts" / "test_fresh_install.py",
         ROOT / "scripts" / "full_skill_validation.py",
         ROOT / "tests" / "expected-triggers.json",
+        ROOT / "tests" / "test_release_tooling.py",
         ROOT / ".agents" / "plugins" / "marketplace.json",
     ]:
         if not path.is_file():

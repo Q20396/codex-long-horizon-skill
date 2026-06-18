@@ -115,6 +115,8 @@ For each major script beat, plan a corresponding visual beat:
   boundaries, and licensing constraints.
 - Do not use copyrighted, private, client, family, legal, medical, financial,
   identity, or confidential material without explicit approval.
+- Use licensing fields and approval checklists for production handoff only; do
+  not provide definitive copyright, rights-clearance, or legal conclusions.
 
 ## Privacy Rules
 
