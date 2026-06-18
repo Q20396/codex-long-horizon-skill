@@ -378,6 +378,42 @@ class FrontMatterParserTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("marketplace source.source must be url for root plugin CLI installs", output)
 
+    def test_validator_rejects_wrong_marketplace_url(self) -> None:
+        repo = self.temp / "repo-wrong-url"
+        shutil.copytree(ROOT, repo, ignore=shutil.ignore_patterns(".git", "__pycache__"))
+        marketplace = repo / ".agents" / "plugins" / "marketplace.json"
+        data = json.loads(marketplace.read_text(encoding="utf-8"))
+        data["plugins"][0]["source"]["url"] = "https://github.com/example/not-this-plugin.git"
+        marketplace.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+        result = subprocess.run(
+            [sys.executable, "scripts/validate_plugin_package.py"],
+            cwd=repo,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        output = result.stdout + result.stderr
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("marketplace source.url must be https://github.com/Q20396/codex-long-horizon-skill.git", output)
+
+    def test_validator_rejects_wrong_marketplace_ref(self) -> None:
+        repo = self.temp / "repo-wrong-ref"
+        shutil.copytree(ROOT, repo, ignore=shutil.ignore_patterns(".git", "__pycache__"))
+        marketplace = repo / ".agents" / "plugins" / "marketplace.json"
+        data = json.loads(marketplace.read_text(encoding="utf-8"))
+        data["plugins"][0]["source"]["ref"] = "release-candidate"
+        marketplace.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+        result = subprocess.run(
+            [sys.executable, "scripts/validate_plugin_package.py"],
+            cwd=repo,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        output = result.stdout + result.stderr
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("marketplace source.ref must be main", output)
+
 
 class FreshInstallCliTests(unittest.TestCase):
     def setUp(self) -> None:
