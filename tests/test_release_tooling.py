@@ -67,11 +67,34 @@ def write_fake_codex(bin_dir: Path) -> Path:
                 values = [arg for arg in args if not arg.startswith("-")]
                 return values[-1] if values else ""
 
-            def supports_modern():
-                return scenario in {"modern", "list_failure", "plugin_failure"}
+            def supports_list():
+                return scenario in {
+                    "modern",
+                    "list_failure",
+                    "plugin_failure",
+                    "json_wrong_root",
+                    "json_outside_root",
+                    "text_list_good",
+                    "text_list_name_only",
+                    "text_list_wrong_root",
+                    "plugin_non_json",
+                    "plugin_source_only",
+                    "plugin_ambiguous",
+                }
 
             def supports_plugin():
-                return scenario in {"modern", "plugin_failure"}
+                return scenario in {
+                    "modern",
+                    "plugin_failure",
+                    "plugin_non_json",
+                    "plugin_source_only",
+                    "plugin_ambiguous",
+                }
+
+            def supports_json(command):
+                if scenario in {"text_list_good", "text_list_name_only", "text_list_wrong_root", "plugin_non_json", "plugin_source_only", "plugin_ambiguous"}:
+                    return command == "marketplace_add"
+                return scenario in {"modern", "list_failure", "plugin_failure", "json_wrong_root", "json_outside_root"}
 
             if argv == ["--version"]:
                 print("codex-cli fake-1.0.0")
@@ -85,35 +108,41 @@ def write_fake_codex(bin_dir: Path) -> Path:
 
             if argv == ["plugin", "marketplace", "--help"]:
                 print("Commands:\n  add")
-                if supports_modern():
+                if supports_list():
                     print("  list")
                 raise SystemExit(0)
 
             if argv == ["plugin", "marketplace", "add", "--help"]:
                 print("Usage: codex plugin marketplace add [OPTIONS] <SOURCE>")
-                if supports_modern():
+                if supports_json("marketplace_add"):
                     print("Options:\n  --json")
                 raise SystemExit(0)
 
             if argv == ["plugin", "marketplace", "list", "--help"]:
-                if not supports_modern():
+                if not supports_list():
                     print("error: unrecognized subcommand 'list'", file=sys.stderr)
                     raise SystemExit(2)
-                print("Usage: codex plugin marketplace list [--json]")
+                print("Usage: codex plugin marketplace list")
+                if supports_json("marketplace_list"):
+                    print("Options:\n  --json")
                 raise SystemExit(0)
 
             if argv == ["plugin", "add", "--help"]:
                 if not supports_plugin():
                     print("error: unrecognized subcommand 'add'", file=sys.stderr)
                     raise SystemExit(2)
-                print("Usage: codex plugin add <plugin[@marketplace]> [--json]")
+                print("Usage: codex plugin add <plugin[@marketplace]>")
+                if supports_json("plugin_add"):
+                    print("Options:\n  --json")
                 raise SystemExit(0)
 
             if argv == ["plugin", "list", "--help"]:
                 if not supports_plugin():
                     print("error: unrecognized subcommand 'list'", file=sys.stderr)
                     raise SystemExit(2)
-                print("Usage: codex plugin list [--json]")
+                print("Usage: codex plugin list")
+                if supports_json("plugin_list"):
+                    print("Options:\n  --json")
                 raise SystemExit(0)
 
             if argv[:3] == ["plugin", "marketplace", "add"]:
@@ -137,10 +166,21 @@ def write_fake_codex(bin_dir: Path) -> Path:
                     print("fake marketplace list failed", file=sys.stderr)
                     raise SystemExit(8)
                 state = load_state()
+                root = state.get("source", "")
+                if scenario == "json_wrong_root":
+                    wrong = codex_home / "wrong-marketplace"
+                    wrong.mkdir(parents=True, exist_ok=True)
+                    root = str(wrong)
+                if scenario == "json_outside_root":
+                    root = "/tmp/codex-outside-marketplace"
                 if "--json" in argv:
-                    print(json.dumps([state]))
+                    print(json.dumps({"marketplaces": [{"name": state.get("name", marketplace_name), "root": root, "marketplaceSource": {"source": state.get("source", "")}}]}))
+                elif scenario == "text_list_name_only":
+                    print(state.get("name", marketplace_name))
+                elif scenario == "text_list_wrong_root":
+                    print(f"{state.get('name', marketplace_name)} {codex_home / 'wrong-marketplace'}")
                 else:
-                    print(f"{state.get('name', marketplace_name)} {state.get('source', '')}")
+                    print(f"{state.get('name', marketplace_name)} {root}")
                 raise SystemExit(0)
 
             if argv[:2] == ["plugin", "add"]:
@@ -150,6 +190,17 @@ def write_fake_codex(bin_dir: Path) -> Path:
                 state = load_state()
                 source = Path(state["source"])
                 installed = codex_home / "plugins" / plugin_name
+                if scenario == "plugin_source_only":
+                    print(f"Installed {plugin_name}.")
+                    raise SystemExit(0)
+                if scenario == "plugin_ambiguous":
+                    for suffix in ["a", "b"]:
+                        target = codex_home / "plugins" / f"{plugin_name}-{suffix}"
+                        if target.exists():
+                            shutil.rmtree(target)
+                        shutil.copytree(source, target, ignore=shutil.ignore_patterns(".git", "__pycache__"))
+                    print(f"Installed {plugin_name}.")
+                    raise SystemExit(0)
                 if installed.exists():
                     shutil.rmtree(installed)
                 shutil.copytree(source, installed, ignore=shutil.ignore_patterns(".git", "__pycache__"))
@@ -319,6 +370,37 @@ class FreshInstallCliTests(unittest.TestCase):
         self.assertIn("Plugin installation: passed", output)
         self.assertIn("Plugin listing: passed", output)
 
+    def test_json_list_wrong_root_fails(self) -> None:
+        result = self.run_fresh("json_wrong_root", "--verbose")
+        output = result.stdout + result.stderr
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Marketplace listing: failed", output)
+        self.assertIn("did not identify the isolated registered marketplace", output)
+
+    def test_json_list_outside_root_fails(self) -> None:
+        result = self.run_fresh("json_outside_root", "--verbose")
+        output = result.stdout + result.stderr
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Marketplace listing: failed", output)
+
+    def test_text_list_with_verified_root_passes(self) -> None:
+        result = self.run_fresh("text_list_good", "--verbose")
+        output = result.stdout + result.stderr
+        self.assertEqual(result.returncode, 0, output)
+        self.assertIn("Marketplace listing: passed", output)
+
+    def test_text_list_name_only_fails(self) -> None:
+        result = self.run_fresh("text_list_name_only", "--verbose")
+        output = result.stdout + result.stderr
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Marketplace listing: failed", output)
+
+    def test_text_list_wrong_root_fails(self) -> None:
+        result = self.run_fresh("text_list_wrong_root", "--verbose")
+        output = result.stdout + result.stderr
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Marketplace listing: failed", output)
+
     def test_advertised_list_failure_fails(self) -> None:
         result = self.run_fresh("list_failure", "--verbose")
         output = result.stdout + result.stderr
@@ -330,6 +412,25 @@ class FreshInstallCliTests(unittest.TestCase):
         output = result.stdout + result.stderr
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("Plugin installation: failed", output)
+
+    def test_non_json_plugin_install_discovers_nested_root(self) -> None:
+        result = self.run_fresh("plugin_non_json", "--verbose")
+        output = result.stdout + result.stderr
+        self.assertEqual(result.returncode, 0, output)
+        self.assertIn("Plugin installation: passed", output)
+        self.assertIn("installed plugin files verified", output)
+
+    def test_source_tree_only_plugin_manifest_is_rejected(self) -> None:
+        result = self.run_fresh("plugin_source_only", "--verbose")
+        output = result.stdout + result.stderr
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("plugin add succeeded but installed package was not verified", output)
+
+    def test_ambiguous_plugin_roots_fail(self) -> None:
+        result = self.run_fresh("plugin_ambiguous", "--verbose")
+        output = result.stdout + result.stderr
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("ambiguous plugin roots", output)
 
     def test_explicit_skip_does_not_run_cli(self) -> None:
         result = self.run_fresh("old", "--skip-codex-cli", "--verbose")

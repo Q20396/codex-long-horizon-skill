@@ -45,6 +45,13 @@ class CliSummary:
     plugin_list_json: str = "unavailable"
 
 
+@dataclass
+class MarketplaceEvidence:
+    name: str
+    source_root: Path
+    installed_roots: list[Path]
+
+
 def run(
     args: list[str],
     *,
@@ -202,6 +209,10 @@ def is_inside(child: Path, parent: Path) -> bool:
     return True
 
 
+def canonical(path: Path) -> Path:
+    return path.expanduser().resolve(strict=False)
+
+
 def parse_json_output(result: subprocess.CompletedProcess[str]) -> object | None:
     text = result.stdout.strip()
     if not text:
@@ -240,6 +251,16 @@ def verify_json_path(data: object, key: str, temp_root: Path) -> str | None:
     return None
 
 
+def safe_relative_path(root: Path, value: str) -> Path | None:
+    candidate = Path(value).expanduser()
+    if not candidate.is_absolute():
+        candidate = root / candidate
+    candidate = canonical(candidate)
+    if is_inside(candidate, root):
+        return candidate
+    return None
+
+
 def verify_persisted_registration(
     files: list[Path],
     *,
@@ -268,8 +289,60 @@ def verify_persisted_registration(
     return None
 
 
-def verify_installed_plugin_root(path_text: str, plugin_name: str, version: str) -> str | None:
-    root = Path(path_text)
+def verify_marketplace_root(
+    root: Path,
+    *,
+    marketplace_name: str,
+    plugin_name: str,
+    version: str,
+    boundary: Path,
+) -> str | None:
+    root = canonical(root)
+    if not root.is_dir() or not is_inside(root, boundary):
+        return None
+    marketplace_path = root / ".agents" / "plugins" / "marketplace.json"
+    if not marketplace_path.is_file():
+        return None
+    try:
+        marketplace = load_json(marketplace_path)
+    except (OSError, json.JSONDecodeError):
+        return None
+    if marketplace.get("name") != marketplace_name:
+        return None
+    plugins = marketplace.get("plugins")
+    if not isinstance(plugins, list):
+        return None
+    plugin_entry = next(
+        (entry for entry in plugins if isinstance(entry, dict) and entry.get("name") == plugin_name),
+        None,
+    )
+    if plugin_entry is None:
+        return None
+    source = plugin_entry.get("source", {})
+    if not isinstance(source, dict):
+        return None
+    plugin_path_value = source.get("path", "./")
+    if not isinstance(plugin_path_value, str):
+        return None
+    plugin_root = safe_relative_path(root, plugin_path_value)
+    if plugin_root is None:
+        return None
+    return verify_plugin_root(plugin_root, plugin_name, version, boundary=boundary, excluded_roots=[])
+
+
+def verify_plugin_root(
+    root: Path,
+    plugin_name: str,
+    version: str,
+    *,
+    boundary: Path,
+    excluded_roots: list[Path],
+) -> str | None:
+    root = canonical(root)
+    if not root.is_dir() or not is_inside(root, boundary):
+        return None
+    if any(root == canonical(excluded) or is_inside(root, canonical(excluded)) for excluded in excluded_roots):
+        return None
     manifest_path = root / ".codex-plugin" / "plugin.json"
     if not manifest_path.is_file():
         return None
@@ -285,6 +358,130 @@ def verify_installed_plugin_root(path_text: str, plugin_name: str, version: str)
     if not (skills_root / "ai-video-production" / "SKILL.md").is_file():
         return None
     return str(root)
+
+
+def verify_installed_plugin_root(
+    path_text: str,
+    plugin_name: str,
+    version: str,
+    *,
+    boundary: Path,
+    excluded_roots: list[Path],
+) -> str | None:
+    return verify_plugin_root(
+        Path(path_text),
+        plugin_name,
+        version,
+        boundary=boundary,
+        excluded_roots=excluded_roots,
+    )
+
+
+def marketplace_list_entries(data: object) -> list[dict]:
+    if isinstance(data, dict):
+        marketplaces = data.get("marketplaces")
+        if isinstance(marketplaces, list):
+            return [entry for entry in marketplaces if isinstance(entry, dict)]
+        return [data]
+    if isinstance(data, list):
+        return [entry for entry in data if isinstance(entry, dict)]
+    return []
+
+
+def verify_marketplace_list_json(
+    data: object,
+    evidence: MarketplaceEvidence,
+    *,
+    plugin_name: str,
+    version: str,
+    boundary: Path,
+) -> str | None:
+    expected_roots = {canonical(evidence.source_root), *[canonical(path) for path in evidence.installed_roots]}
+    for entry in marketplace_list_entries(data):
+        if entry.get("name") != evidence.name:
+            continue
+        root_value = entry.get("root")
+        if not isinstance(root_value, str) or not root_value.strip():
+            continue
+        root = canonical(Path(root_value))
+        if not root.exists() or not is_inside(root, boundary):
+            continue
+        if root in expected_roots or verify_marketplace_root(
+            root,
+            marketplace_name=evidence.name,
+            plugin_name=plugin_name,
+            version=version,
+            boundary=boundary,
+        ):
+            return f"marketplace list JSON verified root={root}"
+    return None
+
+
+def candidate_paths_from_text(text: str) -> list[Path]:
+    candidates: list[Path] = []
+    for raw in text.replace(",", " ").split():
+        token = raw.strip("`'\"()[]{}<>")
+        if "/" in token or token.startswith("."):
+            candidates.append(Path(token).expanduser())
+    return candidates
+
+
+def verify_marketplace_list_text(
+    text: str,
+    evidence: MarketplaceEvidence,
+    *,
+    plugin_name: str,
+    version: str,
+    boundary: Path,
+) -> str | None:
+    if evidence.name not in text:
+        return None
+    expected_roots = [canonical(evidence.source_root), *[canonical(path) for path in evidence.installed_roots]]
+    for line in text.splitlines():
+        if evidence.name not in line:
+            continue
+        for root in expected_roots:
+            if str(root) in line:
+                return f"marketplace list text contains verified root={root}"
+        for path in candidate_paths_from_text(line):
+            root = canonical(path)
+            if verify_marketplace_root(
+                root,
+                marketplace_name=evidence.name,
+                plugin_name=plugin_name,
+                version=version,
+                boundary=boundary,
+            ):
+                return f"marketplace list text verified root={root}"
+    return None
+
+
+def find_ancestor_plugin_roots(
+    paths: list[Path],
+    *,
+    boundary: Path,
+    excluded_roots: list[Path],
+) -> list[Path]:
+    boundary = canonical(boundary)
+    excluded = [canonical(path) for path in excluded_roots]
+    roots: list[Path] = []
+    seen: set[Path] = set()
+    for changed in paths:
+        current = canonical(changed)
+        if current.is_file():
+            current = current.parent
+        while is_inside(current, boundary):
+            if any(current == root or is_inside(current, root) for root in excluded):
+                break
+            if (current / ".codex-plugin" / "plugin.json").is_file():
+                if current not in seen:
+                    roots.append(current)
+                    seen.add(current)
+                break
+            if current == boundary or current.parent == current:
+                break
+            current = current.parent
+    return roots
 
 
 def detect_cli(copy_root: Path, env: dict[str, str]) -> CliSummary:
@@ -363,13 +560,20 @@ def run_codex_cli_smoke(
         return summary, stages
 
     registration_evidence = ""
+    registered_roots: list[Path] = []
     add_json = parse_json_output(add_result) if summary.marketplace_add_json == "available" else None
     if add_json is not None:
         if json_contains(add_json, marketplace_name):
             registration_evidence = "marketplace add JSON contains marketplace name"
         installed_root = verify_json_path(add_json, "installedRoot", isolated_root)
         if installed_root:
+            registered_roots.append(Path(installed_root))
             registration_evidence = f"marketplace add JSON installedRoot={installed_root}"
+    evidence = MarketplaceEvidence(
+        name=marketplace_name,
+        source_root=copy_root,
+        installed_roots=registered_roots,
+    )
 
     if summary.marketplace_list == "available":
         list_command = ["codex", "plugin", "marketplace", "list"]
@@ -382,14 +586,37 @@ def run_codex_cli_smoke(
             stages.append(StageResult("Plugin installation", SKIPPED_UNAVAILABLE, "listing failed"))
             stages.append(StageResult("Plugin listing", SKIPPED_UNAVAILABLE, "plugin installation unavailable"))
             return summary, stages
-        if marketplace_name not in output_text(list_result):
+        if summary.marketplace_list_json == "available":
+            list_json = parse_json_output(list_result)
+            list_evidence = verify_marketplace_list_json(
+                list_json,
+                evidence,
+                plugin_name=plugin_name,
+                version=version,
+                boundary=isolated_root,
+            ) if list_json is not None else None
+        else:
+            list_evidence = verify_marketplace_list_text(
+                output_text(list_result),
+                evidence,
+                plugin_name=plugin_name,
+                version=version,
+                boundary=isolated_root,
+            )
+        if not list_evidence:
             stages.append(StageResult("Marketplace registration", PASSED, registration_evidence or "add exited zero"))
-            stages.append(StageResult("Marketplace listing", FAILED, f"marketplace {marketplace_name!r} not found"))
+            stages.append(
+                StageResult(
+                    "Marketplace listing",
+                    FAILED,
+                    "marketplace list did not identify the isolated registered marketplace root or source",
+                )
+            )
             stages.append(StageResult("Plugin installation", SKIPPED_UNAVAILABLE, "listing failed"))
             stages.append(StageResult("Plugin listing", SKIPPED_UNAVAILABLE, "plugin installation unavailable"))
             return summary, stages
-        registration_evidence = registration_evidence or "marketplace list contains marketplace name"
-        stages.append(StageResult("Marketplace listing", PASSED, "registered marketplace appears in list"))
+        registration_evidence = registration_evidence or list_evidence
+        stages.append(StageResult("Marketplace listing", PASSED, list_evidence))
     else:
         fallback = verify_persisted_registration(
             changed_files(before, temp_home),
@@ -398,6 +625,7 @@ def run_codex_cli_smoke(
             isolated_root=temp_home,
         )
         if fallback:
+            registered_roots.append(temp_home)
             registration_evidence = registration_evidence or fallback
         stages.append(StageResult("Marketplace listing", SKIPPED_UNAVAILABLE, "codex plugin marketplace list unavailable"))
 
@@ -445,15 +673,38 @@ def run_codex_cli_smoke(
             return summary, stages
         installed_path = verify_json_path(plugin_json, "installedPath", isolated_root)
         if installed_path:
-            verified_root = verify_installed_plugin_root(installed_path, plugin_name, version)
+            verified_root = verify_installed_plugin_root(
+                installed_path,
+                plugin_name,
+                version,
+                boundary=isolated_root,
+                excluded_roots=[copy_root],
+            )
             if verified_root:
                 plugin_evidence = f"installedPath verified at {verified_root}"
     if not plugin_evidence:
-        for path in changed_files(before, temp_home):
-            verified_root = verify_installed_plugin_root(str(path.parent), plugin_name, version)
+        candidates = find_ancestor_plugin_roots(
+            changed_files(before, temp_home),
+            boundary=isolated_root,
+            excluded_roots=[copy_root],
+        )
+        verified_roots = []
+        for path in candidates:
+            verified_root = verify_installed_plugin_root(
+                str(path),
+                plugin_name,
+                version,
+                boundary=isolated_root,
+                excluded_roots=[copy_root],
+            )
             if verified_root:
-                plugin_evidence = f"installed plugin files verified at {verified_root}"
-                break
+                verified_roots.append(verified_root)
+        if len(verified_roots) == 1:
+            plugin_evidence = f"installed plugin files verified at {verified_roots[0]}"
+        elif len(verified_roots) > 1:
+            stages.append(StageResult("Plugin installation", FAILED, f"ambiguous plugin roots: {', '.join(verified_roots)}"))
+            stages.append(StageResult("Plugin listing", SKIPPED_UNAVAILABLE, "plugin installation failed"))
+            return summary, stages
     if not plugin_evidence:
         stages.append(StageResult("Plugin installation", FAILED, "plugin add succeeded but installed package was not verified"))
         stages.append(StageResult("Plugin listing", SKIPPED_UNAVAILABLE, "plugin installation failed"))
