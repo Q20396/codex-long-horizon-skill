@@ -8,13 +8,18 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
 PYTHON = sys.executable
-TMP_ROOT = Path("/private/tmp")
+TMP_ROOT = (
+    Path(os.environ.get("CODEX_SKILL_TMP_ROOT", tempfile.gettempdir()))
+    .expanduser()
+    .resolve()
+)
 
 LHE = Path(".agents/skills/long-horizon-engineering")
 AI_VIDEO = Path(".agents/skills/ai-video-production")
@@ -423,7 +428,7 @@ def run_python_compile(report: Report) -> None:
     if scripts_dir.is_dir():
         scripts.extend(sorted(scripts_dir.glob("*.py")))
     env = os.environ.copy()
-    env["PYTHONPYCACHEPREFIX"] = "/private/tmp/codex-pycache"
+    env["PYTHONPYCACHEPREFIX"] = str(TMP_ROOT / "codex-pycache")
     args = [PYTHON, "-m", "py_compile", *[str(path) for path in scripts]]
     result = subprocess.run(
         args,
