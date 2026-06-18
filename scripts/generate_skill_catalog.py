@@ -35,6 +35,32 @@ QUALITY_TERMS = {
 
 LINK_PATTERN = re.compile(r"(?<!!)\[[^\]]+\]\(([^)]+)\)")
 
+REQUIRED_OPEN_SOURCE_FILES = [
+    ".github/ISSUE_TEMPLATE/bug_report.md",
+    ".github/ISSUE_TEMPLATE/feature_request.md",
+    ".github/ISSUE_TEMPLATE/skill_proposal.md",
+    ".github/ISSUE_TEMPLATE/config.yml",
+    ".github/pull_request_template.md",
+    "CODE_OF_CONDUCT.md",
+    "COMMUNITY_SKILLS.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md",
+    "docs/demo/README.md",
+]
+
+EXAMPLE_WORKFLOWS = [
+    "bug-investigation",
+    "large-refactor",
+    "repository-migration",
+    "resume-work",
+]
+
+EXAMPLE_REQUIRED_FILES = [
+    "prompt.md",
+    "workflow.md",
+    "expected-output.md",
+]
+
 
 @dataclass(frozen=True)
 class Skill:
@@ -166,6 +192,38 @@ def check_internal_links() -> list[str]:
     return errors
 
 
+def check_required_files() -> list[str]:
+    errors: list[str] = []
+    for relative in REQUIRED_OPEN_SOURCE_FILES:
+        if not (ROOT / relative).is_file():
+            errors.append(f"Missing open-source support file: {relative}")
+    for example in EXAMPLE_WORKFLOWS:
+        directory = ROOT / "examples" / example
+        if not directory.is_dir():
+            errors.append(f"Missing example directory: examples/{example}")
+            continue
+        for filename in EXAMPLE_REQUIRED_FILES:
+            path = directory / filename
+            if not path.is_file():
+                errors.append(f"Missing example file: examples/{example}/{filename}")
+    return errors
+
+
+def check_issue_template_config() -> list[str]:
+    path = ROOT / ".github" / "ISSUE_TEMPLATE" / "config.yml"
+    if not path.is_file():
+        return []
+    text = path.read_text(encoding="utf-8")
+    errors: list[str] = []
+    if "blank_issues_enabled:" not in text:
+        errors.append(".github/ISSUE_TEMPLATE/config.yml missing blank_issues_enabled")
+    if "http://" in text or "https://" in text:
+        errors.append(
+            ".github/ISSUE_TEMPLATE/config.yml contains external links; verify they are not dead."
+        )
+    return errors
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Generate or check the README skill catalog and product docs."
@@ -189,8 +247,10 @@ def main() -> int:
         errors = []
         if expected != readme_text:
             errors.append("README.md skill catalog is not synchronized.")
+        errors.extend(check_required_files())
         errors.extend(check_quality(skills))
         errors.extend(check_internal_links())
+        errors.extend(check_issue_template_config())
         if errors:
             for error in errors:
                 print(f"ERROR: {error}")

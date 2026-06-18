@@ -153,6 +153,17 @@ reproducibility.
   [CHANGELOG.md](CHANGELOG.md), and [CONTRIBUTING.md](CONTRIBUTING.md) for
   installation, updates, release history, and contribution workflow.
 
+## Awesome Codex Skills Ecosystem
+
+- [Official skill catalog](#skill-catalog)
+- [Prompt library](prompts/)
+- [Examples](examples/)
+- [Templates](templates/)
+- [Contribution guide](CONTRIBUTING.md)
+- [Community skills registry](COMMUNITY_SKILLS.md)
+- [Security policy](SECURITY.md)
+- [Code of conduct](CODE_OF_CONDUCT.md)
+
 ## Official Codex Skill Structure
 
 A Codex skill is a directory containing a required `SKILL.md` file. It can also
