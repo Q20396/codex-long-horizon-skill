@@ -7,6 +7,24 @@ All notable changes to this project are summarized here.
 - Added privacy-first disaster monitoring enablement guidance with manual
   monitored locations, optional one-time approximate current location, and
   alert-rule/runbook templates.
+- Added external skill candidate safety review guidance and a read-only local
+  audit helper for customer-reviewed adoption decisions.
+- Added a source-gap prompt for jurisdiction, tax, regulatory, and industry-rule
+  tasks so Codex asks before searching current public sources online.
+- Added a SkillOpt-inspired training layer with non-sensitive eval cases, a
+  local static skill scorer, and a candidate training report template.
+- Added skill lifecycle management guidance and a local helper for non-sensitive
+  usage tracking, freeze suggestions, and reversible freeze/restore workflows.
+- Added a read-only skill safety audit and wired it into the apply path before
+  installed skills are upgraded.
+- Added review-gated missing capability skill discovery guidance for safely
+  comparing public GitHub skills and proposing bounded local upgrades.
+- Added lightweight SkillOpt-inspired skill optimization protocol and templates
+  for rollout evidence, reflection, bounded edits, validation gates, and
+  rejected edit logs without adding a runtime dependency.
+- Added external tool provider and external app runtime boundary guidance with
+  provider capability, source upload consent, paper evidence, and memory review
+  templates.
 - Added lightweight financial research report and defensive security review
   protocols with source, valuation, risk, and secrets-scan templates.
 - Added adversarial review, TDD, API integration, ship-readiness, and data

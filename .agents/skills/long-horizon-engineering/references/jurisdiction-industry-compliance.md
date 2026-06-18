@@ -104,6 +104,51 @@ Do not invent laws, dates, penalties, licensing requirements, or regulator
 positions. If evidence is unclear, say so and ask whether the user wants a
 deeper jurisdiction-specific check.
 
+## Local Source Gap And Online Search Prompt
+
+When the user asks about laws, tax rules, regulatory requirements, platform
+rules, or industry rules for a country, state, province, city, or region, first
+check whether approved local references already contain current, relevant
+sources.
+
+If local references are missing, stale, too generic, or do not cover the
+requested jurisdiction, automatically identify the source gap and prompt the
+customer before searching online.
+
+Use a privacy-first prompt such as:
+
+"I do not have enough current local reference material for this jurisdiction,
+tax topic, or industry rule. Would you like me to search current public sources
+online? I will use official or reputable public sources where possible, avoid
+sending private client details, and summarize facts separately from practical
+implications."
+
+Before online search, confirm:
+
+- Jurisdiction or region to check
+- Tax, legal, regulatory, platform, or industry-rule topic
+- Industry or business activity
+- Whether official government or regulator sources are required
+- Whether cross-region comparison is needed
+- Whether any private client facts must be excluded from the search query
+
+When searching online:
+
+- Prefer generic, non-sensitive search queries.
+- Do not include client names, private facts, legal evidence, financial account
+  details, family information, precise addresses, or confidential documents in
+  search terms.
+- Prefer official government, regulator, tax authority, court, standards-body,
+  platform, or industry-body sources.
+- Capture source name, URL, publication or update date when available, and the
+  date searched.
+- Treat unofficial summaries as secondary only.
+
+After the search, tell the customer what was found, what remains uncertain, and
+whether the skill package or project docs should be updated. Do not update
+reusable skill guidance with jurisdiction-specific claims unless the user asks
+for a bounded, reviewed change and the source is appropriate for public reuse.
+
 ## Cross-Region Check
 
 After giving a local or industry-specific answer, ask whether the user wants to

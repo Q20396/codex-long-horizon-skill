@@ -78,3 +78,8 @@ Do not restore unrelated private files or broad repository snapshots.
   the ones it will actually use.
 - The methodology, search, content, design, notebook, presentation, and video
   protocols are additive. They do not require new external dependencies.
+- The SkillOpt-inspired optimization protocol is also additive. It uses
+  methodology and templates only by default: rollout logs, reflections, bounded
+  skill edits, validation gates, and rejected edit logs. It does not require the
+  Microsoft SkillOpt runtime, paid model calls, or automatic skill mutation.
+  Human review and validation remain required before adopting a skill change.

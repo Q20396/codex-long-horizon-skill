@@ -76,8 +76,9 @@ python3 .agents/skills/long-horizon-engineering/scripts/update_installed_skill.p
 ```
 
 The updater backs up the existing installed skill under `.codex-skill-backups/`
-before copying package files. It does not delete files, make network calls, or
-modify `main`.
+before copying package files. Before `--apply` copies files, it runs the local
+read-only `audit_skill_safety.py` check against the package skills. It does not
+delete files, make network calls, or modify `main`.
 
 ## Rollback
 
@@ -99,6 +100,10 @@ files or private data.
   exploration instead.
 - No external search provider is required; external search remains optional and
   privacy-first.
+- External apps, hosted notebooks, browser sessions, provider CLIs, and
+  connected services are optional and approval-gated. Use local or metadata-only
+  review first, and do not upload private source material without explicit
+  customer approval for the exact subset and purpose.
 - If content, research, notebook, presentation, or video design protocols are
   not needed, ignore them; they are additive optional references and templates
   and require no new dependencies.

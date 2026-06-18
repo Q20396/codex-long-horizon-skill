@@ -69,12 +69,16 @@ examples/
         decision-log.md
         disaster-monitoring-enablement.md
         evidence-backed-writing.md
+        external-app-runtime-boundary.md
         external-search-protocol.md
+        external-skill-adoption-safety-review.md
         external-source-scan.md
+        external-tool-provider-protocol.md
         financial-research-report-protocol.md
         ideation-to-plan-protocol.md
         jurisdiction-industry-compliance.md
         large-migration-playbook.md
+        missing-capability-skill-discovery.md
         notebook-analysis-protocol.md
         presentation-delivery-protocol.md
         public-agent-capability-review.md
@@ -84,6 +88,9 @@ examples/
         security-review-protocol.md
         ship-readiness-protocol.md
         skill-authoring-methodology.md
+        skill-lifecycle-management.md
+        skill-optimization-protocol.md
+        skillopt-training-layer.md
         stop-conditions.md
         tdd-protocol.md
         ui-ux-review-protocol.md
@@ -99,25 +106,38 @@ examples/
         IMPROVEMENT_SCAN_TEMPLATE.md
         accessibility-checklist.md
         api-contract-test-plan.md
+        bounded-skill-edit.md
         implementation-plan.md
         analysis-run-log.md
         claim-evidence-table.md
         data-quality-report.md
         deck-outline.md
         disaster-alert-rule.md
+        external-skill-adoption-review.md
         frontend-handoff.md
         market-data-source-log.md
         monitoring-runbook.md
+        memory-review-checklist.md
         new-skill-brief.md
         option-analysis.md
+        paper-evidence-card.md
         regression-test-record.md
+        rejected-skill-edit-log.md
         risk-challenge-table.md
         slide-qa-checklist.md
         ship-checklist.md
         skill-evaluation-plan.md
+        skill-reflection-report.md
+        skill-rollout-log.md
+        skill-eval-cases.json
+        skill-training-report.md
+        skill-usage-report.md
+        skill-validation-gate.md
         secrets-scan-checklist.md
+        source-upload-consent-checklist.md
         stock-research-report.md
         TASK_LOG_TEMPLATE.md
+        tool-provider-capability-map.md
         ui-ux-audit.md
         valuation-assumption-table.md
         verification-evidence.md
@@ -126,17 +146,22 @@ examples/
         WORKING_STATE_TEMPLATE.md
       scripts/
         append_project_memory.py
+        audit_external_skill_candidate.py
+        audit_skill_safety.py
         audit_skill_descriptions.py
         check_for_updates.py
         check_skill_package.py
         doctor.py
         github_skill_scan.py
+        manage_skill_lifecycle.py
         scan_top_related_skills.py
+        score_skill_candidate.py
         test_expected_triggers.py
         update_installed_skill.py
         update_task_log.py
 tests/
   expected-triggers.json
+  skill-eval-cases.json
 ```
 
 ## Customer Quick Start
@@ -287,12 +312,21 @@ selected. This package includes:
 - `external-search-protocol.md` for provider-neutral, privacy-first public
   source search planning across web, GitHub, docs, package registries, CVEs, and
   standards
+- `external-skill-adoption-safety-review.md` for scanning and reviewing public
+  or third-party skill candidates before recommending adoption
 - `external-source-scan.md` for consent-gated scans of local folders, connected
   cloud drives, Gmail, or other external sources
+- `external-tool-provider-protocol.md` for mapping optional external tools,
+  provider CLIs, connected apps, MCP servers, fallback behavior, and approval
+  requirements before use
+- `external-app-runtime-boundary.md` for source upload, browser automation,
+  hosted notebook, cloud app, and account-session approval boundaries
 - `ideation-to-plan-protocol.md` for divergent options, tradeoffs, selection
   criteria, and plan conversion
 - `large-migration-playbook.md` for phased, reviewable large migrations and
   complex multi-file implementations
+- `missing-capability-skill-discovery.md` for review-gated discovery of public
+  skills when local skills are missing, too generic, or repeatedly failing
 - `notebook-analysis-protocol.md` for stateful exploratory analysis,
   incremental notebook work, and clean reruns before claims
 - `presentation-delivery-protocol.md` for deck outlines, source-to-slide
@@ -310,6 +344,15 @@ selected. This package includes:
   merge, release, deployment planning, or reviewer handoff
 - `skill-authoring-methodology.md` for eval-driven skill maintenance,
   trigger examples, description quality, and package verification
+- `skill-lifecycle-management.md` for keeping installed skill sets lean by
+  tracking non-sensitive usage, suggesting reversible freezes, and restoring
+  frozen skills with customer approval
+- `skill-optimization-protocol.md` for lightweight SkillOpt-inspired skill
+  improvement using rollout evidence, reflections, bounded edits, validation
+  gates, rejected edit logs, and human review
+- `skillopt-training-layer.md` for optional baseline-vs-candidate skill
+  training runs with non-sensitive benchmark cases, local scoring, and
+  approval-gated optimizer-model use
 - `stop-conditions.md` for knowing when to pause instead of continuing
 - `systematic-debugging-protocol.md` for root-cause-first debugging of bugs,
   failing tests, regressions, and unexpected behavior
@@ -334,6 +377,8 @@ Use `templates/` for reusable starter documents. This package includes:
   contrast, motion, form, and responsive accessibility checks
 - `api-contract-test-plan.md` for API endpoint, auth, request/response, error,
   retry, and contract-test planning
+- `bounded-skill-edit.md` for small, reviewable skill edit proposals with
+  expected improvement, regression risk, validation, and rollback plans
 - `implementation-plan.md` for scoped implementation plans
 - `analysis-run-log.md` for reproducible analysis records
 - `claim-evidence-table.md` for evidence-backed writing
@@ -342,15 +387,23 @@ Use `templates/` for reusable starter documents. This package includes:
 - `deck-outline.md` for source-to-slide planning
 - `debugging-runbook.md` for recording root-cause investigations and final
   verification
+- `external-skill-adoption-review.md` for reporting security, privacy,
+  licensing, and operational risks before adopting a public or third-party skill
 - `frontend-handoff.md` for UI implementation handoffs with design decisions,
   states, accessibility notes, validation, and reviewer focus
 - `market-data-source-log.md` for market data sources, dates, units,
   transformations, limitations, and reproducibility notes
+- `memory-review-checklist.md` for checking whether persistent memory, logs,
+  working state, or handoff files are appropriate and free of sensitive content
 - `new-skill-brief.md` for defining trigger scope, source material, safety
   boundaries, package shape, and validation before creating a skill
 - `option-analysis.md` for comparing implementation or product directions
+- `paper-evidence-card.md` for paper-level metadata, claims, evidence,
+  limitations, and citation-risk review
 - `regression-test-record.md` for bug reproduction, failing tests, fixes, and
   passing evidence
+- `rejected-skill-edit-log.md` for recording skill edits that were rejected and
+  the evidence behind the rejection
 - `risk-challenge-table.md` for adversarial review of assumptions, evidence,
   risks, recommended defaults, and open decisions
 - `slide-qa-checklist.md` for presentation QA
@@ -362,9 +415,25 @@ Use `templates/` for reusable starter documents. This package includes:
   exposing secrets or confidential files
 - `skill-evaluation-plan.md` for skill trigger coverage, instruction quality,
   safety review, validation commands, and reviewer notes
+- `skill-reflection-report.md` for reflecting on skill successes, failures,
+  recurring patterns, root causes, risks, and proposed improvements
+- `skill-rollout-log.md` for recording non-sensitive task evidence, expected
+  behavior, actual behavior, results, and failure modes
+- `skill-eval-cases.json` as an installed starter validation set for
+  SkillOpt-inspired candidate scoring
+- `skill-training-report.md` for reporting baseline score, candidate score,
+  failed cases, safety notes, and human-review recommendation
+- `skill-usage-report.md` for reporting active, frozen, unused, and
+  restore-candidate skills without storing private prompts or source content
+- `skill-validation-gate.md` for checking candidate skill changes before
+  marking them deployable or ready for review
+- `source-upload-consent-checklist.md` for explicit approval before uploading,
+  importing, pasting, or syncing private source material into an external app
 - `stock-research-report.md` for source-backed company, sector, market, and
   watchlist research reports
 - `TASK_LOG_TEMPLATE.md` for concise completed-task notes
+- `tool-provider-capability-map.md` for comparing optional providers, required
+  data, approval gates, privacy risks, and fallbacks
 - `ui-ux-audit.md` for evidence-backed frontend findings and recommendations
 - `valuation-assumption-table.md` for valuation inputs, sensitivity, evidence,
   caveats, and sanity checks
@@ -388,13 +457,23 @@ Use `scripts/` for simple local helpers. This package includes:
 - `append_project_memory.py` to append facts to `docs/PROJECT_MEMORY.md`
 - `audit_skill_descriptions.py` to check skill descriptions for trigger-focused
   metadata
+- `audit_skill_safety.py` to run a read-only pre-upgrade safety audit for risky
+  skill instructions, missing safety metadata, nested skill paths, and
+  unguarded destructive or data-exposure patterns
+- `audit_external_skill_candidate.py` to scan a user-approved local external
+  skill candidate for security, privacy, licensing, and operational risks before
+  the customer decides whether to adopt it
 - `check_for_updates.py` to check whether GitHub has a newer package revision
 - `check_skill_package.py` to validate the package structure
 - `doctor.py` to run product-readiness checks for local installs
 - `github_skill_scan.py` to scan public GitHub projects for review-gated
   improvement evidence
+- `manage_skill_lifecycle.py` to list active/frozen skills, record
+  non-sensitive usage, suggest freeze candidates, and dry-run freeze/restore
 - `scan_top_related_skills.py` to review the top related public skill projects
   for safe manual upgrade ideas
+- `score_skill_candidate.py` to score baseline or candidate skill text against
+  non-sensitive static eval cases before recommending an upgrade
 - `test_expected_triggers.py` to validate packaged trigger fixtures
 - `update_installed_skill.py` to update installed skills with dry-run and
   backup-first behavior
@@ -425,6 +504,16 @@ python3 .agents/skills/long-horizon-engineering/scripts/test_expected_triggers.p
 productized package readiness. `audit_skill_descriptions.py` checks description
 metadata. `test_expected_triggers.py` validates static trigger examples without
 calling a model.
+
+For a broader local audit before review, run:
+
+```bash
+python3 scripts/full_skill_validation.py
+```
+
+This full validation command is intentionally local-only because it includes
+apply and backup smoke tests under temporary directories. CI runs the lighter
+structure, trigger, compile, whitespace, and update dry-run checks.
 
 ## Update And Rollback
 
@@ -584,6 +673,60 @@ approved scope.
 `references/continuous-improvement.md` defines a safe self-improvement loop:
 check related public skills and agent projects, record evidence, adapt only
 small reusable patterns, run checks, and open a draft PR for review.
+
+`references/skill-optimization-protocol.md` defines a lightweight
+SkillOpt-inspired skill optimization loop. It treats skill text as an
+improvable artifact, but it does not add the Microsoft SkillOpt runtime, hard
+dependencies, hidden optimizer runs, paid model calls, or automatic skill
+mutation. Use rollout evidence, reflection reports, bounded edit proposals,
+validation gates, rejected edit logs, and human review before selecting a
+deployable skill change.
+
+`references/skillopt-training-layer.md` adds an optional training-style layer:
+generate bounded candidate edits, score baseline versus candidate skill text
+against `tests/skill-eval-cases.json`, reject unsafe regressions, and produce a
+human-review recommendation. External optimizer models are optional and require
+explicit approval; they may receive only non-sensitive skill text, abstracted
+failure modes, and approved benchmark cases.
+
+Run the local static score with:
+
+```bash
+python3 .agents/skills/long-horizon-engineering/scripts/score_skill_candidate.py
+```
+
+`references/skill-lifecycle-management.md` keeps large installed skill sets
+lean without deleting user data. Codex can record non-sensitive usage metadata,
+suggest optional skills to freeze, move approved skills into
+`.agents/skills.disabled/`, and restore them later from the local frozen cache.
+Remote GitHub checks or reinstalls require customer approval and should use the
+existing safety review and update flow.
+
+Useful local commands:
+
+```bash
+python3 .agents/skills/long-horizon-engineering/scripts/manage_skill_lifecycle.py list
+python3 .agents/skills/long-horizon-engineering/scripts/manage_skill_lifecycle.py suggest-freeze --include-never-used
+python3 .agents/skills/long-horizon-engineering/scripts/manage_skill_lifecycle.py freeze ai-video-production
+python3 .agents/skills/long-horizon-engineering/scripts/manage_skill_lifecycle.py restore ai-video-production
+```
+
+`freeze` and `restore` are dry-run by default. Re-run with `--apply` only after
+the customer approves the exact skill and target project root.
+
+`references/missing-capability-skill-discovery.md` explains how Codex should
+handle local skill gaps. It asks before searching public GitHub, compares top
+related repositories as evidence, extracts only general patterns, checks license
+and safety risk, and proposes bounded updates or a new-skill brief for human
+review.
+
+`references/external-skill-adoption-safety-review.md` adds a customer decision
+gate before adopting a GitHub or third-party skill. If the customer approves a
+local candidate folder, `scripts/audit_external_skill_candidate.py` can scan its
+code, docs, scripts, templates, and license signals for privacy, security, and
+operational risks. Some useful skills legitimately require sensitive inputs, so
+the report should explain the risk and let the customer decide whether to
+approve, reject, or adopt with conditions.
 
 `references/public-agent-capability-review.md` helps Codex compare public
 frontier-agent capability descriptions, classify source reliability, separate
@@ -758,6 +901,26 @@ not store secrets, personal messages, private client data, financial account
 details, legal evidence, family information, API keys, or confidential documents
 in memory, logs, working state, or generated reports.
 
+## External Tool And Source Boundaries
+
+The skill can help Codex reason about optional external tools, provider CLIs,
+connected apps, hosted notebooks, browser sessions, and source-grounded research
+tools without making any of them required.
+
+Use `references/external-tool-provider-protocol.md` and
+`templates/tool-provider-capability-map.md` when a task needs to compare
+providers, understand fallback behavior, or decide what approval is required
+before using a tool. Use `references/external-app-runtime-boundary.md` and
+`templates/source-upload-consent-checklist.md` before any private source
+material would be uploaded, pasted, imported, synced, or summarized in an
+external app.
+
+The default remains local, dry-run, metadata-only, and approval-gated. Do not
+send private source content, client material, legal evidence, family
+information, medical data, financial records, identity documents, secrets, or
+confidential research to external providers unless the user explicitly approves
+the exact subset and purpose.
+
 ## Location And Industry Compliance
 
 `references/jurisdiction-industry-compliance.md` guides tasks that need
@@ -769,6 +932,13 @@ logs. It should ask whether the user wants to approve device/GPS location use or
 manually provide the country, state/province, city, or region. It should confirm
 the customer's industry or business activity and use current public sources for
 jurisdiction-specific legal or regulatory facts.
+
+If local references do not cover the requested country, region, tax topic,
+legal rule, or industry rule, Codex should identify the source gap and ask
+whether the customer wants an online search of current public sources. Search
+queries should stay generic and exclude private client details, legal evidence,
+financial account information, family information, precise addresses, and
+confidential documents.
 
 Outputs should clearly separate public facts, practical implications, and
 recommendations. They should say that the response is informational and not

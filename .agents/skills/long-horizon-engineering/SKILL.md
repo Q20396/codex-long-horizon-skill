@@ -31,9 +31,40 @@ For skill self-improvement tasks, use a review-gated loop: inspect public
 sources, record evidence, adapt only small reusable patterns, run checks, and
 open a draft PR. Do not auto-merge or modify `main` directly.
 
+When improving a skill based on observed task outcomes, trigger failures, or
+reviewer feedback, consult `references/skill-optimization-protocol.md`. Treat
+SkillOpt-style optimization as lightweight methodology only: collect rollout
+evidence, reflect on success and failure, propose bounded edits, validate, log
+rejected changes when useful, and keep human review before deployment.
+
+For SkillOpt-inspired training runs that compare baseline and candidate skill
+text, consult `references/skillopt-training-layer.md` and use
+`scripts/score_skill_candidate.py` for local static scoring when useful. External
+optimizer models require explicit approval and may receive only non-sensitive
+skill text, abstracted failure modes, and approved benchmark cases.
+
 When scanning GitHub for related Codex or Agent Skills projects, treat results
 as evidence for review. Do not copy external code into this skill without
 checking license obligations and user approval.
+
+When the local skill set appears insufficient for a task, or a new domain skill
+may be needed, consult `references/missing-capability-skill-discovery.md`.
+Ask before searching public GitHub, compare top related repositories as
+evidence, extract only general patterns, and propose bounded, validation-gated
+updates or a new-skill brief for human review.
+
+Before adopting or adapting an external public skill, consult
+`references/external-skill-adoption-safety-review.md`. If the user approves a
+local candidate folder, use `scripts/audit_external_skill_candidate.py` to scan
+its code, docs, scripts, templates, and license signals for security, privacy,
+and operational risks, then present the tradeoff for customer decision.
+
+When an installed project has many optional skills, consult
+`references/skill-lifecycle-management.md`. Prefer freezing unused optional
+skills into `.agents/skills.disabled/` over deleting them. Use
+`scripts/manage_skill_lifecycle.py` for local list, usage, suggest-freeze,
+freeze, and restore workflows. Do not download, restore, overwrite, or freeze
+skills without customer approval.
 
 When maintaining this repository's own skills, consult
 `references/skill-authoring-methodology.md`. Treat skill descriptions as trigger
@@ -44,6 +75,14 @@ When current public facts, docs, GitHub issues, package data, standards, CVEs,
 or vendor changes are needed, consult `references/external-search-protocol.md`.
 Use provider-neutral, privacy-first search planning and do not send private
 repository content to external search providers.
+
+When a task may use optional external tools, connected apps, provider CLIs, MCP
+servers, browser sessions, cloud notebooks, or source-grounded research tools,
+consult `references/external-tool-provider-protocol.md` and
+`references/external-app-runtime-boundary.md` when useful. Prefer local,
+metadata-only, dry-run, or approval-gated modes. Do not upload, paste, import,
+or sync private source material into external apps unless the user explicitly
+approves the exact source subset and purpose.
 
 For adversarial review, TDD, API integration, ship-readiness, or data-cleaning
 work, consult the relevant optional protocol:
@@ -123,6 +162,9 @@ and regulatory facts, state that the output is not legal advice, and ask whether
 cross-region rules should also be checked. If cross-region rules may matter, ask
 whether the user wants Codex to load approved skills or reference files for other
 regions while excluding private client materials unless explicitly approved.
+If local references do not contain current rules for the requested jurisdiction,
+tax topic, or industry, identify the source gap and ask whether the user wants
+Codex to search current public sources online before making or updating claims.
 
 For disaster, emergency, earthquake, flood, fire, storm, tsunami, outage, or
 similar alert monitoring designs, consult
@@ -161,6 +203,24 @@ Use `templates/ui-ux-audit.md`, `templates/accessibility-checklist.md`, or
 review record. Use `templates/new-skill-brief.md` or
 `templates/skill-evaluation-plan.md` for skill creation or evaluation tasks
 that need explicit trigger, safety, and validation coverage.
+Use `templates/external-skill-adoption-review.md` when reviewing a public or
+third-party skill candidate before recommending adoption.
+Use `templates/tool-provider-capability-map.md` or
+`templates/source-upload-consent-checklist.md` when external providers or
+external app uploads need an explicit approval record. Use
+`templates/paper-evidence-card.md` for academic claims that need paper-level
+traceability. Use `templates/memory-review-checklist.md` before updating
+persistent memory, logs, state, or handoff files when sensitivity is uncertain.
+Use `templates/skill-rollout-log.md`,
+`templates/skill-reflection-report.md`,
+`templates/bounded-skill-edit.md`,
+`templates/skill-validation-gate.md`, or
+`templates/rejected-skill-edit-log.md` only when skill optimization evidence
+needs a written, non-sensitive review record.
+Use `templates/skill-training-report.md` when comparing baseline and candidate
+skill text with benchmark scores or optimizer-model suggestions.
+Use `templates/skill-usage-report.md` when reporting active, frozen, unused, or
+restore-candidate skills.
 Use `templates/risk-challenge-table.md`,
 `templates/regression-test-record.md`, `templates/ship-checklist.md`,
 `templates/api-contract-test-plan.md`, or
