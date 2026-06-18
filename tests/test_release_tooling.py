@@ -74,12 +74,18 @@ def write_fake_codex(bin_dir: Path) -> Path:
                     "plugin_failure",
                     "json_wrong_root",
                     "json_outside_root",
+                    "json_invalid_registered_root",
                     "text_list_good",
                     "text_list_name_only",
                     "text_list_wrong_root",
                     "plugin_non_json",
                     "plugin_source_only",
                     "plugin_ambiguous",
+                    "snapshot_source_only",
+                    "snapshot_plus_install",
+                    "plugin_list_available_only",
+                    "plugin_list_wrong_version",
+                    "plugin_list_text_substring",
                 }
 
             def supports_plugin():
@@ -89,12 +95,36 @@ def write_fake_codex(bin_dir: Path) -> Path:
                     "plugin_non_json",
                     "plugin_source_only",
                     "plugin_ambiguous",
+                    "snapshot_source_only",
+                    "snapshot_plus_install",
+                    "plugin_list_available_only",
+                    "plugin_list_wrong_version",
+                    "plugin_list_text_substring",
                 }
 
             def supports_json(command):
-                if scenario in {"text_list_good", "text_list_name_only", "text_list_wrong_root", "plugin_non_json", "plugin_source_only", "plugin_ambiguous"}:
+                if scenario in {
+                    "text_list_good",
+                    "text_list_name_only",
+                    "text_list_wrong_root",
+                    "plugin_non_json",
+                    "plugin_source_only",
+                    "plugin_ambiguous",
+                    "snapshot_source_only",
+                    "snapshot_plus_install",
+                    "plugin_list_text_substring",
+                }:
                     return command == "marketplace_add"
-                return scenario in {"modern", "list_failure", "plugin_failure", "json_wrong_root", "json_outside_root"}
+                return scenario in {
+                    "modern",
+                    "list_failure",
+                    "plugin_failure",
+                    "json_wrong_root",
+                    "json_outside_root",
+                    "json_invalid_registered_root",
+                    "plugin_list_available_only",
+                    "plugin_list_wrong_version",
+                }
 
             if argv == ["--version"]:
                 print("codex-cli fake-1.0.0")
@@ -150,12 +180,19 @@ def write_fake_codex(bin_dir: Path) -> Path:
                     print("fake marketplace add failed", file=sys.stderr)
                     raise SystemExit(7)
                 source = source_arg(argv[3:])
+                installed_root = codex_home / "marketplaces" / marketplace_name
+                if scenario == "json_invalid_registered_root":
+                    installed_root = codex_home / "invalid-marketplace"
                 if scenario != "no_evidence":
-                    installed_root = codex_home / "marketplaces" / marketplace_name
-                    installed_root.mkdir(parents=True, exist_ok=True)
+                    if scenario in {"snapshot_source_only", "snapshot_plus_install"}:
+                        if installed_root.exists():
+                            shutil.rmtree(installed_root)
+                        shutil.copytree(source, installed_root, ignore=shutil.ignore_patterns(".git", "__pycache__"))
+                    else:
+                        installed_root.mkdir(parents=True, exist_ok=True)
                     save_state({"name": marketplace_name, "source": source, "installedRoot": str(installed_root)})
                 if "--json" in argv:
-                    data = {"marketplaceName": marketplace_name, "installedRoot": str(codex_home / "marketplaces" / marketplace_name)}
+                    data = {"marketplaceName": marketplace_name, "installedRoot": str(installed_root)}
                     print(json.dumps(data))
                 else:
                     print(f"Added marketplace `{marketplace_name}` from {source}.")
@@ -171,6 +208,8 @@ def write_fake_codex(bin_dir: Path) -> Path:
                     wrong = codex_home / "wrong-marketplace"
                     wrong.mkdir(parents=True, exist_ok=True)
                     root = str(wrong)
+                if scenario == "json_invalid_registered_root":
+                    root = state.get("installedRoot", "")
                 if scenario == "json_outside_root":
                     root = "/tmp/codex-outside-marketplace"
                 if "--json" in argv:
@@ -190,7 +229,7 @@ def write_fake_codex(bin_dir: Path) -> Path:
                 state = load_state()
                 source = Path(state["source"])
                 installed = codex_home / "plugins" / plugin_name
-                if scenario == "plugin_source_only":
+                if scenario in {"plugin_source_only", "snapshot_source_only"}:
                     print(f"Installed {plugin_name}.")
                     raise SystemExit(0)
                 if scenario == "plugin_ambiguous":
@@ -219,9 +258,17 @@ def write_fake_codex(bin_dir: Path) -> Path:
             if argv[:2] == ["plugin", "list"]:
                 installed = codex_home / "plugins" / plugin_name
                 if "--json" in argv:
+                    if scenario == "plugin_list_available_only":
+                        print(json.dumps({"installed": [], "available": [{"name": plugin_name, "marketplaceName": marketplace_name, "version": "0.1.0"}]}))
+                        raise SystemExit(0)
+                    if scenario == "plugin_list_wrong_version":
+                        print(json.dumps({"installed": [{"name": plugin_name, "marketplaceName": marketplace_name, "version": "9.9.9", "installed": installed.exists()}]}))
+                        raise SystemExit(0)
                     print(json.dumps({"installed": [{"name": plugin_name, "marketplaceName": marketplace_name, "version": "0.1.0", "installed": installed.exists()}]}))
+                elif scenario == "plugin_list_text_substring":
+                    print(f"{plugin_name}-old {marketplace_name} 0.1.0 installed")
                 else:
-                    print(plugin_name)
+                    print(f"{plugin_name} {marketplace_name} 0.1.0 installed")
                 raise SystemExit(0)
 
             print(f"unhandled fake codex command: {argv}", file=sys.stderr)
@@ -383,6 +430,12 @@ class FreshInstallCliTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("Marketplace listing: failed", output)
 
+    def test_json_list_registered_root_still_requires_package_identity(self) -> None:
+        result = self.run_fresh("json_invalid_registered_root", "--verbose")
+        output = result.stdout + result.stderr
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Marketplace listing: failed", output)
+
     def test_text_list_with_verified_root_passes(self) -> None:
         result = self.run_fresh("text_list_good", "--verbose")
         output = result.stdout + result.stderr
@@ -426,11 +479,44 @@ class FreshInstallCliTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("plugin add succeeded but installed package was not verified", output)
 
+    def test_marketplace_snapshot_is_not_plugin_install(self) -> None:
+        result = self.run_fresh("snapshot_source_only", "--verbose")
+        output = result.stdout + result.stderr
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("plugin add succeeded but installed package was not verified", output)
+
+    def test_marketplace_snapshot_plus_separate_plugin_install_passes(self) -> None:
+        result = self.run_fresh("snapshot_plus_install", "--verbose")
+        output = result.stdout + result.stderr
+        self.assertEqual(result.returncode, 0, output)
+        self.assertIn("Plugin installation: passed", output)
+
     def test_ambiguous_plugin_roots_fail(self) -> None:
         result = self.run_fresh("plugin_ambiguous", "--verbose")
         output = result.stdout + result.stderr
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("ambiguous plugin roots", output)
+
+    def test_plugin_list_available_only_fails(self) -> None:
+        result = self.run_fresh("plugin_list_available_only", "--verbose")
+        output = result.stdout + result.stderr
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Plugin listing: failed", output)
+        self.assertIn("exact installed plugin identity", output)
+
+    def test_plugin_list_wrong_version_fails(self) -> None:
+        result = self.run_fresh("plugin_list_wrong_version", "--verbose")
+        output = result.stdout + result.stderr
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Plugin listing: failed", output)
+        self.assertIn("exact installed plugin identity", output)
+
+    def test_plugin_list_text_substring_fails(self) -> None:
+        result = self.run_fresh("plugin_list_text_substring", "--verbose")
+        output = result.stdout + result.stderr
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Plugin listing: failed", output)
+        self.assertIn("exact installed plugin identity", output)
 
     def test_explicit_skip_does_not_run_cli(self) -> None:
         result = self.run_fresh("old", "--skip-codex-cli", "--verbose")
