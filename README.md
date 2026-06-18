@@ -159,6 +159,7 @@ reproducibility.
 - [Prompt library](prompts/)
 - [Examples](examples/)
 - [Templates](templates/)
+- [Demo recording guide](docs/demo/README.md)
 - [Contribution guide](CONTRIBUTING.md)
 - [Community skills registry](COMMUNITY_SKILLS.md)
 - [Security policy](SECURITY.md)
