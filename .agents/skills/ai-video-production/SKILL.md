@@ -1,6 +1,6 @@
 ---
 name: ai-video-production
-description: Use this skill for planning and producing AI-assisted videos, animated explainers, image-based storyboards, short-form social videos, and code-rendered video projects using Remotion-style, HyperFrames-style, or image-generation workflows.
+description: Use for AI-assisted video or animation planning: video briefs, scripts, storyboards, shot lists, visual prompts, asset manifests, preview plans, and render handoffs. Do not use for general repository engineering or automatic rendering, uploading, publishing, or posting.
 ---
 
 # AI Video Production
@@ -8,6 +8,20 @@ description: Use this skill for planning and producing AI-assisted videos, anima
 Use this optional skill when a task involves planning or producing AI-assisted video, animation, image-based storyboards, thumbnails, social shorts, explainers, or code-rendered media.
 
 This skill is documentation-first. It may guide scripts, storyboards, shot lists, asset manifests, preview plans, and render handoffs, but it must not automatically render, upload, publish, or post media.
+
+## Routing Boundaries
+
+- "Design a storyboard and shot list" -> use `ai-video-production`.
+- "Create a render handoff and visual asset plan" -> use `ai-video-production`.
+- "Debug a multi-file Remotion rendering bug" -> use
+  `long-horizon-engineering`.
+- "Migrate a video-rendering codebase" -> use `long-horizon-engineering`.
+- Explicit invocation takes precedence when the requested workflow is safe and
+  applicable.
+
+Do not use this skill for general software engineering, repository migrations,
+backend debugging, CI repair, or production deployment unless the user is
+specifically asking for video planning artifacts.
 
 ## Example Prompts
 
@@ -101,6 +115,8 @@ For each major script beat, plan a corresponding visual beat:
   boundaries, and licensing constraints.
 - Do not use copyrighted, private, client, family, legal, medical, financial,
   identity, or confidential material without explicit approval.
+- Use licensing fields and approval checklists for production handoff only; do
+  not provide definitive copyright, rights-clearance, or legal conclusions.
 
 ## Privacy Rules
 

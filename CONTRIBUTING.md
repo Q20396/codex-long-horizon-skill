@@ -2,6 +2,9 @@
 
 Thanks for helping improve Codex Long Horizon Skills.
 
+For a low-risk walkthrough, start with
+[docs/first-contribution.md](docs/first-contribution.md).
+
 ## Create A Skill
 
 1. Add a new directory under `.agents/skills/<skill-name>/`.
@@ -49,6 +52,8 @@ python3 .agents/skills/long-horizon-engineering/scripts/check_skill_package.py
 python3 .agents/skills/long-horizon-engineering/scripts/doctor.py
 python3 .agents/skills/long-horizon-engineering/scripts/test_expected_triggers.py
 python3 .agents/skills/long-horizon-engineering/scripts/audit_skill_descriptions.py
+python3 scripts/validate_plugin_package.py
+python3 scripts/test_fresh_install.py
 git diff --check
 ```
 

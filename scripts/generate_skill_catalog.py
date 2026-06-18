@@ -46,6 +46,14 @@ REQUIRED_OPEN_SOURCE_FILES = [
     "CONTRIBUTING.md",
     "SECURITY.md",
     "docs/demo/README.md",
+    "docs/demo/recording-script.md",
+    "docs/evals/live-routing.md",
+    "docs/first-contribution.md",
+    "docs/maintainers/release-checklist.md",
+    "docs/plugin-install.md",
+    "docs/releases/v0.1.0.md",
+    ".codex-plugin/plugin.json",
+    ".agents/plugins/marketplace.json",
 ]
 
 EXAMPLE_WORKFLOWS = [

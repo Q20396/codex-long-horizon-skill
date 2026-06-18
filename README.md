@@ -1,14 +1,14 @@
 # Codex Long Horizon Skills
 
-Production-grade Codex skills for large engineering projects, long-running
+Production-oriented Codex skills for large engineering projects, long-running
 tasks, repository migrations, PR workflows, AI-assisted development, and
-autonomous execution.
+review-gated execution.
 
 Designed for:
 
 - Large repositories
 - Multi-hour engineering sessions
-- Safe autonomous execution
+- Controlled execution with validation
 - Recoverable workflows
 - Repeatable validation
 
@@ -19,11 +19,23 @@ Install once. Reuse everywhere.
 <!-- skill-catalog:start -->
 | Skill | Purpose | Best For |
 | --- | --- | --- |
-| [`ai-video-production`](.agents/skills/ai-video-production/SKILL.md) | Use this skill for planning and producing AI-assisted videos, animated explainers, image-based storyboards, short-form social videos, and code-rendered video projects using Remotion-style, HyperFrames-style, or image-generation workflows. | Video briefs, scripts, storyboards, visual prompts, asset manifests, and render handoffs. |
-| [`long-horizon-engineering`](.agents/skills/long-horizon-engineering/SKILL.md) | Use this skill for multi-step software engineering tasks that require planning, codebase exploration, edits across multiple files, testing, debugging, refactoring, migrations, or continuing prior work. | Large refactors, migrations, debugging, PR workflows, resumable tasks, and validation-heavy engineering. |
+| [`ai-video-production`](.agents/skills/ai-video-production/SKILL.md) | Use for AI-assisted video or animation planning: video briefs, scripts, storyboards, shot lists, visual prompts, asset manifests, preview plans, and render handoffs. Do not use for general repository engineering or automatic rendering, uploading, publishing, or posting. | Video briefs, scripts, storyboards, visual prompts, asset manifests, and render handoffs. |
+| [`long-horizon-engineering`](.agents/skills/long-horizon-engineering/SKILL.md) | Use for long-running software engineering work: repository exploration, multi-file changes, debugging, migrations, refactors, CI/build failures, staged validation, PR review response, or safe resumption. Do not use for simple edits, unrelated research, writing, media, or legal/financial tasks. | Large refactors, migrations, debugging, PR workflows, resumable tasks, and validation-heavy engineering. |
 <!-- skill-catalog:end -->
 
 ## Quick Start
+
+Add the repository marketplace:
+
+```bash
+codex plugin marketplace add Q20396/codex-long-horizon-skill --ref main
+```
+
+Then enable the plugin in your Codex surface if prompted. See
+[Plugin installation](docs/plugin-install.md) for verification, upgrade, and
+removal notes.
+
+Or clone this repository for direct skill installation:
 
 Clone this repository:
 
@@ -126,12 +138,9 @@ Requirements:
 
 ## Why This Exists
 
-Most Codex sessions fail because they:
-
-- Lose context
-- Skip validation
-- Make unsafe assumptions
-- Cannot recover after interruption
+Long-running coding-agent sessions can break down when they lose context, skip
+validation, rely on unverified assumptions, or cannot recover cleanly after
+interruption.
 
 These skills provide structured workflows that improve reliability and
 reproducibility.
@@ -159,19 +168,31 @@ reproducibility.
 - [Prompt library](prompts/)
 - [Examples](examples/)
 - [Templates](templates/)
+- [Plugin installation](docs/plugin-install.md)
 - [Demo recording guide](docs/demo/README.md)
 - [Contribution guide](CONTRIBUTING.md)
+- [First contribution guide](docs/first-contribution.md)
 - [Community skills registry](COMMUNITY_SKILLS.md)
 - [Security policy](SECURITY.md)
 - [Code of conduct](CODE_OF_CONDUCT.md)
 
 ## Official Codex Skill Structure
 
-A Codex skill is a directory containing a required `SKILL.md` file. It can also
-include optional supporting folders such as `scripts`, `references`,
-`templates`, and `assets`. Codex first reads the skill metadata to decide
-whether the skill is relevant. If the skill is selected, Codex then reads the
-full `SKILL.md` instructions.
+Codex skills are the workflow authoring format. A skill is a directory
+containing a required `SKILL.md` file and optional supporting folders such as
+`scripts`, `references`, `templates`, and `assets`. Codex first reads skill
+metadata to decide whether the skill is relevant. If selected, Codex then reads
+the full `SKILL.md` instructions.
+
+Codex plugins are the installable distribution unit. This repository now
+includes `.codex-plugin/plugin.json` and a repo marketplace at
+`.agents/plugins/marketplace.json` so the canonical skills can be distributed
+without duplicating the skill directories.
+
+Release checks distinguish static plugin package validation, direct skill
+installation, marketplace registration, and actual plugin installation. Actual
+plugin installation is claimed only when the installed Codex CLI exposes and
+passes `codex plugin add`.
 
 Recommended installation path:
 
@@ -273,6 +294,11 @@ patterns, then write original implementation and documentation.
 .agents/skills/
   ai-video-production/
   long-horizon-engineering/
+.agents/plugins/
+  marketplace.json
+.codex-plugin/
+  plugin.json
+docs/
 examples/
 prompts/
 scripts/

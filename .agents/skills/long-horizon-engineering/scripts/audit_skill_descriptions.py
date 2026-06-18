@@ -20,6 +20,17 @@ WORKFLOW_WORDS = {
     "sequence",
 }
 
+MAX_DESCRIPTION_CHARS = 360
+BOUNDARY_TERMS = ("do not use", "not use", "not for")
+POSITIVE_SCOPE = {
+    "long-horizon-engineering": ("software engineering", "debugging", "validation"),
+    "ai-video-production": ("video", "storyboard", "render"),
+}
+NEGATIVE_SCOPE = {
+    "long-horizon-engineering": ("unrelated research", "media", "simple edits"),
+    "ai-video-production": ("general repository engineering", "automatic rendering"),
+}
+
 
 def front_matter(text: str, path: Path) -> dict[str, str]:
     if not text.startswith("---\n"):
@@ -48,7 +59,7 @@ def audit_description(path: Path) -> list[str]:
         return [f"{name}: missing description."]
     if not description.startswith("Use "):
         errors.append(f"{name}: description should start with trigger language such as 'Use when' or 'Use this skill'.")
-    if len(description) > 260:
+    if len(description) > MAX_DESCRIPTION_CHARS:
         errors.append(f"{name}: description is too long for trigger metadata ({len(description)} chars).")
 
     lowered = description.lower()
@@ -57,6 +68,15 @@ def audit_description(path: Path) -> list[str]:
         errors.append(f"{name}: description may be summarizing workflow steps: {', '.join(workflow_hits)}.")
     if "\n" in description:
         errors.append(f"{name}: description should be a single-line metadata field.")
+
+    scope_terms = POSITIVE_SCOPE.get(name, ())
+    if scope_terms and not any(term in lowered for term in scope_terms):
+        errors.append(f"{name}: description is missing clear positive scope terms.")
+    if not any(term in lowered for term in BOUNDARY_TERMS):
+        errors.append(f"{name}: description should include a compact negative boundary.")
+    negative_terms = NEGATIVE_SCOPE.get(name, ())
+    if negative_terms and not any(term in lowered for term in negative_terms):
+        errors.append(f"{name}: description is missing useful boundary terms.")
 
     return errors
 

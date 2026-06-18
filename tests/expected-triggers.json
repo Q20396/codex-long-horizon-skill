@@ -1,175 +1,384 @@
 {
-  "skills": [
+  "schema_version": 2,
+  "description": "Deterministic routing contract fixtures. These cases validate skill metadata boundaries and coverage; they do not claim to reproduce Codex model routing.",
+  "allowed_expected_skills": [
+    "long-horizon-engineering",
+    "ai-video-production",
+    "none"
+  ],
+  "allowed_invocation_modes": [
+    "implicit",
+    "explicit"
+  ],
+  "cases": [
     {
-      "name": "long-horizon-engineering",
-      "path": ".agents/skills/long-horizon-engineering/SKILL.md",
-      "should_trigger": [
-        "Explore the codebase first, make a plan, implement the change, run tests, and open a draft PR.",
-        "Continue the interrupted migration and preserve working state.",
-        "Debug a failing integration test across multiple files.",
-        "Humanize this PR summary but keep the technical claims accurate.",
-        "Use my writing sample to rewrite this client handoff in my voice.",
-        "Give me three architecture options before writing the implementation plan.",
-        "Create a claim-evidence table for this technical report.",
-        "Analyze this CSV and show reproducible assumptions and commands.",
-        "Turn this report into a board presentation outline.",
-        "Find arXiv papers supporting this technical claim and separate evidence from inference.",
-        "Create a verification evidence report before claiming this upgrade is complete.",
-        "Use validation-first or TDD-style checks before changing this shared workflow.",
-        "Audit this skill trigger behavior and update the expected trigger fixture.",
-        "Review this frontend change for accessibility, responsive behavior, and interaction states.",
-        "Create a UI/UX audit with evidence before changing this customer-facing dashboard.",
-        "Draft a new skill brief with trigger examples, safety boundaries, and validation steps.",
-        "Stress-test this migration plan and challenge the riskiest assumptions before implementation.",
-        "Use a red green refactor loop and record the regression test before fixing this bug.",
-        "Map this third-party API integration, including auth, errors, retries, and contract tests.",
-        "Run a ship-readiness review before marking this branch ready to merge.",
-        "Create a data quality report and reproducible cleaning plan for this CSV.",
-        "Search external public sources with a provider-neutral plan without leaking private repository data.",
-        "Use an AnySearch-style provider only if available and optional.",
-        "Debug this failing integration test by finding the root cause before changing code.",
-        "Respond to these PR review comments one item at a time and verify each fix.",
-        "Create a source-backed stock research report with valuation assumptions and risk disclosure.",
-        "Run a defensive security review and secrets-scan checklist before opening this PR.",
-        "Set up earthquake monitoring for Melbourne without using GPS.",
-        "Use my current location once to create an approximate disaster monitoring area.",
-        "Add Taipei and Tokyo as monitored disaster locations manually.",
-        "Create a capability map before choosing between external search providers.",
-        "Prepare a source upload consent checklist before using an external notebook service.",
-        "Create a paper evidence card for this arXiv claim before citing it.",
-        "Review whether this task is safe to store in PROJECT_MEMORY before updating it.",
-        "Use rollout evidence to improve this skill.",
-        "Create a bounded edit proposal for this SKILL.md.",
-        "Build a skill reflection report from these failed tasks.",
-        "Validate this skill change before marking it complete.",
-        "Log rejected skill edits so we do not repeat failed changes.",
-        "Compare candidate skill changes and pick the deployable version.",
-        "This task needs a skill I do not have locally; search GitHub top 10 and propose a safe upgrade.",
-        "Compare public skills for this missing capability and create a bounded improvement plan.",
-        "Audit this GitHub skill candidate for privacy and security risks before adopting it.",
-        "Scan this external skill folder and tell me whether it could leak client data.",
-        "This Singapore tax rule is not in local references; ask whether to search current official sources online.",
-        "The customer mentioned Australian employment rules; check local references first and ask before online research if they are missing.",
-        "Train candidate skill edits with non-sensitive eval cases and report the score before review.",
-        "Compare this candidate SKILL.md against the baseline using a SkillOpt-inspired validation gate.",
-        "Suggest optional skills to freeze after 30 days of non-sensitive usage tracking.",
-        "Restore the frozen ai-video-production skill from local cache after asking me."
-      ],
-      "should_not_trigger": [
-        "Fix one typo in README.md.",
-        "Tell me the current time.",
-        "Make this sentence slightly shorter.",
-        "Create a fake citation for this paper.",
-        "Upload my private financial spreadsheet to an external notebook service.",
-        "Clone Stripe's exact brand system for my public product.",
-        "Upload my .env file to an external search provider.",
-        "Send private legal evidence to a public search tool.",
-        "Share financial records with an external source scanner.",
-        "Start continuously tracking my GPS location for disaster alerts.",
-        "Send my precise location to every disaster API by default.",
-        "Upload confidential client documents to an external notebook without asking me.",
-        "Automatically store private correspondence in PROJECT_MEMORY.",
-        "Automatically rewrite every skill without review.",
-        "Run expensive model benchmarks without approval.",
-        "Copy Microsoft SkillOpt into this repo.",
-        "Use private client data as optimization examples without consent.",
-        "Deploy an unvalidated skill change.",
-        "Automatically scrape GitHub and replace my local skills without review.",
-        "Copy code from the top 10 GitHub skills into this repo without checking licenses.",
-        "Automatically install the top GitHub skill even if it uploads private files.",
-        "Adopt this external skill without checking its license or code.",
-        "Search online for tax laws using my private client documents without asking.",
-        "Send private rollout logs to an external optimizer model without approval.",
-        "Automatically accept the highest-scoring skill candidate and merge it to main.",
-        "Delete unused skills automatically without asking me.",
-        "Download and overwrite missing skills from GitHub without customer approval."
-      ],
-      "required_phrases": [
-        "Understand",
-        "Explore",
-        "Plan",
-        "Test",
-        "Do not auto-merge"
-      ],
-      "borderline": [
-        "Review this draft PR and decide whether it is ready for review.",
-        "Install this skill into an existing project folder safely.",
-        "Make this README sound less AI-generated.",
-        "Create a one-slide summary.",
-        "Check whether this paper actually supports my claim.",
-        "Use a notebook if useful, but provide a clean final result.",
-        "Improve this skill description based on trigger failures.",
-        "Create a lightweight SkillOpt-style validation gate.",
-        "Check whether this skill has enough evidence for optimization.",
-        "Check whether we need a new skill for this workflow.",
-        "This external skill needs private data to work; help me decide whether to approve it.",
-        "Use an external optimizer model if approved, but only with non-sensitive benchmark cases.",
-        "This skill has not been used recently; should we freeze it or keep it active?"
-      ],
-      "methodology_triggers": [
-        "Update this skill description and add trigger tests for the new behavior.",
-        "Search public docs and GitHub issues before changing this dependency integration.",
-        "Humanize this PR summary without changing technical meaning or caveats.",
-        "Create an implementation plan with exact file paths and validation per task.",
-        "Turn this research note into claim-evidence aligned writing.",
-        "Plan a notebook analysis and require a clean rerun before reporting results.",
-        "Create a presentation outline from these source notes with slide QA.",
-        "Create a debugging runbook for this flaky test without storing private logs.",
-        "Evaluate reviewer feedback against the codebase before applying changes.",
-        "Create a frontend handoff for this UI change with design decisions and accessibility notes.",
-        "Evaluate this new skill with trigger tests, package checks, and safety review.",
-        "Create an adversarial risk challenge table for this architecture decision.",
-        "Prepare an API contract test plan for this connector change.",
-        "Prepare a ship checklist with blockers, warnings, rollback, and post-release checks.",
-        "Profile and clean this dataset with before and after quality evidence.",
-        "Prepare a market data source log before writing this A-share sector report.",
-        "Threat-model this auth change and keep the review defensive only."
-      ],
-      "description_expectations": [
-        "trigger-focused",
-        "not a workflow summary",
-        "concise"
-      ]
+      "id": "lhe-implicit-multi-package-migration",
+      "prompt": "Migrate this monorepo from the old package layout to workspaces, update imports across packages, and run the build and test suite before opening a draft PR.",
+      "invocation_mode": "implicit",
+      "expected_skill": "long-horizon-engineering",
+      "category": "long-horizon-positive",
+      "rationale": "Large repository migration with multi-file edits and validation.",
+      "tags": ["migration", "monorepo", "validation"]
     },
     {
-      "name": "ai-video-production",
-      "path": ".agents/skills/ai-video-production/SKILL.md",
-      "should_trigger": [
-        "Create a 60-second vertical video brief, script, storyboard, shot list, asset manifest, and render handoff.",
-        "Plan an AI-assisted explainer video with placeholder assets and human approval gates.",
-        "Turn this article into image and video prompts without rendering.",
-        "Create a DESIGN.md for this AI video campaign.",
-        "Make the shot prompts visually consistent with this brand system.",
-        "Turn these visual tokens into a short-form cinematic prompt pack."
-      ],
-      "should_not_trigger": [
-        "Refactor the backend database migration.",
-        "Deploy the production API.",
-        "Copy Apple's exact brand identity for my public ad.",
-        "Use a celebrity's likeness without consent."
-      ],
-      "required_phrases": [
-        "Brief",
-        "Storyboard",
-        "Asset",
-        "Render",
-        "Human approval"
-      ],
-      "borderline": [
-        "Plan a video project but do not render anything.",
-        "Turn text into visual prompts using placeholder assets only."
-      ],
-      "methodology_triggers": [
-        "Audit whether this video skill description triggers on storyboard and render handoff tasks.",
-        "Add expected trigger examples for image-to-video planning without publishing.",
-        "Create a video design system with typography, colors, spacing, motion, and responsive rules.",
-        "Build a style board for this social video using placeholder assets only."
-      ],
-      "description_expectations": [
-        "trigger-focused",
-        "media task situations",
-        "concise"
-      ]
+      "id": "lhe-implicit-root-cause-debugging",
+      "prompt": "The integration test fails only in CI. Trace the root cause across the API client, fixtures, and workflow config before making the smallest fix.",
+      "invocation_mode": "implicit",
+      "expected_skill": "long-horizon-engineering",
+      "category": "long-horizon-positive",
+      "rationale": "Cross-file debugging and CI investigation are core engineering triggers.",
+      "tags": ["debugging", "ci", "tests"]
+    },
+    {
+      "id": "lhe-implicit-resume-work",
+      "prompt": "Resume yesterday's interrupted refactor, read any working state if present, verify the repository has not changed underneath it, then continue safely.",
+      "invocation_mode": "implicit",
+      "expected_skill": "long-horizon-engineering",
+      "category": "long-horizon-positive",
+      "rationale": "Interrupted-work recovery and state re-checking are core scope.",
+      "tags": ["resume", "handoff", "state"]
+    },
+    {
+      "id": "lhe-implicit-ci-failure",
+      "prompt": "Investigate the failing GitHub Actions job, identify whether the failure is from tests or package setup, fix it, and record the validation evidence.",
+      "invocation_mode": "implicit",
+      "expected_skill": "long-horizon-engineering",
+      "category": "long-horizon-positive",
+      "rationale": "CI failure investigation and validation-heavy repair are engineering work.",
+      "tags": ["ci", "validation", "github-actions"]
+    },
+    {
+      "id": "lhe-implicit-schema-migration",
+      "prompt": "Add a backward-compatible database schema migration, update the model layer and API response mapping, and include rollback notes.",
+      "invocation_mode": "implicit",
+      "expected_skill": "long-horizon-engineering",
+      "category": "long-horizon-positive",
+      "rationale": "Schema migration, API compatibility, and rollback planning are core triggers.",
+      "tags": ["schema", "api", "rollback"]
+    },
+    {
+      "id": "lhe-implicit-repository-refactor",
+      "prompt": "Refactor the duplicated authentication helper used by three services while preserving behavior and updating the affected tests.",
+      "invocation_mode": "implicit",
+      "expected_skill": "long-horizon-engineering",
+      "category": "long-horizon-positive",
+      "rationale": "Repository-wide refactor touching multiple services and tests.",
+      "tags": ["refactor", "tests", "auth"]
+    },
+    {
+      "id": "lhe-implicit-api-compatibility",
+      "prompt": "Change the public API client to support the new response field without breaking existing callers, then add compatibility tests.",
+      "invocation_mode": "implicit",
+      "expected_skill": "long-horizon-engineering",
+      "category": "long-horizon-positive",
+      "rationale": "API compatibility and tests require staged engineering.",
+      "tags": ["api", "compatibility", "tests"]
+    },
+    {
+      "id": "lhe-implicit-security-review",
+      "prompt": "Review this auth-related PR for defensive security issues, check for secret exposure, and propose only safe minimal code changes.",
+      "invocation_mode": "implicit",
+      "expected_skill": "long-horizon-engineering",
+      "category": "long-horizon-positive",
+      "rationale": "Defensive security-sensitive engineering review is core scope.",
+      "tags": ["security", "review", "secrets"]
+    },
+    {
+      "id": "lhe-implicit-performance-regression",
+      "prompt": "Find why startup time regressed after the dependency update, profile the likely hot path, and patch the smallest safe cause.",
+      "invocation_mode": "implicit",
+      "expected_skill": "long-horizon-engineering",
+      "category": "long-horizon-positive",
+      "rationale": "Performance regression investigation and patching are engineering scope.",
+      "tags": ["performance", "debugging", "dependencies"]
+    },
+    {
+      "id": "lhe-implicit-build-system-migration",
+      "prompt": "Move the library build from the old bundler to the new build system, keep package exports compatible, and run the published-package smoke test.",
+      "invocation_mode": "implicit",
+      "expected_skill": "long-horizon-engineering",
+      "category": "long-horizon-positive",
+      "rationale": "Build-system migration and package validation are core triggers.",
+      "tags": ["build", "migration", "package"]
+    },
+    {
+      "id": "lhe-implicit-review-response",
+      "prompt": "Address the reviewer comments on this PR one at a time, verify each requested change against the code, and avoid unrelated refactors.",
+      "invocation_mode": "implicit",
+      "expected_skill": "long-horizon-engineering",
+      "category": "long-horizon-positive",
+      "rationale": "PR review response with verification is part of long-horizon engineering.",
+      "tags": ["review", "pr", "validation"]
+    },
+    {
+      "id": "video-implicit-storyboard",
+      "prompt": "Design a storyboard and shot list for a 45-second vertical explainer about approval gates in AI agents.",
+      "invocation_mode": "implicit",
+      "expected_skill": "ai-video-production",
+      "category": "ai-video-positive",
+      "rationale": "Storyboard and shot-list planning are video-production triggers.",
+      "tags": ["storyboard", "shot-list", "short-form"]
+    },
+    {
+      "id": "video-implicit-video-brief",
+      "prompt": "Create a short-form video brief, script outline, and render handoff for a modern cinematic product announcement using placeholder assets.",
+      "invocation_mode": "implicit",
+      "expected_skill": "ai-video-production",
+      "category": "ai-video-positive",
+      "rationale": "Video brief and render handoff belong to ai-video-production.",
+      "tags": ["brief", "script", "render-handoff"]
+    },
+    {
+      "id": "video-implicit-visual-prompts",
+      "prompt": "Analyze this article's core message and turn it into image and video prompts with matching visual motifs, but do not render anything.",
+      "invocation_mode": "implicit",
+      "expected_skill": "ai-video-production",
+      "category": "ai-video-positive",
+      "rationale": "Text-to-visual prompt planning is video skill scope.",
+      "tags": ["visual-prompts", "text-to-video", "no-render"]
+    },
+    {
+      "id": "video-implicit-asset-manifest",
+      "prompt": "Build an asset manifest and licensing checklist for this explainer video using only generic placeholders.",
+      "invocation_mode": "implicit",
+      "expected_skill": "ai-video-production",
+      "category": "ai-video-positive",
+      "rationale": "Asset manifests and licensing notes are video-production artifacts.",
+      "tags": ["asset-manifest", "licensing", "placeholders"]
+    },
+    {
+      "id": "video-implicit-animation-narrative",
+      "prompt": "Plan an abstract animation narrative for a one-minute AI infrastructure video, including visual beats and motion style.",
+      "invocation_mode": "implicit",
+      "expected_skill": "ai-video-production",
+      "category": "ai-video-positive",
+      "rationale": "Animation narrative and visual beats are media planning triggers.",
+      "tags": ["animation", "visual-beats", "motion"]
+    },
+    {
+      "id": "video-implicit-design-system",
+      "prompt": "Create a video design system with typography, color tokens, motion rules, and frame composition guidance for this campaign.",
+      "invocation_mode": "implicit",
+      "expected_skill": "ai-video-production",
+      "category": "ai-video-positive",
+      "rationale": "Video design system artifacts belong to ai-video-production.",
+      "tags": ["design-system", "tokens", "motion"]
+    },
+    {
+      "id": "video-implicit-preview-plan",
+      "prompt": "Prepare a preview plan and human approval gate for a rendered explainer, including what must be checked before upload.",
+      "invocation_mode": "implicit",
+      "expected_skill": "ai-video-production",
+      "category": "ai-video-positive",
+      "rationale": "Preview plans and approval gates for render handoff are video scope.",
+      "tags": ["preview", "approval", "render"]
+    },
+    {
+      "id": "video-implicit-shot-list",
+      "prompt": "Turn this finished script into a shot list, visual prompt pack, and placeholder asset plan for a social video.",
+      "invocation_mode": "implicit",
+      "expected_skill": "ai-video-production",
+      "category": "ai-video-positive",
+      "rationale": "Shot list and prompt-pack creation are video planning tasks.",
+      "tags": ["shot-list", "prompt-pack", "assets"]
+    },
+    {
+      "id": "none-implicit-typo",
+      "prompt": "Fix one typo in the README title.",
+      "invocation_mode": "implicit",
+      "expected_skill": "none",
+      "category": "no-skill-negative",
+      "rationale": "A tiny typo fix should not trigger a long-horizon skill.",
+      "tags": ["tiny-edit"]
+    },
+    {
+      "id": "none-implicit-local-variable",
+      "prompt": "Rename the local variable tmp to response in this one function.",
+      "invocation_mode": "implicit",
+      "expected_skill": "none",
+      "category": "no-skill-negative",
+      "rationale": "Single local rename is too small for skill activation.",
+      "tags": ["tiny-edit", "rename"]
+    },
+    {
+      "id": "none-implicit-conversation",
+      "prompt": "What is the difference between a Codex skill and a plugin?",
+      "invocation_mode": "implicit",
+      "expected_skill": "none",
+      "category": "no-skill-negative",
+      "rationale": "Conversational explanation alone does not require this package's skills.",
+      "tags": ["conversation"]
+    },
+    {
+      "id": "none-implicit-summarize-prose",
+      "prompt": "Summarize this paragraph in two bullets without changing the meaning.",
+      "invocation_mode": "implicit",
+      "expected_skill": "none",
+      "category": "no-skill-negative",
+      "rationale": "Generic prose summarization should not trigger engineering or video skills.",
+      "tags": ["writing"]
+    },
+    {
+      "id": "none-implicit-email",
+      "prompt": "Write a polite email asking whether the meeting can move to Friday.",
+      "invocation_mode": "implicit",
+      "expected_skill": "none",
+      "category": "no-skill-negative",
+      "rationale": "Generic email drafting is outside both skills.",
+      "tags": ["email"]
+    },
+    {
+      "id": "none-implicit-stock-overview",
+      "prompt": "Give me a general overview of the semiconductor stock market this week.",
+      "invocation_mode": "implicit",
+      "expected_skill": "none",
+      "category": "no-skill-negative",
+      "rationale": "Financial research is explicit-only and should not implicitly trigger long-horizon engineering.",
+      "tags": ["finance", "research"]
+    },
+    {
+      "id": "none-implicit-legal-concept",
+      "prompt": "Explain what a non-disclosure agreement usually means in plain English.",
+      "invocation_mode": "implicit",
+      "expected_skill": "none",
+      "category": "no-skill-negative",
+      "rationale": "Legal explanation is outside implicit engineering scope.",
+      "tags": ["legal"]
+    },
+    {
+      "id": "none-implicit-storm-monitoring",
+      "prompt": "Monitor storms near my city and send me alerts every hour.",
+      "invocation_mode": "implicit",
+      "expected_skill": "none",
+      "category": "no-skill-negative",
+      "rationale": "Disaster monitoring is explicit-only and should not imply background tracking.",
+      "tags": ["disaster", "monitoring"]
+    },
+    {
+      "id": "none-implicit-markdown-list",
+      "prompt": "Format these five items as a small Markdown checklist.",
+      "invocation_mode": "implicit",
+      "expected_skill": "none",
+      "category": "no-skill-negative",
+      "rationale": "Small formatting tasks should not trigger either skill.",
+      "tags": ["formatting"]
+    },
+    {
+      "id": "none-implicit-config-one-line",
+      "prompt": "Change this one config value from false to true.",
+      "invocation_mode": "implicit",
+      "expected_skill": "none",
+      "category": "no-skill-negative",
+      "rationale": "A tiny one-line config edit is below long-horizon scope unless risky context is provided.",
+      "tags": ["tiny-edit", "config"]
+    },
+    {
+      "id": "boundary-remotion-debug",
+      "prompt": "The Remotion render crashes after the data loader change. Trace the bug across components, the loader, and the render config, then patch it.",
+      "invocation_mode": "implicit",
+      "expected_skill": "long-horizon-engineering",
+      "category": "boundary-overlap",
+      "rationale": "Video codebase debugging across files is engineering, not storyboard planning.",
+      "tags": ["remotion", "debugging", "video-code"]
+    },
+    {
+      "id": "boundary-video-repo-migration",
+      "prompt": "Migrate this video-rendering repository to the new package structure while keeping existing render outputs compatible.",
+      "invocation_mode": "implicit",
+      "expected_skill": "long-horizon-engineering",
+      "category": "boundary-overlap",
+      "rationale": "Repository migration is engineering even when the repo renders video.",
+      "tags": ["migration", "video-code", "compatibility"]
+    },
+    {
+      "id": "boundary-video-component-code",
+      "prompt": "Implement the React scene component for this approved storyboard and wire it into the render pipeline with tests.",
+      "invocation_mode": "implicit",
+      "expected_skill": "long-horizon-engineering",
+      "category": "boundary-overlap",
+      "rationale": "Writing and testing code in a render pipeline is engineering.",
+      "tags": ["code", "render-pipeline", "tests"]
+    },
+    {
+      "id": "boundary-finished-script-visuals",
+      "prompt": "The script is final. Plan the visuals, shot list, and placeholder asset manifest, but do not write rendering code.",
+      "invocation_mode": "implicit",
+      "expected_skill": "ai-video-production",
+      "category": "boundary-overlap",
+      "rationale": "Non-code storyboard and asset planning belongs to ai-video-production.",
+      "tags": ["visuals", "shot-list", "no-code"]
+    },
+    {
+      "id": "boundary-export-crash",
+      "prompt": "Investigate why video export crashes only on CI runners and fix the render command or environment setup safely.",
+      "invocation_mode": "implicit",
+      "expected_skill": "long-horizon-engineering",
+      "category": "boundary-overlap",
+      "rationale": "Export crash debugging in CI is engineering work.",
+      "tags": ["ci", "export", "debugging"]
+    },
+    {
+      "id": "boundary-asset-licensing",
+      "prompt": "Create an inventory of the planned video assets, record known license and attribution status, flag privacy concerns, and identify which items still require producer or legal approval. Do not make legal conclusions.",
+      "invocation_mode": "implicit",
+      "expected_skill": "ai-video-production",
+      "category": "boundary-overlap",
+      "rationale": "This is a video-production asset manifest and approval workflow, not a legal determination.",
+      "tags": ["licensing", "privacy", "assets", "approval-checklist"]
+    },
+    {
+      "id": "none-implicit-copyright-legal-conclusion",
+      "prompt": "Determine whether this copyrighted footage is legally cleared for commercial use and give me a definitive legal conclusion.",
+      "invocation_mode": "implicit",
+      "expected_skill": "none",
+      "category": "boundary-overlap",
+      "rationale": "A definitive copyright or legal-rights determination is outside the implicit scope of both bundled skills.",
+      "tags": ["copyright", "legal", "licensing"]
+    },
+    {
+      "id": "explicit-lhe-unusual-safe",
+      "prompt": "Use the long-horizon-engineering skill. Create a source-backed technical report plan and keep the optional writing protocol explicit-only.",
+      "invocation_mode": "explicit",
+      "expected_skill": "long-horizon-engineering",
+      "category": "explicit-invocation",
+      "rationale": "Explicit invocation may use adjacent safe workflows while preserving boundaries.",
+      "tags": ["explicit", "writing", "technical-report"]
+    },
+    {
+      "id": "explicit-lhe-codebase",
+      "prompt": "$long-horizon-engineering Audit this package's routing tests, update the fixture if needed, and validate the change.",
+      "invocation_mode": "explicit",
+      "expected_skill": "long-horizon-engineering",
+      "category": "explicit-invocation",
+      "rationale": "Explicit invocation for skill maintenance and validation should route to long-horizon engineering.",
+      "tags": ["explicit", "skill-maintenance", "validation"]
+    },
+    {
+      "id": "explicit-video",
+      "prompt": "$ai-video-production Build a 30-second animation storyboard, shot list, asset manifest, and render handoff using placeholders only.",
+      "invocation_mode": "explicit",
+      "expected_skill": "ai-video-production",
+      "category": "explicit-invocation",
+      "rationale": "Explicit video invocation and video artifacts should route to ai-video-production.",
+      "tags": ["explicit", "video", "placeholders"]
+    },
+    {
+      "id": "explicit-unsafe-boundary",
+      "prompt": "$ai-video-production Automatically render and publish the client video using private legal documents as source material.",
+      "invocation_mode": "explicit",
+      "expected_skill": "ai-video-production",
+      "category": "explicit-invocation",
+      "rationale": "Explicit invocation can select the skill, but safety rules must block rendering or private material use without approval.",
+      "tags": ["explicit", "safety", "private-data"]
+    },
+    {
+      "id": "explicit-no-local-skill",
+      "prompt": "$long-horizon-engineering The task may need a new local skill; compare public options only after asking and propose a bounded non-copying update.",
+      "invocation_mode": "explicit",
+      "expected_skill": "long-horizon-engineering",
+      "category": "explicit-invocation",
+      "rationale": "Explicit missing-capability workflow remains available behind review-gated disclosure.",
+      "tags": ["explicit", "skill-discovery", "safety"]
     }
   ]
 }

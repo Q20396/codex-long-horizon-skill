@@ -41,6 +41,9 @@ jobs:
           python3 .agents/skills/long-horizon-engineering/scripts/test_expected_triggers.py --help
           python3 .agents/skills/ai-video-production/scripts/scan_top_media_skills.py --help
           python3 scripts/generate_skill_catalog.py --help
+          python3 scripts/validate_plugin_package.py --help
+          python3 scripts/test_fresh_install.py --help
+          python3 scripts/check_release_readiness.py --help
 
       - name: Run productized package checks
         run: |
@@ -53,6 +56,10 @@ jobs:
           python3 .agents/skills/long-horizon-engineering/scripts/manage_skill_lifecycle.py suggest-freeze --include-never-used
           python3 .agents/skills/long-horizon-engineering/scripts/test_expected_triggers.py
           python3 .agents/skills/long-horizon-engineering/scripts/update_installed_skill.py --list-skills
+          python3 -m unittest discover -s tests -p "test_*.py"
+          python3 scripts/validate_plugin_package.py
+          python3 scripts/test_fresh_install.py --skip-codex-cli
+          python3 scripts/check_release_readiness.py --version 0.1.0
 
       - name: Compile Python helper scripts
         run: |
@@ -62,8 +69,13 @@ jobs:
           .agents/skills/long-horizon-engineering/scripts/test_expected_triggers.py
           .agents/skills/long-horizon-engineering/scripts/check_skill_package.py
           .agents/skills/long-horizon-engineering/scripts/audit_skill_descriptions.py
+          .agents/skills/ai-video-production/scripts/scan_top_media_skills.py
           scripts/full_skill_validation.py
           scripts/generate_skill_catalog.py
+          scripts/validate_plugin_package.py
+          scripts/test_fresh_install.py
+          scripts/check_release_readiness.py
+          tests/test_release_tooling.py
           "
           if [ -f .agents/skills/long-horizon-engineering/scripts/audit_skill_optimization_readiness.py ]; then
             scripts_to_compile="$scripts_to_compile .agents/skills/long-horizon-engineering/scripts/audit_skill_optimization_readiness.py"

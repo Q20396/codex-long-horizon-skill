@@ -1,157 +1,196 @@
 ---
 name: long-horizon-engineering
-description: Use this skill for multi-step software engineering tasks that require planning, codebase exploration, edits across multiple files, testing, debugging, refactoring, migrations, or continuing prior work.
+description: Use for long-running software engineering work: repository exploration, multi-file changes, debugging, migrations, refactors, CI/build failures, staged validation, PR review response, or safe resumption. Do not use for simple edits, unrelated research, writing, media, or legal/financial tasks.
 ---
 
-# Long-Horizon Engineering Skill
+# Long-Horizon Engineering
 
-You are operating as a long-horizon engineering agent.
-
-Your goal is not only to write code, but to complete engineering work safely, verifiably, and in a way that can be resumed later.
+Use this skill for non-trivial software engineering work that benefits from
+careful exploration, staged implementation, validation, and resumable handoff.
+The skill should make engineering decisions more evidence-backed, not broaden
+into unrelated research or media workflows.
 
 ## Example Prompts
 
-- Use the long-horizon-engineering skill. Explore the codebase first, make a
-  plan, implement the change incrementally, run validation, and open a draft PR.
-- Use the long-horizon-engineering skill. Investigate this bug, identify root
-  cause before editing, propose the smallest fix, and provide validation
-  evidence.
-- Use the long-horizon-engineering skill. Resume interrupted work by reading the
-  previous state, checking the current repository, and reporting the next safest
-  step.
+- Use the long-horizon-engineering skill. Explore the repository, plan the
+  migration, implement it incrementally, run validation, and open a draft PR.
+- Use the long-horizon-engineering skill. Debug this failing integration test
+  across modules, identify root cause before editing, and verify the smallest
+  safe fix.
+- Use the long-horizon-engineering skill. Resume the interrupted refactor by
+  reading prior state, checking current code, and reporting the next safest
+  step before changing files.
 
-## Failure Recovery Strategy
+## When To Use
+
+Use this skill when the task involves one or more of:
+
+- unfamiliar repository exploration
+- multi-file implementation
+- complex debugging or failing tests
+- migrations, refactors, API changes, or schema changes
+- CI, build-system, dependency, or performance work
+- security-sensitive engineering review within authorized scope
+- code review response or merge-readiness checks
+- interrupted work that needs safe resumption
+- validation-heavy engineering handoff
+
+Do not use this skill implicitly for simple typos, one-line edits,
+conversational answers, generic writing, video/storyboard planning, stock or
+legal research, disaster monitoring, or unrelated data analysis. If the user
+explicitly invokes this skill for a safe unusual workflow, follow the explicit
+request while preserving the safety boundaries below.
+
+## Failure Recovery
 
 If work is interrupted, tests fail unexpectedly, requirements conflict, or the
 repository changes underneath the task, stop and re-establish state before
-editing. Re-read relevant instructions, inspect current files, summarize what is
-known, separate facts from assumptions, and continue only after the next safe
-step is clear.
-
-## Lightweight Long-Horizon Extension
-
-For long-running or interrupted tasks, you may maintain `docs/WORKING_STATE.md`
-when appropriate. Use it for resumable task state, not sensitive data.
-
-When useful, record important assumptions, evidence, decisions, risks, failed
-attempts, and the next safest step. Keep this lightweight; do not introduce
-heavy multi-agent planning, autonomous deployment, self-modifying behavior, or
-complicated orchestration.
+editing. Re-read relevant instructions, inspect current files, separate facts
+from assumptions, and continue only after the next safe step is clear.
 
 Do not make behavioral changes based only on assumptions. Verify important
-claims with repository files, tests, logs, command output, or user-provided
-context before editing.
+claims with repository files, tests, logs, command output, official docs, or
+user-provided context before editing.
 
-Pause instead of continuing when the next step depends on unclear requirements,
-unavailable tools, conflicting repository state, sensitive data, or an
-unverified high-impact assumption.
+## Core Workflow
 
-For skill self-improvement tasks, use a review-gated loop: inspect public
-sources, record evidence, adapt only small reusable patterns, run checks, and
-open a draft PR. Do not auto-merge or modify `main` directly.
+### 1. Understand
 
-When improving a skill based on observed task outcomes, trigger failures, or
-reviewer feedback, consult `references/skill-optimization-protocol.md`. Treat
-SkillOpt-style optimization as lightweight methodology only: collect rollout
-evidence, reflect on success and failure, propose bounded edits, validate, log
-rejected changes when useful, and keep human review before deployment.
+Restate the request in concrete engineering terms:
 
-For SkillOpt-inspired training runs that compare baseline and candidate skill
-text, consult `references/skillopt-training-layer.md` and use
-`scripts/score_skill_candidate.py` for local static scoring when useful. External
-optimizer models require explicit approval and may receive only non-sensitive
-skill text, abstracted failure modes, and approved benchmark cases.
+- goal
+- constraints
+- expected deliverable
+- known files or modules
+- unknowns and assumptions
+- safety or privacy risks
 
-When scanning GitHub for related Codex or Agent Skills projects, treat results
-as evidence for review. Do not copy external code into this skill without
-checking license obligations and user approval.
+### 2. Explore
 
-When the local skill set appears insufficient for a task, or a new domain skill
-may be needed, consult `references/missing-capability-skill-discovery.md`.
-Ask before searching public GitHub, compare top related repositories as
-evidence, extract only general patterns, and propose bounded, validation-gated
-updates or a new-skill brief for human review.
+Inspect relevant files before editing. Look for:
 
-Before adopting or adapting an external public skill, consult
-`references/external-skill-adoption-safety-review.md`. If the user approves a
-local candidate folder, use `scripts/audit_external_skill_candidate.py` to scan
-its code, docs, scripts, templates, and license signals for security, privacy,
-and operational risks, then present the tradeoff for customer decision.
+- existing patterns and ownership boundaries
+- tests, build scripts, package managers, CI, and lint/typecheck commands
+- related modules, schemas, APIs, migrations, and error logs
+- prior task state if resuming work
+- repository-specific instructions such as `AGENTS.md`
 
-When an installed project has many optional skills, consult
-`references/skill-lifecycle-management.md`. Prefer freezing unused optional
-skills into `.agents/skills.disabled/` over deleting them. Use
-`scripts/manage_skill_lifecycle.py` for local list, usage, suggest-freeze,
-freeze, and restore workflows. Do not download, restore, overwrite, or freeze
-skills without customer approval.
+For large unfamiliar repositories, optionally consult
+`references/repomix-codebase-context.md`; generated context is a map, not a
+replacement for reading files you will edit.
 
-When maintaining this repository's own skills, consult
-`references/skill-authoring-methodology.md`. Treat skill descriptions as trigger
-metadata, keep workflows in the body or references, and update trigger examples
-when trigger behavior changes.
+### 3. Plan
 
-When current public facts, docs, GitHub issues, package data, standards, CVEs,
-or vendor changes are needed, consult `references/external-search-protocol.md`.
-Use provider-neutral, privacy-first search planning and do not send private
-repository content to external search providers.
+Produce a short implementation plan when the work is non-trivial. Include:
 
-When a task may use optional external tools, connected apps, provider CLIs, MCP
-servers, browser sessions, cloud notebooks, or source-grounded research tools,
-consult `references/external-tool-provider-protocol.md` and
-`references/external-app-runtime-boundary.md` when useful. Prefer local,
-metadata-only, dry-run, or approval-gated modes. Do not upload, paste, import,
-or sync private source material into external apps unless the user explicitly
-approves the exact source subset and purpose.
+- files likely to change
+- validation commands
+- risk areas
+- important assumptions and supporting evidence
+- rollback or containment strategy
+- user confirmation needed before high-risk steps
 
-For adversarial review, TDD, API integration, ship-readiness, or data-cleaning
-work, consult the relevant optional protocol:
-`references/adversarial-review-protocol.md`, `references/tdd-protocol.md`,
-`references/api-integration-protocol.md`,
-`references/ship-readiness-protocol.md`, or
-`references/data-cleaning-protocol.md`. Keep these flows lightweight,
-evidence-backed, and safety-aware; do not make them mandatory for every task.
+For complex implementation plans, use `templates/implementation-plan.md` when a
+written plan would reduce risk.
 
-For writing, research, analysis, and presentation work, consult the relevant
-optional protocol: `references/writing-humanization-protocol.md`,
-`references/ideation-to-plan-protocol.md`,
-`references/evidence-backed-writing.md`,
-`references/notebook-analysis-protocol.md`, or
-`references/presentation-delivery-protocol.md`. Preserve facts, evidence,
-caveats, and privacy boundaries.
+### 4. Execute
 
-For frontend UI/UX review, accessibility checks, responsive behavior, or
-customer-facing interface handoffs, consult
-`references/ui-ux-review-protocol.md` when useful. Prefer evidence-backed
-findings over taste-only feedback, and do not copy another product's exact
-brand or interface identity.
+Make the smallest coherent change that solves the task. Preserve local style,
+avoid unrelated refactors, and do not introduce dependencies unless they are
+needed and aligned with the project.
 
-For financial, stock, market, sector, valuation, or watchlist research, consult
-`references/financial-research-report-protocol.md` when useful. Treat outputs
-as data analysis, not investment advice; cite sources, validate numbers, record
-assumptions, and do not create deterministic buy/sell recommendations.
+### 5. Validate
 
-For defensive security review, secrets checks, threat modeling, or
-security-sensitive PR review, consult `references/security-review-protocol.md`
-when useful. Stay within authorized scope and do not provide exploit,
-credential, stealth, bypass, exfiltration, or unauthorized-access guidance.
+Run the narrowest relevant checks first, then broader checks when warranted.
+Record commands and outcomes. For validation-heavy work, use
+`templates/verification-evidence.md` when the reviewer needs a concise evidence
+record.
 
-When comparing public frontier-agent capabilities, including Fable-style public
-descriptions, consult `references/public-agent-capability-review.md`. Separate
-official facts, research findings, media reports, community claims, and
-unverified claims before adopting any pattern.
+### 6. Debug
 
-When a task asks for powerful agent behavior such as sub-agent orchestration,
-autonomous deployment, self-improvement, auto-merge, production execution, or
-security automation, consult `references/capability-boundaries.md`. Capability
-does not imply permission; prefer review-gated and reversible workflows.
+When validation fails, read the error, form a hypothesis, make a targeted fix,
+and rerun the relevant check. Avoid blind edits.
 
-Treat client, private, legal, financial, family, medical, identity, business,
-and confidential research data as sensitive by default. Consult
-`references/client-privacy.md` when a repository may contain client or
-confidential material. Do not store client secrets, legal evidence, family
-information, financial details, medical details, identity details, private
-correspondence, or confidential source content in memory, logs, state, handoff
-files, commits, pushes, or public PRs.
+### 7. Summarize
+
+End with:
+
+- what changed
+- why it changed
+- validation run and results
+- known risks or limitations
+- next safest step
+
+For substantial work, include handoff-quality details: evidence used, decisions
+made, what was not changed, reviewer focus, rollback notes, and remaining
+uncertainty.
+
+## Resumable State
+
+`docs/PROJECT_MEMORY.md`, `docs/TASK_LOG.md`, `docs/WORKING_STATE.md`, and
+handoff reports are optional. Use them only when persistent tracking is
+appropriate, useful for resumption, and the repository is not sensitive.
+
+Do not create or update persistent memory, logs, state, or handoff files in
+sensitive repositories unless the user explicitly approves. When resuming work,
+read existing memory/log/state files if present, then re-check the current
+repository before editing.
+
+Use:
+
+- `references/resume-protocol.md` for interrupted-work recovery
+- `references/decision-log.md` for fact, assumption, decision, evidence, risk,
+  and follow-up tracking
+- `templates/WORKING_STATE_TEMPLATE.md` or
+  `templates/HANDOFF_REPORT_TEMPLATE.md` only when a persistent record is safe
+  and useful
+
+## Core References
+
+Load only the references that match the task:
+
+- `references/protocol.md` for the baseline long-horizon workflow
+- `references/safety-policy.md` for safety rules
+- `references/client-privacy.md` for client or confidential data
+- `references/capability-boundaries.md` for high-impact agent behavior
+- `references/stop-conditions.md` for when to pause
+- `references/validation-matrix.md` for choosing verification
+- `references/systematic-debugging-protocol.md` for root-cause debugging
+- `references/large-migration-playbook.md` for broad migrations
+- `references/code-review-response-protocol.md` for reviewer or CI feedback
+- `references/security-review-protocol.md` for defensive security review
+- `references/ship-readiness-protocol.md` for merge/release readiness
+- `references/external-search-protocol.md` when current public technical facts
+  are necessary
+
+## Explicit-Only Extensions
+
+Some bundled references support adjacent or experimental workflows, but they do
+not broaden implicit activation. Use them only when the user explicitly invokes
+this skill or explicitly requests that workflow. Do not select this skill
+implicitly for those domains merely because a reference exists.
+
+See `references/explicit-only-extensions.md` for the index covering writing,
+research, notebook, presentation, financial, jurisdiction, disaster monitoring,
+external skill discovery, skill lifecycle, SkillOpt-style optimization, and
+other optional workflows.
+
+AI video briefs, storyboards, shot lists, visual prompts, asset manifests, and
+render handoffs belong to the `ai-video-production` skill unless the task is
+engineering work on a video codebase, such as debugging a multi-file Remotion
+rendering bug or migrating a rendering repository.
+
+## Safety Rules
+
+Never expose secrets, print API keys, commit credentials, or copy private
+content into reusable logs. Treat client, private, legal, financial, family,
+medical, identity, business, and confidential research data as sensitive by
+default.
+
+Do not auto-merge. Do not store secrets, API keys, private client data, legal
+evidence, family information, financial account details, identity documents,
+private correspondence, or confidential documents in memory, logs, state files,
+handoff files, commits, public PRs, or examples.
 
 Before reading sensitive materials, tell the user why access is needed, which
 files or folders would be read, whether metadata is enough, whether content
@@ -159,325 +198,43 @@ would be quoted, summarized, or recorded, and how sensitive content will be
 minimized or omitted. Wait for explicit approval before reading sensitive
 content.
 
-When a task may require scanning outside the current repository, such as local
-folders, connected cloud drives, or Gmail, ask the user first. Confirm the
-source, scope, query, and whether contents or only metadata should be inspected.
-Use the least access needed, and do not store private source content in memory,
-logs, state, or reports.
-
-When the repository is large, unfamiliar, or multi-language, Codex may consult
-`references/repomix-codebase-context.md` for an optional Repomix-based codebase
-context protocol. Prefer report-first behavior, exclude secrets and private
-materials, and do not treat generated context as a substitute for inspecting the
-specific files being edited.
-
-When a task needs location-aware or industry-aware legal, regulatory, or
-industry-rule context, consult
-`references/jurisdiction-industry-compliance.md`. Do not silently enable GPS or
-infer precise location from private files. Ask whether the user wants to approve
-device/GPS location use or manually provide the country, state/province, city,
-or region. Identify the relevant industry, use current public sources for legal
-and regulatory facts, state that the output is not legal advice, and ask whether
-cross-region rules should also be checked. If cross-region rules may matter, ask
-whether the user wants Codex to load approved skills or reference files for other
-regions while excluding private client materials unless explicitly approved.
-If local references do not contain current rules for the requested jurisdiction,
-tax topic, or industry, identify the source gap and ask whether the user wants
-Codex to search current public sources online before making or updating claims.
-
-For disaster, emergency, earthquake, flood, fire, storm, tsunami, outage, or
-similar alert monitoring designs, consult
-`references/disaster-monitoring-enablement.md`. Default to manually added
-monitored locations. GPS or current location must be optional, user-initiated,
-approximate, and used only to configure alert rules. Do not enable continuous
-tracking or send location to external providers by default.
-
-For large migrations or complex multi-file changes, consult
-`references/large-migration-playbook.md` when appropriate. Use
-`references/validation-matrix.md` to choose task-appropriate verification.
-For bugs, failing tests, build failures, regressions, or unexpected behavior,
-consult `references/systematic-debugging-protocol.md` when a root-cause
-investigation would reduce risk. For review comments or CI feedback, consult
-`references/code-review-response-protocol.md` before applying unclear or
-potentially risky suggestions.
-
-Optional prompt styles live in `prompt-styles/`. Use them only when the user
-asks for a particular response style or when a task clearly benefits from one.
-Prompt styles change presentation, not safety rules or required verification.
-
-For substantial PRs or long-running tasks, produce a handoff summary using
-`templates/HANDOFF_REPORT_TEMPLATE.md` when appropriate. Do not require a
-handoff report for every small task. Do not create extra state, log, or handoff
-files in sensitive repositories unless the user explicitly approves.
-
-For complex implementation work, use `templates/implementation-plan.md` when a
-written plan would reduce risk. For merge-readiness or validation-heavy work,
-use `templates/verification-evidence.md` when evidence needs to be reviewed.
-Use the writing, research, notebook, and presentation templates only when they
-fit the task and the repository is not sensitive, or when the user approves.
-Use `templates/debugging-runbook.md` or `templates/reviewer-response.md` only
-when a written debugging or review-response record would help and is safe.
-Use `templates/ui-ux-audit.md`, `templates/accessibility-checklist.md`, or
-`templates/frontend-handoff.md` only for UI work that benefits from a written
-review record. Use `templates/new-skill-brief.md` or
-`templates/skill-evaluation-plan.md` for skill creation or evaluation tasks
-that need explicit trigger, safety, and validation coverage.
-Use `templates/external-skill-adoption-review.md` when reviewing a public or
-third-party skill candidate before recommending adoption.
-Use `templates/tool-provider-capability-map.md` or
-`templates/source-upload-consent-checklist.md` when external providers or
-external app uploads need an explicit approval record. Use
-`templates/paper-evidence-card.md` for academic claims that need paper-level
-traceability. Use `templates/memory-review-checklist.md` before updating
-persistent memory, logs, state, or handoff files when sensitivity is uncertain.
-Use `templates/skill-rollout-log.md`,
-`templates/skill-reflection-report.md`,
-`templates/bounded-skill-edit.md`,
-`templates/skill-validation-gate.md`, or
-`templates/rejected-skill-edit-log.md` only when skill optimization evidence
-needs a written, non-sensitive review record.
-Use `templates/skill-training-report.md` when comparing baseline and candidate
-skill text with benchmark scores or optimizer-model suggestions.
-Use `templates/skill-usage-report.md` when reporting active, frozen, unused, or
-restore-candidate skills.
-Use `templates/risk-challenge-table.md`,
-`templates/regression-test-record.md`, `templates/ship-checklist.md`,
-`templates/api-contract-test-plan.md`, or
-`templates/data-quality-report.md` only when the corresponding task benefits
-from a written evidence record and the repository is not sensitive, or when the
-user approves.
-Use `templates/stock-research-report.md`,
-`templates/market-data-source-log.md`,
-`templates/valuation-assumption-table.md`, or
-`templates/risk-disclosure.md` only for financial research tasks that need a
-written, source-backed record. Use `templates/secrets-scan-checklist.md` before
-committing or sharing changes when secrets or confidential files may be present.
-
-## Core Rule
-
-Do not jump directly into edits on non-trivial tasks.
-
-For every non-trivial task, follow this sequence:
-
-1. Understand
-2. Explore
-3. Plan
-4. Execute
-5. Test
-6. Debug
-7. Summarize
-8. Update memory/logs/state when appropriate
-
-## When to Use
-
-Use this skill when the task involves:
-
-- Large codebase exploration
-- Refactor or migration
-- Bug fix with uncertain root cause
-- Feature implementation across multiple files
-- Test failure diagnosis
-- Security-sensitive changes
-- Performance optimization
-- API or schema changes
-- Build/deployment changes
-- Long-running task that may continue later
-
-Do not use this skill for simple typo fixes or one-line changes.
-
-## Required Workflow
-
-### 1. Understand
-
-Restate the user’s request in concrete engineering terms.
-
-Identify:
-
-- Goal
-- Constraints
-- Known files or modules
-- Unknowns
-- Safety risks
-- Expected deliverable
-
-### 2. Explore
-
-Before editing, inspect relevant files.
-
-Look for:
-
-- Existing patterns
-- Tests
-- Build scripts
-- Dependency conventions
-- Error logs
-- Related modules
-- Prior task logs if present
-- Prior memory or working state files if resuming work
-- Approved external sources only when the user has explicitly allowed them
-- Large-migration guidance for broad migrations or multi-file implementations
-- Validation guidance for the current task type
-- Public agent capability review guidance for self-improvement work
-- Skill authoring methodology for skill maintenance work
-- External search protocol for provider-neutral public source research
-- Adversarial review, TDD, API integration, ship-readiness, or data-cleaning
-  guidance when those task types are in scope
-- Writing, ideation, evidence-backed writing, notebook, and presentation
-  protocols when those outputs are in scope
-- UI/UX review guidance when frontend, accessibility, responsive, interaction,
-  or visual-system quality is in scope
-- Financial research guidance when stock, market, valuation, watchlist, or
-  securities-report outputs are in scope
-- Defensive security review guidance when secrets, auth, data exposure,
-  dependency, configuration, or security-sensitive diffs are in scope
-- Capability boundaries for high-impact agent behavior
-- Client privacy guidance for private or confidential repositories
-- Jurisdiction and industry compliance guidance for location-aware regulatory
-  questions
-- Repomix codebase context guidance for large or unfamiliar repositories
-
-### 3. Plan
-
-Produce a short implementation plan.
-
-Include:
-
-- Files likely to change
-- Tests to run
-- Risk areas
-- Important assumptions and supporting evidence
-- Rollback strategy
-- Any user confirmation needed
-- For migrations, the proposed phase boundary and compatibility approach
-
-If the task is high-risk, ask before proceeding.
-
-If the repository appears sensitive, stay plan-only or ask for explicit
-confirmation before reading, modifying, staging, committing, pushing, or
-summarizing private materials.
-
-If the task may need local folders, connected cloud drives, Gmail, or other
-external sources, ask before scanning them and keep the approved scope narrow.
-
-### 4. Execute
-
-Make the smallest coherent changes.
-
-Preserve existing style.
-
-Do not introduce unnecessary dependencies.
-
-Do not rewrite unrelated code.
-
-### 5. Test
-
-Run the narrowest relevant tests first.
-
-Then run broader tests if appropriate.
-
-Record all test commands and outcomes.
-
-### 6. Debug
-
-If tests fail:
-
-- Read the error carefully
-- Form a hypothesis
-- Make a targeted fix
-- Re-run the relevant test
-
-Do not blindly edit.
-
-### 7. Summarize
-
-At the end, report:
-
-- What changed
-- Why it changed
-- Tests run
-- Test results
-- Remaining risks
-- Suggested next steps
-
-Before finalizing non-trivial work, review scope, evidence, validation, safety,
-and handoff quality.
-
-For changes to this skill package, run the local package check when available.
-
-For substantial work, include handoff-quality details: evidence used, decisions
-made, validation performed, what was not changed, known risks, reviewer focus,
-rollback plan, and the next safest step.
-
-### 8. Update Memory / Logs / State
-
-If the repo has a project memory, task log, or working state file, update it
-when appropriate.
-
-If not, create:
-
-- `docs/PROJECT_MEMORY.md`
-- `docs/TASK_LOG.md`
-- `docs/WORKING_STATE.md`
-
-only when persistent tracking is appropriate and the repository is not sensitive.
-
-PROJECT_MEMORY.md, TASK_LOG.md, and WORKING_STATE.md are optional. Do not create or update them in sensitive repositories unless the user explicitly approves.
-
-Handoff reports are also optional. Do not create or update persistent handoff
-files in sensitive repositories unless the user explicitly approves.
-
-When resuming work, read prior memory, task log, and working state files before
-planning. Re-check the current repository state before editing; do not blindly
-continue from old state if the code has changed.
-
-Do not write secrets, private client data, legal evidence, family information, financial account details, API keys, or confidential documents into memory, logs, or state files.
-
-If a task requires working with sensitive files, use minimal references and
-avoid copying content into long-term logs. If uncertain, stop and ask.
-
-## Safety Rules
-
-Never expose secrets.
-
-Never print API keys.
-
-Never commit credentials.
-
 Ask for confirmation before:
 
-- deleting files
 - reading, modifying, staging, committing, pushing, or summarizing sensitive
   client or confidential materials
+- deleting files or running destructive commands
 - using sub-agents for broad or high-impact work
-- enabling auto-merge
-- running deployment or production-affecting commands
+- enabling auto-merge, deployment, or production-affecting commands
 - scanning local folders outside the repository
-- scanning connected cloud drives or document stores
-- scanning Gmail or other connected mailboxes
+- scanning connected cloud drives, document stores, Gmail, or mailboxes
 - using device location, GPS, or precise location data
-- giving jurisdiction-specific legal, regulatory, or industry-rule guidance
-  without a confirmed jurisdiction and current source check
-- running destructive commands
-- modifying auth, payment, or security logic
-- changing database migrations
-- modifying production config
-- upgrading major dependencies
+- modifying auth, payment, security, database migration, production config, or
+  major dependency behavior
+- uploading source material to external providers or tools
 
-## Output Format
+If uncertain whether a file or action is sensitive, stop and ask.
 
-Use this format at the end of each task:
+## Final Reporting Contract
+
+For substantial tasks, report:
 
 ### Summary
-Briefly describe what was done.
+
+Briefly describe the outcome.
 
 ### Changes
-List changed files and purpose.
+
+List changed files and their purpose.
 
 ### Verification
-List commands run and results.
+
+List commands run and results. Say clearly if a command was unavailable or not
+run.
 
 ### Risks / Notes
-Mention unresolved concerns.
+
+Mention unresolved concerns, safety boundaries, and review focus.
 
 ### Next Step
-Give one recommended next step if needed.
+
+Give one recommended next step when useful.
