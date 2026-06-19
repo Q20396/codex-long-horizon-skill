@@ -37,6 +37,20 @@ General pattern:
 
 Keep composition IDs human-readable and platform-specific when needed, such as `vertical-short-1080x1920` or `product-demo-16x9`.
 
+Before a render handoff, record the contract that makes a composition
+reproducible:
+
+- entry point or served preview URL
+- composition ID
+- width and height
+- fps
+- duration in frames
+- props file or serialized props
+- whether props are JSON-serializable
+- schema or validation status when user-editable inputs exist
+- static asset path assumptions
+- expected output location
+
 ## Scene Components
 
 Break a video into scene components instead of one large timeline. Scenes should own a clear slice of time and a small visual responsibility.
@@ -102,7 +116,10 @@ Document render parameters before handoff:
 - Output path
 - Width, height, fps, duration
 - Props file or serialized props
+- Config file if used
 - Codec/container assumptions
+- Pixel format or alpha-channel needs
+- Still-frame or image-sequence needs
 - Audio mix source
 - Environment variables
 - Expected render time or cost
@@ -117,11 +134,14 @@ Suggested checks:
 
 - Composition loads
 - Props validate
+- Entry point, composition ID, and props file match the handoff
 - Missing assets fail early
+- Important sample frames render correctly
 - Key frames are readable
 - Captions do not overlap important content
 - Audio and visual timing align
 - Final frame has no abrupt cut unless intentional
+- Output path and overwrite behavior are understood
 
 ## Licensing Caution
 

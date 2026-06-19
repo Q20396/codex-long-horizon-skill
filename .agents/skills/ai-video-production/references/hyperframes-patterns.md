@@ -43,6 +43,26 @@ Preview checks:
 - Captions remain visible
 - Audio starts and ends as expected
 
+## Composition Metadata
+
+For an HTML-native handoff, record the fields that make the browser preview and
+render refer to the same artifact:
+
+- local project path
+- `index.html` path
+- composition ID or stage ID
+- width and height
+- duration
+- fps or frame-stepping assumption
+- asset root
+- audio tracks
+- animation adapter or timeline mechanism
+- lint or inspect result
+- preview URL or local preview command
+
+Prefer explicit timing metadata or data attributes over hidden timing embedded
+only in prose. The agent may describe a render command, but final render remains approval-gated.
+
 ## Deterministic Rendering
 
 A deterministic render pipeline should seek exact frames, capture the browser state, and encode with stable settings. The general pattern is:
@@ -64,6 +84,7 @@ Linting is a cheap gate before expensive rendering. A HyperFrames-style workflow
 - Missing audio, image, font, or video assets
 - Timeline gaps that were not intentional
 - Unsupported remote dependencies
+- Non-seekable or wall-clock-only animation that cannot be frame-sampled
 - Oversized assets
 - Broken animation adapters
 
@@ -79,6 +100,9 @@ The agent may prepare:
 - Asset manifest
 - Known issues
 - Approval checklist
+
+Do not silently install runtime requirements, run package-manager scripts, or
+render the final MP4 without approval. If Node, FFmpeg, browser automation, or Docker is required, state that in the handoff.
 
 The human decides whether to render.
 
