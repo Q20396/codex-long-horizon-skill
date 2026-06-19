@@ -1,0 +1,42 @@
+# Skill Usage Review
+# Manual, local, aggregated, privacy-preserving, and supplied explicitly by the
+# user. Do not scan Codex logs, shell history, browser history, repositories,
+# hidden files, mailboxes, cloud drives, or device location.
+
+review:
+  source_type: user_supplied_aggregate
+  collection_mode: manual
+  storage_scope: local
+  privacy_mode: aggregated_only
+  user_supplied_explicitly: true
+
+allowed_fields:
+  explicit_invocation_count: 0
+  implicit_invocation_count: 0
+  correct_trigger_count: 0
+  false_positive_trigger_count: 0
+  missed_trigger_count: 0
+  task_categories: []
+  too_heavy_feedback: []
+  recommendation: KEEP # KEEP / OPTIMIZE / NARROW_TRIGGER / SPLIT / FREEZE / DEPRECATE
+
+prohibited_fields:
+  - raw prompts
+  - conversation contents
+  - user names or identities
+  - email addresses
+  - credentials
+  - account identifiers
+  - client data
+  - device or GPS location
+  - private absolute paths
+  - repository file contents
+  - Codex logs
+  - shell history
+  - browser history
+  - hidden-file contents
+
+notes:
+  summary:
+  evidence_limits:
+  user_decision:

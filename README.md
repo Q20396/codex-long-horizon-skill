@@ -218,6 +218,13 @@ Optional:
 - `scripts/`
 - `assets/`
 
+## Self-Check and Review-Gated Improvement
+
+Self-check follows: Observe → Compare → Explain → Recommend → Wait for approval.
+In this mode, self-check is read-only, and all findings remain proposal-only
+until the user approves a separate action. Updating or applying a change is a
+separate explicit action, not part of self-check.
+
 ## Install, Verify, Update
 
 Validate this source package:
