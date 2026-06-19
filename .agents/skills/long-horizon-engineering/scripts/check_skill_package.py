@@ -174,6 +174,7 @@ INSTALLED_REQUIRED_FILES = [
     ".agents/skills/long-horizon-engineering/scripts/scan_top_related_skills.py",
     ".agents/skills/long-horizon-engineering/scripts/score_skill_candidate.py",
     ".agents/skills/long-horizon-engineering/scripts/doctor.py",
+    ".agents/skills/long-horizon-engineering/scripts/selfcheck_installed_skill.py",
     ".agents/skills/long-horizon-engineering/scripts/update_installed_skill.py",
     ".agents/skills/long-horizon-engineering/scripts/test_expected_triggers.py",
     ".agents/skills/long-horizon-engineering/scripts/audit_skill_descriptions.py",
