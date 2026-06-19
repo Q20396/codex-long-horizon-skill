@@ -225,6 +225,51 @@ In this mode, self-check is read-only, and all findings remain proposal-only
 until the user approves a separate action. Updating or applying a change is a
 separate explicit action, not part of self-check.
 
+## Manual Update Check
+
+Customers can ask Codex to check for an approved skill update, but the check is
+manual, read-only, and network-gated. It does not run in the background, install
+files, overwrite local skills, or update from mutable sources such as `main`,
+`master`, `latest`, or branch names.
+
+In tag mode, the checker accepts public HTTPS remotes only, blocks obvious local
+or private destinations, checks DNS results before the Git lookup, disables Git
+HTTP redirects and proxy inheritance, and verifies that the tag resolves to the
+expected exact commit SHA. This reduces accidental unsafe lookups, but it is not
+a complete SSRF defense against DNS rebinding or a compromised remote host.
+
+Example prompt:
+
+```text
+Use the long-horizon-engineering skill.
+Check whether my installed codex-long-horizon-skill package has an approved update.
+Ask before using network access, compare only against tag vX.Y.Z and expected commit <reviewed-40-character-sha>, and do not apply the update.
+```
+
+From this package repository, the read-only check can be run after explicit
+network approval:
+
+```bash
+python3 .agents/skills/long-horizon-engineering/scripts/check_for_updates.py \
+  --allow-network \
+  --source-tag vX.Y.Z \
+  --expected-commit REVIEWED_40_CHARACTER_SHA
+```
+
+For an exact commit already supplied by the user, compare locally without a
+remote lookup:
+
+```bash
+python3 .agents/skills/long-horizon-engineering/scripts/check_for_updates.py \
+  --source-commit REVIEWED_40_CHARACTER_SHA
+```
+
+Treat the result as advice only. Applying an update remains a separate
+backup-first action with `update_installed_skill.py`.
+
+For a customer-facing copy-paste prompt that compares installed skills with the
+published `v0.1.0` release, see [UPGRADE_GUIDE.md](UPGRADE_GUIDE.md).
+
 ## Install, Verify, Update
 
 Validate this source package:

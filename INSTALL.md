@@ -92,6 +92,23 @@ For a local release smoke test with your installed Codex CLI, run
 
 ## Update An Installed Skill
 
+Optional read-only update check from this package repository:
+
+```bash
+python3 .agents/skills/long-horizon-engineering/scripts/check_for_updates.py \
+  --allow-network \
+  --source-tag vX.Y.Z \
+  --expected-commit REVIEWED_40_CHARACTER_SHA
+```
+
+Use only reviewed tags with an expected full commit SHA. Do not use mutable
+sources such as `main`, `master`, `latest`, or branch names as reproducible
+update-check sources. This check reports status only; it does not install,
+copy, overwrite, or update files.
+
+For a full customer-facing prompt that compares installed skills with a
+published release without applying changes, see [UPGRADE_GUIDE.md](UPGRADE_GUIDE.md).
+
 Dry-run first:
 
 ```bash
