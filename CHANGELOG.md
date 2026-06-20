@@ -10,11 +10,14 @@ No unreleased changes.
 
 - Added safe online self-check/update protocol.
 - Added explicit two-step approval model for update checking and applying updates.
+- Hardened update self-check path-boundary validation.
 - Added release manifests for installed skill comparison.
 - Added dependency-free update self-check script.
 - Added rollback-first update guidance.
+- Restricted update targets to approved bundled skills.
 - Added customer-facing update prompt templates.
 - Added tests for update self-check behaviour.
+- Added tests for traversal, unknown skill ids, and symlink safety.
 
 ## 0.1.0 - 2026-06-18
 

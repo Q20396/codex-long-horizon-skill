@@ -320,6 +320,10 @@ Check only:
 python3 scripts/skill_update_selfcheck.py
 ```
 
+`--skills` is restricted to the bundled supported skills:
+`long-horizon-engineering` and `ai-video-production`. For release-grade
+comparison, prefer an immutable tag or exact commit with `--ref`.
+
 Apply after explicit typed confirmation:
 
 ```bash
@@ -334,6 +338,10 @@ UPDATE long-horizon-engineering
 UPDATE ai-video-production
 UPDATE ALL
 ```
+
+Apply mode refuses traversal paths, unsupported skill ids, symlinked skill
+targets, symlinked remote skill folders, and unsafe symlinks before replacing
+anything.
 
 Backups are created under:
 
