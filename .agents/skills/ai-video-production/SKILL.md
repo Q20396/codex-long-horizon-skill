@@ -30,6 +30,9 @@ specifically asking for video planning artifacts.
   using placeholder assets only.
 - Use the ai-video-production skill. Turn this article into visual prompts and
   a storyboard, but do not render or upload anything.
+- Use the ai-video-production skill. Analyze this supplied text, identify which
+  concepts deserve diagrams or a storyboard, and prepare visual prompts without
+  generating media.
 - Use the ai-video-production skill. Build a design system for this short-form
   explainer and require human approval before render.
 
@@ -76,6 +79,13 @@ industry vocabulary, common visual language, credible metaphors, and claims
 that need fact-checking. Use the industry-aware summary to create image and
 video prompts. Do not copy private client wording into reusable prompts, logs,
 or public examples unless explicitly approved.
+
+For knowledge articles, method notes, scripts, reports, or abstract
+explanations, consult `references/text-to-visual-analysis.md`. Preserve source
+meaning, extract cognitive anchors, decide which ideas genuinely benefit from
+visualization, distinguish diagrams, explanatory graphics, storyboards, image
+prompt concepts, and text-only sections, then stop at a proposal until the user
+approves generation.
 
 ## Workflow
 
@@ -160,6 +170,7 @@ to click a PR, request an original change, copy reviewed material, or skip.
 - `references/privacy-media-policy.md`
 - `references/licensing-notes.md`
 - `references/design-system-for-video.md`
+- `references/text-to-visual-analysis.md`
 
 ## Templates
 
@@ -167,6 +178,7 @@ to click a PR, request an original change, copy reviewed material, or skip.
 - `templates/DESIGN.md`
 - `templates/visual-style-tokens.md`
 - `templates/brand-system-for-video.md`
+- `templates/TEXT_TO_VISUAL_ANALYSIS_TEMPLATE.md`
 - `templates/STORYBOARD_TEMPLATE.md`
 - `templates/SHOT_LIST_TEMPLATE.md`
 - `templates/ASSET_MANIFEST_TEMPLATE.md`
