@@ -6,7 +6,7 @@ All notable changes to this project are summarized here.
 
 No unreleased changes.
 
-## 0.2.0 - 2026-06-20
+## 0.2.0 - 2026-06-18
 
 - Added safe online self-check/update protocol.
 - Added explicit two-step approval model for update checking and applying updates.
