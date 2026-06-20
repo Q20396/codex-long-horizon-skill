@@ -218,6 +218,19 @@ Optional:
 - `scripts/`
 - `assets/`
 
+## Industrial Skill Design Principles
+
+Industrial skills should trigger accurately, run with least privilege, use
+progressive disclosure, match workflow depth to task risk, and maintain an
+evaluation loop. `SKILL.md` should stay concise; long protocols, templates,
+scripts, and assets should live in their supporting folders.
+
+For larger skill systems, this repository favors router patterns, invocation
+permission layers, and shared design vocabulary while keeping external ideas
+review-gated instead of copied or auto-installed.
+
+Keywords: router patterns, invocation permission layers, shared design vocabulary.
+
 ## Text To Visual Analysis
 
 The `ai-video-production` skill can turn supplied text into visual plans before

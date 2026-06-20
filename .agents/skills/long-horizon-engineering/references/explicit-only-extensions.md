@@ -15,6 +15,8 @@ because the files exist.
 ## Skill Authoring And Optimization
 
 - `skill-authoring-methodology.md` for maintaining this skill package.
+- `industrial-skill-design-principles.md` for trigger boundaries, minimal tool
+  scope, progressive disclosure, task-depth matching, and evaluation loops.
 - `skill-optimization-protocol.md` for bounded, review-gated skill edits.
 - `skillopt-training-layer.md` for optional benchmark-style skill text
   comparison.

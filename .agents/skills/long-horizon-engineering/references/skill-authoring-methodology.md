@@ -16,6 +16,10 @@ Skill maintenance should follow an eval-driven loop:
 9. Review token footprint
 10. Update changelog
 
+Use `industrial-skill-design-principles.md` when a change affects trigger
+boundaries, tool permissions, progressive disclosure, workflow depth, or
+evaluation coverage.
+
 ## Core Principle
 
 Description is trigger metadata, not a workflow summary.

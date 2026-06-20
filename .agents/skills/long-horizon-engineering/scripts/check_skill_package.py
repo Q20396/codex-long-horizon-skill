@@ -94,6 +94,7 @@ INSTALLED_REQUIRED_FILES = [
     ".agents/skills/long-horizon-engineering/references/evidence-backed-writing.md",
     ".agents/skills/long-horizon-engineering/references/financial-research-report-protocol.md",
     ".agents/skills/long-horizon-engineering/references/ideation-to-plan-protocol.md",
+    ".agents/skills/long-horizon-engineering/references/industrial-skill-design-principles.md",
     ".agents/skills/long-horizon-engineering/references/jurisdiction-industry-compliance.md",
     ".agents/skills/long-horizon-engineering/references/large-migration-playbook.md",
     ".agents/skills/long-horizon-engineering/references/missing-capability-skill-discovery.md",
