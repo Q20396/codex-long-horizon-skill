@@ -66,6 +66,11 @@ PACKAGE_ONLY_FILES = [
     "scripts/validate_plugin_package.py",
     "scripts/test_fresh_install.py",
     "scripts/check_release_readiness.py",
+    "scripts/skill_update_selfcheck.py",
+    "scripts/test_skill_update_selfcheck.py",
+    "releases/latest.json",
+    "releases/long-horizon-engineering/latest.json",
+    "releases/ai-video-production/latest.json",
     "tests/expected-triggers.json",
     "tests/skill-eval-cases.json",
     "tests/test_release_tooling.py",
@@ -161,6 +166,7 @@ INSTALLED_REQUIRED_FILES = [
     ".agents/skills/long-horizon-engineering/templates/valuation-assumption-table.md",
     ".agents/skills/long-horizon-engineering/templates/verification-evidence.md",
     ".agents/skills/long-horizon-engineering/templates/risk-disclosure.md",
+    ".agents/skills/long-horizon-engineering/templates/safe-skill-update-selfcheck.md",
     ".agents/skills/long-horizon-engineering/templates/slide-qa-checklist.md",
     ".agents/skills/long-horizon-engineering/templates/source-upload-consent-checklist.md",
     ".agents/skills/long-horizon-engineering/templates/voice-calibration.md",
@@ -204,6 +210,7 @@ AI_VIDEO_REQUIRED_FILES = [
     ".agents/skills/ai-video-production/templates/SHOT_LIST_TEMPLATE.md",
     ".agents/skills/ai-video-production/templates/ASSET_MANIFEST_TEMPLATE.md",
     ".agents/skills/ai-video-production/templates/RENDER_HANDOFF_TEMPLATE.md",
+    ".agents/skills/ai-video-production/templates/safe-skill-update-selfcheck.md",
     ".agents/skills/ai-video-production/scripts/scan_top_media_skills.py",
 ]
 
@@ -236,6 +243,17 @@ def check_skill_front_matter(skill_dir: Path, expected_name: str) -> list[str]:
         )
     if "description:" not in front_matter:
         errors.append(f"{path.relative_to(ROOT)} front matter must include description.")
+    required_metadata = {
+        "version": "0.2.0",
+        "repo": "https://github.com/Q20396/codex-long-horizon-skill",
+        "skill_id": expected_name,
+        "update_channel": "stable",
+    }
+    for key, expected_value in required_metadata.items():
+        if f"{key}: {expected_value}" not in front_matter:
+            errors.append(
+                f"{path.relative_to(ROOT)} front matter must include {key}: {expected_value}"
+            )
     return errors
 
 
