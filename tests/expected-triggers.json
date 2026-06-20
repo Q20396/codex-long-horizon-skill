@@ -379,6 +379,51 @@
       "category": "explicit-invocation",
       "rationale": "Explicit missing-capability workflow remains available behind review-gated disclosure.",
       "tags": ["explicit", "skill-discovery", "safety"]
+    },
+    {
+      "id": "explicit-lhe-usage-review-aggregate",
+      "prompt": "Use the long-horizon-engineering skill. Review this user-supplied aggregated skill-usage summary and propose whether to keep, optimize, narrow, split, freeze, or deprecate the skill without applying changes.",
+      "invocation_mode": "explicit",
+      "expected_skill": "long-horizon-engineering",
+      "category": "explicit-invocation",
+      "rationale": "Explicit usage and trigger review is a proposal-only skill maintenance workflow.",
+      "tags": ["explicit", "usage-review", "proposal-only"]
+    },
+    {
+      "id": "explicit-lhe-trigger-counts-proposal",
+      "prompt": "$long-horizon-engineering Analyze these aggregate false-positive and missed-trigger counts, then propose trigger fixture changes without modifying the skill.",
+      "invocation_mode": "explicit",
+      "expected_skill": "long-horizon-engineering",
+      "category": "explicit-invocation",
+      "rationale": "Explicit trigger-count analysis should produce proposal-only fixture recommendations.",
+      "tags": ["explicit", "trigger-review", "fixtures"]
+    },
+    {
+      "id": "boundary-lhe-too-heavy-proposal-only",
+      "prompt": "Use the long-horizon-engineering skill. Based only on user-supplied aggregate feedback, recommend narrower routing because the skill feels too heavy for small tasks, but keep the result proposal-only.",
+      "invocation_mode": "explicit",
+      "expected_skill": "long-horizon-engineering",
+      "category": "boundary-overlap",
+      "rationale": "Too-heavy routing feedback is a boundary review that may recommend narrower activation but must not edit routing automatically.",
+      "tags": ["explicit", "too-heavy", "routing-boundary"]
+    },
+    {
+      "id": "none-implicit-auto-scan-usage-logs",
+      "prompt": "Automatically scan Codex logs, raw prompts, conversation history, and shell history to infer which skills I use most.",
+      "invocation_mode": "implicit",
+      "expected_skill": "none",
+      "category": "no-skill-negative",
+      "rationale": "Automatic private log or prompt scanning is prohibited and should not trigger a packaged skill workflow.",
+      "tags": ["privacy", "logs", "forbidden"]
+    },
+    {
+      "id": "none-implicit-background-telemetry-deprecate",
+      "prompt": "Enable background telemetry, monitor all future skill usage, and automatically deprecate unused skills without asking me.",
+      "invocation_mode": "implicit",
+      "expected_skill": "none",
+      "category": "no-skill-negative",
+      "rationale": "Background telemetry and automatic lifecycle mutation are outside the allowed usage-review contract.",
+      "tags": ["telemetry", "background", "forbidden"]
     }
   ]
 }
