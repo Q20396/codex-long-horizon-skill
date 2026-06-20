@@ -4,7 +4,7 @@
   "repo": "https://github.com/Q20396/codex-long-horizon-skill",
   "path": ".agents/skills/ai-video-production",
   "channel": "stable",
-  "release_date": "2026-06-20",
+  "release_date": "2026-06-18",
   "risk": "low",
   "summary": [
     "Added safe online self-check/update protocol.",
