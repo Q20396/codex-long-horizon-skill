@@ -6,6 +6,16 @@ All notable changes to this project are summarized here.
 
 No unreleased changes.
 
+## 0.2.0 - 2026-06-20
+
+- Added safe online self-check/update protocol.
+- Added explicit two-step approval model for update checking and applying updates.
+- Added release manifests for installed skill comparison.
+- Added dependency-free update self-check script.
+- Added rollback-first update guidance.
+- Added customer-facing update prompt templates.
+- Added tests for update self-check behaviour.
+
 ## 0.1.0 - 2026-06-18
 
 - Narrowed `long-horizon-engineering` routing scope to non-trivial software

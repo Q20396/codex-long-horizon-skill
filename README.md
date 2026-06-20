@@ -291,6 +291,62 @@ backup-first action with `update_installed_skill.py`.
 For a customer-facing copy-paste prompt that compares installed skills with the
 published `v0.1.0` release, see [UPGRADE_GUIDE.md](UPGRADE_GUIDE.md).
 
+## Safe skill update self-check
+
+This GitHub repository is the source of truth for the latest published skills.
+Customers may have older installed versions under `~/.agents/skills`. The
+self-check compares local installed skills with the GitHub version. The default
+check is read-only: Codex asks before online checking, asks again before
+updating, creates backups before replacement, prints rollback commands, and does
+not auto-update.
+
+Customer prompt:
+
+```text
+Use the skill-installer skill.
+
+Compare my installed Codex skills with:
+https://github.com/Q20396/codex-long-horizon-skill
+
+Check long-horizon-engineering and ai-video-production.
+Do not install or replace automatically.
+Summarize differences, risks, upgrade recommendation, and rollback plan.
+Ask me before making changes.
+```
+
+Check only:
+
+```bash
+python3 scripts/skill_update_selfcheck.py
+```
+
+Apply after explicit typed confirmation:
+
+```bash
+python3 scripts/skill_update_selfcheck.py --apply
+```
+
+`--apply` still does not silently update. It prints a summary and requires the
+user to type exactly one of:
+
+```text
+UPDATE long-horizon-engineering
+UPDATE ai-video-production
+UPDATE ALL
+```
+
+Backups are created under:
+
+```text
+~/.agents/skills/.backups/YYYYMMDD-HHMMSS/<skill_id>
+```
+
+Rollback can be done by copying the backup folder back to:
+
+```text
+~/.agents/skills/<skill_id>
+```
+
 ## Install, Verify, Update
 
 Validate this source package:

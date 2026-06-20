@@ -70,6 +70,11 @@ REQUIRED_CORE_FILES = [
     Path("scripts/validate_plugin_package.py"),
     Path("scripts/test_fresh_install.py"),
     Path("scripts/check_release_readiness.py"),
+    Path("scripts/skill_update_selfcheck.py"),
+    Path("scripts/test_skill_update_selfcheck.py"),
+    Path("releases/latest.json"),
+    Path("releases/long-horizon-engineering/latest.json"),
+    Path("releases/ai-video-production/latest.json"),
     Path("tests/test_release_tooling.py"),
     Path(".codex-plugin/plugin.json"),
     Path(".agents/plugins/marketplace.json"),
@@ -142,6 +147,7 @@ CORE_COMMANDS = [
     [PYTHON, "scripts/validate_plugin_package.py"],
     [PYTHON, "scripts/test_fresh_install.py", "--skip-codex-cli"],
     [PYTHON, "scripts/check_release_readiness.py", "--version", "0.1.0", "--allow-existing-tag"],
+    [PYTHON, "scripts/test_skill_update_selfcheck.py"],
     ["git", "diff", "--check"],
 ]
 
@@ -159,6 +165,8 @@ CI_EXPECTED = [
         "check_release_readiness.py --allow-existing-tag",
         ["check_release_readiness.py", "--version", "0.1.0", "--allow-existing-tag"],
     ),
+    ("skill_update_selfcheck.py --help", ["skill_update_selfcheck.py", "--help"]),
+    ("test_skill_update_selfcheck.py", ["test_skill_update_selfcheck.py"]),
     ("Python compile check", ["py_compile"]),
     ("git diff --check", ["git", "diff", "--check"]),
     ("update dry-run smoke test", ["update_installed_skill.py", "--target-root"]),

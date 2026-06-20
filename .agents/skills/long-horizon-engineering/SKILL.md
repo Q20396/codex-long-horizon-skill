@@ -1,6 +1,10 @@
 ---
 name: long-horizon-engineering
 description: Use for long-running software engineering work: repository exploration, multi-file changes, debugging, migrations, refactors, CI/build failures, staged validation, PR review response, or safe resumption. Do not use for simple edits, unrelated research, writing, media, or legal/financial tasks.
+version: 0.2.0
+repo: https://github.com/Q20396/codex-long-horizon-skill
+skill_id: long-horizon-engineering
+update_channel: stable
 ---
 
 # Long-Horizon Engineering
@@ -179,6 +183,54 @@ AI video briefs, storyboards, shot lists, visual prompts, asset manifests, and
 render handoffs belong to the `ai-video-production` skill unless the task is
 engineering work on a video codebase, such as debugging a multi-file Remotion
 rendering bug or migrating a rendering repository.
+
+## Safe Update / Self-Check Protocol
+
+When the user asks to check for updates, update skills, upgrade skills, or
+compare installed skills with GitHub, first ask for explicit permission to
+access:
+
+`https://github.com/Q20396/codex-long-horizon-skill`
+
+Explain that this first permission is only for checking updates and temporarily
+downloading or cloning the repository. During the check phase, do not install,
+replace, delete, or modify installed skills.
+
+After permission, compare installed local skills with the GitHub version.
+
+Installed local paths:
+
+- `~/.agents/skills/long-horizon-engineering`
+- `~/.agents/skills/ai-video-production`
+
+Remote repo paths:
+
+- `.agents/skills/long-horizon-engineering`
+- `.agents/skills/ai-video-production`
+
+Summarize:
+
+1. local version
+2. remote version
+3. changed files
+4. added files
+5. removed files
+6. important instruction changes
+7. risk level
+8. upgrade recommendation
+9. backup path that would be used
+10. rollback plan
+
+Ask for explicit second approval before applying any update. If applying an
+update, create a timestamped backup first, replace only the selected approved
+skill folder, validate that `SKILL.md` exists, validate that the folder is not
+empty, validate there is no duplicated nested path such as
+`.agents/skills/.agents/skills`, report exact files changed, and print the
+rollback command. If anything fails, restore from backup where possible.
+
+Never silently update. Never update all skills unless the user explicitly
+approves all skills. Prefer check-only mode unless the user clearly asks to
+apply an update.
 
 ## Safety Rules
 
