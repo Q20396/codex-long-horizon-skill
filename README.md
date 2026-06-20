@@ -218,6 +218,14 @@ Optional:
 - `scripts/`
 - `assets/`
 
+## Text To Visual Analysis
+
+The `ai-video-production` skill can turn supplied text into visual plans before
+generation. It analyzes the complete text first, selects only high-value
+concepts for visualization, and produces diagram, storyboard, explanatory
+graphic, image-prompt, or text-only recommendations. It does not generate,
+upload, publish, or bill media automatically.
+
 ## Self-Check and Review-Gated Improvement
 
 Self-check follows: Observe → Compare → Explain → Recommend → Wait for approval.
