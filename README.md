@@ -306,6 +306,11 @@ separate user decision. The user-facing “mad-dog mode” label only exposes
 locked experiment candidates; it never grants execution, installation, network,
 push, merge, or release permission.
 
+Even an opt-in experimental online comparison is stepwise: every network
+request and every update action must show its scope, source/ref, risk,
+validation, and rollback plan, then receive a fresh customer decision. Silence,
+ambiguous consent, or a changed target stops the workflow.
+
 ## Manual Update Check
 
 Customers can ask Codex to check for an approved skill update, but the check is

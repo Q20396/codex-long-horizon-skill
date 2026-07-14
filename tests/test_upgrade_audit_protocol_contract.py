@@ -38,6 +38,10 @@ class UpgradeAuditProtocolContractTests(unittest.TestCase):
                 "This approval expires after that comparison",
                 "An update requires a separate user decision that names the approved target skills.",
                 "Never schedule automatic checks or updates",
+                "treat each external request and each state-changing action as a separate opt-in step.",
+                "wait for an explicit customer decision for that exact step.",
+                "Consent expires after one completed, failed, or cancelled step.",
+                "For an update, require at least two separate decisions",
                 "must not automatically",
                 "rebase, force-push, push, merge, publish, tag, or release",
             ],
@@ -72,6 +76,8 @@ class UpgradeAuditProtocolContractTests(unittest.TestCase):
                 "Changes applied: NO",
                 "Activation status: LOCKED",
                 "Experimental online comparison authorization expires after this run: YES",
+                "## Stepwise Consent Log",
+                "A read-only comparison and a named replacement require separate rows",
             ],
         )
         for text in (checker, doctor, index):
@@ -85,6 +91,7 @@ class UpgradeAuditProtocolContractTests(unittest.TestCase):
                 "starts read-only",
                 "Any network check, durable report, repair, or quarantined experiment needs a separate user decision.",
                 "never grants execution, installation, network, push, merge, or release permission.",
+                "every network request and every update action must show its scope",
             ],
         )
 

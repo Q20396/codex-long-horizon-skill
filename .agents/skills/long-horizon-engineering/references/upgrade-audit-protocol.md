@@ -127,6 +127,26 @@ existing backup-first update flow, validate the replacement, and retain a
 usable rollback path. Never schedule automatic checks or updates, and never
 interpret the mode label as permission to bypass typed confirmation or backup.
 
+## Stepwise Consent For Opt-In Operations
+
+An experimental label does not create a standing permission. If a user asks to
+automate network checks or skill updates, treat each external request and each
+state-changing action as a separate opt-in step. Before the step, show the
+action, target, public source and ref, data scope, dependencies, cost or quota
+risk, expected result, validation, and rollback method. Then wait for an
+explicit customer decision for that exact step.
+
+Consent expires after one completed, failed, or cancelled step. A changed
+source, ref, target skill, path, scope, dependency, or update action requires a
+new prompt and decision. No response, ambiguous response, or rejection means
+stop; do not retry, queue, or continue in the background.
+
+For an update, require at least two separate decisions: one for the read-only
+comparison and one for the named replacement after the customer has seen the
+differences and rollback plan. Backup creation, validation, and restoration
+after failed validation remain mandatory. Do not present a single confirmation
+as authorization for all future network checks or updates.
+
 ## Prohibited Actions
 
 This protocol must not automatically:

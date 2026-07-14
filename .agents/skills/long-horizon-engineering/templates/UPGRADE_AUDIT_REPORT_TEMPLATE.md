@@ -33,6 +33,19 @@ repository contents.
 - Excluded private or sensitive sources:
 - Evidence limitations:
 
+## Stepwise Consent Log
+
+Record only the customer's decision and the minimum operational scope. Do not
+copy private prompts, credentials, or sensitive source content.
+
+| Step ID | Action | Target and source/ref | Scope and cost risk | Customer decision | Expires after step | Result |
+| --- | --- | --- | --- | --- | --- | --- |
+| | | | | `PENDING` | YES | `NOT_STARTED` |
+
+No response, ambiguous response, changed scope, or failed validation means
+`STOP`. A read-only comparison and a named replacement require separate rows
+and separate customer decisions.
+
 ## Upgrade Timeline
 
 | Upgrade ID | Time | Commit or PR | Purpose | Paths | Completion state | Validation state |
