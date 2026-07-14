@@ -46,6 +46,15 @@ No response, ambiguous response, changed scope, or failed validation means
 `STOP`. A read-only comparison and a named replacement require separate rows
 and separate customer decisions.
 
+## Weekly Consent Reminder
+
+- Week starting:
+- Reminder displayed without network access: YES / NO
+- Customer decision for this week: `PENDING`
+- Named source/ref and target skills shown before network approval: YES / NO
+- Online comparison authorized for this week: NO
+- No response, ambiguous response, or decline result: `STOP`
+
 ## Upgrade Timeline
 
 | Upgrade ID | Time | Commit or PR | Purpose | Paths | Completion state | Validation state |

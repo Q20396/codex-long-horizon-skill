@@ -147,6 +147,21 @@ differences and rollback plan. Backup creation, validation, and restoration
 after failed validation remain mandatory. Do not present a single confirmation
 as authorization for all future network checks or updates.
 
+## Optional Weekly Consent Reminder
+
+A customer may configure a weekly reminder outside this skill to ask whether
+they want a read-only update comparison for that week. The reminder is a prompt
+only: it must not access the network, fetch metadata, install anything, or
+apply an update. This skill does not create schedulers, cron jobs, background
+workers, or recurring network tasks.
+
+Each weekly reminder starts with no approval. It should state that no online
+check has happened and ask whether the customer wants to consider one. If the
+customer agrees, first show the named source, ref, target skills, data scope,
+and risk before requesting the separate approval required for the actual
+network step. A prior week's decision never carries forward. No answer,
+ambiguous answer, or a declined reminder means no network activity that week.
+
 ## Prohibited Actions
 
 This protocol must not automatically:

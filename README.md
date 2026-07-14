@@ -311,6 +311,10 @@ request and every update action must show its scope, source/ref, risk,
 validation, and rollback plan, then receive a fresh customer decision. Silence,
 ambiguous consent, or a changed target stops the workflow.
 
+A customer may use a weekly reminder to request a new decision, but the
+reminder never accesses the network. Each week begins with no approval and
+requires a fresh, source-scoped decision before any online comparison.
+
 ## Manual Update Check
 
 Customers can ask Codex to check for an approved skill update, but the check is

@@ -42,6 +42,8 @@ class UpgradeAuditProtocolContractTests(unittest.TestCase):
                 "wait for an explicit customer decision for that exact step.",
                 "Consent expires after one completed, failed, or cancelled step.",
                 "For an update, require at least two separate decisions",
+                "This skill does not create schedulers, cron jobs, background workers, or recurring network tasks.",
+                "A prior week's decision never carries forward.",
                 "must not automatically",
                 "rebase, force-push, push, merge, publish, tag, or release",
             ],
@@ -78,6 +80,8 @@ class UpgradeAuditProtocolContractTests(unittest.TestCase):
                 "Experimental online comparison authorization expires after this run: YES",
                 "## Stepwise Consent Log",
                 "A read-only comparison and a named replacement require separate rows",
+                "## Weekly Consent Reminder",
+                "Online comparison authorized for this week: NO",
             ],
         )
         for text in (checker, doctor, index):
@@ -104,6 +108,14 @@ class UpgradeAuditProtocolContractTests(unittest.TestCase):
         )
         self.assertEqual(
             fixtures["none-implicit-auto-upgrade-audit-repair"]["expected_skill"],
+            "none",
+        )
+        self.assertEqual(
+            fixtures["explicit-lhe-weekly-update-consent-reminder"]["expected_skill"],
+            "long-horizon-engineering",
+        )
+        self.assertEqual(
+            fixtures["none-implicit-weekly-auto-network-update"]["expected_skill"],
             "none",
         )
 
