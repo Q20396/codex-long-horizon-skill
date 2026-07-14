@@ -28,6 +28,8 @@ repository contents.
 - Approved repository scope:
 - Worktrees inspected by status only:
 - Network approval, if any:
+- Experimental online comparison source, ref, and skill IDs:
+- Experimental online comparison authorization expires after this run: YES
 - Excluded private or sensitive sources:
 - Evidence limitations:
 

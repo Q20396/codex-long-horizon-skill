@@ -111,6 +111,22 @@ the network, run external code, modify files, or start services merely to
 prepare an experiment. If isolation is insufficient, provide a proposal or
 patch only.
 
+## Optional Experimental Online Check
+
+Within the user-facing "mad-dog mode" label, a user may explicitly approve one
+read-only online comparison. The approval must name the public repository or
+release, immutable ref where available, target skill IDs, and allowed metadata
+or paths to inspect. This approval expires after that comparison and does not
+authorize a second network request, download, installation, replacement, or
+update.
+
+Report the source, ref, differences, risks, validation evidence, compatibility
+impact, and rollback plan before proposing any change. An update requires a
+separate user decision that names the approved target skills. It must use the
+existing backup-first update flow, validate the replacement, and retain a
+usable rollback path. Never schedule automatic checks or updates, and never
+interpret the mode label as permission to bypass typed confirmation or backup.
+
 ## Prohibited Actions
 
 This protocol must not automatically:

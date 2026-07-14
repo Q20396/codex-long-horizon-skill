@@ -34,6 +34,10 @@ class UpgradeAuditProtocolContractTests(unittest.TestCase):
                 "The audit never applies fixes automatically, including P2 fixes.",
                 "A user must explicitly authorize a named finding",
                 "It is not a safety bypass and does not authorize execution.",
+                "a user may explicitly approve one read-only online comparison.",
+                "This approval expires after that comparison",
+                "An update requires a separate user decision that names the approved target skills.",
+                "Never schedule automatic checks or updates",
                 "must not automatically",
                 "rebase, force-push, push, merge, publish, tag, or release",
             ],
@@ -67,6 +71,7 @@ class UpgradeAuditProtocolContractTests(unittest.TestCase):
                 "Experiment execution: NO",
                 "Changes applied: NO",
                 "Activation status: LOCKED",
+                "Experimental online comparison authorization expires after this run: YES",
             ],
         )
         for text in (checker, doctor, index):
