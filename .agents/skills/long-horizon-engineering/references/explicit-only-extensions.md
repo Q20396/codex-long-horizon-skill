@@ -44,6 +44,12 @@ because the files exist.
 - `financial-research-report-protocol.md` for source-backed market or stock
   research that is not investment advice.
 
+## Local Knowledge Artifacts
+
+- `obsidian-knowledge-workflow.md` for proposal-first, exact-path-authorized
+  Obsidian Markdown, JSON Canvas, or Base artifacts. It does not authorize
+  vault scanning, synchronization, CLI control, or persistent vault memory.
+
 ## External Tools And Source Gathering
 
 - `external-tool-provider-protocol.md` for approval-gated external tools.

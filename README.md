@@ -149,7 +149,8 @@ reproducibility.
 
 - `.agents/skills/long-horizon-engineering/` for multi-step engineering,
   planning, validation, debugging, PR workflows, migrations, resumable work,
-  privacy-first evidence tracking, and review-gated skill improvement.
+  privacy-first evidence tracking, review-gated skill improvement, and
+  optional exact-path-authorized Obsidian knowledge artifacts.
 - `.agents/skills/ai-video-production/` for AI video briefs, scripts,
   storyboards, shot lists, visual prompts, asset manifests, and render handoffs.
 - [prompts/](prompts/) for copy-paste task prompts.
@@ -243,6 +244,23 @@ These are serial working roles, not autonomous sub-agents. They do not grant
 new permissions or enable automatic edits, installs, pushes, merges, deploys,
 or releases. Optional working state supports safe resumption only after current
 branch, diff, and validation state have been re-checked.
+
+## Optional Obsidian Knowledge Workflow
+
+The long-horizon skill can create a proposal for an Obsidian-compatible
+Markdown note, JSON Canvas, or Base when the user explicitly asks. It begins
+with user-supplied content or a narrowly approved file, requires exact vault
+and target paths before any read or write, and keeps all vault changes
+proposal-only until separately approved.
+
+It never scans a whole vault, indexes private notes, follows vault symlinks,
+syncs cloud content, installs or invokes Obsidian CLI, or treats a vault as
+automatic long-term memory. JSON Canvas artifacts can be checked locally with:
+
+```bash
+python3 .agents/skills/long-horizon-engineering/scripts/validate_json_canvas.py \
+  path/to/approved.canvas
+```
 
 ## Text To Visual Analysis
 
