@@ -476,6 +476,19 @@ Sensitive repositories should default to plan-only mode until the user approves
 specific files and actions. Use explicit path staging; do not use broad
 `git add .` for confidential work.
 
+## Approved External Tool Contracts
+
+When a selected external CLI, MCP server, connected app, or provider would
+need new permissions, use the optional Approved Tool Contract Card after
+comparing candidates. It records the exact proposed action, input scope,
+side-effect classes, lowest-risk preview, validation, fallback, and rollback.
+
+The card is proposal-only: it does not authorize installation, execution,
+network access, authentication, file writes, uploads, deployment, publishing,
+or account actions. This package does not add a tool hub, automatic discovery,
+automatic installation or updates, background services, telemetry, or model
+routing.
+
 ## Community Skills
 
 Community skills are welcome when they are original, reviewable, and safe by

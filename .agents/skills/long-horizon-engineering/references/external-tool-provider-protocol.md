@@ -36,6 +36,22 @@ Before using a provider, identify:
 
 Use `templates/tool-provider-capability-map.md` when a written map would help.
 
+## Approved Tool Contract Card
+
+The capability map compares candidates. Once a candidate is selected, use
+`references/approved-tool-contract-card.md` to document the exact proposed
+tool action when it has material permissions or side effects.
+
+Use `templates/APPROVED_TOOL_CONTRACT_CARD.md` only when a written record will
+reduce risk. The card must identify the exact command or action, approved input
+scope, effect classes, lowest-risk first step, validation evidence, fallback,
+and rollback or containment plan.
+
+A completed card is still proposal-only. It does not authorize installation,
+execution, network access, file mutation, external transfer, account access,
+deployment, publication, or any other side effect. Ask for the exact approval
+needed before each applicable action.
+
 ## Approval Rules
 
 Ask before using a provider when the action may:
@@ -49,6 +65,10 @@ Ask before using a provider when the action may:
 - Store provider output in memory, logs, state, or reusable templates
 
 Prefer metadata-only inspection when content is sensitive.
+
+Do not install, update, or run a provider automatically because it appears in a
+capability map or contract card. A changed command, version, source, input
+scope, or effect class needs a new review.
 
 ## Doctor-First Pattern
 

@@ -185,6 +185,8 @@ Load only the references that match the task:
   are necessary
 - `references/safe-project-context-map.md` for a bounded map of an unfamiliar
   repository before broad engineering work
+- `references/approved-tool-contract-card.md` before a selected external tool
+  is proposed for a permissioned action
 
 ## Explicit-Only Extensions
 
