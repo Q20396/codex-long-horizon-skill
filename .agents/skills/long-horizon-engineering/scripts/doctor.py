@@ -8,8 +8,12 @@ import json
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parents[4]
-
+SCRIPT_PATH = Path(__file__).resolve()
+SKILL_DIR = SCRIPT_PATH.parents[1]
+SKILLS_DIR = SKILL_DIR.parent
+SOURCE_ROOT = SCRIPT_PATH.parents[4]
+SOURCE_SKILL_DIR = SOURCE_ROOT / ".agents" / "skills" / "long-horizon-engineering"
+IS_SOURCE_LAYOUT = SOURCE_SKILL_DIR == SKILL_DIR
 PACKAGE_ONLY_PATHS = [
     "AGENTS.md",
     "CHANGELOG.md",
@@ -156,23 +160,35 @@ INSTALLED_REQUIRED_PATHS = [
 
 
 def read_text(relative_path: str) -> str:
-    return (ROOT / relative_path).read_text(encoding="utf-8")
+    return (SOURCE_ROOT / relative_path).read_text(encoding="utf-8")
+
+
+def installed_path(relative_path: str) -> Path:
+    path = Path(relative_path)
+    expected_prefix = (".agents", "skills")
+    if path.parts[:2] != expected_prefix:
+        raise ValueError(f"Installed skill path must start with .agents/skills: {relative_path}")
+    return SKILLS_DIR.joinpath(*path.parts[2:])
 
 
 def package_mode() -> bool:
-    return all((ROOT / relative_path).is_file() for relative_path in PACKAGE_ONLY_PATHS)
+    return IS_SOURCE_LAYOUT and all(
+        (SOURCE_ROOT / relative_path).is_file() for relative_path in PACKAGE_ONLY_PATHS
+    )
 
 
-def check_required_paths(required_paths: list[str], label: str) -> list[str]:
+def check_required_paths(
+    required_paths: list[str], label: str, *, installed: bool
+) -> list[str]:
     return [
         f"Missing required {label} file: {relative_path}"
         for relative_path in required_paths
-        if not (ROOT / relative_path).is_file()
+        if not (installed_path(relative_path) if installed else SOURCE_ROOT / relative_path).is_file()
     ]
 
 
 def check_front_matter(relative_path: str, expected_name: str) -> list[str]:
-    path = ROOT / relative_path
+    path = installed_path(relative_path)
     if not path.is_file():
         return [f"Missing required skill file: {relative_path}"]
     text = path.read_text(encoding="utf-8")
@@ -191,15 +207,14 @@ def check_front_matter(relative_path: str, expected_name: str) -> list[str]:
 
 
 def check_nested_agents() -> list[str]:
-    skills_dir = ROOT / ".agents" / "skills"
     return [
-        f"Nested .agents path found: {path.relative_to(ROOT)}"
-        for path in skills_dir.rglob(".agents")
+        f"Nested .agents path found: {path.relative_to(SKILLS_DIR)}"
+        for path in SKILLS_DIR.rglob(".agents")
     ]
 
 
 def check_trigger_fixture() -> list[str]:
-    path = ROOT / "tests" / "expected-triggers.json"
+    path = SOURCE_ROOT / "tests" / "expected-triggers.json"
     if not path.is_file():
         return []
     try:
@@ -230,7 +245,7 @@ def run_checks() -> tuple[list[str], list[str]]:
     errors = []
     warnings = []
     is_package = package_mode()
-    ai_video_path = ROOT / ".agents/skills/ai-video-production/SKILL.md"
+    ai_video_path = SKILLS_DIR / "ai-video-production" / "SKILL.md"
 
     required_paths = [
         path for path in INSTALLED_REQUIRED_PATHS
@@ -238,10 +253,10 @@ def run_checks() -> tuple[list[str], list[str]]:
         or ai_video_path.exists()
         or not path.startswith(".agents/skills/ai-video-production/")
     ]
-    errors.extend(check_required_paths(required_paths, "installed skill"))
+    errors.extend(check_required_paths(required_paths, "installed skill", installed=True))
 
     if is_package:
-        errors.extend(check_required_paths(PACKAGE_ONLY_PATHS, "package"))
+        errors.extend(check_required_paths(PACKAGE_ONLY_PATHS, "package", installed=False))
     else:
         warnings.append(
             "Package-level files not found; running installed-skill checks only."
