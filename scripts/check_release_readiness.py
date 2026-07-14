@@ -7,11 +7,13 @@ import argparse
 import json
 import re
 import subprocess
+from datetime import date
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
 SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+$")
+RELEASE_DATE_RE = re.compile(r"^Release date:\s*(\d{4}-\d{2}-\d{2})\s*$", re.MULTILINE)
 
 STALE_RELEASE_MARKERS = [
     "prepared, not released",
@@ -73,17 +75,17 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def release_notes_errors(version: str, errors: list[str]) -> None:
+def release_notes_errors(version: str, errors: list[str]) -> str | None:
     release_notes = ROOT / "docs" / "releases" / f"v{version}.md"
     if not release_notes.is_file():
         errors.append(f"release notes missing: docs/releases/v{version}.md")
-        return
+        return None
 
     try:
         text = release_notes.read_text(encoding="utf-8")
     except UnicodeDecodeError:
         errors.append(f"release notes are not valid UTF-8: docs/releases/v{version}.md")
-        return
+        return None
 
     lowered = text.lower()
     required_any = [
@@ -102,6 +104,17 @@ def release_notes_errors(version: str, errors: list[str]) -> None:
         if marker in lowered:
             errors.append(f"release notes contain stale preparation marker: {marker}")
 
+    match = RELEASE_DATE_RE.search(text)
+    if not match:
+        errors.append("release notes missing Release date: YYYY-MM-DD")
+        return None
+    try:
+        date.fromisoformat(match.group(1))
+    except ValueError:
+        errors.append("release notes have invalid Release date: YYYY-MM-DD")
+        return None
+    return match.group(1)
+
 
 def extract_markdown_section(text: str, heading: str) -> str | None:
     pattern = re.compile(rf"^## {re.escape(heading)}\s*$", re.MULTILINE)
@@ -114,7 +127,9 @@ def extract_markdown_section(text: str, heading: str) -> str | None:
     return text[start:end].strip()
 
 
-def changelog_errors(version: str, errors: list[str]) -> None:
+def changelog_errors(version: str, release_date: str | None, errors: list[str]) -> None:
+    if release_date is None:
+        return
     changelog = ROOT / "CHANGELOG.md"
     if not changelog.is_file():
         errors.append("CHANGELOG.md missing")
@@ -125,7 +140,7 @@ def changelog_errors(version: str, errors: list[str]) -> None:
         errors.append("CHANGELOG.md is not valid UTF-8")
         return
 
-    heading = f"{version} - 2026-06-18"
+    heading = f"{version} - {release_date}"
     versioned = extract_markdown_section(text, heading)
     if versioned is None:
         errors.append(f"CHANGELOG missing dated version section: ## {heading}")
@@ -199,8 +214,8 @@ def validate(args: argparse.Namespace) -> list[str]:
         return errors
 
     package_errors(version, errors)
-    release_notes_errors(version, errors)
-    changelog_errors(version, errors)
+    release_date = release_notes_errors(version, errors)
+    changelog_errors(version, release_date, errors)
     tag_errors(version, args.pre_tag, errors)
     return errors
 

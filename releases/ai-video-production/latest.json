@@ -1,15 +1,15 @@
 {
   "skill_id": "ai-video-production",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "repo": "https://github.com/Q20396/codex-long-horizon-skill",
   "path": ".agents/skills/ai-video-production",
   "channel": "stable",
-  "release_date": "2026-06-18",
+  "release_date": "2026-07-15",
   "risk": "low",
   "summary": [
-    "Added safe online self-check/update protocol.",
-    "Added explicit two-step user authorization before checking and updating.",
-    "Added rollback-first upgrade guidance."
+    "Updated bundled validation metadata for the v0.2.1 maintenance release.",
+    "Retained explicit user authorization before checking and updating.",
+    "Retained backup-first rollback guidance."
   ],
   "requires_manual_approval": true,
   "auto_update": false

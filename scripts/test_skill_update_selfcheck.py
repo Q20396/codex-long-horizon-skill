@@ -43,7 +43,7 @@ class SkillUpdateSelfcheckTests(unittest.TestCase):
                 """---
 name: demo
 description: Demo skill.
-version: 0.2.0
+version: 0.2.1
 repo: https://example.test/repo
 skill_id: demo
 update_channel: stable
@@ -53,7 +53,7 @@ update_channel: stable
 """,
             )
             metadata = checker.parse_front_matter(path)
-            self.assertEqual(metadata["version"], "0.2.0")
+            self.assertEqual(metadata["version"], "0.2.1")
             self.assertEqual(metadata["repo"], "https://example.test/repo")
             self.assertEqual(metadata["skill_id"], "demo")
             self.assertEqual(metadata["update_channel"], "stable")
@@ -109,11 +109,11 @@ update_channel: stable
             skill_id = "long-horizon-engineering"
             write(
                 remote_repo / ".agents" / "skills" / skill_id / "SKILL.md",
-                f"---\nversion: 0.2.0\nskill_id: {skill_id}\n---\n# Demo\n",
+                f"---\nversion: 0.2.1\nskill_id: {skill_id}\n---\n# Demo\n",
             )
             report = checker.build_skill_report(skill_id, installed, remote_repo)
             self.assertTrue(report.local_missing)
-            self.assertEqual(report.remote_version, "0.2.0")
+            self.assertEqual(report.remote_version, "0.2.1")
             self.assertIn("SKILL.md", report.added_files)
 
     def test_default_mode_does_not_apply_or_replace_anything(self) -> None:
