@@ -608,7 +608,7 @@ class ReleaseReadinessTests(unittest.TestCase):
     def test_duplicate_release_content_under_unreleased_fails(self) -> None:
         repo = self.copy_repo("duplicated-changelog")
         text = self.changelog(repo).read_text(encoding="utf-8")
-        duplicated = "- Added safe online self-check/update protocol.\n"
+        duplicated = "- Fixed `doctor.py` and `check_skill_package.py` for user-level installations\n"
         text = text.replace("No unreleased changes.\n", "No unreleased changes.\n\n" + duplicated)
         self.changelog(repo).write_text(text, encoding="utf-8")
         result = self.run_readiness(repo, "--allow-existing-tag")
