@@ -471,6 +471,15 @@
       "tags": ["explicit", "personal-workflow", "proposal-only", "privacy"]
     },
     {
+      "id": "explicit-lhe-time-bounded-upgrade-audit",
+      "prompt": "Use the long-horizon-engineering skill. Run a read-only audit of the last 12 hours of this repository's upgrades. Do not create files or apply fixes; report findings and verification evidence.",
+      "invocation_mode": "explicit",
+      "expected_skill": "long-horizon-engineering",
+      "category": "explicit-invocation",
+      "rationale": "A bounded, evidence-first upgrade audit is an explicit proposal-only engineering workflow.",
+      "tags": ["explicit", "upgrade-audit", "read-only", "proposal-only"]
+    },
+    {
       "id": "none-implicit-personal-history-scan",
       "prompt": "Automatically read all my past chats, email, cloud drives, browser history, and private folders to build a personal operating manual.",
       "invocation_mode": "implicit",
@@ -496,6 +505,15 @@
       "category": "no-skill-negative",
       "rationale": "Background telemetry and automatic lifecycle mutation are outside the allowed usage-review contract.",
       "tags": ["telemetry", "background", "forbidden"]
+    },
+    {
+      "id": "none-implicit-auto-upgrade-audit-repair",
+      "prompt": "Automatically audit every recent repository change, create worktrees and reports, repair every P2 finding, commit the fixes, and publish the results.",
+      "invocation_mode": "implicit",
+      "expected_skill": "none",
+      "category": "no-skill-negative",
+      "rationale": "Automatic audit artifacts, repairs, commits, and publication are outside the explicit proposal-only audit protocol.",
+      "tags": ["audit", "automatic-repair", "commit", "publication", "forbidden"]
     },
     {
       "id": "none-implicit-auto-organize-obsidian-vault",

@@ -294,6 +294,18 @@ In this mode, self-check is read-only, and all findings remain proposal-only
 until the user approves a separate action. Updating or applying a change is a
 separate explicit action, not part of self-check.
 
+## Time-Bounded Upgrade Audits
+
+The optional `upgrade-audit-protocol.md` supports an explicitly requested,
+time-bounded review of recent repository upgrades. It starts read-only, fixes
+the audit window and baseline commit, and reports evidence, gaps, findings, and
+test outcomes without creating audit files, branches, worktrees, or repairs.
+
+Any network check, durable report, repair, or quarantined experiment needs a
+separate user decision. The user-facing “mad-dog mode” label only exposes
+locked experiment candidates; it never grants execution, installation, network,
+push, merge, or release permission.
+
 ## Manual Update Check
 
 Customers can ask Codex to check for an approved skill update, but the check is
