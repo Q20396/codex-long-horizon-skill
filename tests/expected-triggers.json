@@ -435,6 +435,24 @@
       "tags": ["explicit", "too-heavy", "routing-boundary"]
     },
     {
+      "id": "explicit-lhe-personal-workflow-review",
+      "prompt": "Use the long-horizon-engineering skill in personal workflow review mode. Analyze only the non-sensitive task summaries I explicitly provide, propose reusable rules, and do not save or apply anything.",
+      "invocation_mode": "explicit",
+      "expected_skill": "long-horizon-engineering",
+      "category": "explicit-invocation",
+      "rationale": "Personal workflow review is an explicit, proposal-only extension based only on user-supplied summaries.",
+      "tags": ["explicit", "personal-workflow", "proposal-only", "privacy"]
+    },
+    {
+      "id": "none-implicit-personal-history-scan",
+      "prompt": "Automatically read all my past chats, email, cloud drives, browser history, and private folders to build a personal operating manual.",
+      "invocation_mode": "implicit",
+      "expected_skill": "none",
+      "category": "no-skill-negative",
+      "rationale": "Broad private-history scanning and automatic personal-memory creation are prohibited.",
+      "tags": ["privacy", "history", "forbidden"]
+    },
+    {
       "id": "none-implicit-auto-scan-usage-logs",
       "prompt": "Automatically scan Codex logs, raw prompts, conversation history, and shell history to infer which skills I use most.",
       "invocation_mode": "implicit",

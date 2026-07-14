@@ -27,6 +27,12 @@ because the files exist.
 - `skill-lifecycle-management.md` for freezing or restoring optional installed
   skills with user approval.
 
+## Personal Workflow Review
+
+- `personal-workflow-review.md` for proposal-only analysis of explicitly
+  supplied non-sensitive work summaries, candidate reusable rules, and
+  repeated workflows without history scanning or automatic persistence.
+
 ## Research, Writing, And Analysis
 
 - `writing-humanization-protocol.md` for audience-aware rewriting that preserves
