@@ -154,6 +154,11 @@ the asset manifest.
 
 ## Step 8: Choose Tool Path
 
+Before choosing a path, compare reproducibility, preview workflow, privacy,
+licensing, cost, and the human approval gate with
+`references/renderer-selection.md`. Tool selection is planning only and does
+not authorize installation, provider use, rendering, upload, or publication.
+
 Use Remotion-style production for maintainable engineering, reusable components, data-driven videos, variants, and precise render contracts.
 
 Use HyperFrames-style production for fast agent-authored HTML animation, previewable single-project compositions, lint-before-render loops, and manual local rendering.
@@ -203,6 +208,9 @@ Render handoff should include:
 - Inputs and assets
 - Known issues
 - License and privacy checklist
+
+Complete `templates/RENDER_EVIDENCE_TEMPLATE.md` before asking for final-render
+approval.
 
 ## Step 12: Export
 

@@ -83,6 +83,10 @@ For large unfamiliar repositories, optionally consult
 `references/repomix-codebase-context.md`; generated context is a map, not a
 replacement for reading files you will edit.
 
+For an approval-gated structural map assembled from explicitly allowed paths,
+consult `references/safe-project-context-map.md`. It is not a repository-wide
+scan, graph database, background index, or permission to read sensitive files.
+
 ### 3. Plan
 
 Produce a short implementation plan when the work is non-trivial. Include:
@@ -179,6 +183,8 @@ Load only the references that match the task:
 - `references/ship-readiness-protocol.md` for merge/release readiness
 - `references/external-search-protocol.md` when current public technical facts
   are necessary
+- `references/safe-project-context-map.md` for a bounded map of an unfamiliar
+  repository before broad engineering work
 
 ## Explicit-Only Extensions
 
@@ -189,8 +195,8 @@ implicitly for those domains merely because a reference exists.
 
 See `references/explicit-only-extensions.md` for the index covering writing,
 research, notebook, presentation, financial, jurisdiction, disaster monitoring,
-external skill discovery, skill lifecycle, SkillOpt-style optimization, and
-other optional workflows.
+external skill discovery, skill lifecycle, SkillOpt-style optimization, local
+compute capability intake, and other optional workflows.
 
 For explicitly authorized work with an Obsidian vault, Markdown note, JSON
 Canvas, or Obsidian Base, use `references/obsidian-knowledge-workflow.md`.
