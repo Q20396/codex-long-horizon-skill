@@ -94,6 +94,11 @@ Produce a short implementation plan when the work is non-trivial. Include:
 - rollback or containment strategy
 - user confirmation needed before high-risk steps
 
+For substantial work, also state the Definition of Done, in-scope and
+out-of-scope paths, acceptance criteria and evidence, stop conditions, and the
+rollback path. A plan is a proposal, not permission to edit, run high-impact
+commands, or promote a result.
+
 For complex implementation plans, use `templates/implementation-plan.md` when a
 written plan would reduce risk.
 
@@ -109,6 +114,11 @@ Run the narrowest relevant checks first, then broader checks when warranted.
 Record commands and outcomes. For validation-heavy work, use
 `templates/verification-evidence.md` when the reviewer needs a concise evidence
 record.
+
+For substantial work, distinguish execution evidence from the evaluator
+conclusion. A passing command is evidence, not by itself proof that every
+acceptance criterion was met. Map important requirements to direct evidence and
+state any remaining gaps.
 
 ### 6. Debug
 
@@ -138,11 +148,14 @@ appropriate, useful for resumption, and the repository is not sensitive.
 Do not create or update persistent memory, logs, state, or handoff files in
 sensitive repositories unless the user explicitly approves. When resuming work,
 read existing memory/log/state files if present, then re-check the current
-repository before editing.
+repository before editing. Compare the recorded branch, commit, working diff,
+and last verification result with current state before relying on old notes.
 
 Use:
 
 - `references/resume-protocol.md` for interrupted-work recovery
+- `references/planner-builder-evaluator-loop.md` for role-based planning,
+  execution, evidence review, and human disposition on substantial tasks
 - `references/decision-log.md` for fact, assumption, decision, evidence, risk,
   and follow-up tracking
 - `templates/WORKING_STATE_TEMPLATE.md` or
@@ -183,6 +196,15 @@ AI video briefs, storyboards, shot lists, visual prompts, asset manifests, and
 render handoffs belong to the `ai-video-production` skill unless the task is
 engineering work on a video codebase, such as debugging a multi-file Remotion
 rendering bug or migrating a rendering repository.
+
+## Role Boundaries
+
+Planner, Builder, and Evaluator are serial working roles, not autonomous
+sub-agents, permission tiers, or a self-approving loop. The Planner proposes a
+bounded task contract, the Builder performs only approved work, and the
+Evaluator reviews evidence and reports findings. The Evaluator does not edit,
+approve its own proposal, or authorize push, merge, deployment, publication, or
+other high-impact actions. Human approval remains required for those actions.
 
 ## Safe Update / Self-Check Protocol
 

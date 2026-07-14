@@ -16,6 +16,28 @@
 ### Out of Scope
 -
 
+## Definition of Done
+
+-
+
+## Planned File Scope (Not Write Permission)
+
+- Planned paths:
+- Paths that require separate approval:
+- Required user approvals:
+
+## Acceptance Criteria And Evidence
+
+| Acceptance Criterion | Expected Observable Result | Evidence or Check | Status |
+| --- | --- | --- | --- |
+
+## Role Handoff
+
+- Planner proposal:
+- Builder execution boundary:
+- Evaluator evidence review:
+- Human disposition required:
+
 ## File Map
 | Path | Action | Purpose | Risk |
 | --- | --- | --- | --- |
@@ -58,6 +80,9 @@ Avoid vague tasks:
 **Expected Result**
 -
 
+**Acceptance Criterion**
+-
+
 **Rollback**
 -
 
@@ -73,6 +98,11 @@ Avoid vague tasks:
 - Required checks before claiming completion:
 - Evidence to include in final summary:
 - Checks intentionally skipped and why:
+
+## Stop Conditions
+- Stop and ask when:
+- Assumptions that must be verified before execution:
+- Conditions that invalidate this plan:
 
 ## Rollback
 - Revert path:

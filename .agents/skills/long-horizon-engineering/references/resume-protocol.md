@@ -32,12 +32,21 @@ Do not blindly continue from old state if the repository has changed. Re-check
 the current code, current branch, current diff, and relevant tests before
 editing.
 
+If a working-state record exists, compare its recorded branch, base commit,
+last verified commit, and last verification result with current state. Inspect
+both staged and unstaged diffs. Re-run the most relevant prior validation when
+its result could now be stale.
+
+If the branch, commit, diff, files, assumptions, or validation result differs
+materially, mark the old state stale. Do not continue the old plan blindly;
+make a new bounded plan or ask for direction before editing.
+
 ## Updating State
 
 If persistent tracking is appropriate and safe, update `docs/WORKING_STATE.md`
-with the current status, evidence, risks, and next safest step. Do not create or
-update state files in sensitive repositories unless the user explicitly
-approves.
+with the current status, evidence, risks, next safest step, and state freshness
+check. Do not create or update state files in sensitive repositories unless the
+user explicitly approves.
 
 ## Safety
 

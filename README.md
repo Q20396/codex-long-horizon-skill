@@ -231,6 +231,19 @@ review-gated instead of copied or auto-installed.
 
 Keywords: router patterns, invocation permission layers, shared design vocabulary.
 
+## Role-Based Engineering Loop
+
+For substantial engineering tasks, the long-horizon skill uses a lightweight
+Planner -> Builder -> Evaluator -> Human Gate flow. The Planner defines scope,
+completion criteria, evidence, and stop conditions; the Builder performs only
+approved work; the Evaluator maps results to evidence and reports gaps; the
+human decides whether to accept or request a bounded correction.
+
+These are serial working roles, not autonomous sub-agents. They do not grant
+new permissions or enable automatic edits, installs, pushes, merges, deploys,
+or releases. Optional working state supports safe resumption only after current
+branch, diff, and validation state have been re-checked.
+
 ## Text To Visual Analysis
 
 The `ai-video-production` skill can turn supplied text into visual plans before

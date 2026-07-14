@@ -23,6 +23,26 @@ documents, private correspondence, or confidential source content.
 
 - 
 
+## Last Verified Commit
+
+-
+
+## Last Verified Command
+
+-
+
+## Last Verified Result
+
+-
+
+## State Freshness Check
+
+- Recorded branch matches current branch: YES / NO / UNKNOWN
+- Recorded commit matches current commit: YES / NO / UNKNOWN
+- Current staged and unstaged diffs were re-checked: YES / NO / UNKNOWN
+- Last verification is still relevant: YES / NO / UNKNOWN
+- Safe to resume from this state: YES / NO / UNKNOWN
+
 ## Current Status
 
 - 
@@ -70,3 +90,10 @@ documents, private correspondence, or confidential source content.
 ## Things Not To Repeat
 
 - 
+
+## Resume Safety
+
+Do not resume from this file until the current branch, commit, working diff,
+relevant files, and last verification result have been re-checked. If any of
+them differ materially, treat this state as stale and make a new plan or ask for
+direction before editing.
