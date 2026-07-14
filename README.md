@@ -411,6 +411,25 @@ python3 .agents/skills/long-horizon-engineering/scripts/update_installed_skill.p
 
 The update flow is dry-run by default and backup-first when `--apply` is used.
 
+## Personal Workflow Review (Explicit Only)
+
+The optional personal-workflow review protocol can turn only user-supplied,
+non-sensitive task summaries into proposed reusable rules or repeated workflow
+candidates. It separates observation, evidence, hypothesis, candidate rule,
+and user decision so that a suggestion is never mistaken for a fact or an
+active instruction.
+
+It does not scan prior chats, raw prompts, email, cloud drives, browser or shell
+history, repositories, hidden files, device data, or GPS. It does not infer
+identity, personality, mental health, or private relationships. It does not
+save a personal manual, create a skill, install anything, or enable a rule
+automatically.
+
+Any durable personal operating manual is private, user-controlled, outside a
+public repository, and created only after exact-path approval. It is not loaded
+automatically in future conversations and cannot override current user,
+repository, safety, or higher-priority instructions.
+
 ## Safety Model
 
 Do not store secrets, API keys, legal evidence, family information, private
