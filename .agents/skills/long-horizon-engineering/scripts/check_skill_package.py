@@ -7,9 +7,13 @@ import argparse
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parents[4]
-SKILL_DIR = ROOT / ".agents" / "skills" / "long-horizon-engineering"
-AI_VIDEO_SKILL_DIR = ROOT / ".agents" / "skills" / "ai-video-production"
+SCRIPT_PATH = Path(__file__).resolve()
+SKILL_DIR = SCRIPT_PATH.parents[1]
+SKILLS_DIR = SKILL_DIR.parent
+SOURCE_ROOT = SCRIPT_PATH.parents[4]
+SOURCE_SKILL_DIR = SOURCE_ROOT / ".agents" / "skills" / "long-horizon-engineering"
+IS_SOURCE_LAYOUT = SOURCE_SKILL_DIR == SKILL_DIR
+AI_VIDEO_SKILL_DIR = SKILLS_DIR / "ai-video-production"
 
 PACKAGE_ONLY_FILES = [
     "AGENTS.md",
@@ -232,34 +236,44 @@ AI_VIDEO_REQUIRED_FILES = [
 ]
 
 
-def check_required_files(required_files: list[str]) -> list[str]:
+def installed_path(relative_path: str) -> Path:
+    path = Path(relative_path)
+    expected_prefix = (".agents", "skills")
+    if path.parts[:2] != expected_prefix:
+        raise ValueError(f"Installed skill path must start with .agents/skills: {relative_path}")
+    return SKILLS_DIR.joinpath(*path.parts[2:])
+
+
+def check_required_files(required_files: list[str], *, installed: bool) -> list[str]:
     errors = []
     for relative_path in required_files:
-        if not (ROOT / relative_path).is_file():
+        path = installed_path(relative_path) if installed else SOURCE_ROOT / relative_path
+        if not path.is_file():
             errors.append(f"Missing required file: {relative_path}")
     return errors
 
 
 def check_skill_front_matter(skill_dir: Path, expected_name: str) -> list[str]:
     path = skill_dir / "SKILL.md"
+    display_path = path.relative_to(SKILLS_DIR)
     if not path.is_file():
-        return [f"Missing required file: {path.relative_to(ROOT)}"]
+        return [f"Missing required file: {display_path}"]
     text = path.read_text(encoding="utf-8")
     if not text.startswith("---\n"):
-        return [f"{path.relative_to(ROOT)} is missing YAML front matter."]
+        return [f"{display_path} is missing YAML front matter."]
 
     parts = text.split("---\n", 2)
     if len(parts) < 3:
-        return [f"{path.relative_to(ROOT)} front matter is not closed."]
+        return [f"{display_path} front matter is not closed."]
 
     front_matter = parts[1]
     errors = []
     if f"name: {expected_name}" not in front_matter:
         errors.append(
-            f"{path.relative_to(ROOT)} front matter must include name: {expected_name}"
+            f"{display_path} front matter must include name: {expected_name}"
         )
     if "description:" not in front_matter:
-        errors.append(f"{path.relative_to(ROOT)} front matter must include description.")
+        errors.append(f"{display_path} front matter must include description.")
     required_metadata = {
         "version": "0.2.0",
         "repo": "https://github.com/Q20396/codex-long-horizon-skill",
@@ -269,23 +283,24 @@ def check_skill_front_matter(skill_dir: Path, expected_name: str) -> list[str]:
     for key, expected_value in required_metadata.items():
         if f"{key}: {expected_value}" not in front_matter:
             errors.append(
-                f"{path.relative_to(ROOT)} front matter must include {key}: {expected_value}"
+                f"{display_path} front matter must include {key}: {expected_value}"
             )
     return errors
 
 
 def check_nested_agents() -> list[str]:
-    skills_dir = ROOT / ".agents" / "skills"
     nested = [
         path
-        for path in skills_dir.rglob(".agents")
-        if path != skills_dir
+        for path in SKILLS_DIR.rglob(".agents")
+        if path != SKILLS_DIR
     ]
-    return [f"Nested .agents path found: {path.relative_to(ROOT)}" for path in nested]
+    return [f"Nested .agents path found: {path.relative_to(SKILLS_DIR)}" for path in nested]
 
 
 def package_mode() -> bool:
-    return all((ROOT / relative_path).is_file() for relative_path in PACKAGE_ONLY_FILES)
+    return IS_SOURCE_LAYOUT and all(
+        (SOURCE_ROOT / relative_path).is_file() for relative_path in PACKAGE_ONLY_FILES
+    )
 
 
 def parse_args() -> argparse.Namespace:
@@ -317,16 +332,16 @@ def main() -> None:
 
     errors = []
     if check_package_files:
-        errors.extend(check_required_files(PACKAGE_ONLY_FILES))
+        errors.extend(check_required_files(PACKAGE_ONLY_FILES, installed=False))
     else:
         print("Installed-skill mode: skipping package-only files.")
-    errors.extend(check_required_files(INSTALLED_REQUIRED_FILES))
+    errors.extend(check_required_files(INSTALLED_REQUIRED_FILES, installed=True))
     errors.extend(check_skill_front_matter(SKILL_DIR, "long-horizon-engineering"))
     if check_package_files:
-        errors.extend(check_required_files(AI_VIDEO_REQUIRED_FILES))
+        errors.extend(check_required_files(AI_VIDEO_REQUIRED_FILES, installed=True))
         errors.extend(check_skill_front_matter(AI_VIDEO_SKILL_DIR, "ai-video-production"))
     elif AI_VIDEO_SKILL_DIR.exists():
-        errors.extend(check_required_files(AI_VIDEO_REQUIRED_FILES))
+        errors.extend(check_required_files(AI_VIDEO_REQUIRED_FILES, installed=True))
         errors.extend(check_skill_front_matter(AI_VIDEO_SKILL_DIR, "ai-video-production"))
     errors.extend(check_nested_agents())
 
