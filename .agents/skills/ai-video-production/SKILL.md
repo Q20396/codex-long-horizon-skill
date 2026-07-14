@@ -203,6 +203,12 @@ For each major script beat, plan a corresponding visual beat:
 - Choose a HyperFrames-style workflow for fast agent-authored HTML/CSS/JS animation, browser preview, lint-before-render loops, and manual rendering from an inspectable `index.html`.
 - Choose image generation for covers, thumbnails, storyboard frames, scene backgrounds, visual assets, style exploration, and image-to-video seed frames.
 
+For a documented comparison of renderer fit, privacy, licensing, previews,
+cost, and approval gates, use `references/renderer-selection.md` and complete
+`templates/RENDER_EVIDENCE_TEMPLATE.md` before requesting final-render
+approval. Selecting a tool does not authorize installation, rendering, provider
+use, upload, publication, or spending.
+
 ## Manual Media Skill Upgrade Scan
 
 When asked to check related video or image skills, Codex may run
@@ -223,6 +229,7 @@ to click a PR, request an original change, copy reviewed material, or skip.
 - `references/licensing-notes.md`
 - `references/design-system-for-video.md`
 - `references/text-to-visual-analysis.md`
+- `references/renderer-selection.md`
 
 ## Templates
 
@@ -235,6 +242,7 @@ to click a PR, request an original change, copy reviewed material, or skip.
 - `templates/SHOT_LIST_TEMPLATE.md`
 - `templates/ASSET_MANIFEST_TEMPLATE.md`
 - `templates/RENDER_HANDOFF_TEMPLATE.md`
+- `templates/RENDER_EVIDENCE_TEMPLATE.md`
 
 ## Scripts
 

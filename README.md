@@ -262,6 +262,23 @@ python3 .agents/skills/long-horizon-engineering/scripts/validate_json_canvas.py 
   path/to/approved.canvas
 ```
 
+## Safe Project Maps And Render Evidence
+
+For large or unfamiliar repositories, the long-horizon skill can prepare a
+bounded project context map from explicitly approved repository paths. It is a
+report-first planning aid, not a graph database, automatic repository scan, or
+permission to inspect sensitive files. It does not read cloud drives, Obsidian
+vaults, mailboxes, media, or folders outside the repository by default.
+
+The video skill can document renderer selection and render evidence before a
+human approves final rendering. It compares repeatability, preview workflow,
+privacy, licensing, cost, assets, and output requirements, but does not install
+tools, call providers, generate media, upload, publish, or spend credits.
+
+Local compute planning remains manual and user-supplied. The skill does not
+discover devices, scan networks, download models, start services, or form a
+distributed compute cluster.
+
 ## Text To Visual Analysis
 
 The `ai-video-production` skill can turn supplied text into visual plans before

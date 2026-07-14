@@ -58,6 +58,9 @@ because the files exist.
 - `external-source-scan.md` for public source discovery boundaries.
 - `public-agent-capability-review.md` for comparing public agent capability
   claims without adopting unsupported patterns.
+- `local-compute-capability-intake.md` for a user-supplied compute requirements
+  comparison without device discovery, network scanning, downloads, or runtime
+  control.
 
 ## Domain-Specific Optional Protocols
 

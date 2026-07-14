@@ -111,6 +111,15 @@
       "tags": ["review", "pr", "validation"]
     },
     {
+      "id": "lhe-implicit-safe-project-map",
+      "prompt": "Map this unfamiliar monorepo from explicitly approved source paths, identify modules, entry points, tests, and unknowns, then propose the safest files to inspect before the migration.",
+      "invocation_mode": "implicit",
+      "expected_skill": "long-horizon-engineering",
+      "category": "long-horizon-positive",
+      "rationale": "A bounded repository map before a broad engineering change is long-horizon planning work.",
+      "tags": ["repository-map", "exploration", "planning"]
+    },
+    {
       "id": "video-implicit-storyboard",
       "prompt": "Design a storyboard and shot list for a 45-second vertical explainer about approval gates in AI agents.",
       "invocation_mode": "implicit",
@@ -192,6 +201,15 @@
       "tags": ["text-to-visual", "visual-prompts", "no-render"]
     },
     {
+      "id": "video-implicit-renderer-selection",
+      "prompt": "Compare renderer options for this data-driven explainer, document privacy, licensing, cost, preview, and approval evidence, but do not install or render anything.",
+      "invocation_mode": "implicit",
+      "expected_skill": "ai-video-production",
+      "category": "ai-video-positive",
+      "rationale": "Renderer selection and render-evidence planning are approval-gated video-production work.",
+      "tags": ["renderer-selection", "render-evidence", "no-render"]
+    },
+    {
       "id": "none-implicit-typo",
       "prompt": "Fix one typo in the README title.",
       "invocation_mode": "implicit",
@@ -244,6 +262,15 @@
       "category": "no-skill-negative",
       "rationale": "Financial research is explicit-only and should not implicitly trigger long-horizon engineering.",
       "tags": ["finance", "research"]
+    },
+    {
+      "id": "none-implicit-device-discovery",
+      "prompt": "Automatically scan my local network for every GPU, start a distributed model cluster, and download whatever model is fastest.",
+      "invocation_mode": "implicit",
+      "expected_skill": "none",
+      "category": "no-skill-negative",
+      "rationale": "Automatic device discovery, downloads, and service startup are outside both skills' safe default scope.",
+      "tags": ["network-scan", "device-discovery", "runtime"]
     },
     {
       "id": "none-implicit-legal-concept",
