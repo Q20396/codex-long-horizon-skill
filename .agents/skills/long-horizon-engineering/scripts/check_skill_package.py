@@ -104,6 +104,7 @@ INSTALLED_REQUIRED_FILES = [
     ".agents/skills/long-horizon-engineering/references/large-migration-playbook.md",
     ".agents/skills/long-horizon-engineering/references/missing-capability-skill-discovery.md",
     ".agents/skills/long-horizon-engineering/references/notebook-analysis-protocol.md",
+    ".agents/skills/long-horizon-engineering/references/obsidian-knowledge-workflow.md",
     ".agents/skills/long-horizon-engineering/references/presentation-delivery-protocol.md",
     ".agents/skills/long-horizon-engineering/references/planner-builder-evaluator-loop.md",
     ".agents/skills/long-horizon-engineering/references/public-agent-capability-review.md",
@@ -146,6 +147,7 @@ INSTALLED_REQUIRED_FILES = [
     ".agents/skills/long-horizon-engineering/templates/memory-review-checklist.md",
     ".agents/skills/long-horizon-engineering/templates/new-skill-brief.md",
     ".agents/skills/long-horizon-engineering/templates/option-analysis.md",
+    ".agents/skills/long-horizon-engineering/templates/OBSIDIAN_ARTIFACT_PLAN_TEMPLATE.md",
     ".agents/skills/long-horizon-engineering/templates/regression-test-record.md",
     ".agents/skills/long-horizon-engineering/templates/reviewer-response.md",
     ".agents/skills/long-horizon-engineering/templates/paper-evidence-card.md",
@@ -188,6 +190,7 @@ INSTALLED_REQUIRED_FILES = [
     ".agents/skills/long-horizon-engineering/scripts/update_installed_skill.py",
     ".agents/skills/long-horizon-engineering/scripts/test_expected_triggers.py",
     ".agents/skills/long-horizon-engineering/scripts/audit_skill_descriptions.py",
+    ".agents/skills/long-horizon-engineering/scripts/validate_json_canvas.py",
 ]
 
 AI_VIDEO_REQUIRED_FILES = [

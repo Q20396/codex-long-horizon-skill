@@ -33,6 +33,7 @@ jobs:
           python3 .agents/skills/long-horizon-engineering/scripts/scan_top_related_skills.py --help
           python3 .agents/skills/long-horizon-engineering/scripts/doctor.py --help
           python3 .agents/skills/long-horizon-engineering/scripts/audit_skill_descriptions.py --help
+          python3 .agents/skills/long-horizon-engineering/scripts/validate_json_canvas.py --help
           python3 .agents/skills/long-horizon-engineering/scripts/audit_external_skill_candidate.py --help
           python3 .agents/skills/long-horizon-engineering/scripts/audit_skill_safety.py --help
           python3 .agents/skills/long-horizon-engineering/scripts/manage_skill_lifecycle.py --help
@@ -71,6 +72,7 @@ jobs:
           .agents/skills/long-horizon-engineering/scripts/test_expected_triggers.py
           .agents/skills/long-horizon-engineering/scripts/check_skill_package.py
           .agents/skills/long-horizon-engineering/scripts/audit_skill_descriptions.py
+          .agents/skills/long-horizon-engineering/scripts/validate_json_canvas.py
           .agents/skills/ai-video-production/scripts/scan_top_media_skills.py
           scripts/full_skill_validation.py
           scripts/generate_skill_catalog.py

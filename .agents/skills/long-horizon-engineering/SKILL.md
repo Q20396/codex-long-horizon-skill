@@ -192,6 +192,11 @@ research, notebook, presentation, financial, jurisdiction, disaster monitoring,
 external skill discovery, skill lifecycle, SkillOpt-style optimization, and
 other optional workflows.
 
+For explicitly authorized work with an Obsidian vault, Markdown note, JSON
+Canvas, or Obsidian Base, use `references/obsidian-knowledge-workflow.md`.
+Default to a proposal and exact-path approval; do not scan, index, sync, or
+write to a vault automatically.
+
 AI video briefs, storyboards, shot lists, visual prompts, asset manifests, and
 render handoffs belong to the `ai-video-production` skill unless the task is
 engineering work on a video codebase, such as debugging a multi-file Remotion

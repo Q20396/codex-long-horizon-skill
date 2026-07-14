@@ -363,6 +363,15 @@
       "tags": ["explicit", "writing", "technical-report"]
     },
     {
+      "id": "explicit-lhe-obsidian-canvas-proposal",
+      "prompt": "Use the long-horizon-engineering skill. Turn this supplied non-sensitive project plan into a JSON Canvas proposal for an Obsidian vault. Do not read or write any vault files until I approve an exact path.",
+      "invocation_mode": "explicit",
+      "expected_skill": "long-horizon-engineering",
+      "category": "explicit-invocation",
+      "rationale": "Explicit, proposal-only planning for a bounded Obsidian artifact remains an adjacent long-horizon workflow.",
+      "tags": ["explicit", "obsidian", "canvas", "proposal-only"]
+    },
+    {
       "id": "explicit-lhe-codebase",
       "prompt": "$long-horizon-engineering Audit this package's routing tests, update the fixture if needed, and validate the change.",
       "invocation_mode": "explicit",
@@ -442,6 +451,15 @@
       "category": "no-skill-negative",
       "rationale": "Background telemetry and automatic lifecycle mutation are outside the allowed usage-review contract.",
       "tags": ["telemetry", "background", "forbidden"]
+    },
+    {
+      "id": "none-implicit-auto-organize-obsidian-vault",
+      "prompt": "Scan my entire Obsidian vault, automatically connect every note, rewrite its tags, and keep it synchronized in the background.",
+      "invocation_mode": "implicit",
+      "expected_skill": "none",
+      "category": "no-skill-negative",
+      "rationale": "Whole-vault scanning, automatic rewriting, synchronization, and background work are outside the explicit-only Obsidian protocol.",
+      "tags": ["obsidian", "vault", "privacy", "background", "forbidden"]
     }
   ]
 }
