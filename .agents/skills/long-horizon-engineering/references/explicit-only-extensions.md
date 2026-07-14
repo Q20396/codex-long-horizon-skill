@@ -26,6 +26,8 @@ because the files exist.
   candidates.
 - `skill-lifecycle-management.md` for freezing or restoring optional installed
   skills with user approval.
+- `upgrade-audit-protocol.md` for a time-bounded, read-only audit of recent
+  repository upgrades, findings, and repair proposals.
 
 ## Personal Workflow Review
 
