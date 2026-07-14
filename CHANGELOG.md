@@ -6,6 +6,15 @@ All notable changes to this project are summarized here.
 
 No unreleased changes.
 
+## 0.2.1 - 2026-07-15
+
+- Fixed `doctor.py` and `check_skill_package.py` for user-level installations
+  under `~/.codex/skills/`.
+- Added regression coverage for automatic source-package and user-level layout
+  detection.
+- Kept the update flow check-only by default, backup-first, and
+  user-authorized.
+
 ## 0.2.0 - 2026-06-18
 
 - Added safe online self-check/update protocol.

@@ -1,7 +1,7 @@
 ---
 name: long-horizon-engineering
 description: Use for long-running software engineering work: repository exploration, multi-file changes, debugging, migrations, refactors, CI/build failures, staged validation, PR review response, or safe resumption. Do not use for simple edits, unrelated research, writing, media, or legal/financial tasks.
-version: 0.2.0
+version: 0.2.1
 repo: https://github.com/Q20396/codex-long-horizon-skill
 skill_id: long-horizon-engineering
 update_channel: stable
