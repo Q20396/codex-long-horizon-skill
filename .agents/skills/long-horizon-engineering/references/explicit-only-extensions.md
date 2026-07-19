@@ -63,6 +63,9 @@ because the files exist.
 - `local-compute-capability-intake.md` for a user-supplied compute requirements
   comparison without device discovery, network scanning, downloads, or runtime
   control.
+- `local-voice-tool-sandbox.md` for approval-gated local voice, speech,
+  voice-cloning, or voice-enabled MCP proposals without installation,
+  configuration, audio access, or runtime control.
 
 ## Domain-Specific Optional Protocols
 

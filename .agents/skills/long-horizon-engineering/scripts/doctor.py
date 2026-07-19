@@ -73,6 +73,7 @@ PACKAGE_ONLY_PATHS = [
 INSTALLED_REQUIRED_PATHS = [
     ".agents/skills/long-horizon-engineering/SKILL.md",
     ".agents/skills/long-horizon-engineering/references/approved-tool-contract-card.md",
+    ".agents/skills/long-horizon-engineering/references/local-voice-tool-sandbox.md",
     ".agents/skills/long-horizon-engineering/references/adversarial-review-protocol.md",
     ".agents/skills/long-horizon-engineering/references/api-integration-protocol.md",
     ".agents/skills/long-horizon-engineering/references/data-cleaning-protocol.md",
@@ -111,6 +112,7 @@ INSTALLED_REQUIRED_PATHS = [
     ".agents/skills/long-horizon-engineering/scripts/test_expected_triggers.py",
     ".agents/skills/long-horizon-engineering/templates/implementation-plan.md",
     ".agents/skills/long-horizon-engineering/templates/APPROVED_TOOL_CONTRACT_CARD.md",
+    ".agents/skills/long-horizon-engineering/templates/LOCAL_VOICE_TOOL_APPROVAL_CARD.md",
     ".agents/skills/long-horizon-engineering/templates/accessibility-checklist.md",
     ".agents/skills/long-horizon-engineering/templates/analysis-run-log.md",
     ".agents/skills/long-horizon-engineering/templates/api-contract-test-plan.md",

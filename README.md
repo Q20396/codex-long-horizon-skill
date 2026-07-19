@@ -510,6 +510,21 @@ or account actions. This package does not add a tool hub, automatic discovery,
 automatic installation or updates, background services, telemetry, or model
 routing.
 
+## Optional Local Voice Tool Sandbox
+
+For a user who explicitly asks to evaluate a local text-to-speech,
+speech-to-text, voice-cloning, or voice-enabled MCP tool, the optional Local
+Voice Tool Sandbox separates source review, installation, model download,
+runtime start, MCP connection, input access, voice identity, output handling,
+and cloud use into separate approval gates.
+
+It does not install, configure, start, or connect any voice tool. By default,
+it denies microphone and system-audio capture, arbitrary audio-path reads,
+transcript history, voice cloning, personality rewriting, non-loopback
+endpoints, cloud sync, and telemetry. Use the protocol and approval card only
+for an explicitly requested, bounded review; local-first marketing is not a
+security guarantee.
+
 ## Community Skills
 
 Community skills are welcome when they are original, reviewable, and safe by

@@ -187,6 +187,8 @@ Load only the references that match the task:
   repository before broad engineering work
 - `references/approved-tool-contract-card.md` before a selected external tool
   is proposed for a permissioned action
+- `references/local-voice-tool-sandbox.md` before proposing a local voice,
+  speech, voice-cloning, or voice-enabled MCP tool
 
 ## Explicit-Only Extensions
 
