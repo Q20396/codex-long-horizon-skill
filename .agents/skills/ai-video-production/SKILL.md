@@ -126,6 +126,25 @@ specific approval required by that protocol.
 If the sibling skill is unavailable, ask for a bounded approval rather than
 creating an integration or assuming the missing protocol grants permission.
 
+## Optional 3D Asset Provider Boundary
+
+This skill may plan a 3D scene, placeholder assets, model requirements, or a
+render handoff. It does not install, configure, start, connect, or invoke an
+external 3D asset provider, hosted 3D-generation service, or 3D asset MCP
+tool.
+
+When the user explicitly asks to evaluate or use one, consult the sibling
+`../long-horizon-engineering/references/three-d-asset-provider-sandbox.md`
+when it is installed. Treat that protocol as a proposal-only handoff:
+source review, skill acquisition, MCP configuration, account connection,
+account-data access, reference upload, generation, final approval, asset
+retrieval, project write, remote runtime, and sharing each need separate
+approval. Do not assume a provider is local, free, offline, private, or
+compatible from a screenshot or popularity claim.
+
+If the sibling skill is unavailable, ask for a bounded approval rather than
+creating an integration or assuming the missing protocol grants permission.
+
 ## Safe Update / Self-Check Protocol
 
 When the user asks to check for updates, update skills, upgrade skills, or

@@ -86,6 +86,23 @@ class AIVideoProductionContractTests(unittest.TestCase):
             ],
         )
 
+    def test_external_3d_tools_are_handed_off_to_the_optional_sandbox(self) -> None:
+        skill = self.read("SKILL.md")
+        self.assert_contains_all(
+            skill,
+            [
+                "Optional 3D Asset Provider Boundary",
+                "does not install, configure, start, connect, or invoke",
+                "three-d-asset-provider-sandbox.md",
+                "Treat that protocol as a proposal-only handoff",
+                "source review, skill acquisition, MCP configuration, account connection",
+                "generation, final approval, asset retrieval, project write, remote runtime, and sharing each need separate approval",
+                "Do not assume a provider is local, free, offline, private, or compatible",
+                "If the sibling skill is unavailable, ask for a bounded approval",
+                "rather than creating an integration or assuming the missing protocol grants permission.",
+            ],
+        )
+
     def test_asset_manifest_template_captures_generation_settings(self) -> None:
         text = self.read("templates/ASSET_MANIFEST_TEMPLATE.md")
         self.assert_contains_all(
