@@ -16,6 +16,14 @@ correspondence, or confidential source content.
   authenticate, capture audio, read audio, clone a voice, write files, upload,
   publish, or delete anything.
 
+## Default Automation Controls
+
+- Automatic installation: NO
+- Automatic model download: NO
+- Automatic MCP configuration: NO
+- Automatic endpoint connection: NO
+- Automatic audio-path, capture, or transcript-history access: NO
+
 ## Candidate Identity
 
 - Tool or provider:
@@ -85,6 +93,19 @@ correspondence, or confidential source content.
 - Model source, size, storage, and license reviewed: yes / no / unknown
 - Sensitive data excluded:
 - Stop condition:
+
+## Minimal Customer Approval Wording
+
+Use one of these statements only after the user selects the named, bounded
+action. Each statement leaves every other gate closed.
+
+- Public-source review only: "I approve reviewing the named public source only.
+  Do not install, download models, configure MCP, connect a tool, or read
+  audio."
+- One local speech pilot: "I approve one local speech pilot using the approved
+  non-sensitive text and built-in preset voice. Do not download models,
+  configure MCP, connect a tool, read audio or history, or retain output beyond
+  the approved destination."
 
 ## Validation, Fallback, And Rollback
 

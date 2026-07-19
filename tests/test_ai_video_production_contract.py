@@ -13,8 +13,9 @@ class AIVideoProductionContractTests(unittest.TestCase):
         return path.read_text(encoding="utf-8")
 
     def assert_contains_all(self, text: str, phrases: list[str]) -> None:
+        normalized_text = " ".join(text.split())
         for phrase in phrases:
-            self.assertIn(phrase, text)
+            self.assertIn(" ".join(phrase.split()), normalized_text)
 
     def test_remotion_contract_tracks_reproducible_render_inputs(self) -> None:
         text = self.read("references/remotion-patterns.md")
@@ -80,6 +81,8 @@ class AIVideoProductionContractTests(unittest.TestCase):
                 "Do not assume the local tool is private",
                 "transcript history, microphone input, or personality rewrite",
                 "If the sibling skill is unavailable, ask for a bounded approval",
+                "when it is installed",
+                "rather than creating an integration or assuming the missing protocol grants permission.",
             ],
         )
 

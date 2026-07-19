@@ -12,11 +12,20 @@ model manager, or audio runtime.
 - Default permission: `NONE`
 - Default network access: `DENY`
 - Default external voice or audio action: `DENY`
+- Automatic installation: `NO`
+- Automatic model download: `NO`
+- Automatic MCP configuration: `NO`
+- Automatic endpoint connection: `NO`
+- Automatic audio-path, capture, or transcript-history access: `NO`
 
 This protocol does not install, update, download, start, configure, connect,
 authenticate, invoke, or remove a voice tool. It does not read microphones,
 system audio, audio files, voice profiles, capture history, or cloud accounts.
 It does not create an MCP configuration or grant a tool access to Codex.
+
+These defaults remain in force even when a user asks for a broad capability
+such as "local voice", "MCP", or "automatic workflow". A proposal, source
+review, or installed package is not approval to perform a later action.
 
 Use `external-tool-provider-protocol.md`,
 `external-app-runtime-boundary.md`, and

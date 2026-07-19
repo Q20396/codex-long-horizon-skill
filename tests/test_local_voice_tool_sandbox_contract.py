@@ -29,8 +29,14 @@ class LocalVoiceToolSandboxContractTests(unittest.TestCase):
                 "Proposal status: `PROPOSAL_ONLY`",
                 "Default permission: `NONE`",
                 "Default network access: `DENY`",
+                "Automatic installation: `NO`",
+                "Automatic model download: `NO`",
+                "Automatic MCP configuration: `NO`",
+                "Automatic endpoint connection: `NO`",
+                "Automatic audio-path, capture, or transcript-history access: `NO`",
                 "does not install, update, download, start, configure, connect",
                 "It does not create an MCP configuration",
+                "A proposal, source review, or installed package is not approval",
             ],
         )
 
@@ -67,8 +73,16 @@ class LocalVoiceToolSandboxContractTests(unittest.TestCase):
                 "Capture or transcript-history access: NO",
                 "Personality rewrite: NO",
                 "Cloud sync, backup, telemetry, or account use: NO",
+                "Automatic installation: NO",
+                "Automatic model download: NO",
+                "Automatic MCP configuration: NO",
+                "Automatic endpoint connection: NO",
+                "Automatic audio-path, capture, or transcript-history access: NO",
                 "Speaker consent for a cloned or reference voice",
                 "Separate Approval Gates",
+                "Minimal Customer Approval Wording",
+                "Do not install, download models, configure MCP, connect a tool, or read audio.",
+                "Do not download models, configure MCP, connect a tool, read audio or history",
             ],
         )
 
