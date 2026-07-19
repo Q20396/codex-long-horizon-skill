@@ -107,6 +107,25 @@ approves generation.
 
 Before final render, upload, publication, or external sharing, require explicit human approval. The handoff should show what will be rendered, what source assets are used, where outputs will be stored, and what command or tool action the human may run.
 
+## Optional Voice And Audio Tool Boundary
+
+This skill may plan narration, voiceover timing, captions, and audio-source
+requirements. It does not install, configure, start, connect, or invoke a
+text-to-speech, speech-to-text, voice-cloning, or voice-enabled MCP tool.
+
+When the user explicitly asks to evaluate or use one of those local voice
+tools, consult the sibling
+`../long-horizon-engineering/references/local-voice-tool-sandbox.md` when it
+is installed. Treat that protocol as a proposal-only handoff: source review,
+installation, model download, runtime start, MCP connection, input access,
+voice identity, output handling, and cloud use each need separate approval.
+Do not assume the local tool is private, and do not use a cloned voice,
+transcript history, microphone input, or personality rewrite without the
+specific approval required by that protocol.
+
+If the sibling skill is unavailable, ask for a bounded approval rather than
+creating an integration or assuming the missing protocol grants permission.
+
 ## Safe Update / Self-Check Protocol
 
 When the user asks to check for updates, update skills, upgrade skills, or

@@ -67,6 +67,22 @@ class AIVideoProductionContractTests(unittest.TestCase):
             ],
         )
 
+    def test_local_voice_tools_are_handed_off_to_the_optional_sandbox(self) -> None:
+        skill = self.read("SKILL.md")
+        self.assert_contains_all(
+            skill,
+            [
+                "Optional Voice And Audio Tool Boundary",
+                "does not install, configure, start, connect, or invoke",
+                "local-voice-tool-sandbox.md",
+                "Treat that protocol as a proposal-only handoff",
+                "each need separate approval",
+                "Do not assume the local tool is private",
+                "transcript history, microphone input, or personality rewrite",
+                "If the sibling skill is unavailable, ask for a bounded approval",
+            ],
+        )
+
     def test_asset_manifest_template_captures_generation_settings(self) -> None:
         text = self.read("templates/ASSET_MANIFEST_TEMPLATE.md")
         self.assert_contains_all(
