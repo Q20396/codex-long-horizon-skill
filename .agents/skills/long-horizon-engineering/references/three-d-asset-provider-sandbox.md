@@ -111,23 +111,20 @@ patterns to adapt are stable logical asset IDs, project-owned manifests,
 format-capability checks, deterministic visual QA, and separate browser/mobile
 approval. Do not copy its code, prompts, assets, or provider-specific prose.
 
-The source-review record preserved these commands solely as commands requiring
-their own future approval. They are **not to be run automatically**:
+### Command Revalidation Required
 
-```bash
-# Review-only record. Do not run without a separate approved acquisition gate.
-npx skills add mintdotgg/mint-threejs-skills -a codex -g -y
+This package deliberately does not preserve copy-ready provider installation
+or MCP-configuration commands. At a later, separately approved acquisition or
+configuration gate, re-check the current official documentation and the exact
+immutable source before showing the customer one command and its expected
+effect. Do not use mutable references, global-install flags, or auto-confirm
+flags by default.
 
-# Review-only record. Do not run without separate MCP configuration and
-# account-connection gates.
-codex mcp add mint --url https://mcp.mint.gg/mcp
-```
-
-Before proposing either command, re-check current official documentation and
-the exact immutable source. Explain that installation can write a global skill
-location; MCP configuration can modify a client configuration and may begin an
-OAuth or account flow. It must not be presented as a local-only, free,
-offline, or privacy-preserving action without current evidence.
+Explain whether the reviewed command can write a global skill location, modify
+a client configuration, begin an OAuth or account flow, download dependencies,
+or expose local data. It must not be presented as a local-only, free, offline,
+or privacy-preserving action without current evidence. A copied command is not
+approval to execute it.
 
 The observed public MCP scope names included `mint:read`,
 `mint:generate:start`, and `mint:generate:approve`. Scope names, APIs, credit

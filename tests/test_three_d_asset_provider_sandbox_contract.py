@@ -42,7 +42,7 @@ class ThreeDAssetProviderSandboxContractTests(unittest.TestCase):
             ],
         )
 
-    def test_reference_requires_granular_approval_and_preserves_review_only_commands(self) -> None:
+    def test_reference_requires_granular_approval_and_command_revalidation(self) -> None:
         text = self.read(REFERENCE)
         self.assert_contains_all(
             text,
@@ -56,9 +56,10 @@ class ThreeDAssetProviderSandboxContractTests(unittest.TestCase):
                 "Asset retrieval and project write",
                 "Runtime use",
                 "Sharing or publication",
-                "npx skills add mintdotgg/mint-threejs-skills -a codex -g -y",
-                "codex mcp add mint --url https://mcp.mint.gg/mcp",
-                "not to be run automatically",
+                "This package deliberately does not preserve copy-ready provider installation",
+                "MCP-configuration commands.",
+                "Do not use mutable references, global-install flags, or auto-confirm flags by default.",
+                "A copied command is not approval to execute it.",
                 "Do not copy its code, prompts, assets, or provider-specific prose.",
                 "Treat unrecognized glTF/GLB extensions",
                 "Do not silently fall back to a remote CDN",
