@@ -4,7 +4,14 @@ All notable changes to this project are summarized here.
 
 ## Unreleased
 
-No unreleased changes.
+- Added proposal-only local voice-tool and external 3D asset-provider sandbox
+  documentation, approval cards, package checks, and contract tests.
+- Removed copy-ready external installation and MCP-configuration commands from
+  the 3D provider record; any future command must be revalidated and separately
+  approved.
+- These candidate changes are unreleased. Do not distribute them under the
+  existing `0.2.1` version; prepare aligned version metadata and a release gate
+  only after review and merge.
 
 ## 0.2.1 - 2026-07-15
 

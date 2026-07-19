@@ -63,6 +63,13 @@ because the files exist.
 - `local-compute-capability-intake.md` for a user-supplied compute requirements
   comparison without device discovery, network scanning, downloads, or runtime
   control.
+- `local-voice-tool-sandbox.md` for approval-gated local voice, speech,
+  voice-cloning, or voice-enabled MCP proposals without installation,
+  configuration, audio access, or runtime control.
+- `three-d-asset-provider-sandbox.md` for approval-gated external 3D asset,
+  hosted-generation, or 3D MCP proposals without installation, configuration,
+  account access, upload, generation, download, project writes, or runtime
+  control.
 
 ## Domain-Specific Optional Protocols
 

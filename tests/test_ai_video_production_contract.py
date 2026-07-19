@@ -13,8 +13,9 @@ class AIVideoProductionContractTests(unittest.TestCase):
         return path.read_text(encoding="utf-8")
 
     def assert_contains_all(self, text: str, phrases: list[str]) -> None:
+        normalized_text = " ".join(text.split())
         for phrase in phrases:
-            self.assertIn(phrase, text)
+            self.assertIn(" ".join(phrase.split()), normalized_text)
 
     def test_remotion_contract_tracks_reproducible_render_inputs(self) -> None:
         text = self.read("references/remotion-patterns.md")
@@ -64,6 +65,41 @@ class AIVideoProductionContractTests(unittest.TestCase):
                 "background or transparency needs",
                 "Private inputs used",
                 "moderation or safety-review status",
+            ],
+        )
+
+    def test_local_voice_tools_are_handed_off_to_the_optional_sandbox(self) -> None:
+        skill = self.read("SKILL.md")
+        self.assert_contains_all(
+            skill,
+            [
+                "Optional Voice And Audio Tool Boundary",
+                "does not install, configure, start, connect, or invoke",
+                "local-voice-tool-sandbox.md",
+                "Treat that protocol as a proposal-only handoff",
+                "each need separate approval",
+                "Do not assume the local tool is private",
+                "transcript history, microphone input, or personality rewrite",
+                "If the sibling skill is unavailable, ask for a bounded approval",
+                "when it is installed",
+                "rather than creating an integration or assuming the missing protocol grants permission.",
+            ],
+        )
+
+    def test_external_3d_tools_are_handed_off_to_the_optional_sandbox(self) -> None:
+        skill = self.read("SKILL.md")
+        self.assert_contains_all(
+            skill,
+            [
+                "Optional 3D Asset Provider Boundary",
+                "does not install, configure, start, connect, or invoke",
+                "three-d-asset-provider-sandbox.md",
+                "Treat that protocol as a proposal-only handoff",
+                "source review, skill acquisition, MCP configuration, account connection",
+                "generation, final approval, asset retrieval, project write, remote runtime, and sharing each need separate approval",
+                "Do not assume a provider is local, free, offline, private, or compatible",
+                "If the sibling skill is unavailable, ask for a bounded approval",
+                "rather than creating an integration or assuming the missing protocol grants permission.",
             ],
         )
 
