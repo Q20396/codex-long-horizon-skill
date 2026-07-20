@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Customer Decision Record",
+  "type": "object",
+  "required": ["step_id", "experiment_id", "proposed_action", "risk_level", "customer_decision", "authorization_source", "decision_time", "audit_id"],
+  "properties": {
+    "step_id": {"type": "string"},
+    "experiment_id": {"type": ["string", "null"]},
+    "proposed_action": {"type": "string"},
+    "risk_level": {"enum": ["low", "medium", "high"]},
+    "customer_decision": {"enum": ["not_approved", "approved", "rejected"]},
+    "authorization_source": {"enum": ["none", "customer-explicit"]},
+    "customer_authorization_text": {"type": ["string", "null"]},
+    "decision_time": {"type": "string"},
+    "executed_at": {"type": ["string", "null"]},
+    "result": {"type": ["string", "null"]},
+    "rollback_status": {"enum": ["not_run", "not_needed", "verified", "not_available"]},
+    "audit_id": {"type": "string"}
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,11 @@
+{
+  "template_version": 1,
+  "status": "locked",
+  "experiment_id": null,
+  "baseline_results": "not_run",
+  "candidate_results": "not_run",
+  "gate_results": "not_run",
+  "scorecard": "not_run",
+  "recommended_status": "locked",
+  "customer_decision": "not_approved"
+}

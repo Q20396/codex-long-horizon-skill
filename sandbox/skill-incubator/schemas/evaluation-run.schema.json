@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Evaluation Run Evidence",
+  "type": "object",
+  "required": ["experiment_id", "baseline_commit", "implementation_commit", "fixture_id", "status", "permission_contract", "network_access", "audit_id"],
+  "properties": {
+    "experiment_id": {"type": "string"},
+    "baseline_commit": {"pattern": "^[0-9a-f]{40}$"},
+    "implementation_commit": {"type": ["string", "null"]},
+    "fixture_id": {"type": "string"},
+    "status": {"enum": ["not_run", "completed", "skipped", "blocked", "timed_out", "inconclusive"]},
+    "permission_contract": {"type": "object"},
+    "network_access": {"enum": ["offline", "approved", "not_available"]},
+    "audit_id": {"type": "string"}
+  },
+  "additionalProperties": false
+}

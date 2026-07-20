@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Incubator Promotion Recommendation",
+  "type": "object",
+  "required": ["experiment_id", "recommended_status", "approved_status", "automatic_transition", "customer_decision", "authorization_source"],
+  "properties": {
+    "experiment_id": {"type": "string"},
+    "recommended_status": {"type": "string"},
+    "approved_status": {"enum": ["not_approved", "customer_approved"]},
+    "automatic_transition": {"const": false},
+    "customer_decision": {"enum": ["not_approved", "approved", "rejected"]},
+    "authorization_source": {"enum": ["none", "customer-explicit"]}
+  },
+  "additionalProperties": false
+}

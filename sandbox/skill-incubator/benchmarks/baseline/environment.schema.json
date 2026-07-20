@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Incubator Evaluation Environment",
+  "type": "object",
+  "required": ["repository_commit", "model", "tool_availability", "permission_scope", "network_state", "token_budget", "time_limit", "retry_policy", "timestamp", "audit_id"],
+  "properties": {
+    "repository_commit": {"pattern": "^[0-9a-f]{40}$"},
+    "model": {"type": "string"},
+    "tool_availability": {"type": "array"},
+    "permission_scope": {"type": "string"},
+    "network_state": {"enum": ["offline", "approved", "not_available"]},
+    "token_budget": {"type": ["integer", "string"]},
+    "time_limit": {"type": ["integer", "string"]},
+    "retry_policy": {"type": "string"},
+    "timestamp": {"type": "string"},
+    "audit_id": {"type": "string"}
+  },
+  "additionalProperties": false
+}

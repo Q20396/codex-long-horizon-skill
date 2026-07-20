@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Hard Gate Result",
+  "type": "object",
+  "required": ["experiment_id", "gate_id", "status", "evidence", "audit_id"],
+  "properties": {
+    "experiment_id": {"type": "string"},
+    "gate_id": {"enum": ["GATE-SOURCE", "GATE-LICENSE", "GATE-SCOPE", "GATE-PRIVACY", "GATE-ISOLATION", "GATE-ROLLBACK", "GATE-OBSERVABILITY", "GATE-HUMAN-CONTROL", "GATE-NO-REGRESSION", "GATE-CLAIM-INTEGRITY"]},
+    "status": {"enum": ["not_run", "passed", "failed", "blocked"]},
+    "evidence": {"type": "array"},
+    "audit_id": {"type": "string"}
+  },
+  "additionalProperties": false
+}

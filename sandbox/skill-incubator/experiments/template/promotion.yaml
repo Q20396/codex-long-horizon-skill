@@ -1,0 +1,8 @@
+template_version: 1
+status: locked
+experiment_id: null
+recommended_status: locked
+approved_status: not_approved
+automatic_transition: false
+customer_decision: not_approved
+evidence: not_recorded

@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "status": "locked",
+  "lifecycle": [
+    "locked",
+    "proposed",
+    "approved_for_design",
+    "approved_for_isolated_build",
+    "testing",
+    "rejected",
+    "retained_in_sandbox",
+    "candidate_optional",
+    "approved_optional",
+    "candidate_core",
+    "approved_core",
+    "deprecated"
+  ],
+  "transition_policy": "manual_customer_decision_required",
+  "experiments": [],
+  "decision_records": []
+}

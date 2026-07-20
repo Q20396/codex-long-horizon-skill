@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Locked Incubator Experiment Registry",
+  "type": "object",
+  "required": ["schema_version", "status", "lifecycle", "transition_policy", "experiments", "decision_records"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "status": {"const": "locked"},
+    "lifecycle": {
+      "type": "array",
+      "items": {"enum": ["locked", "proposed", "approved_for_design", "approved_for_isolated_build", "testing", "rejected", "retained_in_sandbox", "candidate_optional", "approved_optional", "candidate_core", "approved_core", "deprecated"]}
+    },
+    "transition_policy": {"const": "manual_customer_decision_required"},
+    "experiments": {"type": "array", "maxItems": 0},
+    "decision_records": {"type": "array", "maxItems": 0}
+  },
+  "additionalProperties": false
+}

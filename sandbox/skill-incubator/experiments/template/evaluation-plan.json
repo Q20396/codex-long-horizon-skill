@@ -1,0 +1,11 @@
+{
+  "template_version": 1,
+  "status": "locked",
+  "experiment_id": null,
+  "baseline": "no_skill",
+  "candidate": "not_selected",
+  "fixtures": [],
+  "environment": "not_recorded",
+  "runs": "not_run",
+  "customer_decision": "not_approved"
+}

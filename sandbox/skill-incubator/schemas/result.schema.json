@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Incubator Result Evidence",
+  "type": "object",
+  "required": ["experiment_id", "audit_id", "source_commits", "implementation_commit", "baseline_commit", "fixtures", "environment", "commands", "permission_contract", "network_access", "dependencies", "costs", "baseline_results", "candidate_results", "regressions", "gate_results", "scorecard", "unverified_items", "rollback_status", "evaluator", "confidence", "recommended_status", "customer_decision"],
+  "properties": {
+    "experiment_id": {"type": "string"},
+    "audit_id": {"type": "string"},
+    "source_commits": {"type": "array"},
+    "implementation_commit": {"type": ["string", "null"]},
+    "baseline_commit": {"pattern": "^[0-9a-f]{40}$"},
+    "fixtures": {"type": "array"},
+    "environment": {"type": "object"},
+    "commands": {"type": "array"},
+    "permission_contract": {"type": "object"},
+    "network_access": {"enum": ["offline", "approved", "not_available"]},
+    "dependencies": {"type": "array"},
+    "costs": {"type": "object"},
+    "baseline_results": {"type": ["object", "string"]},
+    "candidate_results": {"type": ["object", "string"]},
+    "regressions": {"type": ["object", "string"]},
+    "gate_results": {"type": ["object", "string"]},
+    "scorecard": {"type": ["object", "string"]},
+    "unverified_items": {"type": "array"},
+    "rollback_status": {"enum": ["not_run", "verified", "not_available"]},
+    "evaluator": {"type": ["string", "object"]},
+    "confidence": {"type": ["string", "object"]},
+    "recommended_status": {"type": "string"},
+    "customer_decision": {"enum": ["not_approved", "approved"]}
+  },
+  "additionalProperties": false
+}

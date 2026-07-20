@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Comparable Evaluation Run",
+  "type": "object",
+  "required": ["experiment_id", "arm", "fixture_id", "environment", "status", "audit_id"],
+  "properties": {
+    "experiment_id": {"type": "string"},
+    "arm": {"enum": ["baseline_no_skill", "candidate_skill"]},
+    "fixture_id": {"type": "string"},
+    "environment": {"type": "object"},
+    "status": {"enum": ["not_run", "completed", "skipped", "blocked", "timed_out", "inconclusive"]},
+    "audit_id": {"type": "string"}
+  },
+  "additionalProperties": false
+}
