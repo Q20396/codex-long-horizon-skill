@@ -1,0 +1,19 @@
+{
+  "experiment_id": "MAD-SKILL-002",
+  "status": "locked",
+  "baseline_definition": "Command exit-code check without real-output acceptance.",
+  "candidate_definition": "No harness is selected or implemented.",
+  "environment_controls": {"network": "offline", "workspace": "isolated", "customer_data": "prohibited"},
+  "fixtures": [{"category": "synthetic valid and invalid outputs", "required": true}],
+  "repetitions": {"planned": 0, "minimum_after_approval": 3},
+  "hard_gates": ["GATE-SOURCE", "GATE-LICENSE", "GATE-SCOPE", "GATE-PRIVACY", "GATE-ISOLATION", "GATE-ROLLBACK", "GATE-OBSERVABILITY", "GATE-HUMAN-CONTROL", "GATE-NO-REGRESSION", "GATE-CLAIM-INTEGRITY"],
+  "metrics": ["schema validity", "artifact integrity", "side-effect detection", "baseline quality"],
+  "evaluator": {"mode": "separate evidence review", "self_approval": false},
+  "leakage_controls": ["synthetic fixtures", "no secrets", "no host application"],
+  "adversarial_tests": ["false exit success", "path traversal", "process residue"],
+  "regression_tests": ["command-only baseline remains available"],
+  "cost_tracking": {"status": "not_run", "budget": "not_approved"},
+  "rollback_test": {"status": "not_tested"},
+  "confidence_rules": {"claim": "no real-output claim before repeated evidence"},
+  "inconclusive_conditions": ["missing evidence", "hard-gate failure", "unknown side effect"]
+}

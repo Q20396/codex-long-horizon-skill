@@ -1,0 +1,19 @@
+{
+  "experiment_id": "MAD-SKILL-001",
+  "status": "locked",
+  "baseline_definition": "Manual exact-path repository exploration with no persistent map.",
+  "candidate_definition": "No candidate is selected or implemented.",
+  "environment_controls": {"network": "offline", "workspace": "isolated", "customer_data": "prohibited"},
+  "fixtures": [{"category": "synthetic small repository", "required": true}],
+  "repetitions": {"planned": 0, "minimum_after_approval": 3},
+  "hard_gates": ["GATE-SOURCE", "GATE-LICENSE", "GATE-SCOPE", "GATE-PRIVACY", "GATE-ISOLATION", "GATE-ROLLBACK", "GATE-OBSERVABILITY", "GATE-HUMAN-CONTROL", "GATE-NO-REGRESSION", "GATE-CLAIM-INTEGRITY"],
+  "metrics": ["map accuracy", "scope compliance", "baseline task quality", "rollback evidence"],
+  "evaluator": {"mode": "separate evidence review", "self_approval": false},
+  "leakage_controls": ["synthetic fixtures", "no secrets", "no customer repository"],
+  "adversarial_tests": ["path traversal", "symlink escape", "prompt injection"],
+  "regression_tests": ["manual baseline remains available"],
+  "cost_tracking": {"status": "not_run", "budget": "not_approved"},
+  "rollback_test": {"status": "not_tested"},
+  "confidence_rules": {"claim": "no performance claim before repeated evidence"},
+  "inconclusive_conditions": ["missing baseline", "failed hard gate", "ambiguous scope"]
+}

@@ -1,0 +1,30 @@
+experiment_id: MAD-SKILL-003
+status: locked
+source_commits:
+  - d8d9f2cf309d29687fcf2e20f972dd790e2db79d
+license_compatible: false
+human_approval_required: true
+implementation_exists: false
+execution_authorized: false
+scores:
+  task_quality: 0
+  reliability: 0
+  safety: 0
+  permission_minimization: 0
+  reversibility: 0
+  token_efficiency: 0
+  execution_time: 0
+  maintenance_cost: 0
+  explainability: 0
+  cross_platform_compatibility: 0
+gate_results: []
+regressions: []
+unverified_claims:
+  - Source-compiler performance and rights handling are not locally verified.
+recommended_layer: sandbox-only-methodology
+rollback_status: not_tested
+recommended_status: locked
+approved_status: locked
+automatic_transition: false
+customer_decision: not_approved
+authorization_source: none

@@ -1,0 +1,18 @@
+experiment_id: MAD-SKILL-007
+status: locked
+source_commits: []
+license_compatible: false
+human_approval_required: true
+implementation_exists: false
+execution_authorized: false
+scores: {task_quality: 0, reliability: 0, safety: 0, permission_minimization: 0, reversibility: 0, token_efficiency: 0, execution_time: 0, maintenance_cost: 0, explainability: 0, cross_platform_compatibility: 0}
+gate_results: []
+regressions: []
+unverified_claims: [Claudian source and compatibility are not locally verified]
+recommended_layer: separate-skill
+rollback_status: not_tested
+recommended_status: locked
+approved_status: locked
+automatic_transition: false
+customer_decision: not_approved
+authorization_source: none
