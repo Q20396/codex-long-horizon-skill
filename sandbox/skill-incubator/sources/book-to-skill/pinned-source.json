@@ -1,0 +1,18 @@
+{
+  "id": "book-to-skill",
+  "status": "locked",
+  "verification_status": "verified",
+  "source_type": "github",
+  "repository": "virgiliojr94/book-to-skill",
+  "default_branch": "master",
+  "pinned_commit_sha": "d8d9f2cf309d29687fcf2e20f972dd790e2db79d",
+  "verified_at": "2026-07-20T01:57:23Z",
+  "verification_method": "Read-only GitHub REST metadata and default-branch commit lookup.",
+  "repository_license": "MIT",
+  "per_file_license_status": "unverified",
+  "recommended_layer": "sandbox-only-methodology",
+  "risk_level": "medium",
+  "code_import_allowed": false,
+  "runtime_execution_allowed": false,
+  "network_execution_allowed": false
+}

@@ -1,0 +1,18 @@
+{
+  "id": "mattpocock-skills",
+  "status": "locked",
+  "verification_status": "verified",
+  "source_type": "github",
+  "repository": "mattpocock/skills",
+  "default_branch": "main",
+  "pinned_commit_sha": "9603c1cc8118d08bc1b3bf34cf714f62178dea3b",
+  "verified_at": "2026-07-20T01:57:23Z",
+  "verification_method": "Read-only GitHub REST metadata and default-branch commit lookup.",
+  "repository_license": "MIT",
+  "per_file_license_status": "unverified",
+  "recommended_layer": "sandbox-only-methodology",
+  "risk_level": "medium",
+  "code_import_allowed": false,
+  "runtime_execution_allowed": false,
+  "network_execution_allowed": false
+}

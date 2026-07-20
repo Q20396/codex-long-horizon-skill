@@ -1,0 +1,18 @@
+{
+  "id": "mirofish",
+  "status": "locked",
+  "verification_status": "verified",
+  "source_type": "github",
+  "repository": "666ghj/MiroFish",
+  "default_branch": "main",
+  "pinned_commit_sha": "96096ea0ff42b1a30cbc41a1560b8c91090f9968",
+  "verified_at": "2026-07-20T01:57:23Z",
+  "verification_method": "Read-only GitHub REST metadata and default-branch commit lookup.",
+  "repository_license": "AGPL-3.0",
+  "per_file_license_status": "unverified",
+  "recommended_layer": "sandbox-only",
+  "risk_level": "high",
+  "code_import_allowed": false,
+  "runtime_execution_allowed": false,
+  "network_execution_allowed": false
+}
