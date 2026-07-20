@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Customer-Provided Capability Pattern",
+  "type": "object",
+  "required": ["pattern_id", "name", "capability_family", "classification", "handling"],
+  "properties": {
+    "pattern_id": {"pattern": "^PAT-[0-9]{3}$"},
+    "name": {"type": "string", "minLength": 1},
+    "capability_family": {"pattern": "^FAMILY-00[1-9]$"},
+    "classification": {"const": "customer_provided_capability_pattern"},
+    "handling": {"enum": ["map_to_existing_experiment", "candidate_extension", "candidate_new_experiment", "separate_skill", "rejected_pending_verification", "out_of_scope"]}
+  }
+}

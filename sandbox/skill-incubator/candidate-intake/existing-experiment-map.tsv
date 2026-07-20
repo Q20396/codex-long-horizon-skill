@@ -1,0 +1,41 @@
+pattern_id	name	capability_family	existing_experiment	overlap_score	unique_gap	proposed_action	rationale
+PAT-001	Spec Aligner	FAMILY-002	MAD-SKILL-011	0.70	End-to-end provenance chain	candidate_new_experiment	Existing compiler gate lacks spec-to-release traceability.
+PAT-002	PR Narrator	FAMILY-002	MAD-SKILL-011	0.65	PR narrative provenance	candidate_new_experiment	Narration is covered only as a contract artifact.
+PAT-003	Review Router	FAMILY-001	MAD-SKILL-008	0.90	No gap	map_to_existing_experiment	Router and progressive disclosure are explicit in MAD-SKILL-008.
+PAT-004	Decision Log	FAMILY-002	MAD-SKILL-006	0.90	No gap	map_to_existing_experiment	Decision and feedback lifecycle are covered by the rubric-safe loop.
+PAT-005	Issue Gardener	FAMILY-002	MAD-SKILL-011	0.65	Stable issue-to-evidence IDs	candidate_new_experiment	Traceability is missing, not a separate skill identity.
+PAT-006	Design Sync	FAMILY-006	MAD-SKILL-010	0.55	Visual evidence gate	candidate_new_experiment	The missing part is review evidence, not a design runtime.
+PAT-007	Security Buddy	FAMILY-003	MAD-SKILL-011	0.75	No gap	map_to_existing_experiment	Threat and permission review are already core compiler evidence.
+PAT-008	Knowledge Base	FAMILY-004	MAD-SKILL-003	0.70	Bounded local knowledge separation	map_to_existing_experiment	Authorized source-to-skill handling is already covered.
+PAT-009	Onboarding Map	FAMILY-004	MAD-SKILL-009	0.80	No gap	map_to_existing_experiment	Decision-to-diagram covers structural orientation.
+PAT-010	Retrospective Bot	FAMILY-002	MAD-SKILL-006	0.90	No gap	map_to_existing_experiment	Feedback and retained procedure evidence are covered.
+PAT-011	Agent Swarm	FAMILY-005	MAD-SKILL-005	0.95	No gap	map_to_existing_experiment	Control-plane separation rejects unbounded agent execution.
+PAT-012	Playwright Scout	FAMILY-006	MAD-SKILL-010	0.55	Browser and visual evidence gate	candidate_new_experiment	Existing demonstration gate is not browser QA.
+PAT-013	Terminal Sense	FAMILY-003	MAD-SKILL-002	0.90	No gap	map_to_existing_experiment	Capability contract covers command evidence and side effects.
+PAT-014	CI Fixer	FAMILY-003	MAD-SKILL-002	0.85	No gap	map_to_existing_experiment	Fixing remains an approved implementation action, not implicit automation.
+PAT-015	Release Notes	FAMILY-002	MAD-SKILL-011	0.60	Release-note provenance	candidate_new_experiment	A traceability chain is needed before publication.
+PAT-016	Data Cleaner	FAMILY-003	MAD-SKILL-002	0.75	No gap	map_to_existing_experiment	Data actions require explicit contracts and output checks.
+PAT-017	Screenshot QA	FAMILY-006	MAD-SKILL-010	0.55	Viewport and visual diff evidence	candidate_new_experiment	Existing privacy gate does not define visual QA acceptance.
+PAT-018	Changelog Miner	FAMILY-002	MAD-SKILL-006	0.80	No gap	map_to_existing_experiment	Retrospective evidence already covers historical procedure signals.
+PAT-019	Dependency Guard	FAMILY-003	MAD-SKILL-002	0.85	No gap	map_to_existing_experiment	Dependencies remain permissioned and testable under contracts.
+PAT-020	Nightly Runner	FAMILY-008		0.10	Scheduling safety controller	candidate_new_experiment	No current experiment owns scheduling, budgets, cancellation, or circuit breaking.
+PAT-021	Context Pack	FAMILY-004	MAD-SKILL-003	0.85	No gap	map_to_existing_experiment	Planning and handoff are already bounded source artifacts.
+PAT-022	Repo Cartographer	FAMILY-004	MAD-SKILL-001	0.95	No gap	map_to_existing_experiment	Safe project maps are the stated MAD-SKILL-001 scope.
+PAT-023	Test Pilot	FAMILY-003	MAD-SKILL-002	0.90	No gap	map_to_existing_experiment	Real-output harness is the required evaluator boundary.
+PAT-024	Debug Radar	FAMILY-003	MAD-SKILL-002	0.85	No gap	map_to_existing_experiment	Debugging evidence belongs to the contract harness.
+PAT-025	Refactor Lens	FAMILY-003	MAD-SKILL-002	0.75	No gap	map_to_existing_experiment	Refactors need the same output and regression evidence.
+PAT-026	API Stitcher	FAMILY-003	MAD-SKILL-002	0.75	No gap	map_to_existing_experiment	API work is not separate from capability and rollback contracts.
+PAT-027	Migration Buddy	FAMILY-003	MAD-SKILL-002	0.80	No gap	map_to_existing_experiment	Migration validation is a contract-harness concern.
+PAT-028	Docs Whisperer	FAMILY-002	MAD-SKILL-011	0.60	Document provenance	candidate_new_experiment	Traceability adds stale and orphan detection.
+PAT-029	Prompt Harness	FAMILY-003	MAD-SKILL-002	0.90	No gap	map_to_existing_experiment	Prompt claims need baseline and output evidence.
+PAT-030	Ship Checklist	FAMILY-003	MAD-SKILL-002	0.85	No gap	map_to_existing_experiment	Readiness must be evidenced rather than checklist-only.
+PAT-031	Planning with Files	FAMILY-004	MAD-SKILL-003	0.90	No gap	map_to_existing_experiment	Use bounded records with secret exclusions and compaction.
+PAT-032	Superpowers	FAMILY-001	MAD-SKILL-008	0.75	No gap	map_to_existing_experiment	Composable routing is covered; source remains unverified.
+PAT-033	Code Review	FAMILY-005	MAD-SKILL-005	0.80	No gap	map_to_existing_experiment	Review is a serial role, not an autonomous approval tier.
+PAT-034	Webapp Testing	FAMILY-006	MAD-SKILL-010	0.55	Browser and visual QA gate	candidate_new_experiment	A new candidate can define offline planning and evidence without browser action.
+PAT-035	Code Simplifier	FAMILY-003	MAD-SKILL-002	0.70	No gap	map_to_existing_experiment	Simplification needs regression and output validation.
+PAT-036	UI UX Pro Max	FAMILY-006		0.00	Unique source not identified	rejected_pending_verification	A concept name is not a verifiable source or safe runtime proposal.
+PAT-037	MCP Builder	FAMILY-009		0.20	Explicit registration contract	separate_skill	MCP creation and registration require independent high-risk approvals.
+PAT-038	Ralph Loop	FAMILY-005	MAD-SKILL-005	0.65	Unique source not identified	candidate_extension	Only the pause-and-handoff method is relevant; source remains ambiguous.
+PAT-039	PPTX	FAMILY-007	MAD-SKILL-004	0.65	Artifact rendering runtime	separate_skill	Planning maps to media separation; generation stays isolated.
+PAT-040	Skill Creator	FAMILY-001	MAD-SKILL-008	0.85	No gap	map_to_existing_experiment	Skill selection and composition are router responsibilities.

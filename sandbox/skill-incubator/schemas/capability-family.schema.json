@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Capability Family",
+  "type": "object",
+  "required": ["family_id", "name", "default_layer", "runtime_authorized"],
+  "properties": {
+    "family_id": {"pattern": "^FAMILY-00[1-9]$"},
+    "name": {"type": "string", "minLength": 1},
+    "default_layer": {"enum": ["core", "bundled-optional", "separate-skill", "sandbox", "rejected_pending_verification"]},
+    "runtime_authorized": {"const": false}
+  }
+}
