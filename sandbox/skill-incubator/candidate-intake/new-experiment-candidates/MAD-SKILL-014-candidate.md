@@ -12,6 +12,8 @@
 - cost_authorized: `false`
 - proposed_layers: `sandbox-only -> separate-skill`
 
+The authoritative safety state is stored in: `candidate-intake/candidate-states/MAD-SKILL-014.json`. This Markdown file is explanatory only.
+
 ## Intended Scope
 
 Design a task allowlist, dry run, concurrency lock, timeout, retry ceiling,

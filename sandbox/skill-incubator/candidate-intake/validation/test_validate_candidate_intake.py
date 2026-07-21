@@ -1,105 +1,311 @@
-#!/usr/bin/env python3
-"""Unit tests for the dependency-free candidate-intake validator."""
+"""Negative contract coverage for locked routing and evidence bindings."""
 
 from __future__ import annotations
 
-import importlib.util
+import csv
+import json
+import shutil
+import sys
+import tempfile
 import unittest
 from pathlib import Path
 
 
-VALIDATOR_PATH = Path(__file__).with_name("validate_candidate_intake.py")
-SPEC = importlib.util.spec_from_file_location("candidate_intake_validator", VALIDATOR_PATH)
-assert SPEC is not None and SPEC.loader is not None
-validator = importlib.util.module_from_spec(SPEC)
-SPEC.loader.exec_module(validator)
+HERE = Path(__file__).parent
+sys.path.insert(0, str(HERE))
+import validate_candidate_intake as intake
+import validate_candidate_states as states
+import validate_capability_families as families
+import validate_proposal_evidence as proposal
+import validate_schema_declarations as schemas
 
 
-def valid_row(**changes: str) -> dict[str, str]:
-    row = {
-        "pattern_id": "PAT-001",
-        "name": "Example",
-        "group": "team",
-        "classification": "customer_provided_capability_pattern",
-        "capability_family": "FAMILY-001",
-        "existing_experiment": "MAD-SKILL-008",
-        "overlap_score": "90",
-        "overlap_type": "full",
-        "primary_gap_owner": "MAD-SKILL-008",
-        "routing_allowed": "true",
-        "unique_gap": "No identified design gap",
-        "proposed_action": "map_to_existing_experiment",
-        "rationale": "Test fixture",
-        "evidence_contract": "candidate-intake/base-experiment-contracts/MAD-SKILL-008.json",
-        "evidence_strength": "strong",
-        "source_status": "customer_provided_unverified",
-    }
-    row.update(changes)
-    return row
+ROOT = HERE.parents[3]
 
 
-class CandidateIntakeValidatorTests(unittest.TestCase):
-    def test_current_repository_data_validates(self) -> None:
-        root = Path(__file__).resolve().parents[4]
-        self.assertEqual([], validator.validate_root(root))
+def cloned_root() -> tuple[tempfile.TemporaryDirectory[str], Path]:
+    temporary = tempfile.TemporaryDirectory()
+    root = Path(temporary.name)
+    shutil.copytree(ROOT / "sandbox", root / "sandbox")
+    return temporary, root
 
-    def test_valid_row(self) -> None:
-        rows = [valid_row(pattern_id=f"PAT-{number:03d}") for number in range(1, 41)]
-        self.assertEqual([], validator.validate_pattern_rows(rows))
 
-    def test_missing_column_is_rejected(self) -> None:
-        text = "\t".join(validator.PATTERN_HEADERS[:-1]) + "\nvalue\n"
-        _, errors = validator.parse_tsv_text(text, validator.PATTERN_HEADERS, "fixture")
-        self.assertTrue(errors)
+def rewrite_tsv(path: Path, mutate) -> None:
+    with path.open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle, delimiter="\t"))
+    headers = list(rows[0])
+    mutate(rows)
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=headers, delimiter="\t", lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(rows)
 
-    def test_excess_column_is_rejected(self) -> None:
-        text = "\t".join(validator.PATTERN_HEADERS) + "\n" + "\t".join(["x"] * (len(validator.PATTERN_HEADERS) + 1))
-        _, errors = validator.parse_tsv_text(text, validator.PATTERN_HEADERS, "fixture")
-        self.assertTrue(errors)
 
-    def test_duplicate_pattern_id_is_rejected(self) -> None:
-        rows = [valid_row(pattern_id=f"PAT-{number:03d}") for number in range(1, 40)] + [valid_row(pattern_id="PAT-001")]
-        self.assertTrue(any("duplicate" in item for item in validator.validate_pattern_rows(rows)))
+class RoutingAndEvidenceContractTests(unittest.TestCase):
+    def test_current_repository_validates(self) -> None:
+        self.assertEqual([], intake.validate_root(ROOT))
+        self.assertEqual([], states.validate_root(ROOT))
+        self.assertEqual([], families.validate_root(ROOT))
+        self.assertEqual([], proposal.validate_root(ROOT))
+        self.assertEqual([], schemas.validate_root(ROOT))
 
-    def test_invalid_group_is_rejected(self) -> None:
-        rows = [valid_row(pattern_id=f"PAT-{number:03d}") for number in range(1, 41)]
-        rows[0]["group"] = "advanced"
-        self.assertTrue(any("invalid group" in item for item in validator.validate_pattern_rows(rows)))
+    def test_fake_existing_experiment_is_rejected(self) -> None:
+        temporary, root = cloned_root()
+        self.addCleanup(temporary.cleanup)
+        rewrite_tsv(root / "sandbox/skill-incubator/candidate-intake/capability-patterns.tsv", lambda rows: rows[0].update(existing_experiment="MAD-SKILL-999"))
+        self.assertTrue(any("existing_experiment" in item for item in intake.validate_root(root)))
 
-    def test_invalid_action_is_rejected(self) -> None:
-        rows = [valid_row(pattern_id=f"PAT-{number:03d}") for number in range(1, 41)]
-        rows[0]["proposed_action"] = "install_now"
-        self.assertTrue(any("invalid proposed action" in item for item in validator.validate_pattern_rows(rows)))
+    def test_contract_filename_mismatch_is_rejected(self) -> None:
+        temporary, root = cloned_root()
+        self.addCleanup(temporary.cleanup)
+        rewrite_tsv(root / "sandbox/skill-incubator/candidate-intake/capability-patterns.tsv", lambda rows: rows[0].update(evidence_contract="candidate-intake/base-experiment-contracts/MAD-SKILL-001.json"))
+        self.assertTrue(any("evidence_contract" in item for item in intake.validate_root(root)))
 
-    def test_invalid_overlap_type_is_rejected(self) -> None:
-        rows = [valid_row(pattern_id=f"PAT-{number:03d}") for number in range(1, 41)]
-        rows[0]["overlap_type"] = "mostly"
-        self.assertTrue(any("invalid overlap type" in item for item in validator.validate_pattern_rows(rows)))
+    def test_contract_internal_id_mismatch_is_rejected(self) -> None:
+        temporary, root = cloned_root()
+        self.addCleanup(temporary.cleanup)
+        path = root / "sandbox/skill-incubator/candidate-intake/base-experiment-contracts/MAD-SKILL-001.json"
+        payload = json.loads(path.read_text())
+        payload["experiment_id"] = "MAD-SKILL-002"
+        path.write_text(json.dumps(payload))
+        self.assertTrue(any("experiment_id" in item for item in intake.validate_root(root)))
 
-    def test_non_boolean_routing_is_rejected(self) -> None:
-        rows = [valid_row(pattern_id=f"PAT-{number:03d}") for number in range(1, 41)]
-        rows[0]["routing_allowed"] = "yes"
-        self.assertTrue(any("routing_allowed" in item for item in validator.validate_pattern_rows(rows)))
+    def test_contract_proposal_path_mismatch_is_rejected(self) -> None:
+        temporary, root = cloned_root()
+        self.addCleanup(temporary.cleanup)
+        path = root / "sandbox/skill-incubator/candidate-intake/base-experiment-contracts/MAD-SKILL-001.json"
+        payload = json.loads(path.read_text())
+        payload["source_proposal_path"] = "sandbox/skill-incubator/experiments/MAD-SKILL-002/proposal.md"
+        path.write_text(json.dumps(payload))
+        self.assertTrue(any("source_proposal_path" in item for item in intake.validate_root(root)))
 
-    def test_out_of_range_scores_are_rejected(self) -> None:
-        for value in ("-1", "101"):
-            rows = [valid_row(pattern_id=f"PAT-{number:03d}") for number in range(1, 41)]
-            rows[0]["overlap_score"] = value
-            self.assertTrue(any("0..100" in item for item in validator.validate_pattern_rows(rows)))
+    def test_contract_proposal_sha_mismatch_is_rejected(self) -> None:
+        temporary, root = cloned_root()
+        self.addCleanup(temporary.cleanup)
+        path = root / "sandbox/skill-incubator/candidate-intake/base-experiment-contracts/MAD-SKILL-001.json"
+        payload = json.loads(path.read_text())
+        payload["source_proposal_sha256"] = "0" * 64
+        path.write_text(json.dumps(payload))
+        self.assertTrue(any("source_proposal_sha256" in item for item in intake.validate_root(root)))
 
-    def test_unverified_source_cannot_claim_sha(self) -> None:
-        payload = {"status": "locked", "sources": []}
-        for number in range(10):
-            payload["sources"].append({"source_id": f"blocked-{number}", "status": "locked", "verification_status": "verification_blocked", "full_commit_sha": None, "code_import_allowed": False, "runtime_execution_allowed": False, "network_execution_allowed": False})
-        for number in range(5):
-            payload["sources"].append({"source_id": f"ambiguous-{number}", "status": "locked", "verification_status": "ambiguous_source", "full_commit_sha": None, "code_import_allowed": False, "runtime_execution_allowed": False, "network_execution_allowed": False})
-        payload["sources"][0]["full_commit_sha"] = "a" * 40
-        self.assertTrue(any("commit SHA" in item for item in validator.validate_source_payload(payload)))
+    def test_full_mapping_without_covered_pattern_is_rejected(self) -> None:
+        temporary, root = cloned_root()
+        self.addCleanup(temporary.cleanup)
+        path = root / "sandbox/skill-incubator/candidate-intake/base-experiment-contracts/MAD-SKILL-008.json"
+        payload = json.loads(path.read_text())
+        payload["covered_patterns"] = []
+        path.write_text(json.dumps(payload))
+        self.assertTrue(any("covered_patterns" in item for item in intake.validate_root(root)))
 
-    def test_candidate_only_registration_is_rejected(self) -> None:
-        candidate_text = "\n".join(["status: `candidate_only`", "registered_experiment: `false`", "implementation_exists: `false`", "execution_authorized: `false`", "customer_decision: `not_approved`"])
-        errors = validator.validate_candidate_only_state({"MAD-SKILL-012-candidate": candidate_text}, {"MAD-SKILL-012"})
-        self.assertTrue(any("present in experiment registry" in item for item in errors))
+    def test_partial_mapping_without_owner_is_rejected(self) -> None:
+        temporary, root = cloned_root()
+        self.addCleanup(temporary.cleanup)
+        rewrite_tsv(root / "sandbox/skill-incubator/candidate-intake/capability-patterns.tsv", lambda rows: rows[0].update(primary_gap_owner=""))
+        self.assertTrue(any("primary_gap_owner" in item for item in intake.validate_root(root)))
+
+    def test_candidate_design_owner_is_allowed_but_state_id_is_not(self) -> None:
+        temporary, root = cloned_root()
+        self.addCleanup(temporary.cleanup)
+
+        def set_owner(rows, owner: str) -> None:
+            row = next(row for row in rows if row["overlap_type"] == "partial")
+            row["primary_gap_owner"] = owner
+
+        paths = (
+            "capability-patterns.tsv",
+            "existing-experiment-map.tsv",
+            "deduplication-evidence.tsv",
+        )
+        for name in paths:
+            rewrite_tsv(
+                root / f"sandbox/skill-incubator/candidate-intake/{name}",
+                lambda rows: set_owner(rows, "MAD-SKILL-012-candidate"),
+            )
+        self.assertEqual([], intake.validate_root(root))
+        for name in paths:
+            rewrite_tsv(
+                root / f"sandbox/skill-incubator/candidate-intake/{name}",
+                lambda rows: set_owner(rows, "MAD-SKILL-012"),
+            )
+        self.assertTrue(any("primary_gap_owner" in item for item in intake.validate_root(root)))
+
+    def test_candidate_in_registry_is_rejected(self) -> None:
+        temporary, root = cloned_root()
+        self.addCleanup(temporary.cleanup)
+        path = root / "sandbox/skill-incubator/experiments/registry.json"
+        payload = json.loads(path.read_text())
+        payload["experiments"].append({"experiment_id": "MAD-SKILL-012"})
+        path.write_text(json.dumps(payload))
+        self.assertTrue(any("registry" in item for item in states.validate_root(root)))
+
+    def test_locked_routing_true_is_rejected(self) -> None:
+        temporary, root = cloned_root()
+        self.addCleanup(temporary.cleanup)
+        rewrite_tsv(root / "sandbox/skill-incubator/candidate-intake/capability-patterns.tsv", lambda rows: rows[0].update(execution_routing_allowed="true"))
+        self.assertTrue(any("execution_routing_allowed" in item for item in intake.validate_root(root)))
+
+    def test_verification_blocked_recommendation_is_rejected(self) -> None:
+        temporary, root = cloned_root()
+        self.addCleanup(temporary.cleanup)
+        def mutate(rows):
+            row = next(row for row in rows if row["source_status"] == "verification_blocked")
+            row["recommendation_eligible"] = "true"
+        rewrite_tsv(root / "sandbox/skill-incubator/candidate-intake/capability-patterns.tsv", mutate)
+        self.assertTrue(any("recommendation_eligible" in item for item in intake.validate_root(root)))
+
+    def test_partial_overlap_execution_is_rejected(self) -> None:
+        temporary, root = cloned_root()
+        self.addCleanup(temporary.cleanup)
+        def mutate(rows):
+            row = next(row for row in rows if row["overlap_type"] == "partial")
+            row["execution_routing_allowed"] = "true"
+        rewrite_tsv(root / "sandbox/skill-incubator/candidate-intake/capability-patterns.tsv", mutate)
+        self.assertTrue(any("execution_routing_allowed" in item for item in intake.validate_root(root)))
+
+    def test_catalog_visibility_does_not_grant_routing(self) -> None:
+        temporary, root = cloned_root()
+        self.addCleanup(temporary.cleanup)
+        rewrite_tsv(root / "sandbox/skill-incubator/candidate-intake/capability-patterns.tsv", lambda rows: rows[0].update(catalog_visible="false"))
+        rewrite_tsv(root / "sandbox/skill-incubator/candidate-intake/existing-experiment-map.tsv", lambda rows: rows[0].update(catalog_visible="false"))
+        rewrite_tsv(root / "sandbox/skill-incubator/candidate-intake/deduplication-evidence.tsv", lambda rows: rows[0].update(catalog_visible="false"))
+        self.assertEqual([], intake.validate_root(root))
+
+    def test_candidate_recommendation_true_is_rejected(self) -> None:
+        temporary, root = cloned_root()
+        self.addCleanup(temporary.cleanup)
+        path = root / "sandbox/skill-incubator/candidate-intake/candidate-states/MAD-SKILL-012.json"
+        payload = json.loads(path.read_text())
+        payload["recommendation_eligible"] = True
+        path.write_text(json.dumps(payload))
+        self.assertTrue(any("recommendation_eligible" in item for item in states.validate_root(root)))
+
+    def test_candidate_unknown_field_is_rejected(self) -> None:
+        temporary, root = cloned_root()
+        self.addCleanup(temporary.cleanup)
+        path = root / "sandbox/skill-incubator/candidate-intake/candidate-states/MAD-SKILL-012.json"
+        payload = json.loads(path.read_text())
+        payload["unexpected"] = True
+        path.write_text(json.dumps(payload))
+        self.assertTrue(any("keys" in item for item in states.validate_root(root)))
+
+    def test_candidate_active_status_is_rejected(self) -> None:
+        temporary, root = cloned_root()
+        self.addCleanup(temporary.cleanup)
+        path = root / "sandbox/skill-incubator/candidate-intake/candidate-states/MAD-SKILL-012.json"
+        payload = json.loads(path.read_text())
+        payload["status"] = "active"
+        path.write_text(json.dumps(payload))
+        self.assertTrue(any("status" in item for item in states.validate_root(root)))
+
+    def test_candidate_registered_execution_and_promotion_are_rejected(self) -> None:
+        for field in ("registered_experiment", "execution_routing_allowed", "promotion_allowed"):
+            with self.subTest(field=field):
+                temporary, root = cloned_root()
+                self.addCleanup(temporary.cleanup)
+                path = root / "sandbox/skill-incubator/candidate-intake/candidate-states/MAD-SKILL-012.json"
+                payload = json.loads(path.read_text())
+                payload[field] = True
+                path.write_text(json.dumps(payload))
+                self.assertTrue(any(field in item for item in states.validate_root(root)))
+
+    def test_candidate_customer_approval_is_rejected(self) -> None:
+        temporary, root = cloned_root()
+        self.addCleanup(temporary.cleanup)
+        path = root / "sandbox/skill-incubator/candidate-intake/candidate-states/MAD-SKILL-012.json"
+        payload = json.loads(path.read_text())
+        payload["customer_decision"] = "approved"
+        path.write_text(json.dumps(payload))
+        self.assertTrue(any("customer_decision" in item for item in states.validate_root(root)))
+
+    def test_family_execution_true_is_rejected(self) -> None:
+        temporary, root = cloned_root()
+        self.addCleanup(temporary.cleanup)
+        path = root / "sandbox/skill-incubator/architecture/capability-families.json"
+        payload = json.loads(path.read_text())
+        payload["families"][0]["execution_routing_allowed"] = True
+        path.write_text(json.dumps(payload))
+        self.assertTrue(any("execution_routing_allowed" in item for item in families.validate_root(root)))
+
+    def test_family_current_experiment_mismatch_is_rejected(self) -> None:
+        temporary, root = cloned_root()
+        self.addCleanup(temporary.cleanup)
+        path = root / "sandbox/skill-incubator/architecture/capability-families.json"
+        payload = json.loads(path.read_text())
+        payload["families"][0]["current_experiments"] = ["MAD-SKILL-001"]
+        path.write_text(json.dumps(payload))
+        self.assertTrue(any("matrix.current_experiments" in item for item in families.validate_root(root)))
+
+    def test_empty_family_experiment_lists_are_valid_when_authoritative(self) -> None:
+        payload = json.loads((ROOT / "sandbox/skill-incubator/architecture/capability-families.json").read_text())
+        indexed = {entry["family_id"]: entry for entry in payload["families"]}
+        self.assertEqual([], indexed["FAMILY-008"]["current_experiments"])
+        self.assertEqual([], indexed["FAMILY-009"]["current_experiments"])
+        self.assertEqual([], families.validate_root(ROOT))
+
+    def test_family_candidate_cannot_be_current_experiment(self) -> None:
+        temporary, root = cloned_root()
+        self.addCleanup(temporary.cleanup)
+        path = root / "sandbox/skill-incubator/architecture/capability-families.json"
+        payload = json.loads(path.read_text())
+        payload["families"][0]["current_experiments"] = ["MAD-SKILL-012"]
+        path.write_text(json.dumps(payload))
+        self.assertTrue(any("current_experiments" in item for item in families.validate_root(root)))
+
+    def test_family_unknown_field_and_wrong_family_are_rejected(self) -> None:
+        temporary, root = cloned_root()
+        self.addCleanup(temporary.cleanup)
+        path = root / "sandbox/skill-incubator/architecture/capability-families.json"
+        payload = json.loads(path.read_text())
+        payload["families"][0]["unknown"] = True
+        path.write_text(json.dumps(payload))
+        self.assertTrue(any("keys" in item for item in families.validate_root(root)))
+        rewrite_tsv(root / "sandbox/skill-incubator/candidate-intake/capability-patterns.tsv", lambda rows: rows[0].update(capability_family="FAMILY-999"))
+        self.assertTrue(any("capability_family" in item for item in intake.validate_root(root)))
+
+    def test_proposal_evidence_wrong_sha_is_rejected(self) -> None:
+        evidence = json.loads((ROOT / "sandbox/skill-incubator/candidate-intake/proposal-evidence/MAD-SKILL-001.json").read_text())
+        evidence["proposal_sha256"] = "0" * 64
+        proposal_bytes = (ROOT / "sandbox/skill-incubator/experiments/MAD-SKILL-001/proposal.md").read_bytes()
+        self.assertTrue(any("proposal_sha256" in item for item in proposal.validate_evidence_payload(evidence, "fixture", proposal_bytes)))
+
+    def test_proposal_evidence_bad_line_range_is_rejected(self) -> None:
+        evidence = json.loads((ROOT / "sandbox/skill-incubator/candidate-intake/proposal-evidence/MAD-SKILL-001.json").read_text())
+        evidence["sections"][0]["line_end"] = 9999
+        proposal_bytes = (ROOT / "sandbox/skill-incubator/experiments/MAD-SKILL-001/proposal.md").read_bytes()
+        self.assertTrue(any("line_range" in item for item in proposal.validate_evidence_payload(evidence, "fixture", proposal_bytes)))
+
+    def test_proposal_evidence_experiment_and_excerpt_mismatches_are_rejected(self) -> None:
+        evidence = json.loads((ROOT / "sandbox/skill-incubator/candidate-intake/proposal-evidence/MAD-SKILL-001.json").read_text())
+        proposal_bytes = (ROOT / "sandbox/skill-incubator/experiments/MAD-SKILL-001/proposal.md").read_bytes()
+        evidence["experiment_id"] = "MAD-SKILL-002"
+        evidence["sections"][0]["normalized_excerpt_sha256"] = "0" * 64
+        errors = proposal.validate_evidence_payload(evidence, "fixture", proposal_bytes, "MAD-SKILL-001")
+        self.assertTrue(any("experiment_id" in item for item in errors))
+        self.assertTrue(any("normalized_excerpt_sha256" in item for item in errors))
+
+    def test_contract_and_dedup_missing_proposal_evidence_are_rejected(self) -> None:
+        temporary, root = cloned_root()
+        self.addCleanup(temporary.cleanup)
+        contract_path = root / "sandbox/skill-incubator/candidate-intake/base-experiment-contracts/MAD-SKILL-001.json"
+        contract = json.loads(contract_path.read_text())
+        contract["proposal_evidence_ids"] = []
+        contract_path.write_text(json.dumps(contract))
+        self.assertTrue(any("proposal_evidence_ids" in item for item in intake.validate_root(root)))
+
+        def mutate(rows):
+            row = next(row for row in rows if row["overlap_type"] == "full")
+            row["proposal_evidence_ids"] = "missing-evidence-id"
+        rewrite_tsv(root / "sandbox/skill-incubator/candidate-intake/deduplication-evidence.tsv", mutate)
+        self.assertTrue(any("proposal_evidence_ids" in item for item in proposal.validate_root(root)))
+
+    def test_partial_overlap_requires_candidate_gap_evidence(self) -> None:
+        temporary, root = cloned_root()
+        self.addCleanup(temporary.cleanup)
+        def mutate(rows):
+            row = next(row for row in rows if row["overlap_type"] == "partial" and row["proposed_existing_experiment"])
+            row["proposal_evidence_ids"] = f"{row['proposed_existing_experiment']}-objective"
+        rewrite_tsv(root / "sandbox/skill-incubator/candidate-intake/deduplication-evidence.tsv", mutate)
+        self.assertTrue(any("partial_overlap_evidence" in item for item in proposal.validate_root(root)))
 
 
 if __name__ == "__main__":

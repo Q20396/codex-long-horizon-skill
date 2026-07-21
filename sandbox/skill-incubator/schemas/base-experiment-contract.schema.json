@@ -1,5 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "base-experiment-contract.schema.json",
   "title": "Base Experiment Design-Mapping Contract",
   "type": "object",
   "additionalProperties": false,
@@ -20,7 +21,12 @@
     "excluded_patterns",
     "known_gaps",
     "recommended_layer",
-    "routing_eligible"
+    "routing_eligible",
+    "catalog_visible",
+    "recommendation_eligible",
+    "execution_routing_allowed",
+    "proposal_evidence_path",
+    "proposal_evidence_ids"
   ],
   "properties": {
     "experiment_id": {"type": "string", "pattern": "^MAD-SKILL-0(?:0[1-9]|1[01])$"},
@@ -49,6 +55,11 @@
     "excluded_patterns": {"type": "array", "items": {"type": "string", "minLength": 1}},
     "known_gaps": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
     "recommended_layer": {"type": "string", "minLength": 1},
-    "routing_eligible": {"type": "boolean", "default": false, "const": false}
+    "routing_eligible": {"type": "boolean", "default": false, "const": false},
+    "catalog_visible": {"type": "boolean"},
+    "recommendation_eligible": {"type": "boolean", "const": false},
+    "execution_routing_allowed": {"type": "boolean", "const": false},
+    "proposal_evidence_path": {"type": "string", "pattern": "^candidate-intake/proposal-evidence/MAD-SKILL-0(?:0[1-9]|1[01])\\.json$"},
+    "proposal_evidence_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
   }
 }

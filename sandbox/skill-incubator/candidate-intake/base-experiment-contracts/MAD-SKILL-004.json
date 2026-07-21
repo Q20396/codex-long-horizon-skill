@@ -6,14 +6,45 @@
   "source_proposal_sha256": "98d9896a06e8a385ca1d8e2f3f2ce5a7c1f7ce5537d09cf577b8f2ac837fb7b5",
   "mapping_basis": "design_mapping",
   "coverage_validation": "not_runtime_verified",
-  "objective": ["Separate planning, script, storyboard, asset needs, provider choice, customer approval, rendering, and acceptance for future media workflows."],
-  "non_goals": ["No provider call, upload, model download, media generation, voice synthesis, image synthesis, rendering, or external publish."],
-  "inputs": ["Future customer-approved brief, factual source list, audience, style, and delivery constraints."],
-  "outputs": ["Future script, storyboard, asset plan, provider-neutral handoff, and acceptance checklist."],
-  "permissions": {"read": ["Future customer-approved brief and factual source list"], "write": [], "network": false, "external_services": false},
+  "objective": [
+    "Separate planning, script, storyboard, asset needs, provider choice, customer approval, rendering, and acceptance for future media workflows."
+  ],
+  "non_goals": [
+    "No provider call, upload, model download, media generation, voice synthesis, image synthesis, rendering, or external publish."
+  ],
+  "inputs": [
+    "Future customer-approved brief, factual source list, audience, style, and delivery constraints."
+  ],
+  "outputs": [
+    "Future script, storyboard, asset plan, provider-neutral handoff, and acceptance checklist."
+  ],
+  "permissions": {
+    "read": [
+      "Future customer-approved brief and factual source list"
+    ],
+    "write": [],
+    "network": false,
+    "external_services": false
+  },
   "covered_patterns": [],
-  "excluded_patterns": ["PPTX and media renderer execution remain separate-skill concerns."],
-  "known_gaps": ["The proposal is planning-only and does not create or validate a rendered artifact."],
+  "excluded_patterns": [
+    "PPTX and media renderer execution remain separate-skill concerns."
+  ],
+  "known_gaps": [
+    "The proposal is planning-only and does not create or validate a rendered artifact."
+  ],
   "recommended_layer": "bundled-optional",
-  "routing_eligible": false
+  "routing_eligible": false,
+  "catalog_visible": true,
+  "recommendation_eligible": false,
+  "execution_routing_allowed": false,
+  "proposal_evidence_path": "candidate-intake/proposal-evidence/MAD-SKILL-004.json",
+  "proposal_evidence_ids": [
+    "MAD-SKILL-004-objective",
+    "MAD-SKILL-004-non-goal",
+    "MAD-SKILL-004-input",
+    "MAD-SKILL-004-output",
+    "MAD-SKILL-004-permission",
+    "MAD-SKILL-004-execution-boundary"
+  ]
 }

@@ -1,5 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "gate-result.schema.json",
   "title": "Hard Gate Result",
   "type": "object",
   "required": ["experiment_id", "gate_id", "status", "evidence", "audit_id"],

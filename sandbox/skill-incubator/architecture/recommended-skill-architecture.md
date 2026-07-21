@@ -48,12 +48,7 @@ skill or remains sandbox-only.
 
 ## Router Boundary
 
-The future router is recommendation-only. Candidate-only designs do not
-participate in routing, and locked experiments do not execute by default.
-Partial, adjacent, and no-overlap records must not be automatically routed.
-Only a `full` mapping with `strong` evidence and a separate customer approval
-may be suggested. A router may display at most three candidates and cannot
-install, invoke, or grant permission to any of them.
+`catalog_visible` is not `recommendation_eligible`, and neither is `execution_routing_allowed`. The current router may display catalog-visible items and explain their locked state only. Every current experiment and candidate has recommendation and execution routing disabled. Candidate-only designs do not participate in routing. A future recommendation requires a separate approved step; future execution routing requires a higher, separate approval and is not implied by a recommendation.
 
 ## Source Boundary
 

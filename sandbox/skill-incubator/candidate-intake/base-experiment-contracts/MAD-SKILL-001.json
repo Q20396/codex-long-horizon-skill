@@ -6,14 +6,47 @@
   "source_proposal_sha256": "0a8c7ffb4a43730ce5d01b073e5cd179bd53bda4fb4e551832eb5c986fca7227",
   "mapping_basis": "design_mapping",
   "coverage_validation": "not_runtime_verified",
-  "objective": ["Create a bounded evidence-linked structural map for a large repository without a repository-wide read, persistent index, or unsupported token-saving claim."],
-  "non_goals": ["No index, graph database, broad scan, sync, model call, secret discovery, or automatic context injection."],
-  "inputs": ["Future customer-approved exact paths and an explicit context budget."],
-  "outputs": ["Future reviewable map manifest, evidence links, exclusions, and budget report."],
-  "permissions": {"read": ["Future customer-approved exact paths"], "write": [], "network": false, "external_services": false},
-  "covered_patterns": ["PAT-022"],
-  "excluded_patterns": ["PAT-021 requires a broader context-pack design mapping and is not a full coverage claim."],
-  "known_gaps": ["The proposal is locked and has not been runtime-validated; no repository map is produced by this contract."],
+  "objective": [
+    "Create a bounded evidence-linked structural map for a large repository without a repository-wide read, persistent index, or unsupported token-saving claim."
+  ],
+  "non_goals": [
+    "No index, graph database, broad scan, sync, model call, secret discovery, or automatic context injection."
+  ],
+  "inputs": [
+    "Future customer-approved exact paths and an explicit context budget."
+  ],
+  "outputs": [
+    "Future reviewable map manifest, evidence links, exclusions, and budget report."
+  ],
+  "permissions": {
+    "read": [
+      "Future customer-approved exact paths"
+    ],
+    "write": [],
+    "network": false,
+    "external_services": false
+  },
+  "covered_patterns": [
+    "PAT-022"
+  ],
+  "excluded_patterns": [
+    "PAT-021 requires a broader context-pack design mapping and is not a full coverage claim."
+  ],
+  "known_gaps": [
+    "The proposal is locked and has not been runtime-validated; no repository map is produced by this contract."
+  ],
   "recommended_layer": "sandbox",
-  "routing_eligible": false
+  "routing_eligible": false,
+  "catalog_visible": true,
+  "recommendation_eligible": false,
+  "execution_routing_allowed": false,
+  "proposal_evidence_path": "candidate-intake/proposal-evidence/MAD-SKILL-001.json",
+  "proposal_evidence_ids": [
+    "MAD-SKILL-001-objective",
+    "MAD-SKILL-001-non-goal",
+    "MAD-SKILL-001-input",
+    "MAD-SKILL-001-output",
+    "MAD-SKILL-001-permission",
+    "MAD-SKILL-001-execution-boundary"
+  ]
 }

@@ -1,5 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "promotion.schema.json",
   "title": "Incubator Promotion Recommendation",
   "type": "object",
   "required": ["experiment_id", "status", "recommended_status", "approved_status", "automatic_transition", "customer_decision", "authorization_source", "license_compatible", "implementation_exists", "execution_authorized", "scores", "gate_results", "regressions", "unverified_claims", "rollback_status"],

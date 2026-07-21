@@ -1,5 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "decision-record.schema.json",
   "title": "Customer Decision Record",
   "type": "object",
   "required": ["step_id", "experiment_id", "proposed_action", "risk_level", "customer_decision", "authorization_source", "decision_time", "audit_id"],

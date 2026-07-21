@@ -12,6 +12,11 @@ or permission grant.
   experiments. This intake does not change their status or files.
 - MAD-SKILL-012 through MAD-SKILL-014 are candidate-only designs. They are not
   registered experiments and have no implementation or execution authority.
+- `candidate-states/` is the authoritative state source for those three
+  candidates. Their Markdown files are explanatory only.
+- Structured candidate state uses canonical IDs such as `MAD-SKILL-012`.
+  `MAD-SKILL-012-candidate` is only a candidate-design identifier for a
+  `primary_gap_owner`; neither identifier represents a registered experiment.
 - No source code, skill prose, credentials, customer material, private files,
   screenshots, or marketing metrics are imported here.
 
@@ -29,9 +34,11 @@ See `capability-patterns.tsv`, `existing-experiment-map.tsv`, and
 
 `deduplication-evidence.tsv` records the objective, input, output, permission,
 and non-goal comparison for each pattern. It distinguishes full, partial,
-adjacent, and no-overlap records. Only a full design mapping with strong
-evidence can be recommended; a locked target still cannot execute without a
-separate customer approval.
+adjacent, and no-overlap records. A full mapping with strong evidence is still
+only a design claim: it does not make a pattern recommendation-eligible or
+execution-routable. All current records explicitly preserve those two states as
+`false`; any future recommendation or execution needs a separate approved
+change.
 
 The dependency-free validator in `validation/validate_candidate_intake.py`
 reads only this repository's explicit intake, contract, registry, and candidate

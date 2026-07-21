@@ -6,14 +6,45 @@
   "source_proposal_sha256": "9c710f34988dfca00939fb926dd5b734231889f992cca9bbb3184a9dd6f3e80f",
   "mapping_basis": "design_mapping",
   "coverage_validation": "not_runtime_verified",
-  "objective": ["Define an explicit-path allowlist, secret exclusion, and write-diff approval boundary for future local knowledge workflows."],
-  "non_goals": ["No Vault indexing, sync, shell, MCP, network, external directory access, write, or daemon."],
-  "inputs": ["Future customer-approved exact local paths and exclusion rules."],
-  "outputs": ["Future read-only contract and future write-diff approval design."],
-  "permissions": {"read": ["Future customer-approved exact local paths"], "write": [], "network": false, "external_services": false},
+  "objective": [
+    "Define an explicit-path allowlist, secret exclusion, and write-diff approval boundary for future local knowledge workflows."
+  ],
+  "non_goals": [
+    "No Vault indexing, sync, shell, MCP, network, external directory access, write, or daemon."
+  ],
+  "inputs": [
+    "Future customer-approved exact local paths and exclusion rules."
+  ],
+  "outputs": [
+    "Future read-only contract and future write-diff approval design."
+  ],
+  "permissions": {
+    "read": [
+      "Future customer-approved exact local paths"
+    ],
+    "write": [],
+    "network": false,
+    "external_services": false
+  },
   "covered_patterns": [],
-  "excluded_patterns": ["Knowledge-base and repository-context patterns need separate source and scope evidence."],
-  "known_gaps": ["The proposal is locked and does not read a real Vault or external directory."],
+  "excluded_patterns": [
+    "Knowledge-base and repository-context patterns need separate source and scope evidence."
+  ],
+  "known_gaps": [
+    "The proposal is locked and does not read a real Vault or external directory."
+  ],
   "recommended_layer": "separate-skill",
-  "routing_eligible": false
+  "routing_eligible": false,
+  "catalog_visible": true,
+  "recommendation_eligible": false,
+  "execution_routing_allowed": false,
+  "proposal_evidence_path": "candidate-intake/proposal-evidence/MAD-SKILL-007.json",
+  "proposal_evidence_ids": [
+    "MAD-SKILL-007-objective",
+    "MAD-SKILL-007-non-goal",
+    "MAD-SKILL-007-input",
+    "MAD-SKILL-007-output",
+    "MAD-SKILL-007-permission",
+    "MAD-SKILL-007-execution-boundary"
+  ]
 }

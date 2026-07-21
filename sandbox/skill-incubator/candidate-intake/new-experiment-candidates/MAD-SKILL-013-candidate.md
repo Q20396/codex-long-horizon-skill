@@ -15,6 +15,8 @@
 - authentication: `false`
 - proposed_layers: `sandbox -> bundled-optional planner -> browser execution separate-skill`
 
+The authoritative safety state is stored in: `candidate-intake/candidate-states/MAD-SKILL-013.json`. This Markdown file is explanatory only.
+
 ## Intended Scope
 
 Specify test routes, viewport matrices, DOM assertions, screenshot baselines,

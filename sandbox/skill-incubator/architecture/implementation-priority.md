@@ -5,9 +5,11 @@ This is a proposed ordering, not an execution authorization.
 1. **MAD-SKILL-002**: Capability Contract and Real Output Harness. It enables
    every later candidate without a third-party runtime and addresses false
    success from exit-code-only validation. Its current status remains locked.
-2. **Unified Skill Router** from MAD-SKILL-008: one bounded entry point, at
-   most three recommendations, risk explanations, progressive disclosure, and
-   customer choice. It cannot invoke a candidate or bypass approval.
+2. **Unified Skill Router** from MAD-SKILL-008: a future bounded entry point
+   for catalog display, risk explanations, progressive disclosure, and customer
+   choice. The current catalog has no recommendation-eligible or execution-
+   routable entries, so this proposal cannot recommend, invoke, or bypass
+   approval.
 3. **MAD-SKILL-012 candidate**: Engineering Traceability Pipeline. It remains
    candidate_only and is not a current routing target.
 4. **MAD-SKILL-003**: lightweight planning and handoff.

@@ -1,6 +1,8 @@
 # Capability Families
 
-The customer-provided list consolidates into nine capability families. Family
+The customer-provided list consolidates into nine capability families.
+`capability-families.json` is the authoritative machine-readable representation;
+this Markdown file is explanatory only. Family
 membership describes an engineering concern; it does not authorize a runtime,
 source import, or automatic routing action. The labels below distinguish a
 current design mapping from partial coverage and future candidates. No mapping
@@ -8,8 +10,9 @@ is runtime-validated.
 
 ## FAMILY-001: Skill Routing and Progressive Disclosure
 
-**Current design mapping:** MAD-SKILL-008 covers recommendation-only task
-classification, risk disclosure, progressive disclosure, and customer choice.
+**Current design mapping:** MAD-SKILL-008 describes task classification, risk
+disclosure, progressive disclosure, and customer choice. It is catalog-visible
+only; no current mapping is recommendation-eligible or execution-routable.
 **Partial coverage:** Skill creation remains a MAD-SKILL-011 evidence concern.
 
 ## FAMILY-002: Specification and Traceability

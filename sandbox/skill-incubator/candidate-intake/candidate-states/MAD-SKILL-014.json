@@ -1,0 +1,18 @@
+{
+  "candidate_id": "MAD-SKILL-014",
+  "name": "Scheduled Automation Safety Controller",
+  "status": "candidate_only",
+  "registered_experiment": false,
+  "catalog_visible": true,
+  "recommendation_eligible": false,
+  "execution_routing_allowed": false,
+  "implementation_exists": false,
+  "execution_authorized": false,
+  "customer_decision": "not_approved",
+  "network_authorized": false,
+  "dependency_install_authorized": false,
+  "external_service_authorized": false,
+  "promotion_allowed": false,
+  "source_status": "customer_provided_unverified",
+  "authoritative_state": true
+}

@@ -1,5 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "experiment.schema.json",
   "title": "Incubator Experiment Record",
   "type": "object",
   "required": ["experiment_id", "status", "audit_id", "source_commits", "customer_decision", "implementation_exists", "execution_authorized"],
