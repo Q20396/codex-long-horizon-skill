@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "registry.schema.json",
+  "title": "Locked Skill Incubator Registry",
+  "type": "object",
+  "required": ["schema_version", "status", "baseline", "sources", "experiments"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "status": {"const": "locked"},
+    "baseline": {
+      "type": "object",
+      "required": ["ref", "commit"],
+      "properties": {
+        "ref": {"const": "refs/remotes/origin/main"},
+        "commit": {"pattern": "^[0-9a-f]{40}$"}
+      }
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "status", "verification_status", "recommended_layer", "risk_level", "code_import_allowed", "runtime_execution_allowed", "network_execution_allowed"],
+        "properties": {
+          "status": {"const": "locked"},
+          "verification_status": {"enum": ["verified", "verification_blocked"]},
+          "pinned_commit_sha": {"type": ["string", "null"], "pattern": "^[0-9a-f]{40}$"},
+          "code_import_allowed": {"const": false},
+          "runtime_execution_allowed": {"const": false},
+          "network_execution_allowed": {"const": false}
+        }
+      }
+    },
+    "experiments": {"type": "array", "maxItems": 0}
+  }
+}

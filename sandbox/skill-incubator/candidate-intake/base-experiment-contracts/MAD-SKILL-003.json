@@ -1,0 +1,50 @@
+{
+  "experiment_id": "MAD-SKILL-003",
+  "name": "Auditable Source-to-Skill Compiler",
+  "status": "locked",
+  "source_proposal_path": "sandbox/skill-incubator/experiments/MAD-SKILL-003/proposal.md",
+  "source_proposal_sha256": "a13cf705c2829187c02b78c79805ff872c3d72be56004b760697c1d67d10332c",
+  "mapping_basis": "design_mapping",
+  "coverage_validation": "not_runtime_verified",
+  "objective": [
+    "Turn customer-authorized material into a bounded candidate Skill structure with traceable source, rights, citation, confidence, and applicability records."
+  ],
+  "non_goals": [
+    "No document ingestion, OCR, full-text copying, private corpus, automatic Skill creation, or external upload."
+  ],
+  "inputs": [
+    "Future customer-approved source manifest with rights and citation boundaries."
+  ],
+  "outputs": [
+    "Future source index, glossary, pattern inventory, confidence labels, and bounded candidate outline."
+  ],
+  "permissions": {
+    "read": [
+      "Future customer-approved exact source files"
+    ],
+    "write": [],
+    "network": false,
+    "external_services": false
+  },
+  "covered_patterns": [],
+  "excluded_patterns": [
+    "Knowledge-base, context-pack, and planning workflows remain partial mappings until their inputs and outputs are separately evidenced."
+  ],
+  "known_gaps": [
+    "The proposal is locked, has no parser or model, and does not validate any source transformation."
+  ],
+  "recommended_layer": "sandbox-only-methodology",
+  "routing_eligible": false,
+  "catalog_visible": true,
+  "recommendation_eligible": false,
+  "execution_routing_allowed": false,
+  "proposal_evidence_path": "candidate-intake/proposal-evidence/MAD-SKILL-003.json",
+  "proposal_evidence_ids": [
+    "MAD-SKILL-003-objective",
+    "MAD-SKILL-003-non-goal",
+    "MAD-SKILL-003-input",
+    "MAD-SKILL-003-output",
+    "MAD-SKILL-003-permission",
+    "MAD-SKILL-003-execution-boundary"
+  ]
+}

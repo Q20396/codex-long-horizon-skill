@@ -1,0 +1,20 @@
+{
+  "template_version": 1,
+  "status": "locked",
+  "experiment_id": null,
+  "gate_precedence": "required",
+  "scores": {
+    "task_quality": 0,
+    "reliability": 0,
+    "safety": 0,
+    "permission_minimization": 0,
+    "reversibility": 0,
+    "token_efficiency": 0,
+    "execution_time": 0,
+    "maintenance_cost": 0,
+    "explainability": 0,
+    "cross_platform_compatibility": 0
+  },
+  "total": "not_scored",
+  "recommended_status": "locked"
+}

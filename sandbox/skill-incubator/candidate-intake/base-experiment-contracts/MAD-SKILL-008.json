@@ -1,0 +1,53 @@
+{
+  "experiment_id": "MAD-SKILL-008",
+  "name": "Composable Skill Router and Progressive Disclosure",
+  "status": "locked",
+  "source_proposal_path": "sandbox/skill-incubator/experiments/MAD-SKILL-008/proposal.md",
+  "source_proposal_sha256": "665153e4e87e79b3691e97dce0b4a81d2f10eb40c4b5cdcd42b5c05223c8a8d7",
+  "mapping_basis": "design_mapping",
+  "coverage_validation": "not_runtime_verified",
+  "objective": [
+    "Define explicit-only, model-eligible, and router categories with progressive disclosure without implicit permission escalation."
+  ],
+  "non_goals": [
+    "No automatic invocation, install, download, update, permission grant, or execution."
+  ],
+  "inputs": [
+    "Future local capability inventory and customer-approved trigger contract."
+  ],
+  "outputs": [
+    "Future recommendation-only route decision and disclosure plan."
+  ],
+  "permissions": {
+    "read": [
+      "Future customer-approved local capability inventory"
+    ],
+    "write": [],
+    "network": false,
+    "external_services": false
+  },
+  "covered_patterns": [
+    "PAT-003",
+    "PAT-032"
+  ],
+  "excluded_patterns": [
+    "Skill creation and any automatic invocation remain outside this router contract."
+  ],
+  "known_gaps": [
+    "The proposal is locked and has no true routing evaluation or supported platform-field claim."
+  ],
+  "recommended_layer": "sandbox-only-methodology",
+  "routing_eligible": false,
+  "catalog_visible": true,
+  "recommendation_eligible": false,
+  "execution_routing_allowed": false,
+  "proposal_evidence_path": "candidate-intake/proposal-evidence/MAD-SKILL-008.json",
+  "proposal_evidence_ids": [
+    "MAD-SKILL-008-objective",
+    "MAD-SKILL-008-non-goal",
+    "MAD-SKILL-008-input",
+    "MAD-SKILL-008-output",
+    "MAD-SKILL-008-permission",
+    "MAD-SKILL-008-execution-boundary"
+  ]
+}

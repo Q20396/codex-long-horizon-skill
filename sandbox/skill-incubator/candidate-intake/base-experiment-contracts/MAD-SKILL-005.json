@@ -1,0 +1,50 @@
+{
+  "experiment_id": "MAD-SKILL-005",
+  "name": "Control Plane / Execution Plane Separation",
+  "status": "locked",
+  "source_proposal_path": "sandbox/skill-incubator/experiments/MAD-SKILL-005/proposal.md",
+  "source_proposal_sha256": "1195c40df5924bc8562c1b8662f9936b17af6976c1adc16cd3241d6734c2e9d1",
+  "mapping_basis": "design_mapping",
+  "coverage_validation": "not_runtime_verified",
+  "objective": [
+    "Separate planning, routing, approvals, state, cost, audit, and any future bounded execution without treating governance as permission."
+  ],
+  "non_goals": [
+    "No auto attack, scan, credential acquisition, exploit, lateral movement, persistence, data theft, infinite loop, or concurrent execution."
+  ],
+  "inputs": [
+    "Future approved task contract, explicit permission contract, budget, and isolated synthetic fixture."
+  ],
+  "outputs": [
+    "Future control-plane decision record and execution-plane interface specification."
+  ],
+  "permissions": {
+    "read": [
+      "Future approved synthetic fixture and task contract"
+    ],
+    "write": [],
+    "network": false,
+    "external_services": false
+  },
+  "covered_patterns": [],
+  "excluded_patterns": [
+    "Agent-swarm, code-review, and loop patterns are only partial governance mappings and do not authorize a runtime."
+  ],
+  "known_gaps": [
+    "The proposal is restricted, locked, and does not create agents, workers, or an executor."
+  ],
+  "recommended_layer": "sandbox",
+  "routing_eligible": false,
+  "catalog_visible": true,
+  "recommendation_eligible": false,
+  "execution_routing_allowed": false,
+  "proposal_evidence_path": "candidate-intake/proposal-evidence/MAD-SKILL-005.json",
+  "proposal_evidence_ids": [
+    "MAD-SKILL-005-objective",
+    "MAD-SKILL-005-non-goal",
+    "MAD-SKILL-005-input",
+    "MAD-SKILL-005-output",
+    "MAD-SKILL-005-permission",
+    "MAD-SKILL-005-execution-boundary"
+  ]
+}

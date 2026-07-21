@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "candidate-state.schema.json",
+  "title": "Authoritative Locked Candidate State",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "candidate_id", "name", "status", "registered_experiment", "catalog_visible",
+    "recommendation_eligible", "execution_routing_allowed", "implementation_exists",
+    "execution_authorized", "customer_decision", "network_authorized",
+    "dependency_install_authorized", "external_service_authorized", "promotion_allowed",
+    "source_status", "authoritative_state"
+  ],
+  "properties": {
+    "candidate_id": {"type": "string", "pattern": "^MAD-SKILL-01[2-4]$"},
+    "name": {"type": "string", "minLength": 1},
+    "status": {"const": "candidate_only"},
+    "registered_experiment": {"const": false},
+    "catalog_visible": {"type": "boolean"},
+    "recommendation_eligible": {"const": false},
+    "execution_routing_allowed": {"const": false},
+    "implementation_exists": {"const": false},
+    "execution_authorized": {"const": false},
+    "customer_decision": {"const": "not_approved"},
+    "network_authorized": {"const": false},
+    "dependency_install_authorized": {"const": false},
+    "external_service_authorized": {"const": false},
+    "promotion_allowed": {"const": false},
+    "source_status": {"enum": ["customer_provided_unverified", "verification_blocked", "ambiguous_source"]},
+    "authoritative_state": {"const": true}
+  }
+}

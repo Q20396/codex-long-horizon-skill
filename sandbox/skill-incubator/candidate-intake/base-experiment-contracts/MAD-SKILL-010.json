@@ -1,0 +1,50 @@
+{
+  "experiment_id": "MAD-SKILL-010",
+  "name": "Privacy-Gated Demonstration-to-Skill",
+  "status": "locked",
+  "source_proposal_path": "sandbox/skill-incubator/experiments/MAD-SKILL-010/proposal.md",
+  "source_proposal_sha256": "4cf8d7f35589493c528cfcbef3c96ac7a50e4a00e7b6dbcb022a49743c17eb93",
+  "mapping_basis": "design_mapping",
+  "coverage_validation": "not_runtime_verified",
+  "objective": [
+    "Separate recording, operation extraction, replay, and external-action approvals for a future low-risk synthetic demonstration description."
+  ],
+  "non_goals": [
+    "No recording, replay, login, upload, send, payment, deletion, publish, or external write."
+  ],
+  "inputs": [
+    "Future customer-approved low-risk synthetic demonstration description."
+  ],
+  "outputs": [
+    "Future preview-only operation outline and approval matrix."
+  ],
+  "permissions": {
+    "read": [
+      "Future approved synthetic demonstration description"
+    ],
+    "write": [],
+    "network": false,
+    "external_services": false
+  },
+  "covered_patterns": [],
+  "excluded_patterns": [
+    "Browser, visual, screenshot, and web application QA implementations require a separate candidate and execution boundary."
+  ],
+  "known_gaps": [
+    "The proposal is platform-gated and does not observe or replay an interaction."
+  ],
+  "recommended_layer": "platform-gated",
+  "routing_eligible": false,
+  "catalog_visible": true,
+  "recommendation_eligible": false,
+  "execution_routing_allowed": false,
+  "proposal_evidence_path": "candidate-intake/proposal-evidence/MAD-SKILL-010.json",
+  "proposal_evidence_ids": [
+    "MAD-SKILL-010-objective",
+    "MAD-SKILL-010-non-goal",
+    "MAD-SKILL-010-input",
+    "MAD-SKILL-010-output",
+    "MAD-SKILL-010-permission",
+    "MAD-SKILL-010-execution-boundary"
+  ]
+}

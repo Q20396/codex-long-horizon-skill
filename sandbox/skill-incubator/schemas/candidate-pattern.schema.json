@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "candidate-pattern.schema.json",
+  "title": "Locked Capability Pattern Intake Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "pattern_id", "name", "group", "classification", "capability_family",
+    "existing_experiment", "overlap_score", "overlap_type", "primary_gap_owner",
+    "catalog_visible", "recommendation_eligible", "execution_routing_allowed",
+    "unique_gap", "proposed_action", "rationale", "evidence_contract",
+    "evidence_strength", "source_status"
+  ],
+  "properties": {
+    "pattern_id": {"type": "string", "pattern": "^PAT-[0-9]{3}$"},
+    "name": {"type": "string", "minLength": 1},
+    "group": {"type": "string", "enum": ["team", "automation", "advanced_engineering", "foundation"]},
+    "classification": {"const": "customer_provided_capability_pattern"},
+    "capability_family": {"type": "string", "pattern": "^FAMILY-00[1-9]$"},
+    "existing_experiment": {"type": "string", "pattern": "^$|^MAD-SKILL-0(?:0[1-9]|1[01])$"},
+    "overlap_score": {"type": "integer", "minimum": 0, "maximum": 100},
+    "overlap_type": {"enum": ["full", "partial", "adjacent", "none"]},
+    "primary_gap_owner": {"type": "string"},
+    "catalog_visible": {"type": "boolean"},
+    "recommendation_eligible": {"const": false},
+    "execution_routing_allowed": {"const": false},
+    "unique_gap": {"type": "string", "minLength": 1},
+    "proposed_action": {"enum": ["map_to_existing_experiment", "candidate_extension", "candidate_new_experiment", "separate_skill", "rejected_pending_verification", "out_of_scope"]},
+    "rationale": {"type": "string", "minLength": 1},
+    "evidence_contract": {"type": "string", "minLength": 1},
+    "evidence_strength": {"enum": ["strong", "moderate", "weak", "insufficient"]},
+    "source_status": {"enum": ["customer_provided_unverified", "verification_blocked", "ambiguous_source"]}
+  }
+}

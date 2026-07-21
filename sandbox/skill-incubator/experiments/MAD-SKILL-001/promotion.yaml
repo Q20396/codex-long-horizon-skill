@@ -1,0 +1,30 @@
+experiment_id: MAD-SKILL-001
+status: locked
+source_commits:
+  - edec9eabeceeae6aa2375eddb3835efa1a32c0a3
+license_compatible: false
+human_approval_required: true
+implementation_exists: false
+execution_authorized: false
+scores:
+  task_quality: 0
+  reliability: 0
+  safety: 0
+  permission_minimization: 0
+  reversibility: 0
+  token_efficiency: 0
+  execution_time: 0
+  maintenance_cost: 0
+  explainability: 0
+  cross_platform_compatibility: 0
+gate_results: []
+regressions: []
+unverified_claims:
+  - Token-savings and accuracy claims remain unverified.
+recommended_layer: sandbox
+rollback_status: not_tested
+recommended_status: locked
+approved_status: locked
+automatic_transition: false
+customer_decision: not_approved
+authorization_source: none

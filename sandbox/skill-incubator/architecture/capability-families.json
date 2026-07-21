@@ -1,0 +1,249 @@
+{
+  "families": [
+    {
+      "family_id": "FAMILY-001",
+      "name": "Skill Routing and Progressive Disclosure",
+      "objective": "Describe visible capability choices without implying recommendation or execution permission.",
+      "responsibilities": [
+        "Bounded catalog display",
+        "State explanation",
+        "Progressive disclosure"
+      ],
+      "included_patterns": [
+        "PAT-003",
+        "PAT-032",
+        "PAT-040"
+      ],
+      "excluded_patterns": [],
+      "current_experiments": [
+        "MAD-SKILL-008"
+      ],
+      "candidate_experiments": [],
+      "recommended_layer": "sandbox-only-methodology",
+      "execution_boundary": "design_only",
+      "catalog_visible": true,
+      "recommendation_eligible": false,
+      "execution_routing_allowed": false
+    },
+    {
+      "family_id": "FAMILY-002",
+      "name": "Specification and Traceability",
+      "objective": "Preserve explicit design provenance boundaries for specifications, decisions, and release-facing records.",
+      "responsibilities": [
+        "Traceability planning",
+        "Evidence review",
+        "Candidate-gap disclosure"
+      ],
+      "included_patterns": [
+        "PAT-001",
+        "PAT-002",
+        "PAT-004",
+        "PAT-005",
+        "PAT-010",
+        "PAT-015",
+        "PAT-018",
+        "PAT-028"
+      ],
+      "excluded_patterns": [],
+      "current_experiments": [
+        "MAD-SKILL-006",
+        "MAD-SKILL-011"
+      ],
+      "candidate_experiments": [
+        "MAD-SKILL-012"
+      ],
+      "recommended_layer": "sandbox",
+      "execution_boundary": "design_only",
+      "catalog_visible": true,
+      "recommendation_eligible": false,
+      "execution_routing_allowed": false
+    },
+    {
+      "family_id": "FAMILY-003",
+      "name": "Capability Contract and Evidence Harness",
+      "objective": "Define bounded acceptance evidence without treating a contract as a workflow runtime.",
+      "responsibilities": [
+        "Contract review",
+        "Acceptance evidence",
+        "Permission boundary"
+      ],
+      "included_patterns": [
+        "PAT-007",
+        "PAT-013",
+        "PAT-014",
+        "PAT-016",
+        "PAT-019",
+        "PAT-023",
+        "PAT-024",
+        "PAT-025",
+        "PAT-026",
+        "PAT-027",
+        "PAT-029",
+        "PAT-030",
+        "PAT-035"
+      ],
+      "excluded_patterns": [],
+      "current_experiments": [
+        "MAD-SKILL-002",
+        "MAD-SKILL-011"
+      ],
+      "candidate_experiments": [],
+      "recommended_layer": "sandbox",
+      "execution_boundary": "design_only",
+      "catalog_visible": true,
+      "recommendation_eligible": false,
+      "execution_routing_allowed": false
+    },
+    {
+      "family_id": "FAMILY-004",
+      "name": "Repository Understanding and Context",
+      "objective": "Plan bounded repository understanding and local context without a persistent index or broad scan.",
+      "responsibilities": [
+        "Structural mapping",
+        "Context planning",
+        "Handoff design"
+      ],
+      "included_patterns": [
+        "PAT-008",
+        "PAT-009",
+        "PAT-021",
+        "PAT-022",
+        "PAT-031"
+      ],
+      "excluded_patterns": [],
+      "current_experiments": [
+        "MAD-SKILL-001",
+        "MAD-SKILL-003",
+        "MAD-SKILL-007",
+        "MAD-SKILL-009"
+      ],
+      "candidate_experiments": [],
+      "recommended_layer": "sandbox",
+      "execution_boundary": "design_only",
+      "catalog_visible": true,
+      "recommendation_eligible": false,
+      "execution_routing_allowed": false
+    },
+    {
+      "family_id": "FAMILY-005",
+      "name": "Isolated Multi-Agent Control Plane",
+      "objective": "Describe approval and isolation concepts without creating a multi-agent runtime.",
+      "responsibilities": [
+        "Control-plane planning",
+        "Containment",
+        "Audit boundary"
+      ],
+      "included_patterns": [
+        "PAT-011",
+        "PAT-033",
+        "PAT-038"
+      ],
+      "excluded_patterns": [],
+      "current_experiments": [
+        "MAD-SKILL-005"
+      ],
+      "candidate_experiments": [],
+      "recommended_layer": "sandbox",
+      "execution_boundary": "restricted_domain",
+      "catalog_visible": true,
+      "recommendation_eligible": false,
+      "execution_routing_allowed": false
+    },
+    {
+      "family_id": "FAMILY-006",
+      "name": "Browser and Visual QA",
+      "objective": "Plan browser and visual evidence without opening or operating a browser.",
+      "responsibilities": [
+        "QA planning",
+        "Visual evidence",
+        "Approval gates"
+      ],
+      "included_patterns": [
+        "PAT-006",
+        "PAT-012",
+        "PAT-017",
+        "PAT-034",
+        "PAT-036"
+      ],
+      "excluded_patterns": [],
+      "current_experiments": [
+        "MAD-SKILL-010"
+      ],
+      "candidate_experiments": [
+        "MAD-SKILL-013"
+      ],
+      "recommended_layer": "separate-skill",
+      "execution_boundary": "separate_approval",
+      "catalog_visible": true,
+      "recommendation_eligible": false,
+      "execution_routing_allowed": false
+    },
+    {
+      "family_id": "FAMILY-007",
+      "name": "Media and Artifact Production",
+      "objective": "Separate media and artifact planning from renderer or provider execution.",
+      "responsibilities": [
+        "Artifact planning",
+        "Provider-neutral handoff",
+        "Approval separation"
+      ],
+      "included_patterns": [
+        "PAT-039"
+      ],
+      "excluded_patterns": [],
+      "current_experiments": [
+        "MAD-SKILL-004"
+      ],
+      "candidate_experiments": [],
+      "recommended_layer": "bundled-optional",
+      "execution_boundary": "separate_approval",
+      "catalog_visible": true,
+      "recommendation_eligible": false,
+      "execution_routing_allowed": false
+    },
+    {
+      "family_id": "FAMILY-008",
+      "name": "Scheduled Automation Controller",
+      "objective": "Define scheduler safety boundaries without starting a timer or background service.",
+      "responsibilities": [
+        "Allowlist design",
+        "Budget and cancellation",
+        "Dry-run boundary"
+      ],
+      "included_patterns": [
+        "PAT-020"
+      ],
+      "excluded_patterns": [],
+      "current_experiments": [],
+      "candidate_experiments": [
+        "MAD-SKILL-014"
+      ],
+      "recommended_layer": "sandbox",
+      "execution_boundary": "design_only",
+      "catalog_visible": true,
+      "recommendation_eligible": false,
+      "execution_routing_allowed": false
+    },
+    {
+      "family_id": "FAMILY-009",
+      "name": "Restricted Domain Adapters",
+      "objective": "Keep legal, finance, security, communication, MCP, and external-service work outside defaults.",
+      "responsibilities": [
+        "Restricted-domain isolation",
+        "Separate approval",
+        "External-service boundary"
+      ],
+      "included_patterns": [
+        "PAT-037"
+      ],
+      "excluded_patterns": [],
+      "current_experiments": [],
+      "candidate_experiments": [],
+      "recommended_layer": "separate-skill",
+      "execution_boundary": "restricted_domain",
+      "catalog_visible": true,
+      "recommendation_eligible": false,
+      "execution_routing_allowed": false
+    }
+  ]
+}

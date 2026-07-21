@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "status": "locked",
+  "lifecycle": [
+    "locked",
+    "proposed",
+    "approved_for_design",
+    "approved_for_isolated_build",
+    "testing",
+    "rejected",
+    "retained_in_sandbox",
+    "candidate_optional",
+    "approved_optional",
+    "candidate_core",
+    "approved_core",
+    "deprecated"
+  ],
+  "transition_policy": "manual_customer_decision_required",
+  "experiments": [
+    {"experiment_id":"MAD-SKILL-001","name":"Safe Project Map and Context Budget","status":"locked","recommended_layer":"sandbox","source_ids":["graphify"],"source_commits":["edec9eabeceeae6aa2375eddb3835efa1a32c0a3"],"risk_level":"Medium","restricted_domain":false,"implementation_exists":false,"execution_authorized":false,"network_required_for_design":false,"dependencies_required_for_design":false,"customer_decision":"not_approved","proposal_path":"MAD-SKILL-001/proposal.md","promotion_path":"MAD-SKILL-001/promotion.yaml"},
+    {"experiment_id":"MAD-SKILL-002","name":"Capability Contract and Real Output Harness","status":"locked","recommended_layer":"separate-skill","source_ids":["cli-anything"],"source_commits":["bc536c9bebb7c3d9f7bb2736a732609139c1acdb"],"risk_level":"High","restricted_domain":false,"implementation_exists":false,"execution_authorized":false,"network_required_for_design":false,"dependencies_required_for_design":false,"customer_decision":"not_approved","proposal_path":"MAD-SKILL-002/proposal.md","promotion_path":"MAD-SKILL-002/promotion.yaml"},
+    {"experiment_id":"MAD-SKILL-003","name":"Auditable Source-to-Skill Compiler","status":"locked","recommended_layer":"sandbox-only-methodology","source_ids":["book-to-skill"],"source_commits":["d8d9f2cf309d29687fcf2e20f972dd790e2db79d"],"risk_level":"High","restricted_domain":false,"implementation_exists":false,"execution_authorized":false,"network_required_for_design":false,"dependencies_required_for_design":false,"customer_decision":"not_approved","proposal_path":"MAD-SKILL-003/proposal.md","promotion_path":"MAD-SKILL-003/promotion.yaml"},
+    {"experiment_id":"MAD-SKILL-004","name":"Plan and Render Separation","status":"locked","recommended_layer":"bundled-optional","source_ids":["seedance-2"],"source_commits":["57d01dc66f93ecb03c2475be5f22dc416d9b701d"],"risk_level":"High","restricted_domain":false,"implementation_exists":false,"execution_authorized":false,"network_required_for_design":false,"dependencies_required_for_design":false,"customer_decision":"not_approved","proposal_path":"MAD-SKILL-004/proposal.md","promotion_path":"MAD-SKILL-004/promotion.yaml"},
+    {"experiment_id":"MAD-SKILL-005","name":"Control Plane / Execution Plane Separation","status":"locked","recommended_layer":"sandbox","source_ids":["ruflo","exo","pentagi"],"source_commits":["12ede21767a6dd669df1b79392a5d27d9154f237","b5375f8cee4368d09e1ce96a56b9f81fb0bc81aa","879e87c2c2688c4a95eac9c1aaf3cd6f6123ebe3"],"risk_level":"Critical","restricted_domain":true,"implementation_exists":false,"execution_authorized":false,"network_required_for_design":false,"dependencies_required_for_design":false,"customer_decision":"not_approved","proposal_path":"MAD-SKILL-005/proposal.md","promotion_path":"MAD-SKILL-005/promotion.yaml"},
+    {"experiment_id":"MAD-SKILL-006","name":"Rubric-Blind Failure-to-Procedure Loop","status":"locked","recommended_layer":"sandbox","source_ids":["parthenon-law"],"source_commits":[],"risk_level":"Critical","restricted_domain":true,"implementation_exists":false,"execution_authorized":false,"network_required_for_design":false,"dependencies_required_for_design":false,"customer_decision":"not_approved","proposal_path":"MAD-SKILL-006/proposal.md","promotion_path":"MAD-SKILL-006/promotion.yaml"},
+    {"experiment_id":"MAD-SKILL-007","name":"Allowlisted Local Knowledge Vault Bridge","status":"locked","recommended_layer":"separate-skill","source_ids":["claudian"],"source_commits":[],"risk_level":"Critical","restricted_domain":true,"implementation_exists":false,"execution_authorized":false,"network_required_for_design":false,"dependencies_required_for_design":false,"customer_decision":"not_approved","proposal_path":"MAD-SKILL-007/proposal.md","promotion_path":"MAD-SKILL-007/promotion.yaml"},
+    {"experiment_id":"MAD-SKILL-008","name":"Composable Skill Router and Progressive Disclosure","status":"locked","recommended_layer":"sandbox-only-methodology","source_ids":["mattpocock-skills"],"source_commits":["9603c1cc8118d08bc1b3bf34cf714f62178dea3b"],"risk_level":"High","restricted_domain":false,"implementation_exists":false,"execution_authorized":false,"network_required_for_design":false,"dependencies_required_for_design":false,"customer_decision":"not_approved","proposal_path":"MAD-SKILL-008/proposal.md","promotion_path":"MAD-SKILL-008/promotion.yaml"},
+    {"experiment_id":"MAD-SKILL-009","name":"Decision-to-Diagram","status":"locked","recommended_layer":"sandbox","source_ids":["hand-drawn-explainer-skill"],"source_commits":[],"risk_level":"Medium","restricted_domain":false,"implementation_exists":false,"execution_authorized":false,"network_required_for_design":false,"dependencies_required_for_design":false,"customer_decision":"not_approved","proposal_path":"MAD-SKILL-009/proposal.md","promotion_path":"MAD-SKILL-009/promotion.yaml"},
+    {"experiment_id":"MAD-SKILL-010","name":"Privacy-Gated Demonstration-to-Skill","status":"locked","recommended_layer":"platform-gated","source_ids":["codex-record-replay"],"source_commits":[],"risk_level":"Critical","restricted_domain":true,"implementation_exists":false,"execution_authorized":false,"network_required_for_design":false,"dependencies_required_for_design":false,"customer_decision":"not_approved","proposal_path":"MAD-SKILL-010/proposal.md","promotion_path":"MAD-SKILL-010/promotion.yaml"},
+    {"experiment_id":"MAD-SKILL-011","name":"Industrial Skill Compiler and Evaluator","status":"locked","recommended_layer":"core-policy-candidate","source_ids":[],"source_commits":[],"risk_level":"High","restricted_domain":false,"implementation_exists":false,"execution_authorized":false,"network_required_for_design":false,"dependencies_required_for_design":false,"customer_decision":"not_approved","proposal_path":"MAD-SKILL-011/proposal.md","promotion_path":"MAD-SKILL-011/promotion.yaml"}
+  ],
+  "decision_records": []
+}

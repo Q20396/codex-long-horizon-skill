@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "evaluation-run.schema.json",
+  "title": "Evaluation Run Evidence",
+  "type": "object",
+  "anyOf": [
+    {"required": ["experiment_id", "status", "baseline_definition", "candidate_definition", "environment_controls", "fixtures", "repetitions", "hard_gates", "metrics", "evaluator", "leakage_controls", "adversarial_tests", "regression_tests", "cost_tracking", "rollback_test", "confidence_rules", "inconclusive_conditions"]},
+    {"required": ["experiment_id", "baseline_commit", "implementation_commit", "fixture_id", "status", "permission_contract", "network_access", "audit_id"]}
+  ],
+  "properties": {
+    "experiment_id": {"type": "string"},
+    "baseline_commit": {"pattern": "^[0-9a-f]{40}$"},
+    "implementation_commit": {"type": ["string", "null"]},
+    "fixture_id": {"type": "string"},
+    "status": {"enum": ["locked", "not_run", "completed", "skipped", "blocked", "timed_out", "inconclusive"]},
+    "baseline_definition": {"type": "string"},
+    "candidate_definition": {"type": "string"},
+    "environment_controls": {"type": "object"},
+    "fixtures": {"type": "array"},
+    "repetitions": {"type": "object"},
+    "hard_gates": {"type": "array"},
+    "metrics": {"type": "array"},
+    "evaluator": {"type": "object"},
+    "leakage_controls": {"type": "array"},
+    "adversarial_tests": {"type": "array"},
+    "regression_tests": {"type": "array"},
+    "cost_tracking": {"type": "object"},
+    "rollback_test": {"type": "object"},
+    "confidence_rules": {"type": "object"},
+    "inconclusive_conditions": {"type": "array"},
+    "permission_contract": {"type": "object"},
+    "network_access": {"enum": ["offline", "approved", "not_available"]},
+    "audit_id": {"type": "string"}
+  },
+  "additionalProperties": false
+}

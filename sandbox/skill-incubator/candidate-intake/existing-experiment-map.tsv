@@ -1,0 +1,41 @@
+pattern_id	name	existing_experiment	overlap_type	primary_gap_owner	catalog_visible	recommendation_eligible	execution_routing_allowed	evidence_contract	evidence_strength	proposed_action	source_status
+PAT-001	Spec Aligner	MAD-SKILL-011	partial	unresolved	true	false	false	candidate-intake/base-experiment-contracts/MAD-SKILL-011.json	moderate	candidate_new_experiment	customer_provided_unverified
+PAT-002	PR Narrator	MAD-SKILL-011	partial	unresolved	true	false	false	candidate-intake/base-experiment-contracts/MAD-SKILL-011.json	moderate	candidate_new_experiment	customer_provided_unverified
+PAT-003	Review Router	MAD-SKILL-008	full		true	false	false	candidate-intake/base-experiment-contracts/MAD-SKILL-008.json	strong	map_to_existing_experiment	customer_provided_unverified
+PAT-004	Decision Log	MAD-SKILL-006	partial	unresolved	true	false	false	candidate-intake/base-experiment-contracts/MAD-SKILL-006.json	moderate	candidate_new_experiment	customer_provided_unverified
+PAT-005	Issue Gardener	MAD-SKILL-011	partial	unresolved	true	false	false	candidate-intake/base-experiment-contracts/MAD-SKILL-011.json	moderate	candidate_new_experiment	customer_provided_unverified
+PAT-006	Design Sync	MAD-SKILL-010	partial	unresolved	true	false	false	candidate-intake/base-experiment-contracts/MAD-SKILL-010.json	weak	candidate_new_experiment	customer_provided_unverified
+PAT-007	Security Buddy	MAD-SKILL-011	partial	unresolved	true	false	false	candidate-intake/base-experiment-contracts/MAD-SKILL-011.json	moderate	candidate_extension	customer_provided_unverified
+PAT-008	Knowledge Base	MAD-SKILL-003	partial	unresolved	true	false	false	candidate-intake/base-experiment-contracts/MAD-SKILL-003.json	moderate	candidate_extension	customer_provided_unverified
+PAT-009	Onboarding Map	MAD-SKILL-009	partial	unresolved	true	false	false	candidate-intake/base-experiment-contracts/MAD-SKILL-009.json	weak	candidate_extension	customer_provided_unverified
+PAT-010	Retrospective Bot	MAD-SKILL-006	partial	unresolved	true	false	false	candidate-intake/base-experiment-contracts/MAD-SKILL-006.json	moderate	candidate_new_experiment	customer_provided_unverified
+PAT-011	Agent Swarm	MAD-SKILL-005	partial	unresolved	true	false	false	candidate-intake/base-experiment-contracts/MAD-SKILL-005.json	moderate	candidate_extension	customer_provided_unverified
+PAT-012	Playwright Scout	MAD-SKILL-010	partial	unresolved	true	false	false	candidate-intake/base-experiment-contracts/MAD-SKILL-010.json	weak	candidate_new_experiment	customer_provided_unverified
+PAT-013	Terminal Sense	MAD-SKILL-002	partial	unresolved	true	false	false	candidate-intake/base-experiment-contracts/MAD-SKILL-002.json	moderate	candidate_extension	customer_provided_unverified
+PAT-014	CI Fixer	MAD-SKILL-002	partial	unresolved	true	false	false	candidate-intake/base-experiment-contracts/MAD-SKILL-002.json	moderate	candidate_new_experiment	customer_provided_unverified
+PAT-015	Release Notes	MAD-SKILL-011	partial	unresolved	true	false	false	candidate-intake/base-experiment-contracts/MAD-SKILL-011.json	moderate	candidate_new_experiment	customer_provided_unverified
+PAT-016	Data Cleaner	MAD-SKILL-002	partial	unresolved	true	false	false	candidate-intake/base-experiment-contracts/MAD-SKILL-002.json	moderate	candidate_new_experiment	customer_provided_unverified
+PAT-017	Screenshot QA	MAD-SKILL-010	partial	unresolved	true	false	false	candidate-intake/base-experiment-contracts/MAD-SKILL-010.json	weak	candidate_new_experiment	customer_provided_unverified
+PAT-018	Changelog Miner	MAD-SKILL-006	partial	unresolved	true	false	false	candidate-intake/base-experiment-contracts/MAD-SKILL-006.json	moderate	candidate_new_experiment	customer_provided_unverified
+PAT-019	Dependency Guard	MAD-SKILL-002	partial	unresolved	true	false	false	candidate-intake/base-experiment-contracts/MAD-SKILL-002.json	moderate	candidate_new_experiment	customer_provided_unverified
+PAT-020	Nightly Runner		none	unresolved	true	false	false	not_applicable	insufficient	candidate_new_experiment	customer_provided_unverified
+PAT-021	Context Pack	MAD-SKILL-001	partial	unresolved	true	false	false	candidate-intake/base-experiment-contracts/MAD-SKILL-001.json	moderate	candidate_extension	customer_provided_unverified
+PAT-022	Repo Cartographer	MAD-SKILL-001	full		true	false	false	candidate-intake/base-experiment-contracts/MAD-SKILL-001.json	strong	map_to_existing_experiment	customer_provided_unverified
+PAT-023	Test Pilot	MAD-SKILL-002	partial	unresolved	true	false	false	candidate-intake/base-experiment-contracts/MAD-SKILL-002.json	moderate	candidate_extension	customer_provided_unverified
+PAT-024	Debug Radar	MAD-SKILL-002	partial	unresolved	true	false	false	candidate-intake/base-experiment-contracts/MAD-SKILL-002.json	moderate	candidate_extension	customer_provided_unverified
+PAT-025	Refactor Lens	MAD-SKILL-002	partial	unresolved	true	false	false	candidate-intake/base-experiment-contracts/MAD-SKILL-002.json	moderate	candidate_extension	customer_provided_unverified
+PAT-026	API Stitcher	MAD-SKILL-002	partial	unresolved	true	false	false	candidate-intake/base-experiment-contracts/MAD-SKILL-002.json	moderate	candidate_extension	customer_provided_unverified
+PAT-027	Migration Buddy	MAD-SKILL-002	partial	unresolved	true	false	false	candidate-intake/base-experiment-contracts/MAD-SKILL-002.json	moderate	candidate_extension	customer_provided_unverified
+PAT-028	Docs Whisperer	MAD-SKILL-011	partial	unresolved	true	false	false	candidate-intake/base-experiment-contracts/MAD-SKILL-011.json	moderate	candidate_new_experiment	customer_provided_unverified
+PAT-029	Prompt Harness	MAD-SKILL-002	partial	unresolved	true	false	false	candidate-intake/base-experiment-contracts/MAD-SKILL-002.json	moderate	candidate_extension	customer_provided_unverified
+PAT-030	Ship Checklist	MAD-SKILL-002	partial	unresolved	true	false	false	candidate-intake/base-experiment-contracts/MAD-SKILL-002.json	moderate	candidate_extension	customer_provided_unverified
+PAT-031	Planning with Files	MAD-SKILL-003	partial	unresolved	true	false	false	candidate-intake/base-experiment-contracts/MAD-SKILL-003.json	moderate	candidate_extension	verification_blocked
+PAT-032	Superpowers	MAD-SKILL-008	partial	unresolved	true	false	false	candidate-intake/base-experiment-contracts/MAD-SKILL-008.json	moderate	candidate_extension	verification_blocked
+PAT-033	Code Review	MAD-SKILL-005	partial	unresolved	true	false	false	candidate-intake/base-experiment-contracts/MAD-SKILL-005.json	moderate	candidate_extension	ambiguous_source
+PAT-034	Webapp Testing	MAD-SKILL-010	partial	unresolved	true	false	false	candidate-intake/base-experiment-contracts/MAD-SKILL-010.json	weak	candidate_new_experiment	customer_provided_unverified
+PAT-035	Code Simplifier	MAD-SKILL-002	partial	unresolved	true	false	false	candidate-intake/base-experiment-contracts/MAD-SKILL-002.json	moderate	candidate_extension	customer_provided_unverified
+PAT-036	UI UX Pro Max		none	unresolved	true	false	false	not_applicable	insufficient	rejected_pending_verification	ambiguous_source
+PAT-037	MCP Builder		adjacent	separate-skill	true	false	false	not_applicable	weak	separate_skill	ambiguous_source
+PAT-038	Ralph Loop	MAD-SKILL-005	partial	unresolved	true	false	false	candidate-intake/base-experiment-contracts/MAD-SKILL-005.json	weak	candidate_extension	ambiguous_source
+PAT-039	PPTX	MAD-SKILL-004	partial	separate-skill	true	false	false	candidate-intake/base-experiment-contracts/MAD-SKILL-004.json	weak	separate_skill	ambiguous_source
+PAT-040	Skill Creator	MAD-SKILL-008	partial	unresolved	true	false	false	candidate-intake/base-experiment-contracts/MAD-SKILL-008.json	moderate	candidate_extension	customer_provided_unverified

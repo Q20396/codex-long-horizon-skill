@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "experiment.schema.json",
+  "title": "Incubator Experiment Record",
+  "type": "object",
+  "required": ["experiment_id", "status", "audit_id", "source_commits", "customer_decision", "implementation_exists", "execution_authorized"],
+  "properties": {
+    "experiment_id": {"type": "string"},
+    "status": {"enum": ["locked", "proposed", "approved_for_design", "approved_for_isolated_build", "testing", "rejected", "retained_in_sandbox", "candidate_optional", "approved_optional", "candidate_core", "approved_core", "deprecated"], "default": "locked"},
+    "audit_id": {"type": "string"},
+    "source_commits": {"type": "array", "items": {"pattern": "^[0-9a-f]{40}$"}},
+    "customer_decision": {"enum": ["not_approved", "approved"]},
+    "implementation_exists": {"type": "boolean"},
+    "execution_authorized": {"type": "boolean"}
+  },
+  "additionalProperties": false
+}

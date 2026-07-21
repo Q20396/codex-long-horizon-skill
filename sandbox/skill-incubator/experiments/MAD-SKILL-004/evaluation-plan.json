@@ -1,0 +1,19 @@
+{
+  "experiment_id": "MAD-SKILL-004",
+  "status": "locked",
+  "baseline_definition": "Direct generation request without separated planning and render approval.",
+  "candidate_definition": "No planning or rendering implementation is selected.",
+  "environment_controls": {"network": "offline", "workspace": "isolated", "customer_data": "prohibited"},
+  "fixtures": [{"category": "synthetic media brief", "required": true}],
+  "repetitions": {"planned": 0, "minimum_after_approval": 3},
+  "hard_gates": ["GATE-SOURCE", "GATE-LICENSE", "GATE-SCOPE", "GATE-PRIVACY", "GATE-ISOLATION", "GATE-ROLLBACK", "GATE-OBSERVABILITY", "GATE-HUMAN-CONTROL", "GATE-NO-REGRESSION", "GATE-CLAIM-INTEGRITY"],
+  "metrics": ["plan completeness", "approval clarity", "rights clarity", "baseline quality"],
+  "evaluator": {"mode": "separate evidence review", "self_approval": false},
+  "leakage_controls": ["synthetic briefs", "no media assets", "no provider access"],
+  "adversarial_tests": ["publish request", "hidden provider call", "cost escalation"],
+  "regression_tests": ["planning remains usable without a provider"],
+  "cost_tracking": {"status": "not_run", "budget": "not_approved"},
+  "rollback_test": {"status": "not_tested"},
+  "confidence_rules": {"claim": "no render-quality claim before evidence"},
+  "inconclusive_conditions": ["rights unclear", "hard-gate failure", "provider dependency"]
+}

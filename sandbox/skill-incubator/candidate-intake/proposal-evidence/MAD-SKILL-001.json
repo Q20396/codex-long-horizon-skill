@@ -1,0 +1,78 @@
+{
+  "experiment_id": "MAD-SKILL-001",
+  "proposal_path": "sandbox/skill-incubator/experiments/MAD-SKILL-001/proposal.md",
+  "proposal_sha256": "0a8c7ffb4a43730ce5d01b073e5cd179bd53bda4fb4e551832eb5c986fca7227",
+  "proposal_commit": "418497b9918f8f0af1f3868af69f54a57773f586",
+  "sections": [
+    {
+      "evidence_id": "MAD-SKILL-001-objective",
+      "heading": "Problem Statement",
+      "line_start": 12,
+      "line_end": 13,
+      "normalized_excerpt_sha256": "c3b55e591d052c6b15cad76f44aae7a049744cca37911b8aa05fda3b0786106e",
+      "supports": [
+        "objective"
+      ]
+    },
+    {
+      "evidence_id": "MAD-SKILL-001-non-goal",
+      "heading": "Explicit Non-goals",
+      "line_start": 24,
+      "line_end": 25,
+      "normalized_excerpt_sha256": "c05d6ac897a74140d8dae82339f5f27d355bc330cdb7cf9317d27d8cb637b449",
+      "supports": [
+        "non_goal"
+      ]
+    },
+    {
+      "evidence_id": "MAD-SKILL-001-input",
+      "heading": "Inputs",
+      "line_start": 27,
+      "line_end": 28,
+      "normalized_excerpt_sha256": "80dc60b4589b6b519784c15126599380a236121b9c01a246ffd148a18f447f67",
+      "supports": [
+        "input"
+      ]
+    },
+    {
+      "evidence_id": "MAD-SKILL-001-output",
+      "heading": "Outputs",
+      "line_start": 30,
+      "line_end": 31,
+      "normalized_excerpt_sha256": "491ae444c977f9c4737ea49347ba4ea33e31c95e6aa6bfa0e83c36fe90ed5772",
+      "supports": [
+        "output"
+      ]
+    },
+    {
+      "evidence_id": "MAD-SKILL-001-permission",
+      "heading": "Permissions Required",
+      "line_start": 33,
+      "line_end": 34,
+      "normalized_excerpt_sha256": "10d00e60d590815bcdcb38eeefe5d43c51630bdca5d9d9c0f21916042b24833d",
+      "supports": [
+        "permission"
+      ]
+    },
+    {
+      "evidence_id": "MAD-SKILL-001-execution-boundary",
+      "heading": "Promotion Constraints",
+      "line_start": 63,
+      "line_end": 64,
+      "normalized_excerpt_sha256": "133e4a7142b0b9fe3557bc837c4b109e40020b3cc1a61bb7453d01ae80325abc",
+      "supports": [
+        "execution_boundary"
+      ]
+    },
+    {
+      "evidence_id": "MAD-SKILL-001-candidate-gap",
+      "heading": "Open Questions",
+      "line_start": 69,
+      "line_end": 70,
+      "normalized_excerpt_sha256": "f3c2150b10f063135dd679382eeb69f219d926db6d826f038635d8f84e843ee2",
+      "supports": [
+        "candidate_gap"
+      ]
+    }
+  ]
+}

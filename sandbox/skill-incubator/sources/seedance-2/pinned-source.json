@@ -1,0 +1,18 @@
+{
+  "id": "seedance-2",
+  "status": "locked",
+  "verification_status": "verified",
+  "source_type": "github",
+  "repository": "Emily2040/seedance-2.0",
+  "default_branch": "main",
+  "pinned_commit_sha": "57d01dc66f93ecb03c2475be5f22dc416d9b701d",
+  "verified_at": "2026-07-20T01:57:23Z",
+  "verification_method": "Read-only GitHub REST metadata and default-branch commit lookup.",
+  "repository_license": "MIT",
+  "per_file_license_status": "unverified",
+  "recommended_layer": "sandbox-only",
+  "risk_level": "medium",
+  "code_import_allowed": false,
+  "runtime_execution_allowed": false,
+  "network_execution_allowed": false
+}

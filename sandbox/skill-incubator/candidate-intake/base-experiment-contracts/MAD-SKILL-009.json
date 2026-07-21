@@ -1,0 +1,50 @@
+{
+  "experiment_id": "MAD-SKILL-009",
+  "name": "Decision-to-Diagram",
+  "status": "locked",
+  "source_proposal_path": "sandbox/skill-incubator/experiments/MAD-SKILL-009/proposal.md",
+  "source_proposal_sha256": "b751a5c709f3469802d62a982ca792e6e6e72959c5fbcc131666261f9e453066",
+  "mapping_basis": "design_mapping",
+  "coverage_validation": "not_runtime_verified",
+  "objective": [
+    "Make a future customer-approved abstract decision structure inspectable through text diagrams and node-edge specifications."
+  ],
+  "non_goals": [
+    "No image generation, external source search, visual provider, OCR, or publishing."
+  ],
+  "inputs": [
+    "Future customer-approved abstract decision structure."
+  ],
+  "outputs": [
+    "Future text diagram and node-edge specification."
+  ],
+  "permissions": {
+    "read": [
+      "Future customer-approved abstract decision structure"
+    ],
+    "write": [],
+    "network": false,
+    "external_services": false
+  },
+  "covered_patterns": [],
+  "excluded_patterns": [
+    "Onboarding and repository maps need their own user and structure evidence."
+  ],
+  "known_gaps": [
+    "The proposal does not generate an image or validate a diagram with users."
+  ],
+  "recommended_layer": "sandbox",
+  "routing_eligible": false,
+  "catalog_visible": true,
+  "recommendation_eligible": false,
+  "execution_routing_allowed": false,
+  "proposal_evidence_path": "candidate-intake/proposal-evidence/MAD-SKILL-009.json",
+  "proposal_evidence_ids": [
+    "MAD-SKILL-009-objective",
+    "MAD-SKILL-009-non-goal",
+    "MAD-SKILL-009-input",
+    "MAD-SKILL-009-output",
+    "MAD-SKILL-009-permission",
+    "MAD-SKILL-009-execution-boundary"
+  ]
+}

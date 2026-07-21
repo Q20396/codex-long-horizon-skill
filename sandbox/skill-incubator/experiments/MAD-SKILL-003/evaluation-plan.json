@@ -1,0 +1,19 @@
+{
+  "experiment_id": "MAD-SKILL-003",
+  "status": "locked",
+  "baseline_definition": "Manual notes without structured source provenance.",
+  "candidate_definition": "No compiler is selected or implemented.",
+  "environment_controls": {"network": "offline", "workspace": "isolated", "customer_data": "prohibited"},
+  "fixtures": [{"category": "synthetic authorized snippets", "required": true}],
+  "repetitions": {"planned": 0, "minimum_after_approval": 3},
+  "hard_gates": ["GATE-SOURCE", "GATE-LICENSE", "GATE-SCOPE", "GATE-PRIVACY", "GATE-ISOLATION", "GATE-ROLLBACK", "GATE-OBSERVABILITY", "GATE-HUMAN-CONTROL", "GATE-NO-REGRESSION", "GATE-CLAIM-INTEGRITY"],
+  "metrics": ["citation completeness", "rights compliance", "applicability clarity", "baseline task quality"],
+  "evaluator": {"mode": "separate evidence review", "self_approval": false},
+  "leakage_controls": ["synthetic snippets", "no private corpus", "no raw source retention"],
+  "adversarial_tests": ["copyright boundary", "prompt injection", "path traversal"],
+  "regression_tests": ["manual-note baseline remains available"],
+  "cost_tracking": {"status": "not_run", "budget": "not_approved"},
+  "rollback_test": {"status": "not_tested"},
+  "confidence_rules": {"claim": "no extraction-quality claim before repeated evidence"},
+  "inconclusive_conditions": ["unclear rights", "failed hard gate", "incomplete provenance"]
+}

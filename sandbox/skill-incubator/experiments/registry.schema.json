@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Locked Incubator Experiment Registry",
+  "type": "object",
+  "required": ["schema_version", "status", "lifecycle", "transition_policy", "experiments", "decision_records"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "status": {"const": "locked"},
+    "lifecycle": {
+      "type": "array",
+      "items": {"enum": ["locked", "proposed", "approved_for_design", "approved_for_isolated_build", "testing", "rejected", "retained_in_sandbox", "candidate_optional", "approved_optional", "candidate_core", "approved_core", "deprecated"]}
+    },
+    "transition_policy": {"const": "manual_customer_decision_required"},
+    "experiments": {
+      "type": "array",
+      "minItems": 11,
+      "maxItems": 11,
+      "items": {
+        "type": "object",
+        "required": ["experiment_id", "name", "status", "recommended_layer", "source_ids", "source_commits", "risk_level", "restricted_domain", "implementation_exists", "execution_authorized", "network_required_for_design", "dependencies_required_for_design", "customer_decision", "proposal_path", "promotion_path"],
+        "properties": {
+          "experiment_id": {"pattern": "^MAD-SKILL-0(0[1-9]|1[01])$"},
+          "name": {"type": "string"},
+          "status": {"const": "locked"},
+          "recommended_layer": {"enum": ["sandbox", "sandbox-only-methodology", "bundled-optional", "separate-skill", "platform-gated", "core-policy-candidate"]},
+          "source_ids": {"type": "array", "items": {"type": "string"}},
+          "source_commits": {"type": "array", "items": {"pattern": "^[0-9a-f]{40}$"}},
+          "risk_level": {"enum": ["Low", "Medium", "High", "Critical"]},
+          "restricted_domain": {"type": "boolean"},
+          "implementation_exists": {"const": false},
+          "execution_authorized": {"const": false},
+          "network_required_for_design": {"const": false},
+          "dependencies_required_for_design": {"const": false},
+          "customer_decision": {"const": "not_approved"},
+          "proposal_path": {"pattern": "^MAD-SKILL-0(0[1-9]|1[01])/proposal\\.md$"},
+          "promotion_path": {"pattern": "^MAD-SKILL-0(0[1-9]|1[01])/promotion\\.yaml$"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "decision_records": {"type": "array", "maxItems": 0}
+  },
+  "additionalProperties": false
+}

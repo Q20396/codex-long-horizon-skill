@@ -1,0 +1,19 @@
+{
+  "experiment_id": "MAD-SKILL-005",
+  "status": "locked",
+  "baseline_definition": "Serial human-approved workflow with no control-plane abstraction.",
+  "candidate_definition": "No controller or executor is selected or implemented.",
+  "environment_controls": {"network": "offline", "workspace": "isolated", "customer_data": "prohibited", "concurrency_cap": 4},
+  "fixtures": [{"category": "synthetic defensive governance tasks", "required": true}],
+  "repetitions": {"planned": 0, "minimum_after_approval": 3},
+  "hard_gates": ["GATE-SOURCE", "GATE-LICENSE", "GATE-SCOPE", "GATE-PRIVACY", "GATE-ISOLATION", "GATE-ROLLBACK", "GATE-OBSERVABILITY", "GATE-HUMAN-CONTROL", "GATE-NO-REGRESSION", "GATE-CLAIM-INTEGRITY"],
+  "metrics": ["deny-default fidelity", "approval clarity", "audit completeness", "baseline quality"],
+  "evaluator": {"mode": "separate defensive review", "self_approval": false},
+  "leakage_controls": ["synthetic tasks", "no target systems", "no credentials"],
+  "adversarial_tests": ["approval laundering", "loop escalation", "scope escape"],
+  "regression_tests": ["serial manual baseline remains available"],
+  "cost_tracking": {"status": "not_run", "budget": "not_approved"},
+  "rollback_test": {"status": "not_tested"},
+  "confidence_rules": {"claim": "no security effectiveness claim before independent evidence"},
+  "inconclusive_conditions": ["unsafe capability", "hard-gate failure", "unbounded scope"]
+}
