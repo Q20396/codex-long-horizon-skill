@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Deduplication Evidence Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "pattern_id",
+    "name",
+    "proposed_existing_experiment",
+    "overlap_type",
+    "primary_gap_owner",
+    "routing_allowed",
+    "experiment_contract_path",
+    "proposal_path",
+    "contract_sha256",
+    "objective_overlap",
+    "input_overlap",
+    "output_overlap",
+    "permission_overlap",
+    "non_goal_conflict",
+    "evidence_strength",
+    "reviewer_notes"
+  ],
+  "properties": {
+    "pattern_id": {"type": "string", "pattern": "^PAT-[0-9]{3}$"},
+    "name": {"type": "string", "minLength": 1},
+    "proposed_existing_experiment": {"type": "string"},
+    "overlap_type": {"type": "string", "enum": ["full", "partial", "adjacent", "none"]},
+    "primary_gap_owner": {"type": "string", "minLength": 1},
+    "routing_allowed": {"type": "boolean"},
+    "experiment_contract_path": {"type": "string", "minLength": 1},
+    "proposal_path": {"type": "string", "minLength": 1},
+    "contract_sha256": {"type": "string", "pattern": "^(?:[a-f0-9]{64}|not_applicable)$"},
+    "objective_overlap": {"type": "string", "minLength": 1},
+    "input_overlap": {"type": "string", "minLength": 1},
+    "output_overlap": {"type": "string", "minLength": 1},
+    "permission_overlap": {"type": "string", "minLength": 1},
+    "non_goal_conflict": {"type": "string", "minLength": 1},
+    "evidence_strength": {"type": "string", "enum": ["strong", "moderate", "weak", "insufficient"]},
+    "reviewer_notes": {"type": "string", "minLength": 1}
+  }
+}

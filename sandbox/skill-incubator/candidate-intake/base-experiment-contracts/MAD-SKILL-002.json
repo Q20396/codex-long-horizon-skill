@@ -1,0 +1,19 @@
+{
+  "experiment_id": "MAD-SKILL-002",
+  "name": "Capability Contract and Real Output Harness",
+  "status": "locked",
+  "source_proposal_path": "sandbox/skill-incubator/experiments/MAD-SKILL-002/proposal.md",
+  "source_proposal_sha256": "ed7fdf27e524f0787c2333ea17c7fd6cf913b0bd873332f5103ec7af09f884ab",
+  "mapping_basis": "design_mapping",
+  "coverage_validation": "not_runtime_verified",
+  "objective": ["Define a reusable contract that bounds future tool input, output, scopes, permissions, cost, failures, rollback, and acceptance evidence."],
+  "non_goals": ["No CLI installation, host control, provider call, filesystem write, or execution."],
+  "inputs": ["Future customer-approved input, output, read_scope, write_scope, network, dependencies, permissions, cost, failure_conditions, rollback, and acceptance_checks."],
+  "outputs": ["Future machine-reviewable contract and real-output acceptance plan."],
+  "permissions": {"read": ["Future exact-tool and fixture scope"], "write": [], "network": false, "external_services": false},
+  "covered_patterns": ["PAT-023", "PAT-029"],
+  "excluded_patterns": ["Terminal, CI, data-cleaning, dependency, refactor, API, migration, and release workflows need their own bounded behavior evidence."],
+  "known_gaps": ["The proposal is locked and only describes a future harness; it does not execute or validate a tool."],
+  "recommended_layer": "separate-skill",
+  "routing_eligible": false
+}

@@ -1,13 +1,42 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Customer-Provided Capability Pattern",
+  "title": "Capability Pattern Intake Record",
   "type": "object",
-  "required": ["pattern_id", "name", "capability_family", "classification", "handling"],
+  "additionalProperties": false,
+  "required": [
+    "pattern_id",
+    "name",
+    "group",
+    "classification",
+    "capability_family",
+    "existing_experiment",
+    "overlap_score",
+    "overlap_type",
+    "primary_gap_owner",
+    "routing_allowed",
+    "unique_gap",
+    "proposed_action",
+    "rationale",
+    "evidence_contract",
+    "evidence_strength",
+    "source_status"
+  ],
   "properties": {
-    "pattern_id": {"pattern": "^PAT-[0-9]{3}$"},
+    "pattern_id": {"type": "string", "pattern": "^PAT-[0-9]{3}$"},
     "name": {"type": "string", "minLength": 1},
-    "capability_family": {"pattern": "^FAMILY-00[1-9]$"},
-    "classification": {"const": "customer_provided_capability_pattern"},
-    "handling": {"enum": ["map_to_existing_experiment", "candidate_extension", "candidate_new_experiment", "separate_skill", "rejected_pending_verification", "out_of_scope"]}
+    "group": {"type": "string", "enum": ["team", "automation", "advanced_engineering", "foundation"]},
+    "classification": {"type": "string", "const": "customer_provided_capability_pattern"},
+    "capability_family": {"type": "string", "pattern": "^FAMILY-00[1-9]$"},
+    "existing_experiment": {"type": "string", "pattern": "^$|^MAD-SKILL-0(?:0[1-9]|1[01])$"},
+    "overlap_score": {"type": "integer", "minimum": 0, "maximum": 100},
+    "overlap_type": {"type": "string", "enum": ["full", "partial", "adjacent", "none"]},
+    "primary_gap_owner": {"type": "string", "minLength": 1},
+    "routing_allowed": {"type": "boolean"},
+    "unique_gap": {"type": "string", "minLength": 1},
+    "proposed_action": {"type": "string", "enum": ["map_to_existing_experiment", "candidate_extension", "candidate_new_experiment", "separate_skill", "rejected_pending_verification", "out_of_scope"]},
+    "rationale": {"type": "string", "minLength": 1},
+    "evidence_contract": {"type": "string", "minLength": 1},
+    "evidence_strength": {"type": "string", "enum": ["strong", "moderate", "weak", "insufficient"]},
+    "source_status": {"type": "string", "enum": ["customer_provided_unverified", "verification_blocked", "ambiguous_source"]}
   }
 }

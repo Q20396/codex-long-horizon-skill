@@ -26,3 +26,13 @@ that pass immutable-commit verification.
 See `capability-patterns.tsv`, `existing-experiment-map.tsv`, and
 `deduplication-matrix.tsv` for the consolidation evidence. See
 `source-candidates.json` for locked, non-executable public-source leads.
+
+`deduplication-evidence.tsv` records the objective, input, output, permission,
+and non-goal comparison for each pattern. It distinguishes full, partial,
+adjacent, and no-overlap records. Only a full design mapping with strong
+evidence can be recommended; a locked target still cannot execute without a
+separate customer approval.
+
+The dependency-free validator in `validation/validate_candidate_intake.py`
+reads only this repository's explicit intake, contract, registry, and candidate
+paths. It does not fetch sources, install packages, or execute candidates.

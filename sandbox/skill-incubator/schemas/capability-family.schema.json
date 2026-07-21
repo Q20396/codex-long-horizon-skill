@@ -2,11 +2,29 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Capability Family",
   "type": "object",
-  "required": ["family_id", "name", "default_layer", "runtime_authorized"],
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "name",
+    "objective",
+    "responsibilities",
+    "included_patterns",
+    "excluded_patterns",
+    "current_experiments",
+    "candidate_experiments",
+    "recommended_layer",
+    "execution_boundary"
+  ],
   "properties": {
-    "family_id": {"pattern": "^FAMILY-00[1-9]$"},
+    "id": {"type": "string", "pattern": "^FAMILY-00[1-9]$"},
     "name": {"type": "string", "minLength": 1},
-    "default_layer": {"enum": ["core", "bundled-optional", "separate-skill", "sandbox", "rejected_pending_verification"]},
-    "runtime_authorized": {"const": false}
+    "objective": {"type": "string", "minLength": 1},
+    "responsibilities": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "included_patterns": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "^PAT-[0-9]{3}$"}},
+    "excluded_patterns": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "current_experiments": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "^MAD-SKILL-0(?:0[1-9]|1[01])$"}},
+    "candidate_experiments": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "^MAD-SKILL-0(?:1[2-4])-candidate$"}},
+    "recommended_layer": {"type": "string", "enum": ["core", "bundled-optional", "separate-skill", "sandbox", "sandbox-only-methodology", "rejected_pending_verification"]},
+    "execution_boundary": {"type": "string", "enum": ["design_only", "separate_approval", "restricted_domain"]}
   }
 }

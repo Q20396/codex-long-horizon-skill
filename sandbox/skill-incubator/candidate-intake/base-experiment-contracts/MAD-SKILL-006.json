@@ -1,0 +1,19 @@
+{
+  "experiment_id": "MAD-SKILL-006",
+  "name": "Rubric-Blind Failure-to-Procedure Loop",
+  "status": "locked",
+  "source_proposal_path": "sandbox/skill-incubator/experiments/MAD-SKILL-006/proposal.md",
+  "source_proposal_sha256": "32507f0998c42a3b6ebedb76eb71b07df2fca184affb7e7240265153cf92646a",
+  "mapping_basis": "design_mapping",
+  "coverage_validation": "not_runtime_verified",
+  "objective": ["Define a redacted Solver, Evaluator, and Learner Proposal loop that separates evidence from a future customer promotion decision."],
+  "non_goals": ["No legal advice, law retrieval, client document read, legal task execution, or automatic learning."],
+  "inputs": ["Future synthetic non-legal fixture and a customer-approved redaction policy."],
+  "outputs": ["Future redacted failure signal and procedure-change proposal."],
+  "permissions": {"read": ["Future approved synthetic fixture and redaction policy"], "write": [], "network": false, "external_services": false},
+  "covered_patterns": [],
+  "excluded_patterns": ["Traceability, decision-log, retrospective, changelog, and documentation patterns require a separate provenance design."],
+  "known_gaps": ["The proposal does not run an evaluator or prove that feedback is rubric-safe."],
+  "recommended_layer": "sandbox",
+  "routing_eligible": false
+}

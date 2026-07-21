@@ -1,0 +1,19 @@
+{
+  "experiment_id": "MAD-SKILL-011",
+  "name": "Industrial Skill Compiler and Evaluator",
+  "status": "locked",
+  "source_proposal_path": "sandbox/skill-incubator/experiments/MAD-SKILL-011/proposal.md",
+  "source_proposal_sha256": "3b10d2a2082fb509818b63c599078aec001828748246b8d695acf942a1ab119f",
+  "mapping_basis": "design_mapping",
+  "coverage_validation": "not_runtime_verified",
+  "objective": ["Define a consistent trigger, permission, data-flow, threat, evaluation, fixture, rollback, and promotion-readiness evidence package for future candidate Skills."],
+  "non_goals": ["No automatic Skill modification, trigger editing, installation, update, execution, or promotion."],
+  "inputs": ["Future customer-approved candidate description and exact approved target paths."],
+  "outputs": ["Future trigger-contract, permission-contract, data-flow, threat-model, eval-plan, fixtures, baseline plan, rollback plan, and promotion readiness review."],
+  "permissions": {"read": ["Future customer-approved candidate description and exact approved target paths"], "write": [], "network": false, "external_services": false},
+  "covered_patterns": ["PAT-007"],
+  "excluded_patterns": ["Traceability, PR narration, issue handling, release notes, and documentation require the separate candidate pipeline."],
+  "known_gaps": ["The proposal is locked and does not compile, modify, or evaluate a Skill."],
+  "recommended_layer": "core-policy-candidate",
+  "routing_eligible": false
+}
