@@ -21,10 +21,16 @@ REQUIRED = {
     "current_experiments", "candidate_experiments", "recommended_layer", "execution_boundary",
     "catalog_visible", "recommendation_eligible", "execution_routing_allowed",
 }
+RECOMMENDED_LAYERS = {
+    "core", "bundled-optional", "separate-skill", "sandbox", "sandbox-only-methodology", "rejected_pending_verification",
+}
+EXECUTION_BOUNDARIES = {"design_only", "separate_approval", "restricted_domain"}
 
 
-def validate_payload(payload: dict, patterns: dict[str, dict[str, str]], matrix: dict[str, dict[str, str]]) -> list[str]:
+def validate_payload(payload: object, patterns: dict[str, dict[str, str]], matrix: dict[str, dict[str, str]]) -> list[str]:
     errors: list[str] = []
+    if not isinstance(payload, dict):
+        return [issue("capability-families.json", "payload", "object", type(payload).__name__)]
     families = payload.get("families")
     if not isinstance(families, list):
         return [issue("capability-families.json", "families", "list", type(families).__name__)]
@@ -38,6 +44,31 @@ def validate_payload(payload: dict, patterns: dict[str, dict[str, str]], matrix:
         family_id = family.get("family_id", "<missing>")
         if set(family) != REQUIRED:
             errors.append(issue(family_id, "keys", sorted(REQUIRED), sorted(family)))
+        for field in ("name", "objective"):
+            if not isinstance(family.get(field), str) or not family[field].strip():
+                errors.append(issue(family_id, field, "non-empty string", family.get(field)))
+        responsibilities = family.get("responsibilities")
+        if not isinstance(responsibilities, list) or not responsibilities or any(
+            not isinstance(item, str) or not item.strip() for item in responsibilities
+        ) or len(responsibilities) != len(set(responsibilities)):
+            errors.append(issue(family_id, "responsibilities", "non-empty unique non-empty string list", responsibilities))
+        for field, expected_ids in (("included_patterns", {f"PAT-{number:03d}" for number in range(1, 41)}),):
+            values = family.get(field)
+            if not isinstance(values, list) or any(not isinstance(item, str) or item not in expected_ids for item in values):
+                errors.append(issue(family_id, field, "unique PAT-### list", values))
+            elif len(values) != len(set(values)):
+                errors.append(issue(family_id, field, "unique PAT-### list", values))
+        excluded = family.get("excluded_patterns")
+        if not isinstance(excluded, list) or any(not isinstance(item, str) or not item.strip() for item in excluded):
+            errors.append(issue(family_id, "excluded_patterns", "unique non-empty string list", excluded))
+        elif len(excluded) != len(set(excluded)):
+            errors.append(issue(family_id, "excluded_patterns", "unique non-empty string list", excluded))
+        if family.get("recommended_layer") not in RECOMMENDED_LAYERS:
+            errors.append(issue(family_id, "recommended_layer", sorted(RECOMMENDED_LAYERS), family.get("recommended_layer")))
+        if family.get("execution_boundary") not in EXECUTION_BOUNDARIES:
+            errors.append(issue(family_id, "execution_boundary", sorted(EXECUTION_BOUNDARIES), family.get("execution_boundary")))
+        if not isinstance(family.get("catalog_visible"), bool):
+            errors.append(issue(family_id, "catalog_visible", "boolean", family.get("catalog_visible")))
         if family.get("recommendation_eligible") is not False:
             errors.append(issue(family_id, "recommendation_eligible", False, family.get("recommendation_eligible")))
         if family.get("execution_routing_allowed") is not False:
@@ -48,9 +79,13 @@ def validate_payload(payload: dict, patterns: dict[str, dict[str, str]], matrix:
             errors.append(issue(family_id, "included_patterns", expected_patterns, sorted(included)))
         current = family.get("current_experiments", [])
         candidates = family.get("candidate_experiments", [])
-        if len(current) != len(set(current)) or any(identifier not in BASE_EXPERIMENT_IDS for identifier in current):
+        if not isinstance(current, list) or any(not isinstance(identifier, str) or identifier not in BASE_EXPERIMENT_IDS for identifier in current):
             errors.append(issue(family_id, "current_experiments", "unique base experiment IDs", current))
-        if len(candidates) != len(set(candidates)) or any(identifier not in CANDIDATE_IDS for identifier in candidates):
+        elif len(current) != len(set(current)):
+            errors.append(issue(family_id, "current_experiments", "unique base experiment IDs", current))
+        if not isinstance(candidates, list) or any(not isinstance(identifier, str) or identifier not in CANDIDATE_IDS for identifier in candidates):
+            errors.append(issue(family_id, "candidate_experiments", "unique candidate IDs", candidates))
+        elif len(candidates) != len(set(candidates)):
             errors.append(issue(family_id, "candidate_experiments", "unique candidate IDs", candidates))
         matrix_row = matrix.get(family_id)
         if matrix_row is None:

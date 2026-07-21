@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import re
 from pathlib import Path
 
 from validation_common import (
@@ -53,6 +54,78 @@ PROPOSED_ACTIONS = {
 ALLOWED_OWNERS = {f"{candidate_id}-candidate" for candidate_id in CANDIDATE_IDS} | {
     "unresolved", "separate-skill", "out-of-scope"
 }
+BASE_CONTRACT_FIELDS = {
+    "experiment_id", "name", "status", "source_proposal_path", "source_proposal_sha256",
+    "mapping_basis", "coverage_validation", "objective", "non_goals", "inputs", "outputs",
+    "permissions", "covered_patterns", "excluded_patterns", "known_gaps", "recommended_layer",
+    "routing_eligible", "catalog_visible", "recommendation_eligible", "execution_routing_allowed",
+    "proposal_evidence_path", "proposal_evidence_ids",
+}
+PERMISSION_FIELDS = {"read", "write", "network", "external_services"}
+SHA256_RE = re.compile(r"^[a-f0-9]{64}$")
+
+
+def _validate_string_list(
+    payload: dict, field: str, relative: str, errors: list[str], *, minimum: int = 0, unique: bool = False
+) -> None:
+    value = payload.get(field)
+    if not isinstance(value, list) or len(value) < minimum:
+        errors.append(issue(relative, field, f"list with at least {minimum} item(s)", value))
+        return
+    if any(not isinstance(item, str) or not item.strip() for item in value):
+        errors.append(issue(relative, field, "non-empty strings", value))
+        return
+    if unique and len(value) != len(set(value)):
+        errors.append(issue(relative, field, "unique values", value))
+
+
+def _validate_base_contract_shape(payload: object, experiment_id: str, relative: str, errors: list[str]) -> None:
+    """Mirror security-critical schema constraints when no JSON Schema engine is installed."""
+    if not isinstance(payload, dict):
+        errors.append(issue(relative, "contract", "object", type(payload).__name__))
+        return
+    if set(payload) != BASE_CONTRACT_FIELDS:
+        errors.append(issue(relative, "keys", sorted(BASE_CONTRACT_FIELDS), sorted(payload)))
+    if not isinstance(payload.get("name"), str) or not payload["name"].strip():
+        errors.append(issue(relative, "name", "non-empty string", payload.get("name")))
+    for field in ("objective", "non_goals", "inputs", "outputs", "known_gaps"):
+        _validate_string_list(payload, field, relative, errors, minimum=1)
+    _validate_string_list(payload, "excluded_patterns", relative, errors)
+    _validate_string_list(payload, "proposal_evidence_ids", relative, errors, minimum=1, unique=True)
+
+    permissions = payload.get("permissions")
+    if not isinstance(permissions, dict) or set(permissions) != PERMISSION_FIELDS:
+        errors.append(issue(relative, "permissions", sorted(PERMISSION_FIELDS), permissions))
+    else:
+        for field, minimum in (("read", 1), ("write", 0)):
+            value = permissions.get(field)
+            if not isinstance(value, list) or len(value) < minimum or any(
+                not isinstance(item, str) or not item.strip() for item in value
+            ):
+                errors.append(issue(relative, f"permissions.{field}", f"list with at least {minimum} non-empty string item(s)", value))
+        for field in ("network", "external_services"):
+            if permissions.get(field) is not False:
+                errors.append(issue(relative, f"permissions.{field}", False, permissions.get(field)))
+
+    covered = payload.get("covered_patterns")
+    if not isinstance(covered, list) or any(
+        not isinstance(item, str) or re.fullmatch(r"PAT-[0-9]{3}", item) is None for item in covered
+    ) or len(covered) != len(set(covered)):
+        errors.append(issue(relative, "covered_patterns", "unique PAT-### list", covered))
+    if payload.get("mapping_basis") != "design_mapping":
+        errors.append(issue(relative, "mapping_basis", "design_mapping", payload.get("mapping_basis")))
+    if payload.get("coverage_validation") != "not_runtime_verified":
+        errors.append(issue(relative, "coverage_validation", "not_runtime_verified", payload.get("coverage_validation")))
+    if not isinstance(payload.get("recommended_layer"), str) or not payload["recommended_layer"].strip():
+        errors.append(issue(relative, "recommended_layer", "non-empty string", payload.get("recommended_layer")))
+    for field, expected in (("routing_eligible", False), ("recommendation_eligible", False), ("execution_routing_allowed", False)):
+        if payload.get(field) is not expected:
+            errors.append(issue(relative, field, expected, payload.get(field)))
+    if not isinstance(payload.get("catalog_visible"), bool):
+        errors.append(issue(relative, "catalog_visible", "boolean", payload.get("catalog_visible")))
+    for field in ("source_proposal_sha256",):
+        if not isinstance(payload.get(field), str) or SHA256_RE.fullmatch(payload[field]) is None:
+            errors.append(issue(relative, field, "lowercase SHA-256", payload.get(field)))
 
 
 def _validate_routing(row: dict[str, str], relative: str, line: int, errors: list[str]) -> None:
@@ -98,13 +171,29 @@ def validate_pattern_rows(records: list[dict[str, str]]) -> list[str]:
         _validate_routing(row, "capability-patterns.tsv", offset, errors)
         owner = row["primary_gap_owner"]
         if row["overlap_type"] == "full":
+            if not row["existing_experiment"]:
+                errors.append(issue(identifier, "existing_experiment", "base experiment for full overlap", row["existing_experiment"]))
             if owner:
                 errors.append(issue(identifier, "primary_gap_owner", "empty for full overlap", owner))
             if row["evidence_strength"] != "strong":
                 errors.append(issue(identifier, "evidence_strength", "strong for full overlap", row["evidence_strength"]))
+            if row["proposed_action"] != "map_to_existing_experiment":
+                errors.append(issue(identifier, "proposed_action", "map_to_existing_experiment for full overlap", row["proposed_action"]))
         else:
             if owner not in ALLOWED_OWNERS:
                 errors.append(issue(identifier, "primary_gap_owner", sorted(ALLOWED_OWNERS), owner))
+        if row["overlap_type"] == "none" and row["existing_experiment"]:
+            errors.append(issue(identifier, "existing_experiment", "empty for no overlap", row["existing_experiment"]))
+        if row["proposed_action"] == "map_to_existing_experiment" and not row["existing_experiment"]:
+            errors.append(issue(identifier, "existing_experiment", "required for map_to_existing_experiment", row["existing_experiment"]))
+        if row["proposed_action"] == "candidate_extension" and not row["existing_experiment"]:
+            errors.append(issue(identifier, "existing_experiment", "required for candidate_extension", row["existing_experiment"]))
+        if row["proposed_action"] == "candidate_new_experiment":
+            allowed_candidate_owners = {f"{candidate_id}-candidate" for candidate_id in CANDIDATE_IDS} | {"unresolved"}
+            if owner not in allowed_candidate_owners:
+                errors.append(issue(identifier, "primary_gap_owner", "candidate design owner or unresolved for candidate_new_experiment", owner))
+        if row["proposed_action"] == "separate_skill" and owner != "separate-skill":
+            errors.append(issue(identifier, "primary_gap_owner", "separate-skill for separate_skill action", owner))
         if not row["name"].strip() or not row["unique_gap"].strip():
             errors.append(issue(identifier, "descriptive_fields", "non-empty", "empty"))
     expected = {f"PAT-{number:03d}" for number in range(1, 41)}
@@ -121,9 +210,13 @@ def validate_base_contracts(root: Path) -> tuple[dict[str, dict], list[str]]:
         payload = load_json(root, relative, errors)
         if payload is None:
             continue
+        if not isinstance(payload, dict):
+            _validate_base_contract_shape(payload, experiment_id, relative, errors)
+            continue
         contracts[experiment_id] = payload
         if payload.get("experiment_id") != experiment_id:
             errors.append(issue(relative, "experiment_id", experiment_id, payload.get("experiment_id")))
+        _validate_base_contract_shape(payload, experiment_id, relative, errors)
         for field, expected in (("status", "locked"), ("routing_eligible", False), ("catalog_visible", True),
                                 ("recommendation_eligible", False), ("execution_routing_allowed", False)):
             if payload.get(field) != expected:
@@ -204,7 +297,7 @@ def validate_map_consistency(root: Path, patterns: list[dict[str, str]], contrac
                     if contract_path != expected_contract:
                         errors.append(issue(f"{label}:{identifier}", "experiment_contract_path", expected_contract, contract_path))
                     contract = contracts.get(pattern["existing_experiment"])
-                    if contract is not None:
+                    if contract is not None and contract_path == expected_contract:
                         expected_sha = sha256_file(root / f"sandbox/skill-incubator/{contract_path}")
                         if row["contract_sha256"] != expected_sha:
                             errors.append(issue(f"{label}:{identifier}", "contract_sha256", expected_sha, row["contract_sha256"]))

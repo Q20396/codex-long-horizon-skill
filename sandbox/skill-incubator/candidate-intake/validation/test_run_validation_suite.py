@@ -6,6 +6,7 @@ import importlib.util
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 
@@ -55,6 +56,21 @@ class AuditEvidenceTests(unittest.TestCase):
     def test_blocked_limitation_cannot_be_passed(self) -> None:
         record = self._record(limitations=["blocked_not_installed"])
         self.assertTrue(any("blocked limitation" in error for error in suite.validate_record(record)))
+
+    @mock.patch.object(suite.importlib.util, "find_spec", return_value=None)
+    def test_formal_schema_probe_is_blocked_only_when_engine_is_unavailable(self, _find_spec) -> None:
+        record = suite.formal_schema_probe(HERE, self.audit_root, "a" * 40)
+        self.assertEqual("blocked_not_installed", record["status"])
+        self.assertEqual(0, record["exit_code"])
+
+    @mock.patch.object(suite, "run")
+    @mock.patch.object(suite.importlib.util, "find_spec", return_value=object())
+    def test_formal_schema_probe_runs_real_validator_when_engine_is_available(self, _find_spec, run) -> None:
+        run.return_value = self._record()
+        record = suite.formal_schema_probe(HERE, self.audit_root, "a" * 40)
+        self.assertEqual("passed", record["status"])
+        argv = run.call_args.args[0]
+        self.assertIn("validate_formal_schema_instances.py", argv[1])
 
     def _record(self, **updates):
         stdout = self.audit_root / "stdout.txt"

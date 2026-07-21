@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
 import shutil
 import sys
@@ -88,6 +89,38 @@ class RoutingAndEvidenceContractTests(unittest.TestCase):
         path.write_text(json.dumps(payload))
         self.assertTrue(any("source_proposal_sha256" in item for item in intake.validate_root(root)))
 
+    def test_contract_unsafe_network_permission_is_rejected_after_hash_recalculation(self) -> None:
+        temporary, root = cloned_root()
+        self.addCleanup(temporary.cleanup)
+        contract_path = root / "sandbox/skill-incubator/candidate-intake/base-experiment-contracts/MAD-SKILL-001.json"
+        contract = json.loads(contract_path.read_text())
+        contract["permissions"]["network"] = True
+        contract_path.write_text(json.dumps(contract))
+        digest = hashlib.sha256(contract_path.read_bytes()).hexdigest()
+        rewrite_tsv(
+            root / "sandbox/skill-incubator/candidate-intake/deduplication-evidence.tsv",
+            lambda rows: [row.update(contract_sha256=digest) for row in rows if row["proposed_existing_experiment"] == "MAD-SKILL-001"],
+        )
+        self.assertTrue(any("permissions.network" in item for item in intake.validate_root(root)))
+
+    def test_contract_permission_structure_is_rejected(self) -> None:
+        temporary, root = cloned_root()
+        self.addCleanup(temporary.cleanup)
+        path = root / "sandbox/skill-incubator/candidate-intake/base-experiment-contracts/MAD-SKILL-001.json"
+        payload = json.loads(path.read_text())
+        payload["permissions"]["write"] = "not-a-list"
+        path.write_text(json.dumps(payload))
+        self.assertTrue(any("permissions.write" in item for item in intake.validate_root(root)))
+
+    def test_contract_non_string_permission_path_is_rejected_without_crashing(self) -> None:
+        temporary, root = cloned_root()
+        self.addCleanup(temporary.cleanup)
+        path = root / "sandbox/skill-incubator/candidate-intake/base-experiment-contracts/MAD-SKILL-001.json"
+        payload = json.loads(path.read_text())
+        payload["permissions"]["read"] = [{"unsafe": "shape"}]
+        path.write_text(json.dumps(payload))
+        self.assertTrue(any("permissions.read" in item for item in intake.validate_root(root)))
+
     def test_full_mapping_without_covered_pattern_is_rejected(self) -> None:
         temporary, root = cloned_root()
         self.addCleanup(temporary.cleanup)
@@ -96,6 +129,44 @@ class RoutingAndEvidenceContractTests(unittest.TestCase):
         payload["covered_patterns"] = []
         path.write_text(json.dumps(payload))
         self.assertTrue(any("covered_patterns" in item for item in intake.validate_root(root)))
+
+    def test_full_mapping_requires_existing_experiment_and_map_action(self) -> None:
+        temporary, root = cloned_root()
+        self.addCleanup(temporary.cleanup)
+        rewrite_tsv(
+            root / "sandbox/skill-incubator/candidate-intake/capability-patterns.tsv",
+            lambda rows: next(row for row in rows if row["overlap_type"] == "full").update(existing_experiment="", proposed_action="candidate_extension"),
+        )
+        errors = intake.validate_root(root)
+        self.assertTrue(any("base experiment for full overlap" in item for item in errors))
+        self.assertTrue(any("map_to_existing_experiment for full overlap" in item for item in errors))
+
+    def test_no_overlap_cannot_claim_existing_experiment(self) -> None:
+        temporary, root = cloned_root()
+        self.addCleanup(temporary.cleanup)
+        rewrite_tsv(
+            root / "sandbox/skill-incubator/candidate-intake/capability-patterns.tsv",
+            lambda rows: next(row for row in rows if row["overlap_type"] == "none").update(existing_experiment="MAD-SKILL-001"),
+        )
+        self.assertTrue(any("empty for no overlap" in item for item in intake.validate_root(root)))
+
+    def test_proposed_action_relationships_are_rejected_when_inconsistent(self) -> None:
+        cases = (
+            ("candidate_extension", {"existing_experiment": ""}, "required for candidate_extension"),
+            ("candidate_new_experiment", {"primary_gap_owner": "separate-skill"}, "candidate design owner or unresolved"),
+            ("separate_skill", {"primary_gap_owner": "unresolved"}, "separate-skill for separate_skill action"),
+        )
+        for action, update, expected in cases:
+            with self.subTest(action=action):
+                temporary, root = cloned_root()
+                self.addCleanup(temporary.cleanup)
+
+                def mutate(rows: list[dict[str, str]]) -> None:
+                    row = next(item for item in rows if item["proposed_action"] == action)
+                    row.update(update)
+
+                rewrite_tsv(root / "sandbox/skill-incubator/candidate-intake/capability-patterns.tsv", mutate)
+                self.assertTrue(any(expected in item for item in intake.validate_root(root)))
 
     def test_partial_mapping_without_owner_is_rejected(self) -> None:
         temporary, root = cloned_root()
@@ -226,6 +297,38 @@ class RoutingAndEvidenceContractTests(unittest.TestCase):
         path.write_text(json.dumps(payload))
         self.assertTrue(any("execution_routing_allowed" in item for item in families.validate_root(root)))
 
+    def test_family_schema_critical_types_and_enums_are_rejected(self) -> None:
+        temporary, root = cloned_root()
+        self.addCleanup(temporary.cleanup)
+        path = root / "sandbox/skill-incubator/architecture/capability-families.json"
+        payload = json.loads(path.read_text())
+        family = payload["families"][0]
+        family["catalog_visible"] = "yes"
+        family["recommended_layer"] = "unsupported-layer"
+        family["execution_boundary"] = "anything"
+        family["responsibilities"] = []
+        path.write_text(json.dumps(payload))
+        errors = families.validate_root(root)
+        self.assertTrue(any("catalog_visible" in item for item in errors))
+        self.assertTrue(any("recommended_layer" in item for item in errors))
+        self.assertTrue(any("execution_boundary" in item for item in errors))
+        self.assertTrue(any("responsibilities" in item for item in errors))
+
+    def test_family_nested_values_are_rejected_without_crashing(self) -> None:
+        temporary, root = cloned_root()
+        self.addCleanup(temporary.cleanup)
+        path = root / "sandbox/skill-incubator/architecture/capability-families.json"
+        payload = json.loads(path.read_text())
+        family = payload["families"][0]
+        family["included_patterns"] = [{"invalid": "shape"}]
+        family["excluded_patterns"] = [{"invalid": "shape"}]
+        family["current_experiments"] = [{"invalid": "shape"}]
+        family["candidate_experiments"] = [{"invalid": "shape"}]
+        path.write_text(json.dumps(payload))
+        errors = families.validate_root(root)
+        for field in ("included_patterns", "excluded_patterns", "current_experiments", "candidate_experiments"):
+            self.assertTrue(any(field in item for item in errors))
+
     def test_family_current_experiment_mismatch_is_rejected(self) -> None:
         temporary, root = cloned_root()
         self.addCleanup(temporary.cleanup)
@@ -282,6 +385,16 @@ class RoutingAndEvidenceContractTests(unittest.TestCase):
         errors = proposal.validate_evidence_payload(evidence, "fixture", proposal_bytes, "MAD-SKILL-001")
         self.assertTrue(any("experiment_id" in item for item in errors))
         self.assertTrue(any("normalized_excerpt_sha256" in item for item in errors))
+
+    def test_proposal_evidence_path_and_contract_binding_are_rejected(self) -> None:
+        evidence = json.loads((ROOT / "sandbox/skill-incubator/candidate-intake/proposal-evidence/MAD-SKILL-001.json").read_text())
+        evidence["proposal_path"] = "sandbox/skill-incubator/experiments/MAD-SKILL-002/proposal.md"
+        proposal_bytes = (ROOT / "sandbox/skill-incubator/experiments/MAD-SKILL-002/proposal.md").read_bytes()
+        evidence["proposal_sha256"] = proposal.sha256_bytes(proposal_bytes)
+        errors = proposal.validate_evidence_payload(evidence, "fixture", proposal_bytes, "MAD-SKILL-001")
+        self.assertTrue(any("proposal_path" in item for item in errors))
+        contract = json.loads((ROOT / "sandbox/skill-incubator/candidate-intake/base-experiment-contracts/MAD-SKILL-001.json").read_text())
+        self.assertTrue(any("source_proposal_path" in item for item in proposal.validate_contract_binding(contract, evidence, "MAD-SKILL-001")))
 
     def test_contract_and_dedup_missing_proposal_evidence_are_rejected(self) -> None:
         temporary, root = cloned_root()

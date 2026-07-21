@@ -38,6 +38,10 @@ def validate_evidence_payload(
         errors.append(issue(relative, "experiment_id", sorted(BASE_EXPERIMENT_IDS), experiment_id))
     if payload.get("proposal_commit") != PINNED_COMMIT:
         errors.append(issue(relative, "proposal_commit", PINNED_COMMIT, payload.get("proposal_commit")))
+    if expected_experiment_id is not None:
+        expected_path = f"sandbox/skill-incubator/experiments/{expected_experiment_id}/proposal.md"
+        if payload.get("proposal_path") != expected_path:
+            errors.append(issue(relative, "proposal_path", expected_path, payload.get("proposal_path")))
     if proposal_bytes is None:
         errors.append(issue(relative, "proposal", "readable pinned Git object", "unavailable"))
         return errors
@@ -60,6 +64,20 @@ def validate_evidence_payload(
         supports = section.get("supports")
         if not isinstance(supports, list) or not supports or any(item not in ALLOWED_SUPPORTS for item in supports):
             errors.append(issue(relative, f"sections[{evidence_id}].supports", sorted(ALLOWED_SUPPORTS), supports))
+    return errors
+
+
+def validate_contract_binding(contract: dict, evidence: dict, experiment_id: str) -> list[str]:
+    """Require contract and evidence to identify the same immutable proposal."""
+    relative = f"base-experiment-contracts/{experiment_id}.json"
+    expected_path = f"sandbox/skill-incubator/experiments/{experiment_id}/proposal.md"
+    errors: list[str] = []
+    if contract.get("source_proposal_path") != expected_path:
+        errors.append(issue(relative, "source_proposal_path", expected_path, contract.get("source_proposal_path")))
+    if evidence.get("proposal_path") != expected_path:
+        errors.append(issue(f"proposal-evidence/{experiment_id}.json", "proposal_path", expected_path, evidence.get("proposal_path")))
+    if contract.get("source_proposal_path") != evidence.get("proposal_path"):
+        errors.append(issue(relative, "source_proposal_path", evidence.get("proposal_path"), contract.get("source_proposal_path")))
     return errors
 
 
@@ -89,6 +107,7 @@ def validate_root(root: Path) -> list[str]:
         contract_path = root / f"sandbox/skill-incubator/candidate-intake/base-experiment-contracts/{experiment_id}.json"
         contracts[experiment_id] = json.loads(contract_path.read_text(encoding="utf-8"))
     for contract_id, contract in contracts.items():
+        errors.extend(validate_contract_binding(contract, evidence.get(contract_id, {}), contract_id))
         evidence_path = contract.get("proposal_evidence_path")
         expected_path = f"candidate-intake/proposal-evidence/{contract_id}.json"
         if evidence_path != expected_path:

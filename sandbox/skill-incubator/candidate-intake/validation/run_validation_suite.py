@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import shlex
 import subprocess
@@ -148,22 +149,30 @@ def append_record(handle: Any, record: dict[str, Any]) -> None:
 
 
 def formal_schema_probe(cwd: Path, audit_root: Path, commit: str) -> dict[str, Any]:
+    if importlib.util.find_spec("jsonschema") is None:
+        record = run(
+            [sys.executable, "-c", "print('Draft 2020-12 engine is not installed')"],
+            cwd,
+            "formal-json-schema-engine",
+            audit_root,
+            commit,
+            ["Draft 2020-12 engine is not installed; dependency-free validators remain the local gate."],
+        )
+        record["status"] = "blocked_not_installed"
+        return record
     record = run(
         [
             sys.executable,
-            "-c",
-            "import importlib.util, sys; sys.exit(0 if importlib.util.find_spec('jsonschema') is None else 1)",
+            str(Path(__file__).with_name("validate_formal_schema_instances.py")),
+            "--root",
+            str(cwd),
         ],
         cwd,
         "formal-json-schema-engine",
         audit_root,
         commit,
-        ["Draft 2020-12 engine execution is intentionally not performed; this probe only checks whether jsonschema is absent."],
+        ["Runs only when the locally installed jsonschema Draft 2020-12 engine is available; no dependency is installed."],
     )
-    if record["exit_code"] == 0:
-        record["status"] = "blocked_not_installed"
-    else:
-        record["limitations"].append("Expected absent jsonschema module was unexpectedly available; formal engine execution remains disabled by this protocol.")
     return record
 
 
