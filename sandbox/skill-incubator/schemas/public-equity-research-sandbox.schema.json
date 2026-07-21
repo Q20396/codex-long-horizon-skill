@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "public-equity-research-sandbox.schema.json",
+  "title": "Locked Public Equity Research Sandbox Proposal",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "candidate_id",
+    "name",
+    "status",
+    "registered_experiment",
+    "implementation_exists",
+    "customer_decision",
+    "markets",
+    "research_only",
+    "broker_access_authorized",
+    "credential_access_authorized",
+    "network_execution_authorized",
+    "provider_access_authorized",
+    "trade_execution_authorized",
+    "investment_advice_provided",
+    "code_import_allowed",
+    "activation_policy",
+    "generic_review_behavior",
+    "conversation_context_only",
+    "manual_input_only",
+    "approved_path_required",
+    "customer_material_local_processing_only",
+    "customer_material_upload_authorized",
+    "customer_material_external_transfer_authorized",
+    "public_source_approval_required",
+    "permitted_outputs",
+    "prohibited_actions",
+    "source_lead_policy"
+  ],
+  "properties": {
+    "candidate_id": {"const": "PUBLIC-EQUITY-RESEARCH-SANDBOX"},
+    "name": {"const": "Public Equity Research Sandbox"},
+    "status": {"const": "locked"},
+    "registered_experiment": {"const": false},
+    "implementation_exists": {"const": false},
+    "customer_decision": {"const": "not_approved"},
+    "markets": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {"enum": ["ASX", "US_LISTED_EQUITIES"]},
+      "uniqueItems": true
+    },
+    "research_only": {"const": true},
+    "broker_access_authorized": {"const": false},
+    "credential_access_authorized": {"const": false},
+    "network_execution_authorized": {"const": false},
+    "provider_access_authorized": {"const": false},
+    "trade_execution_authorized": {"const": false},
+    "investment_advice_provided": {"const": false},
+    "code_import_allowed": {"const": false},
+    "activation_policy": {"const": "contextual_explicit_only"},
+    "generic_review_behavior": {
+      "const": "use_current_conversation_if_unambiguous_else_clarify"
+    },
+    "conversation_context_only": {"const": true},
+    "manual_input_only": {"const": true},
+    "approved_path_required": {"const": true},
+    "customer_material_local_processing_only": {"const": true},
+    "customer_material_upload_authorized": {"const": false},
+    "customer_material_external_transfer_authorized": {"const": false},
+    "public_source_approval_required": {"const": true},
+    "permitted_outputs": {
+      "type": "array",
+      "minItems": 4,
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true
+    },
+    "prohibited_actions": {
+      "type": "array",
+      "minItems": 8,
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true
+    },
+    "source_lead_policy": {
+      "const": "immutable_commit_and_license_review_required_before_any_separate_candidate"
+    }
+  }
+}
