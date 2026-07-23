@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Q20396/codex-long-horizon-skill/schemas/decision-map.schema.json",
+  "title": "LHE Decision Map",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "metadata",
+    "destination",
+    "decisions",
+    "unknowns",
+    "out_of_scope",
+    "work_items",
+    "dependencies",
+    "frontier"
+  ],
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "updated_at"],
+      "properties": {
+        "schema_version": {"type": "string", "const": "1.0"},
+        "updated_at": {"type": "string"},
+        "owner": {"type": "string"}
+      }
+    },
+    "destination": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["outcome", "success_criteria"],
+      "properties": {
+        "outcome": {"type": "string", "minLength": 1},
+        "success_criteria": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "decisions": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/note"}
+    },
+    "unknowns": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/note"}
+    },
+    "out_of_scope": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/note"}
+    },
+    "work_items": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/work_item"}
+    },
+    "dependencies": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/dependency"}
+    },
+    "frontier": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    }
+  },
+  "$defs": {
+    "note": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "text"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "text": {"type": "string", "minLength": 1},
+        "evidence": {"type": "string"}
+      }
+    },
+    "work_item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "status"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "title": {"type": "string", "minLength": 1},
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "in_progress",
+            "blocked",
+            "completed",
+            "cancelled",
+            "out_of_scope"
+          ]
+        },
+        "notes": {"type": "string"}
+      }
+    },
+    "dependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["work_item", "depends_on"],
+      "properties": {
+        "work_item": {"type": "string", "minLength": 1},
+        "depends_on": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}

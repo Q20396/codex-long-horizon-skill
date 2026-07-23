@@ -94,6 +94,7 @@ INSTALLED_REQUIRED_FILES = [
     ".agents/skills/long-horizon-engineering/references/context-compaction.md",
     ".agents/skills/long-horizon-engineering/references/continuous-improvement.md",
     ".agents/skills/long-horizon-engineering/references/decision-log.md",
+    ".agents/skills/long-horizon-engineering/references/decision-map-and-frontier.md",
     ".agents/skills/long-horizon-engineering/references/disaster-monitoring-enablement.md",
     ".agents/skills/long-horizon-engineering/references/external-search-protocol.md",
     ".agents/skills/long-horizon-engineering/references/external-skill-adoption-safety-review.md",
@@ -146,6 +147,7 @@ INSTALLED_REQUIRED_FILES = [
     ".agents/skills/long-horizon-engineering/templates/PERSONAL_OPERATING_MANUAL_TEMPLATE.md",
     ".agents/skills/long-horizon-engineering/templates/PROJECT_CONTEXT_MAP_TEMPLATE.md",
     ".agents/skills/long-horizon-engineering/templates/COMPUTE_CAPABILITY_INTAKE.md",
+    ".agents/skills/long-horizon-engineering/templates/DECISION_MAP_TEMPLATE.md",
     ".agents/skills/long-horizon-engineering/templates/LOCAL_VOICE_TOOL_APPROVAL_CARD.md",
     ".agents/skills/long-horizon-engineering/templates/THREE_D_ASSET_DELIVERY_APPROVAL_CARD.md",
     ".agents/skills/long-horizon-engineering/templates/IMPROVEMENT_SCAN_TEMPLATE.md",
@@ -199,6 +201,7 @@ INSTALLED_REQUIRED_FILES = [
     ".agents/skills/long-horizon-engineering/scripts/audit_external_skill_candidate.py",
     ".agents/skills/long-horizon-engineering/scripts/audit_skill_safety.py",
     ".agents/skills/long-horizon-engineering/scripts/check_skill_package.py",
+    ".agents/skills/long-horizon-engineering/scripts/compute_frontier.py",
     ".agents/skills/long-horizon-engineering/scripts/check_for_updates.py",
     ".agents/skills/long-horizon-engineering/scripts/github_skill_scan.py",
     ".agents/skills/long-horizon-engineering/scripts/manage_skill_lifecycle.py",
@@ -210,6 +213,8 @@ INSTALLED_REQUIRED_FILES = [
     ".agents/skills/long-horizon-engineering/scripts/test_expected_triggers.py",
     ".agents/skills/long-horizon-engineering/scripts/audit_skill_descriptions.py",
     ".agents/skills/long-horizon-engineering/scripts/validate_json_canvas.py",
+    ".agents/skills/long-horizon-engineering/schemas/decision-map.schema.json",
+    ".agents/skills/long-horizon-engineering/schemas/frontier.schema.json",
 ]
 
 AI_VIDEO_REQUIRED_FILES = [
