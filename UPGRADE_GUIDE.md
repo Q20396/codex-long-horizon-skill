@@ -71,7 +71,8 @@ Codex.
    ```
 
 5. Review the printed plan and confirm the target path.
-6. Apply only after review:
+6. Apply to a project-level `.agents/skills/<skill>` installation only after
+   review:
 
    ```bash
    python3 .agents/skills/long-horizon-engineering/scripts/update_installed_skill.py \
@@ -79,6 +80,27 @@ Codex.
      --skill long-horizon-engineering \
      --apply
    ```
+
+   For an existing Codex user-level installation, use `--target-skill-dir`
+   instead:
+
+   ```bash
+   python3 .agents/skills/long-horizon-engineering/scripts/update_installed_skill.py \
+     --target-skill-dir ~/.codex/skills/long-horizon-engineering \
+     --skill long-horizon-engineering
+   ```
+
+   ```bash
+   python3 .agents/skills/long-horizon-engineering/scripts/update_installed_skill.py \
+     --target-skill-dir ~/.codex/skills/long-horizon-engineering \
+     --skill long-horizon-engineering \
+     --apply
+   ```
+
+   Never use `~/.codex` as `--target-root`; that would target the unsupported
+   duplicate path `~/.codex/.agents/skills/<skill>`.
+   Direct skill-directory targets must use a `skills/<skill>` layout, and the
+   final directory name must match the selected skill.
 
 7. Run the target project's tests or smoke checks.
 8. Commit the update in a branch and open a review PR.

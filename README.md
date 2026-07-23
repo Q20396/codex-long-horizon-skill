@@ -456,7 +456,8 @@ python3 .agents/skills/long-horizon-engineering/scripts/update_installed_skill.p
   --skill long-horizon-engineering
 ```
 
-Apply only after review:
+Apply to a project-level `.agents/skills/<skill>` installation only after
+review:
 
 ```bash
 python3 .agents/skills/long-horizon-engineering/scripts/update_installed_skill.py \
@@ -465,7 +466,26 @@ python3 .agents/skills/long-horizon-engineering/scripts/update_installed_skill.p
   --apply
 ```
 
+For an existing Codex user-level installation, point directly at the skill
+directory instead of using `~/.codex` as `--target-root`:
+
+```bash
+python3 .agents/skills/long-horizon-engineering/scripts/update_installed_skill.py \
+  --target-skill-dir ~/.codex/skills/long-horizon-engineering \
+  --skill long-horizon-engineering
+```
+
+```bash
+python3 .agents/skills/long-horizon-engineering/scripts/update_installed_skill.py \
+  --target-skill-dir ~/.codex/skills/long-horizon-engineering \
+  --skill long-horizon-engineering \
+  --apply
+```
+
 The update flow is dry-run by default and backup-first when `--apply` is used.
+`--apply` requires exactly one explicit `--skill` and either `--target-root` or
+`--target-skill-dir`. A direct skill directory must use a `skills/<skill>`
+layout and the final directory name must match the selected skill.
 
 ## Personal Workflow Review (Explicit Only)
 

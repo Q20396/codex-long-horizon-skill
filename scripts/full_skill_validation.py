@@ -399,23 +399,22 @@ def run_installed_project_smoke(report: Report) -> None:
     update_script = LHE_SCRIPTS / "update_installed_skill.py"
     safe_rmtree(target)
     target.mkdir(parents=True, exist_ok=True)
-    result = run_command(
-        [
-            PYTHON,
-            str(update_script),
-            "--target-root",
-            str(target),
-            "--skill",
-            "long-horizon-engineering",
-            "--skill",
-            "ai-video-production",
-            "--apply",
-        ]
-    )
-    if result.returncode == 0:
-        report.pass_("Installed Project Smoke Test", "install both skills", summarize_output(result))
-    else:
-        report.fail("Installed Project Smoke Test", "install both skills", summarize_output(result))
+    for skill in ["long-horizon-engineering", "ai-video-production"]:
+        result = run_command(
+            [
+                PYTHON,
+                str(update_script),
+                "--target-root",
+                str(target),
+                "--skill",
+                skill,
+                "--apply",
+            ]
+        )
+        if result.returncode == 0:
+            report.pass_("Installed Project Smoke Test", f"install {skill}", summarize_output(result))
+        else:
+            report.fail("Installed Project Smoke Test", f"install {skill}", summarize_output(result))
 
     installed_doctor = target / LHE_SCRIPTS / "doctor.py"
     installed_check = target / LHE_SCRIPTS / "check_skill_package.py"
