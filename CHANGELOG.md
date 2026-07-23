@@ -4,14 +4,29 @@ All notable changes to this project are summarized here.
 
 ## Unreleased
 
+No unreleased changes.
+
+## 0.2.2 - 2026-07-24
+
 - Added proposal-only local voice-tool and external 3D asset-provider sandbox
   documentation, approval cards, package checks, and contract tests.
 - Removed copy-ready external installation and MCP-configuration commands from
   the 3D provider record; any future command must be revalidated and separately
   approved.
-- These candidate changes are unreleased. Do not distribute them under the
-  existing `0.2.1` version; prepare aligned version metadata and a release gate
-  only after review and merge.
+- Added governed Skill Incubator capability research and routing safeguards
+  with locked source ledgers, verification-blocked states, and no third-party
+  runtime execution.
+- Added a locked public equity research sandbox with no customer-data upload,
+  no trading execution, and no financial advice automation.
+- Added optional Decision Map and deterministic Frontier planning support for
+  long-running engineering work without replacing checkpoints, approvals,
+  rollback, resume, or validation gates.
+- Fixed the updater path contract so `--target-root` continues to target
+  project-scoped `.agents/skills/<skill>` installs while `--target-skill-dir`
+  can safely target existing Codex user-level `skills/<skill>` installs.
+- Rejected ambiguous updater targets, duplicate `~/.codex/.agents/skills`
+  layouts, multi-skill apply operations, and mismatched direct skill
+  directories.
 
 ## 0.2.1 - 2026-07-15
 
