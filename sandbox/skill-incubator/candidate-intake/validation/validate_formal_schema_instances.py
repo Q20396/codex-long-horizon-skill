@@ -33,6 +33,12 @@ SCHEMA_SETS = (
         "sandbox/skill-incubator/candidate-intake/proposal-evidence",
         lambda payload: [payload],
     ),
+    (
+        "public-equity-research-sandbox.schema.json",
+        "sandbox/skill-incubator/schemas/public-equity-research-sandbox.schema.json",
+        "sandbox/skill-incubator/architecture",
+        lambda payload: [payload],
+    ),
 )
 
 
@@ -59,7 +65,12 @@ def validate_root(root: Path) -> tuple[list[str], int, int]:
             continue
         validator = Draft202012Validator(schema)
         directory = root / instances_relative
-        paths = [directory / "capability-families.json"] if label == "capability-family.schema.json" else sorted(directory.glob("*.json"))
+        if label == "capability-family.schema.json":
+            paths = [directory / "capability-families.json"]
+        elif label == "public-equity-research-sandbox.schema.json":
+            paths = [directory / "public-equity-research-sandbox.json"]
+        else:
+            paths = sorted(directory.glob("*.json"))
         for path in paths:
             payload = json.loads(path.read_text(encoding="utf-8"))
             for index, instance in enumerate(extract(payload)):
