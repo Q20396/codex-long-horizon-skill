@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Q20396/codex-long-horizon-skill/schemas/frontier.schema.json",
+  "title": "LHE Computed Frontier",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["frontier"],
+  "properties": {
+    "frontier": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    }
+  }
+}

@@ -106,6 +106,11 @@ commands, or promote a result.
 For complex implementation plans, use `templates/implementation-plan.md` when a
 written plan would reduce risk.
 
+For long-running work with many possible next steps, use
+`references/decision-map-and-frontier.md` to create an optional planning-only
+Decision Map. The computed Frontier can recommend the next executable work, but
+it is not execution permission, approval, or a replacement for checkpoints.
+
 ### 4. Execute
 
 Make the smallest coherent change that solves the task. Preserve local style,
@@ -181,6 +186,8 @@ Load only the references that match the task:
 - `references/code-review-response-protocol.md` for reviewer or CI feedback
 - `references/security-review-protocol.md` for defensive security review
 - `references/ship-readiness-protocol.md` for merge/release readiness
+- `references/decision-map-and-frontier.md` when the user asks what to do next,
+  how to sequence a long-running task, or how to identify the next safe PR
 - `references/external-search-protocol.md` when current public technical facts
   are necessary
 - `references/safe-project-context-map.md` for a bounded map of an unfamiliar
