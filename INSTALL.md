@@ -109,7 +109,7 @@ copy, overwrite, or update files.
 For a full customer-facing prompt that compares installed skills with a
 published release without applying changes, see [UPGRADE_GUIDE.md](UPGRADE_GUIDE.md).
 
-Dry-run first:
+Dry-run a project-level `.agents/skills/<skill>` update first:
 
 ```bash
 python3 .agents/skills/long-horizon-engineering/scripts/update_installed_skill.py \
@@ -117,7 +117,7 @@ python3 .agents/skills/long-horizon-engineering/scripts/update_installed_skill.p
   --skill long-horizon-engineering
 ```
 
-Apply after review:
+Apply to a project-level installation after review:
 
 ```bash
 python3 .agents/skills/long-horizon-engineering/scripts/update_installed_skill.py \
@@ -126,10 +126,31 @@ python3 .agents/skills/long-horizon-engineering/scripts/update_installed_skill.p
   --apply
 ```
 
+For an existing Codex user-level installation, use the direct skill directory:
+
+```bash
+python3 .agents/skills/long-horizon-engineering/scripts/update_installed_skill.py \
+  --target-skill-dir ~/.codex/skills/long-horizon-engineering \
+  --skill long-horizon-engineering
+```
+
+```bash
+python3 .agents/skills/long-horizon-engineering/scripts/update_installed_skill.py \
+  --target-skill-dir ~/.codex/skills/long-horizon-engineering \
+  --skill long-horizon-engineering \
+  --apply
+```
+
+Do not use `~/.codex` as `--target-root`; that would imply the unsupported
+duplicate layout `~/.codex/.agents/skills/<skill>`.
+Direct skill-directory targets must use a `skills/<skill>` layout, and the
+final directory name must match the selected skill.
+
 The updater backs up the existing installed skill under `.codex-skill-backups/`
-before copying package files. Before `--apply` copies files, it runs the local
-read-only `audit_skill_safety.py` check against the package skills. It does not
-delete files, make network calls, or modify `main`.
+for project-level installs, or under `skill-backups/` next to the active Codex
+`skills/` directory for direct user-level installs. Before `--apply` copies
+files, it runs the local read-only `audit_skill_safety.py` check against the
+package skills. It does not delete files, make network calls, or modify `main`.
 
 ## Rollback
 
