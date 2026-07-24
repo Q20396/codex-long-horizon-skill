@@ -1,6 +1,6 @@
 {
   "skill_id": "ai-video-production",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "repo": "https://github.com/Q20396/codex-long-horizon-skill",
   "path": ".agents/skills/ai-video-production",
   "channel": "stable",
@@ -8,7 +8,7 @@
   "risk": "low",
   "summary": [
     "Retained stable AI video planning behavior.",
-    "Kept bundled validation metadata aligned with the v0.2.2 package release.",
+    "Kept bundled validation metadata aligned with the v0.2.3 package release.",
     "Retained explicit user authorization before checking and updating."
   ],
   "requires_manual_approval": true,

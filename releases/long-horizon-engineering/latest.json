@@ -1,15 +1,15 @@
 {
   "skill_id": "long-horizon-engineering",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "repo": "https://github.com/Q20396/codex-long-horizon-skill",
   "path": ".agents/skills/long-horizon-engineering",
   "channel": "stable",
   "release_date": "2026-07-24",
   "risk": "low",
   "summary": [
-    "Added approval-gated voice, 3D, public equity, and external capability sandbox governance.",
-    "Added optional Decision Map and deterministic Frontier planning support.",
-    "Fixed updater target-path contracts for direct ~/.codex/skills installations."
+    "Documented the stable v0.2.3 marketplace installation reference.",
+    "Kept --ref main documented only for intentionally tracking unreleased repository state.",
+    "Retained explicit user authorization before checking and updating."
   ],
   "requires_manual_approval": true,
   "auto_update": false

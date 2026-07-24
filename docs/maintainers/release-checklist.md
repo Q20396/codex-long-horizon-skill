@@ -34,13 +34,13 @@ Suggested routine checks:
 ```bash
 python3 -m unittest discover -s tests -p "test_*.py"
 python3 scripts/test_fresh_install.py --skip-codex-cli --verbose
-python3 scripts/check_release_readiness.py --version 0.1.0 --allow-existing-tag
+python3 scripts/check_release_readiness.py --version <version> --allow-existing-tag
 python3 scripts/full_skill_validation.py
 ```
 
 Suggested final pre-tag checks:
 
 ```bash
-python3 scripts/check_release_readiness.py --version 0.1.0 --pre-tag
+python3 scripts/check_release_readiness.py --version <version> --pre-tag
 python3 scripts/test_fresh_install.py --require-codex-cli --require-plugin-install --verbose
 ```
