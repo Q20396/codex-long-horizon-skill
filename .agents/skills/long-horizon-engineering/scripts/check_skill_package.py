@@ -4,7 +4,9 @@
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
+from typing import NamedTuple
 
 
 SCRIPT_PATH = Path(__file__).resolve()
@@ -82,6 +84,7 @@ PACKAGE_ONLY_FILES = [
 
 INSTALLED_REQUIRED_FILES = [
     ".agents/skills/long-horizon-engineering/SKILL.md",
+    ".agents/skills/long-horizon-engineering/package-manifest.json",
     ".agents/skills/long-horizon-engineering/references/protocol.md",
     ".agents/skills/long-horizon-engineering/references/adversarial-review-protocol.md",
     ".agents/skills/long-horizon-engineering/references/approved-tool-contract-card.md",
@@ -123,6 +126,7 @@ INSTALLED_REQUIRED_FILES = [
     ".agents/skills/long-horizon-engineering/references/local-voice-tool-sandbox.md",
     ".agents/skills/long-horizon-engineering/references/three-d-asset-provider-sandbox.md",
     ".agents/skills/long-horizon-engineering/references/security-review-protocol.md",
+    ".agents/skills/long-horizon-engineering/references/self-check-policy.md",
     ".agents/skills/long-horizon-engineering/references/stop-conditions.md",
     ".agents/skills/long-horizon-engineering/references/skill-authoring-methodology.md",
     ".agents/skills/long-horizon-engineering/references/skill-lifecycle-management.md",
@@ -182,6 +186,8 @@ INSTALLED_REQUIRED_FILES = [
     ".agents/skills/long-horizon-engineering/templates/secrets-scan-checklist.md",
     ".agents/skills/long-horizon-engineering/templates/rejected-skill-edit-log.md",
     ".agents/skills/long-horizon-engineering/templates/REPEATED_WORKFLOW_CANDIDATE_TEMPLATE.md",
+    ".agents/skills/long-horizon-engineering/templates/SELF_IMPROVEMENT_REVIEW_TEMPLATE.md",
+    ".agents/skills/long-horizon-engineering/templates/SKILL_USAGE_REVIEW_TEMPLATE.yaml",
     ".agents/skills/long-horizon-engineering/templates/stock-research-report.md",
     ".agents/skills/long-horizon-engineering/templates/TASK_LOG_TEMPLATE.md",
     ".agents/skills/long-horizon-engineering/templates/TRIGGER_REVIEW_TEMPLATE.md",
@@ -215,6 +221,7 @@ INSTALLED_REQUIRED_FILES = [
     ".agents/skills/long-horizon-engineering/scripts/validate_json_canvas.py",
     ".agents/skills/long-horizon-engineering/schemas/decision-map.schema.json",
     ".agents/skills/long-horizon-engineering/schemas/frontier.schema.json",
+    ".agents/skills/long-horizon-engineering/schemas/package-manifest.schema.json",
 ]
 
 AI_VIDEO_REQUIRED_FILES = [
@@ -245,6 +252,228 @@ AI_VIDEO_REQUIRED_FILES = [
     ".agents/skills/ai-video-production/templates/safe-skill-update-selfcheck.md",
     ".agents/skills/ai-video-production/scripts/scan_top_media_skills.py",
 ]
+
+PACKAGE_MANIFEST_PATH = SKILL_DIR / "package-manifest.json"
+LHE_PATH_PREFIX = ".agents/skills/long-horizon-engineering/"
+SUPPORTED_COMPONENT_LAYERS = {"core", "bundled-optional"}
+POST_LEGACY_REQUIRED_FILES = {
+    ".agents/skills/long-horizon-engineering/package-manifest.json",
+    ".agents/skills/long-horizon-engineering/references/self-check-policy.md",
+    ".agents/skills/long-horizon-engineering/templates/SELF_IMPROVEMENT_REVIEW_TEMPLATE.md",
+    ".agents/skills/long-horizon-engineering/templates/SKILL_USAGE_REVIEW_TEMPLATE.yaml",
+    ".agents/skills/long-horizon-engineering/schemas/package-manifest.schema.json",
+}
+
+
+class PackageContract(NamedTuple):
+    lhe_required_files: tuple[str, ...]
+    ai_video_required_files: tuple[str, ...]
+    loaded_from_manifest: bool
+
+
+def _legacy_package_contract() -> PackageContract:
+    return PackageContract(
+        lhe_required_files=tuple(
+            path
+            for path in INSTALLED_REQUIRED_FILES
+            if path not in POST_LEGACY_REQUIRED_FILES
+        ),
+        ai_video_required_files=tuple(AI_VIDEO_REQUIRED_FILES),
+        loaded_from_manifest=False,
+    )
+
+
+def _validate_manifest_paths(
+    values: object,
+    *,
+    owner: str,
+    prefix: str,
+) -> tuple[list[str], list[str]]:
+    errors: list[str] = []
+    if not isinstance(values, list) or not values:
+        return [], [f"Package manifest {owner} paths must be a non-empty list."]
+
+    paths: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        if not isinstance(value, str):
+            errors.append(f"Package manifest {owner} path must be a string.")
+            continue
+        path = Path(value)
+        if (
+            path.is_absolute()
+            or ".." in path.parts
+            or "*" in value
+            or "\\" in value
+            or "//" in value
+            or not value.startswith(prefix)
+        ):
+            errors.append(f"Unsafe package manifest path for {owner}: {value}")
+            continue
+        if value in seen:
+            errors.append(f"Duplicate package manifest path for {owner}: {value}")
+            continue
+        seen.add(value)
+        paths.append(value)
+    return paths, errors
+
+
+def load_package_contract() -> tuple[PackageContract, list[str]]:
+    """Load the layered manifest while retaining the v0.2 legacy fallback."""
+    fallback = _legacy_package_contract()
+    if not PACKAGE_MANIFEST_PATH.is_file():
+        return fallback, []
+
+    try:
+        manifest = json.loads(PACKAGE_MANIFEST_PATH.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        return fallback, [f"Invalid package manifest: {error}"]
+
+    errors: list[str] = []
+    if not isinstance(manifest, dict):
+        return fallback, ["Package manifest root must be an object."]
+    if manifest.get("schema_version") != "1.0":
+        errors.append("Package manifest schema_version must be 1.0.")
+    if manifest.get("skill_id") != "long-horizon-engineering":
+        errors.append("Package manifest skill_id must be long-horizon-engineering.")
+
+    components = manifest.get("components")
+    profiles = manifest.get("profiles")
+    default_profile = manifest.get("default_profile")
+    separate_skills = manifest.get("separate_skills")
+    migration = manifest.get("migration")
+    if not isinstance(components, dict):
+        errors.append("Package manifest components must be an object.")
+        components = {}
+    if not isinstance(profiles, dict):
+        errors.append("Package manifest profiles must be an object.")
+        profiles = {}
+    if not isinstance(default_profile, str) or default_profile not in profiles:
+        errors.append("Package manifest default_profile must name a declared profile.")
+        profile = {}
+    else:
+        profile = profiles[default_profile]
+        if not isinstance(profile, dict):
+            errors.append("Package manifest default profile must be an object.")
+            profile = {}
+
+    selected_components = profile.get("components", [])
+    if not isinstance(selected_components, list) or not all(
+        isinstance(value, str) for value in selected_components
+    ):
+        errors.append("Package manifest profile components must be a string list.")
+        selected_components = []
+
+    component_paths_by_id: dict[str, list[str]] = {}
+    seen_lhe_paths: set[str] = set()
+    for component_id, component in components.items():
+        if not isinstance(component_id, str) or not component_id:
+            errors.append("Package manifest component IDs must be non-empty strings.")
+            continue
+        if not isinstance(component, dict):
+            errors.append(f"Package manifest component must be an object: {component_id}")
+            continue
+        layer = component.get("layer")
+        if layer not in SUPPORTED_COMPONENT_LAYERS:
+            errors.append(f"Unsupported package layer for component: {component_id}")
+        expected_required = layer == "core"
+        if component.get("required") is not expected_required:
+            errors.append(
+                f"Package manifest component required flag conflicts with layer: {component_id}"
+            )
+        component_paths, path_errors = _validate_manifest_paths(
+            component.get("paths"),
+            owner=f"component {component_id}",
+            prefix=LHE_PATH_PREFIX,
+        )
+        errors.extend(path_errors)
+        for value in component_paths:
+            if value in seen_lhe_paths:
+                errors.append(f"Package manifest path appears in multiple components: {value}")
+                continue
+            seen_lhe_paths.add(value)
+        component_paths_by_id[component_id] = component_paths
+
+    lhe_paths: list[str] = []
+    for component_id in selected_components:
+        if component_id not in component_paths_by_id:
+            errors.append(
+                f"Package manifest profile references unknown component: {component_id}"
+            )
+            continue
+        lhe_paths.extend(component_paths_by_id[component_id])
+
+    ai_video_paths: list[str] = []
+    if not isinstance(separate_skills, list):
+        errors.append("Package manifest separate_skills must be a list.")
+        separate_skills = []
+    separate_by_id: dict[str, dict] = {}
+    separate_paths_by_id: dict[str, list[str]] = {}
+    for item in separate_skills:
+        if not isinstance(item, dict) or not isinstance(item.get("skill_id"), str):
+            errors.append("Package manifest separate skill must declare a string skill_id.")
+            continue
+        skill_id = item["skill_id"]
+        if skill_id in separate_by_id:
+            errors.append(f"Duplicate separate skill in package manifest: {skill_id}")
+            continue
+        separate_by_id[skill_id] = item
+        if item.get("layer") != "separate-skill":
+            errors.append(f"Separate skill has invalid layer: {skill_id}")
+        if not isinstance(item.get("required_in_source_package"), bool):
+            errors.append(
+                f"Separate skill must declare a boolean required_in_source_package: {skill_id}"
+            )
+        separate_paths, path_errors = _validate_manifest_paths(
+            item.get("paths"),
+            owner=f"separate skill {skill_id}",
+            prefix=f".agents/skills/{skill_id}/",
+        )
+        errors.extend(path_errors)
+        separate_paths_by_id[skill_id] = separate_paths
+    selected_separate = profile.get("separate_skills", [])
+    if not isinstance(selected_separate, list) or not all(
+        isinstance(value, str) for value in selected_separate
+    ):
+        errors.append("Package manifest profile separate_skills must be a string list.")
+        selected_separate = []
+    for skill_id in selected_separate:
+        item = separate_by_id.get(skill_id)
+        if item is None:
+            errors.append(
+                f"Package manifest profile references unknown separate skill: {skill_id}"
+            )
+            continue
+        if skill_id == "ai-video-production":
+            ai_video_paths = separate_paths_by_id[skill_id]
+
+    expected_migration = {
+        "physical_layout_changed": False,
+        "default_install_changed": False,
+        "legacy_checker_fallback": True,
+    }
+    if migration != expected_migration:
+        errors.append(
+            "Package manifest migration flags must preserve the v0.2 legacy-full layout."
+        )
+
+    if set(lhe_paths) != set(INSTALLED_REQUIRED_FILES):
+        errors.append(
+            "Package manifest LHE paths differ from the legacy required-file contract."
+        )
+    if set(ai_video_paths) != set(AI_VIDEO_REQUIRED_FILES):
+        errors.append(
+            "Package manifest AI Video paths differ from the legacy required-file contract."
+        )
+
+    return (
+        PackageContract(
+            lhe_required_files=tuple(lhe_paths),
+            ai_video_required_files=tuple(ai_video_paths),
+            loaded_from_manifest=True,
+        ),
+        errors,
+    )
 
 
 def installed_path(relative_path: str) -> Path:
@@ -340,19 +569,24 @@ def main() -> None:
         raise SystemExit("ERROR: choose only one of --package or --installed.")
 
     check_package_files = args.package or (not args.installed and package_mode())
+    contract, manifest_errors = load_package_contract()
 
-    errors = []
+    errors = list(manifest_errors)
     if check_package_files:
         errors.extend(check_required_files(PACKAGE_ONLY_FILES, installed=False))
     else:
         print("Installed-skill mode: skipping package-only files.")
-    errors.extend(check_required_files(INSTALLED_REQUIRED_FILES, installed=True))
+    errors.extend(check_required_files(list(contract.lhe_required_files), installed=True))
     errors.extend(check_skill_front_matter(SKILL_DIR, "long-horizon-engineering"))
     if check_package_files:
-        errors.extend(check_required_files(AI_VIDEO_REQUIRED_FILES, installed=True))
+        errors.extend(
+            check_required_files(list(contract.ai_video_required_files), installed=True)
+        )
         errors.extend(check_skill_front_matter(AI_VIDEO_SKILL_DIR, "ai-video-production"))
     elif AI_VIDEO_SKILL_DIR.exists():
-        errors.extend(check_required_files(AI_VIDEO_REQUIRED_FILES, installed=True))
+        errors.extend(
+            check_required_files(list(contract.ai_video_required_files), installed=True)
+        )
         errors.extend(check_skill_front_matter(AI_VIDEO_SKILL_DIR, "ai-video-production"))
     errors.extend(check_nested_agents())
 
