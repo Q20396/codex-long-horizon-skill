@@ -6,6 +6,15 @@ All notable changes to this project are summarized here.
 
 No unreleased changes.
 
+## 0.2.4 - 2026-07-24
+
+- Added a proposal-only renderer runtime sandbox protocol and approval card for
+  AI video work. Environment inspection, dependency installation, preview,
+  final render, external processing, and sharing remain separate approvals.
+- Kept renderer selection and runtime execution separate: selecting a renderer
+  does not authorize installation, rendering, provider use, uploads, or sharing.
+- Added contract coverage for the renderer runtime sandbox boundary.
+
 ## 0.2.3 - 2026-07-24
 
 - Documented `--ref v0.2.3` as the stable marketplace installation reference

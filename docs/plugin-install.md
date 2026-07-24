@@ -10,7 +10,7 @@ This repository can be used in two ways:
 Add the latest stable release as a marketplace:
 
 ```bash
-codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.2.3
+codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.2.4
 ```
 
 Use `--ref main` only when you intentionally want the newest unreleased
