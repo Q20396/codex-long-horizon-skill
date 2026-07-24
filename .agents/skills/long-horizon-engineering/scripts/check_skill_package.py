@@ -269,6 +269,7 @@ class PackageContract(NamedTuple):
     lhe_required_files: tuple[str, ...]
     ai_video_required_files: tuple[str, ...]
     loaded_from_manifest: bool
+    selected_profile: str
 
 
 def _legacy_package_contract() -> PackageContract:
@@ -280,6 +281,7 @@ def _legacy_package_contract() -> PackageContract:
         ),
         ai_video_required_files=tuple(AI_VIDEO_REQUIRED_FILES),
         loaded_from_manifest=False,
+        selected_profile="legacy-fallback",
     )
 
 
@@ -318,10 +320,16 @@ def _validate_manifest_paths(
     return paths, errors
 
 
-def load_package_contract() -> tuple[PackageContract, list[str]]:
+def load_package_contract(
+    requested_profile: str | None = None,
+) -> tuple[PackageContract, list[str]]:
     """Load the layered manifest while retaining the v0.2 legacy fallback."""
     fallback = _legacy_package_contract()
     if not PACKAGE_MANIFEST_PATH.is_file():
+        if requested_profile is not None:
+            return fallback, [
+                "Cannot select a package profile without package-manifest.json."
+            ]
         return fallback, []
 
     try:
@@ -417,11 +425,20 @@ def load_package_contract() -> tuple[PackageContract, list[str]]:
         or default_profile not in profile_components_by_id
     ):
         errors.append("Package manifest default_profile must name a declared profile.")
+        selected_profile = ""
         selected_components: list[str] = []
         selected_separate: list[str] = []
     else:
-        selected_components = profile_components_by_id[default_profile]
-        selected_separate = profile_separate_by_id[default_profile]
+        selected_profile = requested_profile or default_profile
+        if selected_profile not in profile_components_by_id:
+            errors.append(
+                f"Package manifest does not declare requested profile: {selected_profile}"
+            )
+            selected_components = []
+            selected_separate = []
+        else:
+            selected_components = profile_components_by_id[selected_profile]
+            selected_separate = profile_separate_by_id[selected_profile]
 
     component_paths_by_id: dict[str, list[str]] = {}
     seen_lhe_paths: set[str] = set()
@@ -537,20 +554,35 @@ def load_package_contract() -> tuple[PackageContract, list[str]]:
             "Package manifest migration flags must preserve the v0.2 legacy-full layout."
         )
 
-    if set(lhe_paths) != set(INSTALLED_REQUIRED_FILES):
-        errors.append(
-            "Package manifest LHE paths differ from the legacy required-file contract."
-        )
-    if set(ai_video_paths) != set(AI_VIDEO_REQUIRED_FILES):
-        errors.append(
-            "Package manifest AI Video paths differ from the legacy required-file contract."
-        )
+    if default_profile in profile_components_by_id:
+        default_lhe_paths = [
+            path
+            for component_id in profile_components_by_id[default_profile]
+            for path in component_paths_by_id.get(component_id, [])
+        ]
+        default_ai_video_paths = [
+            path
+            for skill_id in profile_separate_by_id[default_profile]
+            if skill_id == "ai-video-production"
+            for path in separate_paths_by_id.get(skill_id, [])
+        ]
+        if set(default_lhe_paths) != set(INSTALLED_REQUIRED_FILES):
+            errors.append(
+                "Package manifest default profile LHE paths differ from the "
+                "legacy required-file contract."
+            )
+        if set(default_ai_video_paths) != set(AI_VIDEO_REQUIRED_FILES):
+            errors.append(
+                "Package manifest default profile AI Video paths differ from the "
+                "legacy required-file contract."
+            )
 
     return (
         PackageContract(
             lhe_required_files=tuple(lhe_paths),
             ai_video_required_files=tuple(ai_video_paths),
             loaded_from_manifest=True,
+            selected_profile=selected_profile,
         ),
         errors,
     )
@@ -640,6 +672,13 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Check only installed skill files under .agents/skills.",
     )
+    parser.add_argument(
+        "--profile",
+        help=(
+            "Validate a declared package profile. Defaults to the manifest's "
+            "default_profile."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -649,7 +688,7 @@ def main() -> None:
         raise SystemExit("ERROR: choose only one of --package or --installed.")
 
     check_package_files = args.package or (not args.installed and package_mode())
-    contract, manifest_errors = load_package_contract()
+    contract, manifest_errors = load_package_contract(args.profile)
 
     errors = list(manifest_errors)
     if check_package_files:
@@ -658,12 +697,12 @@ def main() -> None:
         print("Installed-skill mode: skipping package-only files.")
     errors.extend(check_required_files(list(contract.lhe_required_files), installed=True))
     errors.extend(check_skill_front_matter(SKILL_DIR, "long-horizon-engineering"))
-    if check_package_files:
+    if check_package_files and contract.ai_video_required_files:
         errors.extend(
             check_required_files(list(contract.ai_video_required_files), installed=True)
         )
         errors.extend(check_skill_front_matter(AI_VIDEO_SKILL_DIR, "ai-video-production"))
-    elif AI_VIDEO_SKILL_DIR.exists():
+    elif contract.ai_video_required_files and AI_VIDEO_SKILL_DIR.exists():
         errors.extend(
             check_required_files(list(contract.ai_video_required_files), installed=True)
         )
@@ -675,12 +714,26 @@ def main() -> None:
             print(f"ERROR: {error}")
         raise SystemExit(1)
 
-    if check_package_files:
-        print("Skill package check passed for long-horizon-engineering and ai-video-production.")
-    elif AI_VIDEO_SKILL_DIR.exists():
-        print("Installed skill check passed for long-horizon-engineering and ai-video-production.")
+    if check_package_files and contract.ai_video_required_files:
+        print(
+            "Skill package check passed for long-horizon-engineering and "
+            f"ai-video-production (profile: {contract.selected_profile})."
+        )
+    elif check_package_files:
+        print(
+            "Skill package check passed for long-horizon-engineering "
+            f"(profile: {contract.selected_profile})."
+        )
+    elif contract.ai_video_required_files and AI_VIDEO_SKILL_DIR.exists():
+        print(
+            "Installed skill check passed for long-horizon-engineering and "
+            f"ai-video-production (profile: {contract.selected_profile})."
+        )
     else:
-        print("Installed skill check passed for long-horizon-engineering.")
+        print(
+            "Installed skill check passed for long-horizon-engineering "
+            f"(profile: {contract.selected_profile})."
+        )
 
 
 if __name__ == "__main__":

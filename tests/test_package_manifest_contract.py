@@ -3,6 +3,9 @@ from __future__ import annotations
 import importlib.util
 import json
 from pathlib import Path
+import shutil
+import subprocess
+import sys
 import tempfile
 import unittest
 from unittest import mock
@@ -24,6 +27,8 @@ class PackageManifestContractTests(unittest.TestCase):
         self.assertEqual(manifest["skill_id"], "long-horizon-engineering")
         self.assertEqual(manifest["default_profile"], "legacy-full")
         self.assertEqual(manifest["profiles"]["legacy-full"]["components"], ["core", "bundled-optional"])
+        self.assertEqual(manifest["profiles"]["core-only"]["components"], ["core"])
+        self.assertEqual(manifest["profiles"]["core-only"]["separate_skills"], [])
         self.assertFalse(manifest["migration"]["physical_layout_changed"])
         self.assertFalse(manifest["migration"]["default_install_changed"])
         self.assertTrue(manifest["migration"]["legacy_checker_fallback"])
@@ -113,6 +118,110 @@ class PackageManifestContractTests(unittest.TestCase):
             set(module.AI_VIDEO_REQUIRED_FILES),
         )
         self.assertTrue(contract.loaded_from_manifest)
+        self.assertEqual(contract.selected_profile, "legacy-full")
+
+    def test_checker_selects_core_only_profile(self) -> None:
+        spec = importlib.util.spec_from_file_location("check_skill_package", CHECKER)
+        module = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
+        spec.loader.exec_module(module)
+        manifest = self.load_json(MANIFEST)
+        contract, errors = module.load_package_contract("core-only")
+        self.assertEqual(errors, [])
+        self.assertTrue(contract.loaded_from_manifest)
+        self.assertEqual(contract.selected_profile, "core-only")
+        self.assertEqual(
+            set(contract.lhe_required_files),
+            set(manifest["components"]["core"]["paths"]),
+        )
+        self.assertEqual(contract.ai_video_required_files, ())
+
+    def test_checker_rejects_unknown_profile(self) -> None:
+        spec = importlib.util.spec_from_file_location("check_skill_package", CHECKER)
+        module = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
+        spec.loader.exec_module(module)
+        contract, errors = module.load_package_contract("missing-profile")
+        self.assertEqual(contract.selected_profile, "missing-profile")
+        self.assertTrue(
+            any("does not declare requested profile" in error for error in errors),
+            errors,
+        )
+
+    def test_cli_core_only_profile_does_not_require_optional_or_ai_video(self) -> None:
+        result = subprocess.run(
+            [sys.executable, str(CHECKER), "--package", "--profile", "core-only"],
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("profile: core-only", result.stdout)
+        self.assertNotIn("ai-video-production", result.stdout)
+
+    def test_core_only_installed_layout_passes_without_optional_files(self) -> None:
+        manifest = self.load_json(MANIFEST)
+        with tempfile.TemporaryDirectory() as temp_name:
+            temp_root = Path(temp_name)
+            for relative_path in manifest["components"]["core"]["paths"]:
+                source = ROOT / relative_path
+                destination = temp_root / relative_path
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source, destination)
+            checker = (
+                temp_root
+                / ".agents"
+                / "skills"
+                / "long-horizon-engineering"
+                / "scripts"
+                / "check_skill_package.py"
+            )
+            core_result = subprocess.run(
+                [
+                    sys.executable,
+                    str(checker),
+                    "--installed",
+                    "--profile",
+                    "core-only",
+                ],
+                cwd=temp_root,
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            legacy_result = subprocess.run(
+                [
+                    sys.executable,
+                    str(checker),
+                    "--installed",
+                    "--profile",
+                    "legacy-full",
+                ],
+                cwd=temp_root,
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+        self.assertEqual(
+            core_result.returncode,
+            0,
+            core_result.stdout + core_result.stderr,
+        )
+        self.assertIn("profile: core-only", core_result.stdout)
+        self.assertNotEqual(legacy_result.returncode, 0)
+        self.assertIn("Missing required file", legacy_result.stdout)
+
+    def test_cli_rejects_unknown_profile(self) -> None:
+        result = subprocess.run(
+            [sys.executable, str(CHECKER), "--package", "--profile", "missing-profile"],
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("does not declare requested profile", result.stdout)
 
     def test_checker_rejects_unsafe_manifest_paths(self) -> None:
         spec = importlib.util.spec_from_file_location("check_skill_package", CHECKER)
@@ -263,6 +372,7 @@ class PackageManifestContractTests(unittest.TestCase):
                 contract, errors = module.load_package_contract()
         self.assertEqual(errors, [])
         self.assertFalse(contract.loaded_from_manifest)
+        self.assertEqual(contract.selected_profile, "legacy-fallback")
         self.assertEqual(
             set(contract.lhe_required_files),
             set(module.INSTALLED_REQUIRED_FILES)
@@ -271,6 +381,21 @@ class PackageManifestContractTests(unittest.TestCase):
         self.assertNotIn(
             ".agents/skills/long-horizon-engineering/package-manifest.json",
             contract.lhe_required_files,
+        )
+
+    def test_explicit_profile_requires_manifest(self) -> None:
+        spec = importlib.util.spec_from_file_location("check_skill_package", CHECKER)
+        module = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
+        spec.loader.exec_module(module)
+        with tempfile.TemporaryDirectory() as temp_name:
+            missing = Path(temp_name) / "missing.json"
+            with mock.patch.object(module, "PACKAGE_MANIFEST_PATH", missing):
+                contract, errors = module.load_package_contract("core-only")
+        self.assertFalse(contract.loaded_from_manifest)
+        self.assertTrue(
+            any("Cannot select a package profile" in error for error in errors),
+            errors,
         )
 
 if __name__ == "__main__":

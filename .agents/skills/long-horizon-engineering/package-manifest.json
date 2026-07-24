@@ -12,6 +12,12 @@
       "separate_skills": [
         "ai-video-production"
       ]
+    },
+    "core-only": {
+      "components": [
+        "core"
+      ],
+      "separate_skills": []
     }
   },
   "components": {
