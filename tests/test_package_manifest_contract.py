@@ -189,6 +189,69 @@ class PackageManifestContractTests(unittest.TestCase):
         self.assertTrue(any("missing-component" in error for error in errors), errors)
         self.assertTrue(any("missing-skill" in error for error in errors), errors)
 
+    def test_checker_enforces_schema_structure_without_jsonschema(self) -> None:
+        spec = importlib.util.spec_from_file_location("check_skill_package", CHECKER)
+        module = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
+        spec.loader.exec_module(module)
+
+        def validate(mutator) -> list[str]:
+            manifest = self.load_json(MANIFEST)
+            mutator(manifest)
+            with tempfile.TemporaryDirectory() as temp_name:
+                path = Path(temp_name) / "package-manifest.json"
+                path.write_text(json.dumps(manifest), encoding="utf-8")
+                with mock.patch.object(module, "PACKAGE_MANIFEST_PATH", path):
+                    _, errors = module.load_package_contract()
+            return errors
+
+        cases = {
+            "unknown root field": (
+                lambda manifest: manifest.__setitem__("unexpected", True),
+                "unknown fields",
+            ),
+            "missing canonical component": (
+                lambda manifest: (
+                    manifest["components"].__setitem__(
+                        "renamed-core", manifest["components"].pop("core")
+                    ),
+                    manifest["profiles"]["legacy-full"]["components"].__setitem__(
+                        0, "renamed-core"
+                    ),
+                ),
+                "missing canonical components",
+            ),
+            "unknown component field": (
+                lambda manifest: manifest["components"]["core"].__setitem__(
+                    "unexpected", True
+                ),
+                "component fields are invalid",
+            ),
+            "unknown separate skill field": (
+                lambda manifest: manifest["separate_skills"][0].__setitem__(
+                    "unexpected", True
+                ),
+                "Separate skill fields are invalid",
+            ),
+            "invalid schema type": (
+                lambda manifest: manifest.__setitem__("$schema", 3),
+                "$schema must be a string",
+            ),
+            "empty separate skill id": (
+                lambda manifest: manifest["separate_skills"][0].__setitem__(
+                    "skill_id", ""
+                ),
+                "non-empty string skill_id",
+            ),
+        }
+        for name, (mutator, expected_error) in cases.items():
+            with self.subTest(name=name):
+                errors = validate(mutator)
+                self.assertTrue(
+                    any(expected_error in error for error in errors),
+                    errors,
+                )
+
     def test_checker_uses_legacy_contract_when_manifest_is_absent(self) -> None:
         spec = importlib.util.spec_from_file_location("check_skill_package", CHECKER)
         module = importlib.util.module_from_spec(spec)

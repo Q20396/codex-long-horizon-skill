@@ -332,6 +332,30 @@ def load_package_contract() -> tuple[PackageContract, list[str]]:
     errors: list[str] = []
     if not isinstance(manifest, dict):
         return fallback, ["Package manifest root must be an object."]
+    required_root_fields = {
+        "schema_version",
+        "skill_id",
+        "default_profile",
+        "profiles",
+        "components",
+        "separate_skills",
+        "migration",
+    }
+    allowed_root_fields = required_root_fields | {"$schema"}
+    missing_root_fields = required_root_fields - set(manifest)
+    unknown_root_fields = set(manifest) - allowed_root_fields
+    if missing_root_fields:
+        errors.append(
+            "Package manifest is missing required fields: "
+            + ", ".join(sorted(missing_root_fields))
+        )
+    if unknown_root_fields:
+        errors.append(
+            "Package manifest contains unknown fields: "
+            + ", ".join(sorted(unknown_root_fields))
+        )
+    if "$schema" in manifest and not isinstance(manifest["$schema"], str):
+        errors.append("Package manifest $schema must be a string.")
     if manifest.get("schema_version") != "1.0":
         errors.append("Package manifest schema_version must be 1.0.")
     if manifest.get("skill_id") != "long-horizon-engineering":
@@ -345,6 +369,12 @@ def load_package_contract() -> tuple[PackageContract, list[str]]:
     if not isinstance(components, dict):
         errors.append("Package manifest components must be an object.")
         components = {}
+    missing_components = {"core", "bundled-optional"} - set(components)
+    if missing_components:
+        errors.append(
+            "Package manifest is missing canonical components: "
+            + ", ".join(sorted(missing_components))
+        )
     if not isinstance(profiles, dict):
         errors.append("Package manifest profiles must be an object.")
         profiles = {}
@@ -402,6 +432,10 @@ def load_package_contract() -> tuple[PackageContract, list[str]]:
         if not isinstance(component, dict):
             errors.append(f"Package manifest component must be an object: {component_id}")
             continue
+        if set(component) != {"layer", "required", "paths"}:
+            errors.append(
+                f"Package manifest component fields are invalid: {component_id}"
+            )
         layer = component.get("layer")
         if layer not in SUPPORTED_COMPONENT_LAYERS:
             errors.append(f"Unsupported package layer for component: {component_id}")
@@ -444,14 +478,27 @@ def load_package_contract() -> tuple[PackageContract, list[str]]:
     separate_by_id: dict[str, dict] = {}
     separate_paths_by_id: dict[str, list[str]] = {}
     for item in separate_skills:
-        if not isinstance(item, dict) or not isinstance(item.get("skill_id"), str):
-            errors.append("Package manifest separate skill must declare a string skill_id.")
+        if (
+            not isinstance(item, dict)
+            or not isinstance(item.get("skill_id"), str)
+            or not item.get("skill_id")
+        ):
+            errors.append(
+                "Package manifest separate skill must declare a non-empty string skill_id."
+            )
             continue
         skill_id = item["skill_id"]
         if skill_id in separate_by_id:
             errors.append(f"Duplicate separate skill in package manifest: {skill_id}")
             continue
         separate_by_id[skill_id] = item
+        if set(item) != {
+            "skill_id",
+            "layer",
+            "required_in_source_package",
+            "paths",
+        }:
+            errors.append(f"Separate skill fields are invalid: {skill_id}")
         if item.get("layer") != "separate-skill":
             errors.append(f"Separate skill has invalid layer: {skill_id}")
         if not isinstance(item.get("required_in_source_package"), bool):
