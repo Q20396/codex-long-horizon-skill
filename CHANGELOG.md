@@ -6,6 +6,12 @@ All notable changes to this project are summarized here.
 
 No unreleased changes.
 
+## 0.2.3 - 2026-07-24
+
+- Documented `--ref v0.2.3` as the stable marketplace installation reference
+  and retained `--ref main` only for users who explicitly want unreleased
+  repository state.
+
 ## 0.2.2 - 2026-07-24
 
 - Added proposal-only local voice-tool and external 3D asset-provider sandbox

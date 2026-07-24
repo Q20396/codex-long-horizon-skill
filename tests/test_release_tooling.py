@@ -249,7 +249,7 @@ def write_fake_codex(bin_dir: Path) -> Path:
                         "pluginId": f"{plugin_name}@{marketplace_name}",
                         "name": plugin_name,
                         "marketplaceName": marketplace_name,
-                        "version": "0.2.2",
+                        "version": "0.2.3",
                         "installedPath": str(installed),
                     }))
                 else:
@@ -260,16 +260,16 @@ def write_fake_codex(bin_dir: Path) -> Path:
                 installed = codex_home / "plugins" / plugin_name
                 if "--json" in argv:
                     if scenario == "plugin_list_available_only":
-                        print(json.dumps({"installed": [], "available": [{"name": plugin_name, "marketplaceName": marketplace_name, "version": "0.2.2"}]}))
+                        print(json.dumps({"installed": [], "available": [{"name": plugin_name, "marketplaceName": marketplace_name, "version": "0.2.3"}]}))
                         raise SystemExit(0)
                     if scenario == "plugin_list_wrong_version":
                         print(json.dumps({"installed": [{"name": plugin_name, "marketplaceName": marketplace_name, "version": "9.9.9", "installed": installed.exists()}]}))
                         raise SystemExit(0)
-                    print(json.dumps({"installed": [{"name": plugin_name, "marketplaceName": marketplace_name, "version": "0.2.2", "installed": installed.exists()}]}))
+                    print(json.dumps({"installed": [{"name": plugin_name, "marketplaceName": marketplace_name, "version": "0.2.3", "installed": installed.exists()}]}))
                 elif scenario == "plugin_list_text_substring":
                     print(f"{plugin_name}-old {marketplace_name} 0.2.1 installed")
                 else:
-                    print(f"{plugin_name} {marketplace_name} 0.2.2 installed")
+                    print(f"{plugin_name} {marketplace_name} 0.2.3 installed")
                 raise SystemExit(0)
 
             print(f"unhandled fake codex command: {argv}", file=sys.stderr)
@@ -437,7 +437,7 @@ class ReleaseReadinessTests(unittest.TestCase):
         if env:
             run_env.update(env)
         return subprocess.run(
-            [sys.executable, "scripts/check_release_readiness.py", "--version", "0.2.2", *args],
+            [sys.executable, "scripts/check_release_readiness.py", "--version", "0.2.3", *args],
             cwd=repo,
             env=run_env,
             text=True,
@@ -446,7 +446,7 @@ class ReleaseReadinessTests(unittest.TestCase):
         )
 
     def release_notes(self, repo: Path) -> Path:
-        return repo / "docs" / "releases" / "v0.2.2.md"
+        return repo / "docs" / "releases" / "v0.2.3.md"
 
     def changelog(self, repo: Path) -> Path:
         return repo / "CHANGELOG.md"
@@ -460,7 +460,7 @@ class ReleaseReadinessTests(unittest.TestCase):
             capture_output=True,
             text=True,
         )
-        subprocess.run(["git", "tag", "v0.2.2"], cwd=repo, check=True, capture_output=True, text=True)
+        subprocess.run(["git", "tag", "v0.2.3"], cwd=repo, check=True, capture_output=True, text=True)
 
     def assert_failed_without_traceback(self, result: subprocess.CompletedProcess[str], expected: str) -> None:
         output = result.stdout + result.stderr
@@ -513,7 +513,7 @@ class ReleaseReadinessTests(unittest.TestCase):
     def test_missing_dated_changelog_heading_fails(self) -> None:
         repo = self.copy_repo("missing-changelog-heading")
         self.changelog(repo).write_text(
-            self.changelog(repo).read_text(encoding="utf-8").replace("## 0.2.2 - 2026-07-24", "## 0.2.2"),
+            self.changelog(repo).read_text(encoding="utf-8").replace("## 0.2.3 - 2026-07-24", "## 0.2.3"),
             encoding="utf-8",
         )
         result = self.run_readiness(repo, "--allow-existing-tag")
@@ -524,7 +524,7 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.changelog(repo).write_text(
             "# Changelog\n\nAll notable changes to this project are summarized here.\n\n"
             "## Unreleased\n\nNo unreleased changes.\n\n"
-            "## 0.2.2 - 2026-07-24\n\n"
+            "## 0.2.3 - 2026-07-24\n\n"
             "## 2026-06-15\n\n- Older work.\n",
             encoding="utf-8",
         )
@@ -543,14 +543,14 @@ class ReleaseReadinessTests(unittest.TestCase):
         data["version"] = "9.9.9"
         manifest.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
         result = self.run_readiness(repo, "--allow-existing-tag")
-        self.assert_failed_without_traceback(result, "plugin version '9.9.9' does not match '0.2.2'")
+        self.assert_failed_without_traceback(result, "plugin version '9.9.9' does not match '0.2.3'")
 
     def test_release_note_date_must_match_changelog_date(self) -> None:
         repo = self.copy_repo("mismatched-release-date")
         self.changelog(repo).write_text(
             self.changelog(repo).read_text(encoding="utf-8").replace(
-                "## 0.2.2 - 2026-07-24",
-                "## 0.2.2 - 2026-07-23",
+                "## 0.2.3 - 2026-07-24",
+                "## 0.2.3 - 2026-07-23",
             ),
             encoding="utf-8",
         )
@@ -609,9 +609,9 @@ class ReleaseReadinessTests(unittest.TestCase):
         repo = self.copy_repo("duplicated-changelog")
         text = self.changelog(repo).read_text(encoding="utf-8")
         duplicated = (
-            "- Fixed the updater path contract so `--target-root` continues to target\n"
-            "  project-scoped `.agents/skills/<skill>` installs while `--target-skill-dir`\n"
-            "  can safely target existing Codex user-level `skills/<skill>` installs.\n"
+            "- Documented `--ref v0.2.3` as the stable marketplace installation reference\n"
+            "  and retained `--ref main` only for users who explicitly want unreleased\n"
+            "  repository state.\n"
         )
         unreleased_heading = "## Unreleased\n"
         self.assertIn(unreleased_heading, text)
