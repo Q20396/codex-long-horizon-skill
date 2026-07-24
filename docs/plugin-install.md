@@ -7,7 +7,14 @@ This repository can be used in two ways:
 
 ## Plugin Installation
 
-Add this repository as a marketplace:
+Add the latest stable release as a marketplace:
+
+```bash
+codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.2.2
+```
+
+Use `--ref main` only when you intentionally want the newest unreleased
+repository state:
 
 ```bash
 codex plugin marketplace add Q20396/codex-long-horizon-skill --ref main

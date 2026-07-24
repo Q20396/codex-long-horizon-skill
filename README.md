@@ -25,7 +25,14 @@ Install once. Reuse everywhere.
 
 ## Quick Start
 
-Add the repository marketplace:
+Add the latest stable repository marketplace:
+
+```bash
+codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.2.2
+```
+
+Use `--ref main` only when you intentionally want the newest unreleased
+repository state:
 
 ```bash
 codex plugin marketplace add Q20396/codex-long-horizon-skill --ref main
