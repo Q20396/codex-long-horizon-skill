@@ -142,6 +142,42 @@ class AIVideoProductionContractTests(unittest.TestCase):
             ],
         )
 
+    def test_renderer_runtime_is_a_separately_approved_sandbox_handoff(self) -> None:
+        skill = self.read("SKILL.md")
+        protocol = self.read("references/renderer-runtime-sandbox.md")
+        template = self.read("templates/RENDER_RUNTIME_APPROVAL_CARD.md")
+        self.assert_contains_all(
+            skill,
+            [
+                "Optional Renderer Runtime Sandbox Boundary",
+                "does not install, configure, start, connect, or invoke",
+                "renderer-runtime-sandbox.md",
+                "RENDER_RUNTIME_APPROVAL_CARD.md",
+                "Selecting a renderer never grants permission",
+            ],
+        )
+        self.assert_contains_all(
+            protocol,
+            [
+                "planning skill separate from execution",
+                "Dependency installation",
+                "Preview",
+                "Final render",
+                "External processing or sharing",
+                "Do not silently fall back from a local renderer to an external provider",
+            ],
+        )
+        self.assert_contains_all(
+            template,
+            [
+                "Status: PROPOSAL_ONLY",
+                "Environment inspection approved: No",
+                "Dependency installation approved: No",
+                "Final render approved: No",
+                "External processing approved: No",
+            ],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -17,6 +17,8 @@ This skill is documentation-first. It may guide scripts, storyboards, shot lists
 
 - "Design a storyboard and shot list" -> use `ai-video-production`.
 - "Create a render handoff and visual asset plan" -> use `ai-video-production`.
+- "Assess a local renderer runtime before an approved render" -> use
+  `ai-video-production` and the renderer runtime sandbox handoff.
 - "Debug a multi-file Remotion rendering bug" -> use
   `long-horizon-engineering`.
 - "Migrate a video-rendering codebase" -> use `long-horizon-engineering`.
@@ -106,6 +108,25 @@ approves generation.
 ## Required Gate
 
 Before final render, upload, publication, or external sharing, require explicit human approval. The handoff should show what will be rendered, what source assets are used, where outputs will be stored, and what command or tool action the human may run.
+
+## Optional Renderer Runtime Sandbox Boundary
+
+This skill may prepare a renderer choice, preview plan, render handoff, and
+approval card. It does not install, configure, start, connect, or invoke
+Remotion, HyperFrames, FFmpeg, Node, browser automation, Docker, a cloud
+renderer, or an external media provider.
+
+When the user explicitly asks to assess or use a renderer runtime, consult
+`references/renderer-runtime-sandbox.md` and complete
+`templates/RENDER_RUNTIME_APPROVAL_CARD.md`. Treat the protocol as a
+proposal-only handoff: environment inspection, dependency installation,
+local preview, final render, external processing, asset upload, and output
+sharing each require separate approval. Selecting a renderer never grants
+permission to perform any of those actions.
+
+If the required runtime is unavailable or its data boundary is unclear, keep
+the work at the planning and handoff stage. Do not create an integration,
+infer a local runtime is private, or silently switch to an external provider.
 
 ## Optional Voice And Audio Tool Boundary
 

@@ -88,6 +88,28 @@ class SafeContextRendererProtocolsContractTests(unittest.TestCase):
         self.assertIn("renderer-selection.md", skill)
         self.assertIn("RENDER_EVIDENCE_TEMPLATE.md", skill)
 
+    def test_renderer_runtime_stays_separate_from_planning_and_external_use(self) -> None:
+        protocol = self.read(VIDEO / "references" / "renderer-runtime-sandbox.md")
+        template = self.read(VIDEO / "templates" / "RENDER_RUNTIME_APPROVAL_CARD.md")
+        self.assert_contains_all(
+            protocol,
+            [
+                "proposal and approval protocol, not an installer",
+                "Neither a selected renderer nor an approved video plan authorizes a runtime",
+                "Each external transfer or publish action needs its own approval",
+                "Stop and return to the render handoff",
+            ],
+        )
+        self.assert_contains_all(
+            template,
+            [
+                "Every unchecked stage remains denied",
+                "Network required: No / Yes, separately approved",
+                "Account or session access: No / Yes, separately approved",
+                "Cost, quota, or billing effect: No / Yes, separately approved",
+            ],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -230,6 +230,7 @@ AI_VIDEO_REQUIRED_FILES = [
     ".agents/skills/ai-video-production/references/design-system-for-video.md",
     ".agents/skills/ai-video-production/references/text-to-visual-analysis.md",
     ".agents/skills/ai-video-production/references/renderer-selection.md",
+    ".agents/skills/ai-video-production/references/renderer-runtime-sandbox.md",
     ".agents/skills/ai-video-production/templates/VIDEO_BRIEF_TEMPLATE.md",
     ".agents/skills/ai-video-production/templates/DESIGN.md",
     ".agents/skills/ai-video-production/templates/visual-style-tokens.md",
@@ -240,6 +241,7 @@ AI_VIDEO_REQUIRED_FILES = [
     ".agents/skills/ai-video-production/templates/ASSET_MANIFEST_TEMPLATE.md",
     ".agents/skills/ai-video-production/templates/RENDER_HANDOFF_TEMPLATE.md",
     ".agents/skills/ai-video-production/templates/RENDER_EVIDENCE_TEMPLATE.md",
+    ".agents/skills/ai-video-production/templates/RENDER_RUNTIME_APPROVAL_CARD.md",
     ".agents/skills/ai-video-production/templates/safe-skill-update-selfcheck.md",
     ".agents/skills/ai-video-production/scripts/scan_top_media_skills.py",
 ]
