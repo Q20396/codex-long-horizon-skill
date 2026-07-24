@@ -12,7 +12,7 @@ Plugin installation is the preferred reusable distribution path.
 Add the latest stable repository marketplace:
 
 ```bash
-codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.2.3
+codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.2.4
 ```
 
 Use `--ref main` only when you intentionally want the newest unreleased

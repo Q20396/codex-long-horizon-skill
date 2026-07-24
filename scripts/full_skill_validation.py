@@ -58,6 +58,7 @@ REQUIRED_CORE_FILES = [
     Path("docs/releases/v0.2.1.md"),
     Path("docs/releases/v0.2.2.md"),
     Path("docs/releases/v0.2.3.md"),
+    Path("docs/releases/v0.2.4.md"),
     Path("examples/bug-investigation/expected-output.md"),
     Path("examples/bug-investigation/prompt.md"),
     Path("examples/bug-investigation/workflow.md"),
@@ -150,7 +151,7 @@ CORE_COMMANDS = [
     [PYTHON, "scripts/generate_skill_catalog.py", "--check"],
     [PYTHON, "scripts/validate_plugin_package.py"],
     [PYTHON, "scripts/test_fresh_install.py", "--skip-codex-cli"],
-    [PYTHON, "scripts/check_release_readiness.py", "--version", "0.2.3", "--allow-existing-tag"],
+    [PYTHON, "scripts/check_release_readiness.py", "--version", "0.2.4", "--allow-existing-tag"],
     [PYTHON, "scripts/test_skill_update_selfcheck.py"],
     ["git", "diff", "--check"],
 ]
@@ -167,7 +168,7 @@ CI_EXPECTED = [
     ("test_fresh_install.py --skip-codex-cli", ["test_fresh_install.py", "--skip-codex-cli"]),
     (
         "check_release_readiness.py --allow-existing-tag",
-        ["check_release_readiness.py", "--version", "0.2.3", "--allow-existing-tag"],
+        ["check_release_readiness.py", "--version", "0.2.4", "--allow-existing-tag"],
     ),
     ("skill_update_selfcheck.py --help", ["skill_update_selfcheck.py", "--help"]),
     ("test_skill_update_selfcheck.py", ["test_skill_update_selfcheck.py"]),
