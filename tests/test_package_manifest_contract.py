@@ -168,6 +168,27 @@ class PackageManifestContractTests(unittest.TestCase):
             errors,
         )
 
+    def test_checker_rejects_malformed_unselected_profiles(self) -> None:
+        spec = importlib.util.spec_from_file_location("check_skill_package", CHECKER)
+        module = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
+        spec.loader.exec_module(module)
+        manifest = self.load_json(MANIFEST)
+        manifest["profiles"]["malformed-unselected"] = {
+            "components": ["core", "core", "missing-component"],
+            "separate_skills": ["missing-skill"],
+            "unexpected": True,
+        }
+        with tempfile.TemporaryDirectory() as temp_name:
+            path = Path(temp_name) / "package-manifest.json"
+            path.write_text(json.dumps(manifest), encoding="utf-8")
+            with mock.patch.object(module, "PACKAGE_MANIFEST_PATH", path):
+                _, errors = module.load_package_contract()
+        self.assertTrue(any("profile fields are invalid" in error for error in errors), errors)
+        self.assertTrue(any("contains duplicates" in error for error in errors), errors)
+        self.assertTrue(any("missing-component" in error for error in errors), errors)
+        self.assertTrue(any("missing-skill" in error for error in errors), errors)
+
     def test_checker_uses_legacy_contract_when_manifest_is_absent(self) -> None:
         spec = importlib.util.spec_from_file_location("check_skill_package", CHECKER)
         module = importlib.util.module_from_spec(spec)

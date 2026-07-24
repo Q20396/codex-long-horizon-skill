@@ -348,21 +348,50 @@ def load_package_contract() -> tuple[PackageContract, list[str]]:
     if not isinstance(profiles, dict):
         errors.append("Package manifest profiles must be an object.")
         profiles = {}
-    if not isinstance(default_profile, str) or default_profile not in profiles:
-        errors.append("Package manifest default_profile must name a declared profile.")
-        profile = {}
-    else:
-        profile = profiles[default_profile]
-        if not isinstance(profile, dict):
-            errors.append("Package manifest default profile must be an object.")
-            profile = {}
 
-    selected_components = profile.get("components", [])
-    if not isinstance(selected_components, list) or not all(
-        isinstance(value, str) for value in selected_components
+    profile_components_by_id: dict[str, list[str]] = {}
+    profile_separate_by_id: dict[str, list[str]] = {}
+    expected_profile_fields = {"components", "separate_skills"}
+    for profile_id, profile_value in profiles.items():
+        if not isinstance(profile_id, str) or not profile_id:
+            errors.append("Package manifest profile IDs must be non-empty strings.")
+            continue
+        if not isinstance(profile_value, dict):
+            errors.append(f"Package manifest profile must be an object: {profile_id}")
+            continue
+        if set(profile_value) != expected_profile_fields:
+            errors.append(
+                f"Package manifest profile fields are invalid: {profile_id}"
+            )
+        for field, destination in (
+            ("components", profile_components_by_id),
+            ("separate_skills", profile_separate_by_id),
+        ):
+            values = profile_value.get(field)
+            if not isinstance(values, list) or not all(
+                isinstance(value, str) and value for value in values
+            ):
+                errors.append(
+                    f"Package manifest profile {field} must be a string list: {profile_id}"
+                )
+                destination[profile_id] = []
+                continue
+            if len(values) != len(set(values)):
+                errors.append(
+                    f"Package manifest profile {field} contains duplicates: {profile_id}"
+                )
+            destination[profile_id] = values
+
+    if (
+        not isinstance(default_profile, str)
+        or default_profile not in profile_components_by_id
     ):
-        errors.append("Package manifest profile components must be a string list.")
-        selected_components = []
+        errors.append("Package manifest default_profile must name a declared profile.")
+        selected_components: list[str] = []
+        selected_separate: list[str] = []
+    else:
+        selected_components = profile_components_by_id[default_profile]
+        selected_separate = profile_separate_by_id[default_profile]
 
     component_paths_by_id: dict[str, list[str]] = {}
     seen_lhe_paths: set[str] = set()
@@ -394,12 +423,17 @@ def load_package_contract() -> tuple[PackageContract, list[str]]:
             seen_lhe_paths.add(value)
         component_paths_by_id[component_id] = component_paths
 
+    for profile_id, component_ids in profile_components_by_id.items():
+        for component_id in component_ids:
+            if component_id not in component_paths_by_id:
+                errors.append(
+                    "Package manifest profile references unknown component: "
+                    f"{profile_id} -> {component_id}"
+                )
+
     lhe_paths: list[str] = []
     for component_id in selected_components:
         if component_id not in component_paths_by_id:
-            errors.append(
-                f"Package manifest profile references unknown component: {component_id}"
-            )
             continue
         lhe_paths.extend(component_paths_by_id[component_id])
 
@@ -431,18 +465,17 @@ def load_package_contract() -> tuple[PackageContract, list[str]]:
         )
         errors.extend(path_errors)
         separate_paths_by_id[skill_id] = separate_paths
-    selected_separate = profile.get("separate_skills", [])
-    if not isinstance(selected_separate, list) or not all(
-        isinstance(value, str) for value in selected_separate
-    ):
-        errors.append("Package manifest profile separate_skills must be a string list.")
-        selected_separate = []
+
+    for profile_id, skill_ids in profile_separate_by_id.items():
+        for skill_id in skill_ids:
+            if skill_id not in separate_by_id:
+                errors.append(
+                    "Package manifest profile references unknown separate skill: "
+                    f"{profile_id} -> {skill_id}"
+                )
+
     for skill_id in selected_separate:
-        item = separate_by_id.get(skill_id)
-        if item is None:
-            errors.append(
-                f"Package manifest profile references unknown separate skill: {skill_id}"
-            )
+        if skill_id not in separate_by_id:
             continue
         if skill_id == "ai-video-production":
             ai_video_paths = separate_paths_by_id[skill_id]
