@@ -44,3 +44,7 @@ repository-owned code or authorize source import.
   foundation for research readiness, human disposition, monitoring drafts, and
   append-only review. It is not registered as a skill and has no runtime,
   provider, account, broker, order, or execution integration.
+- `architecture/public-equity-data-freshness.md` defines the contract-only
+  source provenance, market-calendar, licence, and freshness assessment that
+  must be reviewable before evidence can enter the Investment Decision Gate.
+  It performs no retrieval, monitoring, upload, or provider access.

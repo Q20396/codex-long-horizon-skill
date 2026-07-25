@@ -57,6 +57,12 @@ SCHEMA_SETS = (
         "tests/fixtures/investment-decision-gate",
         lambda payload: [item["record"]["monitoring_plan"] for item in payload],
     ),
+    (
+        "public-equity-data-freshness.schema.json",
+        "sandbox/skill-incubator/schemas/public-equity-data-freshness.schema.json",
+        "tests/fixtures/public-equity-data-freshness",
+        lambda payload: [item["record"] for item in payload],
+    ),
 )
 
 
@@ -105,6 +111,7 @@ def validate_root(root: Path) -> tuple[list[str], int, int]:
             "investment-decision-gate.schema.json",
             "evidence-ledger.schema.json",
             "monitoring-review.schema.json",
+            "public-equity-data-freshness.schema.json",
         }:
             paths = [directory / "cases.json"]
         else:

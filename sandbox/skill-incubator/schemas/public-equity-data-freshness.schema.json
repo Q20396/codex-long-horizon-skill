@@ -1,0 +1,668 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:codex-long-horizon-skill:schema:public-equity-data-freshness:1.0.0",
+  "title": "Public Equity Data Freshness Assessment",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "assessment_id",
+    "created_at",
+    "assessed_at",
+    "market_context",
+    "sources",
+    "claims",
+    "decision_gate_eligible",
+    "block_reasons",
+    "human_decision",
+    "boundaries"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "assessment_id": {
+      "type": "string",
+      "pattern": "^PEDF-[A-Z0-9-]+$"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "assessed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "market_context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "market",
+        "exchange_timezone",
+        "calendar_basis",
+        "trading_date",
+        "session_state"
+      ],
+      "properties": {
+        "market": {
+          "enum": [
+            "ASX",
+            "US_LISTED_EQUITIES"
+          ]
+        },
+        "exchange_timezone": {
+          "enum": [
+            "Australia/Sydney",
+            "America/New_York"
+          ]
+        },
+        "calendar_basis": {
+          "enum": [
+            "ASX",
+            "US_MARKET"
+          ]
+        },
+        "trading_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "session_state": {
+          "enum": [
+            "pre_open",
+            "regular",
+            "post_close",
+            "extended",
+            "holiday",
+            "suspended",
+            "unknown"
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "market": {
+                "const": "ASX"
+              }
+            },
+            "required": [
+              "market"
+            ]
+          },
+          "then": {
+            "properties": {
+              "exchange_timezone": {
+                "const": "Australia/Sydney"
+              },
+              "calendar_basis": {
+                "const": "ASX"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "market": {
+                "const": "US_LISTED_EQUITIES"
+              }
+            },
+            "required": [
+              "market"
+            ]
+          },
+          "then": {
+            "properties": {
+              "exchange_timezone": {
+                "const": "America/New_York"
+              },
+              "calendar_basis": {
+                "const": "US_MARKET"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/source"
+      }
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/claim"
+      }
+    },
+    "decision_gate_eligible": {
+      "type": "boolean"
+    },
+    "block_reasons": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "SOURCE_MISSING",
+          "SOURCE_STALE",
+          "SOURCE_FRESHNESS_UNKNOWN",
+          "SOURCE_LICENSE_UNKNOWN",
+          "SOURCE_CONFLICT",
+          "SOURCE_PROVENANCE_INCOMPLETE",
+          "CALENDAR_UNVERIFIED",
+          "MARKET_TIMEZONE_MISMATCH",
+          "AS_OF_MISSING",
+          "PUBLIC_SOURCE_APPROVAL_MISSING"
+        ]
+      },
+      "uniqueItems": true
+    },
+    "human_decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "decision_log_id"
+      ],
+      "properties": {
+        "status": {
+          "const": "pending"
+        },
+        "decision_log_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "network_action_performed",
+        "provider_access_performed",
+        "customer_material_uploaded",
+        "external_transfer_performed",
+        "account_access_performed",
+        "trade_execution_performed"
+      ],
+      "properties": {
+        "network_action_performed": {
+          "const": false
+        },
+        "provider_access_performed": {
+          "const": false
+        },
+        "customer_material_uploaded": {
+          "const": false
+        },
+        "external_transfer_performed": {
+          "const": false
+        },
+        "account_access_performed": {
+          "const": false
+        },
+        "trade_execution_performed": {
+          "const": false
+        }
+      }
+    }
+  },
+  "$defs": {
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_id",
+        "source_class",
+        "publisher",
+        "source_locator",
+        "access_basis",
+        "effective_at",
+        "published_at",
+        "retrieved_at",
+        "reliability",
+        "license_status",
+        "redistribution_allowed",
+        "freshness",
+        "market_calendar_status",
+        "conflict_status",
+        "claim_ids",
+        "limitations"
+      ],
+      "properties": {
+        "source_id": {
+          "type": "string",
+          "pattern": "^SRC-[A-Z0-9-]+$"
+        },
+        "source_class": {
+          "enum": [
+            "regulatory_filing",
+            "issuer_release",
+            "market_price",
+            "corporate_action",
+            "public_research",
+            "source_estimate",
+            "synthetic_fixture"
+          ]
+        },
+        "publisher": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_locator": {
+          "type": "string",
+          "minLength": 1,
+          "not": {
+            "pattern": "^(file:|/Users/|/home/|[A-Za-z]:\\\\)"
+          }
+        },
+        "access_basis": {
+          "enum": [
+            "synthetic_fixture",
+            "customer_provided_public_excerpt",
+            "public_read_separately_approved",
+            "public_read_approval_missing"
+          ]
+        },
+        "effective_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "published_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "retrieved_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "reliability": {
+          "enum": [
+            "high",
+            "medium",
+            "low",
+            "unverified"
+          ]
+        },
+        "license_status": {
+          "enum": [
+            "verified",
+            "restricted",
+            "unknown"
+          ]
+        },
+        "redistribution_allowed": {
+          "const": false
+        },
+        "freshness": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "assessed_at",
+            "basis",
+            "age_seconds",
+            "max_age_seconds"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "fresh",
+                "stale",
+                "unknown",
+                "not_applicable"
+              ]
+            },
+            "assessed_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "basis": {
+              "enum": [
+                "effective_at",
+                "published_at",
+                "retrieved_at",
+                "not_applicable"
+              ]
+            },
+            "age_seconds": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "max_age_seconds": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "fresh",
+                      "stale"
+                    ]
+                  }
+                },
+                "required": [
+                  "status"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "basis": {
+                    "enum": [
+                      "effective_at",
+                      "published_at",
+                      "retrieved_at"
+                    ]
+                  },
+                  "age_seconds": {
+                    "type": "integer"
+                  },
+                  "max_age_seconds": {
+                    "type": "integer"
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "const": "not_applicable"
+                  }
+                },
+                "required": [
+                  "status"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "basis": {
+                    "const": "not_applicable"
+                  },
+                  "age_seconds": {
+                    "type": "null"
+                  },
+                  "max_age_seconds": {
+                    "type": "null"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "market_calendar_status": {
+          "enum": [
+            "verified",
+            "unverified",
+            "not_applicable"
+          ]
+        },
+        "conflict_status": {
+          "enum": [
+            "none",
+            "resolved",
+            "unresolved"
+          ]
+        },
+        "claim_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^CLM-[A-Z0-9-]+$"
+          },
+          "uniqueItems": true
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "source_class": {
+                "enum": [
+                  "market_price",
+                  "corporate_action"
+                ]
+              }
+            },
+            "required": [
+              "source_class"
+            ]
+          },
+          "then": {
+            "properties": {
+              "market_calendar_status": {
+                "enum": [
+                  "verified",
+                  "unverified"
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    "claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "claim_id",
+        "statement",
+        "classification",
+        "source_ids",
+        "model_version"
+      ],
+      "properties": {
+        "claim_id": {
+          "type": "string",
+          "pattern": "^CLM-[A-Z0-9-]+$"
+        },
+        "statement": {
+          "type": "string",
+          "minLength": 1
+        },
+        "classification": {
+          "enum": [
+            "fact",
+            "derived",
+            "judgment"
+          ]
+        },
+        "source_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^SRC-[A-Z0-9-]+$"
+          },
+          "uniqueItems": true
+        },
+        "model_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "classification": {
+                "enum": [
+                  "fact",
+                  "derived"
+                ]
+              }
+            },
+            "required": [
+              "classification"
+            ]
+          },
+          "then": {
+            "properties": {
+              "source_ids": {
+                "minItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "classification": {
+                "const": "derived"
+              }
+            },
+            "required": [
+              "classification"
+            ]
+          },
+          "then": {
+            "properties": {
+              "model_version": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "decision_gate_eligible": {
+            "const": true
+          }
+        },
+        "required": [
+          "decision_gate_eligible"
+        ]
+      },
+      "then": {
+        "properties": {
+          "sources": {
+            "minItems": 1,
+            "items": {
+              "allOf": [
+                {
+                  "properties": {
+                    "effective_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "published_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "retrieved_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "reliability": {
+                      "not": {
+                        "const": "unverified"
+                      }
+                    },
+                    "access_basis": {
+                      "not": {
+                        "const": "public_read_approval_missing"
+                      }
+                    },
+                    "license_status": {
+                      "not": {
+                        "const": "unknown"
+                      }
+                    },
+                    "freshness": {
+                      "properties": {
+                        "status": {
+                          "enum": [
+                            "fresh",
+                            "not_applicable"
+                          ]
+                        }
+                      }
+                    },
+                    "conflict_status": {
+                      "enum": [
+                        "none",
+                        "resolved"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "source_class": {
+                        "enum": [
+                          "market_price",
+                          "corporate_action"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "source_class"
+                    ]
+                  },
+                  "then": {
+                    "properties": {
+                      "market_calendar_status": {
+                        "const": "verified"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "claims": {
+            "minItems": 1
+          },
+          "block_reasons": {
+            "maxItems": 0
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "block_reasons": {
+            "minItems": 1
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,520 @@
+[
+  {
+    "case_id": "fresh-asx-filing",
+    "expected_eligible": true,
+    "record": {
+      "schema_version": "1.0.0",
+      "assessment_id": "PEDF-FRESH-ASX",
+      "created_at": "2026-07-25T00:00:00Z",
+      "assessed_at": "2026-07-25T00:00:00Z",
+      "market_context": {
+        "market": "ASX",
+        "exchange_timezone": "Australia/Sydney",
+        "calendar_basis": "ASX",
+        "trading_date": "2026-07-24",
+        "session_state": "post_close"
+      },
+      "sources": [
+        {
+          "source_id": "SRC-ASX-FILING",
+          "source_class": "regulatory_filing",
+          "publisher": "Synthetic ASX issuer",
+          "source_locator": "synthetic://asx/filing/001",
+          "access_basis": "synthetic_fixture",
+          "effective_at": "2026-07-24T00:00:00Z",
+          "published_at": "2026-07-24T01:00:00Z",
+          "retrieved_at": "2026-07-24T02:00:00Z",
+          "reliability": "high",
+          "license_status": "verified",
+          "redistribution_allowed": false,
+          "freshness": {
+            "status": "fresh",
+            "assessed_at": "2026-07-25T00:00:00Z",
+            "basis": "effective_at",
+            "age_seconds": 86400,
+            "max_age_seconds": 604800
+          },
+          "market_calendar_status": "not_applicable",
+          "conflict_status": "none",
+          "claim_ids": ["CLM-ASX-FACT", "CLM-ASX-DERIVED"],
+          "limitations": ["synthetic fixture; no source body retained"]
+        }
+      ],
+      "claims": [
+        {
+          "claim_id": "CLM-ASX-FACT",
+          "statement": "A synthetic filing reported a synthetic metric.",
+          "classification": "fact",
+          "source_ids": ["SRC-ASX-FILING"],
+          "model_version": null
+        },
+        {
+          "claim_id": "CLM-ASX-DERIVED",
+          "statement": "A synthetic calculation derived a trend from the metric.",
+          "classification": "derived",
+          "source_ids": ["SRC-ASX-FILING"],
+          "model_version": "SYNTHETIC-MODEL-1"
+        },
+        {
+          "claim_id": "CLM-ASX-JUDGMENT",
+          "statement": "A human may decide whether the trend is material.",
+          "classification": "judgment",
+          "source_ids": ["SRC-ASX-FILING"],
+          "model_version": null
+        }
+      ],
+      "decision_gate_eligible": true,
+      "block_reasons": [],
+      "human_decision": {"status": "pending", "decision_log_id": null},
+      "boundaries": {
+        "network_action_performed": false,
+        "provider_access_performed": false,
+        "customer_material_uploaded": false,
+        "external_transfer_performed": false,
+        "account_access_performed": false,
+        "trade_execution_performed": false
+      }
+    }
+  },
+  {
+    "case_id": "fresh-us-market-price",
+    "expected_eligible": true,
+    "record": {
+      "schema_version": "1.0.0",
+      "assessment_id": "PEDF-FRESH-US",
+      "created_at": "2026-07-25T00:00:00Z",
+      "assessed_at": "2026-07-25T00:00:00Z",
+      "market_context": {
+        "market": "US_LISTED_EQUITIES",
+        "exchange_timezone": "America/New_York",
+        "calendar_basis": "US_MARKET",
+        "trading_date": "2026-07-24",
+        "session_state": "post_close"
+      },
+      "sources": [
+        {
+          "source_id": "SRC-US-PRICE",
+          "source_class": "market_price",
+          "publisher": "Synthetic licensed market source",
+          "source_locator": "synthetic://us/price/001",
+          "access_basis": "synthetic_fixture",
+          "effective_at": "2026-07-24T20:00:00Z",
+          "published_at": "2026-07-24T20:00:01Z",
+          "retrieved_at": "2026-07-24T20:00:02Z",
+          "reliability": "high",
+          "license_status": "restricted",
+          "redistribution_allowed": false,
+          "freshness": {
+            "status": "fresh",
+            "assessed_at": "2026-07-25T00:00:00Z",
+            "basis": "effective_at",
+            "age_seconds": 14400,
+            "max_age_seconds": 86400
+          },
+          "market_calendar_status": "verified",
+          "conflict_status": "none",
+          "claim_ids": ["CLM-US-PRICE"],
+          "limitations": ["citation and local analysis only"]
+        }
+      ],
+      "claims": [
+        {
+          "claim_id": "CLM-US-PRICE",
+          "statement": "A synthetic closing-price observation was recorded.",
+          "classification": "fact",
+          "source_ids": ["SRC-US-PRICE"],
+          "model_version": null
+        }
+      ],
+      "decision_gate_eligible": true,
+      "block_reasons": [],
+      "human_decision": {"status": "pending", "decision_log_id": null},
+      "boundaries": {
+        "network_action_performed": false,
+        "provider_access_performed": false,
+        "customer_material_uploaded": false,
+        "external_transfer_performed": false,
+        "account_access_performed": false,
+        "trade_execution_performed": false
+      }
+    }
+  },
+  {
+    "case_id": "stale-market-price",
+    "expected_eligible": false,
+    "record": {
+      "schema_version": "1.0.0",
+      "assessment_id": "PEDF-STALE-PRICE",
+      "created_at": "2026-07-25T00:00:00Z",
+      "assessed_at": "2026-07-25T00:00:00Z",
+      "market_context": {
+        "market": "ASX",
+        "exchange_timezone": "Australia/Sydney",
+        "calendar_basis": "ASX",
+        "trading_date": "2026-07-24",
+        "session_state": "post_close"
+      },
+      "sources": [
+        {
+          "source_id": "SRC-STALE-PRICE",
+          "source_class": "market_price",
+          "publisher": "Synthetic licensed market source",
+          "source_locator": "synthetic://asx/price/stale",
+          "access_basis": "synthetic_fixture",
+          "effective_at": "2026-07-15T00:00:00Z",
+          "published_at": "2026-07-15T00:00:01Z",
+          "retrieved_at": "2026-07-15T00:00:02Z",
+          "reliability": "high",
+          "license_status": "restricted",
+          "redistribution_allowed": false,
+          "freshness": {
+            "status": "stale",
+            "assessed_at": "2026-07-25T00:00:00Z",
+            "basis": "effective_at",
+            "age_seconds": 864000,
+            "max_age_seconds": 86400
+          },
+          "market_calendar_status": "verified",
+          "conflict_status": "none",
+          "claim_ids": ["CLM-STALE-PRICE"],
+          "limitations": ["stale observation"]
+        }
+      ],
+      "claims": [
+        {
+          "claim_id": "CLM-STALE-PRICE",
+          "statement": "A synthetic stale price observation was recorded.",
+          "classification": "fact",
+          "source_ids": ["SRC-STALE-PRICE"],
+          "model_version": null
+        }
+      ],
+      "decision_gate_eligible": false,
+      "block_reasons": ["SOURCE_STALE"],
+      "human_decision": {"status": "pending", "decision_log_id": null},
+      "boundaries": {
+        "network_action_performed": false,
+        "provider_access_performed": false,
+        "customer_material_uploaded": false,
+        "external_transfer_performed": false,
+        "account_access_performed": false,
+        "trade_execution_performed": false
+      }
+    }
+  },
+  {
+    "case_id": "unknown-publication-time",
+    "expected_eligible": false,
+    "record": {
+      "schema_version": "1.0.0",
+      "assessment_id": "PEDF-UNKNOWN-TIME",
+      "created_at": "2026-07-25T00:00:00Z",
+      "assessed_at": "2026-07-25T00:00:00Z",
+      "market_context": {
+        "market": "US_LISTED_EQUITIES",
+        "exchange_timezone": "America/New_York",
+        "calendar_basis": "US_MARKET",
+        "trading_date": "2026-07-24",
+        "session_state": "unknown"
+      },
+      "sources": [
+        {
+          "source_id": "SRC-UNKNOWN-TIME",
+          "source_class": "public_research",
+          "publisher": "Synthetic public research publisher",
+          "source_locator": "synthetic://us/research/unknown-time",
+          "access_basis": "synthetic_fixture",
+          "effective_at": null,
+          "published_at": null,
+          "retrieved_at": "2026-07-24T22:00:00Z",
+          "reliability": "medium",
+          "license_status": "restricted",
+          "redistribution_allowed": false,
+          "freshness": {
+            "status": "unknown",
+            "assessed_at": "2026-07-25T00:00:00Z",
+            "basis": "published_at",
+            "age_seconds": null,
+            "max_age_seconds": 2592000
+          },
+          "market_calendar_status": "not_applicable",
+          "conflict_status": "none",
+          "claim_ids": ["CLM-UNKNOWN-TIME"],
+          "limitations": ["publication and effective times missing"]
+        }
+      ],
+      "claims": [
+        {
+          "claim_id": "CLM-UNKNOWN-TIME",
+          "statement": "A synthetic source assertion has no reliable as-of time.",
+          "classification": "fact",
+          "source_ids": ["SRC-UNKNOWN-TIME"],
+          "model_version": null
+        }
+      ],
+      "decision_gate_eligible": false,
+      "block_reasons": ["SOURCE_FRESHNESS_UNKNOWN", "AS_OF_MISSING"],
+      "human_decision": {"status": "pending", "decision_log_id": null},
+      "boundaries": {
+        "network_action_performed": false,
+        "provider_access_performed": false,
+        "customer_material_uploaded": false,
+        "external_transfer_performed": false,
+        "account_access_performed": false,
+        "trade_execution_performed": false
+      }
+    }
+  },
+  {
+    "case_id": "unknown-source-licence",
+    "expected_eligible": false,
+    "record": {
+      "schema_version": "1.0.0",
+      "assessment_id": "PEDF-UNKNOWN-LICENSE",
+      "created_at": "2026-07-25T00:00:00Z",
+      "assessed_at": "2026-07-25T00:00:00Z",
+      "market_context": {
+        "market": "ASX",
+        "exchange_timezone": "Australia/Sydney",
+        "calendar_basis": "ASX",
+        "trading_date": "2026-07-24",
+        "session_state": "post_close"
+      },
+      "sources": [
+        {
+          "source_id": "SRC-UNKNOWN-LICENSE",
+          "source_class": "source_estimate",
+          "publisher": "Synthetic estimate publisher",
+          "source_locator": "synthetic://asx/estimate/unknown-license",
+          "access_basis": "synthetic_fixture",
+          "effective_at": "2026-07-24T00:00:00Z",
+          "published_at": "2026-07-24T01:00:00Z",
+          "retrieved_at": "2026-07-24T02:00:00Z",
+          "reliability": "medium",
+          "license_status": "unknown",
+          "redistribution_allowed": false,
+          "freshness": {
+            "status": "fresh",
+            "assessed_at": "2026-07-25T00:00:00Z",
+            "basis": "effective_at",
+            "age_seconds": 86400,
+            "max_age_seconds": 2592000
+          },
+          "market_calendar_status": "not_applicable",
+          "conflict_status": "none",
+          "claim_ids": ["CLM-UNKNOWN-LICENSE"],
+          "limitations": ["licence boundary not verified"]
+        }
+      ],
+      "claims": [
+        {
+          "claim_id": "CLM-UNKNOWN-LICENSE",
+          "statement": "A synthetic estimate exists but its permitted use is unknown.",
+          "classification": "fact",
+          "source_ids": ["SRC-UNKNOWN-LICENSE"],
+          "model_version": null
+        }
+      ],
+      "decision_gate_eligible": false,
+      "block_reasons": ["SOURCE_LICENSE_UNKNOWN"],
+      "human_decision": {"status": "pending", "decision_log_id": null},
+      "boundaries": {
+        "network_action_performed": false,
+        "provider_access_performed": false,
+        "customer_material_uploaded": false,
+        "external_transfer_performed": false,
+        "account_access_performed": false,
+        "trade_execution_performed": false
+      }
+    }
+  },
+  {
+    "case_id": "unresolved-source-conflict",
+    "expected_eligible": false,
+    "record": {
+      "schema_version": "1.0.0",
+      "assessment_id": "PEDF-CONFLICT",
+      "created_at": "2026-07-25T00:00:00Z",
+      "assessed_at": "2026-07-25T00:00:00Z",
+      "market_context": {
+        "market": "US_LISTED_EQUITIES",
+        "exchange_timezone": "America/New_York",
+        "calendar_basis": "US_MARKET",
+        "trading_date": "2026-07-24",
+        "session_state": "post_close"
+      },
+      "sources": [
+        {
+          "source_id": "SRC-CONFLICT",
+          "source_class": "issuer_release",
+          "publisher": "Synthetic issuer",
+          "source_locator": "synthetic://us/issuer/conflict",
+          "access_basis": "synthetic_fixture",
+          "effective_at": "2026-07-24T20:00:00Z",
+          "published_at": "2026-07-24T20:30:00Z",
+          "retrieved_at": "2026-07-24T21:00:00Z",
+          "reliability": "high",
+          "license_status": "verified",
+          "redistribution_allowed": false,
+          "freshness": {
+            "status": "fresh",
+            "assessed_at": "2026-07-25T00:00:00Z",
+            "basis": "effective_at",
+            "age_seconds": 14400,
+            "max_age_seconds": 604800
+          },
+          "market_calendar_status": "not_applicable",
+          "conflict_status": "unresolved",
+          "claim_ids": ["CLM-CONFLICT"],
+          "limitations": ["synthetic filing and release definitions conflict"]
+        }
+      ],
+      "claims": [
+        {
+          "claim_id": "CLM-CONFLICT",
+          "statement": "Two synthetic source definitions do not tie out.",
+          "classification": "fact",
+          "source_ids": ["SRC-CONFLICT"],
+          "model_version": null
+        }
+      ],
+      "decision_gate_eligible": false,
+      "block_reasons": ["SOURCE_CONFLICT"],
+      "human_decision": {"status": "pending", "decision_log_id": null},
+      "boundaries": {
+        "network_action_performed": false,
+        "provider_access_performed": false,
+        "customer_material_uploaded": false,
+        "external_transfer_performed": false,
+        "account_access_performed": false,
+        "trade_execution_performed": false
+      }
+    }
+  },
+  {
+    "case_id": "unverified-market-calendar",
+    "expected_eligible": false,
+    "record": {
+      "schema_version": "1.0.0",
+      "assessment_id": "PEDF-CALENDAR",
+      "created_at": "2026-07-25T00:00:00Z",
+      "assessed_at": "2026-07-25T00:00:00Z",
+      "market_context": {
+        "market": "ASX",
+        "exchange_timezone": "Australia/Sydney",
+        "calendar_basis": "ASX",
+        "trading_date": "2026-07-24",
+        "session_state": "unknown"
+      },
+      "sources": [
+        {
+          "source_id": "SRC-CALENDAR",
+          "source_class": "corporate_action",
+          "publisher": "Synthetic corporate-action source",
+          "source_locator": "synthetic://asx/corporate-action/calendar",
+          "access_basis": "synthetic_fixture",
+          "effective_at": "2026-07-24T00:00:00Z",
+          "published_at": "2026-07-24T01:00:00Z",
+          "retrieved_at": "2026-07-24T02:00:00Z",
+          "reliability": "high",
+          "license_status": "restricted",
+          "redistribution_allowed": false,
+          "freshness": {
+            "status": "fresh",
+            "assessed_at": "2026-07-25T00:00:00Z",
+            "basis": "effective_at",
+            "age_seconds": 86400,
+            "max_age_seconds": 604800
+          },
+          "market_calendar_status": "unverified",
+          "conflict_status": "none",
+          "claim_ids": ["CLM-CALENDAR"],
+          "limitations": ["trading calendar not verified"]
+        }
+      ],
+      "claims": [
+        {
+          "claim_id": "CLM-CALENDAR",
+          "statement": "A synthetic corporate action needs calendar verification.",
+          "classification": "fact",
+          "source_ids": ["SRC-CALENDAR"],
+          "model_version": null
+        }
+      ],
+      "decision_gate_eligible": false,
+      "block_reasons": ["CALENDAR_UNVERIFIED"],
+      "human_decision": {"status": "pending", "decision_log_id": null},
+      "boundaries": {
+        "network_action_performed": false,
+        "provider_access_performed": false,
+        "customer_material_uploaded": false,
+        "external_transfer_performed": false,
+        "account_access_performed": false,
+        "trade_execution_performed": false
+      }
+    }
+  },
+  {
+    "case_id": "public-source-approval-missing",
+    "expected_eligible": false,
+    "record": {
+      "schema_version": "1.0.0",
+      "assessment_id": "PEDF-APPROVAL-MISSING",
+      "created_at": "2026-07-25T00:00:00Z",
+      "assessed_at": "2026-07-25T00:00:00Z",
+      "market_context": {
+        "market": "US_LISTED_EQUITIES",
+        "exchange_timezone": "America/New_York",
+        "calendar_basis": "US_MARKET",
+        "trading_date": "2026-07-24",
+        "session_state": "post_close"
+      },
+      "sources": [
+        {
+          "source_id": "SRC-APPROVAL-MISSING",
+          "source_class": "public_research",
+          "publisher": "Synthetic public research publisher",
+          "source_locator": "synthetic://us/research/approval-missing",
+          "access_basis": "public_read_approval_missing",
+          "effective_at": "2026-07-24T20:00:00Z",
+          "published_at": "2026-07-24T20:30:00Z",
+          "retrieved_at": "2026-07-24T21:00:00Z",
+          "reliability": "medium",
+          "license_status": "restricted",
+          "redistribution_allowed": false,
+          "freshness": {
+            "status": "fresh",
+            "assessed_at": "2026-07-25T00:00:00Z",
+            "basis": "effective_at",
+            "age_seconds": 14400,
+            "max_age_seconds": 2592000
+          },
+          "market_calendar_status": "not_applicable",
+          "conflict_status": "none",
+          "claim_ids": ["CLM-APPROVAL-MISSING"],
+          "limitations": ["public-source access not separately approved"]
+        }
+      ],
+      "claims": [
+        {
+          "claim_id": "CLM-APPROVAL-MISSING",
+          "statement": "A synthetic public-source lead awaits access approval.",
+          "classification": "fact",
+          "source_ids": ["SRC-APPROVAL-MISSING"],
+          "model_version": null
+        }
+      ],
+      "decision_gate_eligible": false,
+      "block_reasons": ["PUBLIC_SOURCE_APPROVAL_MISSING"],
+      "human_decision": {"status": "pending", "decision_log_id": null},
+      "boundaries": {
+        "network_action_performed": false,
+        "provider_access_performed": false,
+        "customer_material_uploaded": false,
+        "external_transfer_performed": false,
+        "account_access_performed": false,
+        "trade_execution_performed": false
+      }
+    }
+  }
+]
