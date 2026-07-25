@@ -66,6 +66,14 @@ Each evidence item records its source type, factual as-of time, retrieval time,
 reliability, use, direction, licence status, redistribution status, and known
 limitations.
 
+The companion
+[`public-equity-data-freshness.md`](public-equity-data-freshness.md) contract
+defines the stricter provenance, market-calendar, timestamp, conflict, and
+fact-versus-inference assessment used before a source packet is represented as
+eligible for this gate. That assessment is additive: it does not change this
+schema version or authorize retrieval, monitoring, provider access, or
+execution.
+
 - `verified` means the relevant use and citation boundary was checked.
 - `restricted` means the source may support local analysis but not copying or
   redistribution.

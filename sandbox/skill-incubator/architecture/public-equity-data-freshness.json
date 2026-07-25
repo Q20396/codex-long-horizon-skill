@@ -1,0 +1,30 @@
+{
+  "contract_id": "PUBLIC-EQUITY-DATA-FRESHNESS",
+  "name": "Public Equity Data Freshness Contract",
+  "status": "contract_foundation_approved",
+  "registered_skill": false,
+  "runtime_integration_exists": false,
+  "automatic_retrieval_authorized": false,
+  "automatic_monitoring_authorized": false,
+  "human_decision_required": true,
+  "research_only": true,
+  "broker_access_authorized": false,
+  "account_access_authorized": false,
+  "credential_access_authorized": false,
+  "order_generation_authorized": false,
+  "order_transmission_authorized": false,
+  "trade_execution_authorized": false,
+  "network_execution_authorized": false,
+  "provider_access_authorized": false,
+  "customer_material_upload_authorized": false,
+  "customer_material_external_transfer_authorized": false,
+  "code_import_allowed": false,
+  "schema_version": "1.0.0",
+  "markets": [
+    "ASX",
+    "US_LISTED_EQUITIES"
+  ],
+  "decision_gate_relationship": "additive_precondition_contract",
+  "decision_gate_input_default": "blocked_until_assessment_eligible",
+  "human_decision_default": "pending"
+}
