@@ -18,6 +18,13 @@
         "core"
       ],
       "separate_skills": []
+    },
+    "lhe-bundled": {
+      "components": [
+        "core",
+        "bundled-optional"
+      ],
+      "separate_skills": []
     }
   },
   "components": {
