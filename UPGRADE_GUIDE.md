@@ -102,8 +102,31 @@ Codex.
    Direct skill-directory targets must use a `skills/<skill>` layout, and the
    final directory name must match the selected skill.
 
-7. Run the target project's tests or smoke checks.
-8. Commit the update in a branch and open a review PR.
+7. If dry-run reports target-only files, inspect them before apply. Apply stops
+   by default so local files cannot be silently retained or silently removed.
+   To approve replacing the active directory while preserving those files in
+   the backup, add:
+
+   ```text
+   --allow-remove-extra-files
+   ```
+
+8. The updater validates a unique staging copy, retains a complete backup,
+   replaces the active directory, and verifies the published manifest. If
+   post-publish validation fails, it retains the failed tree in quarantine and
+   attempts a best-effort restore of the prior target.
+9. Run the target project's tests or smoke checks.
+10. Commit the update in a branch and open a review PR.
+
+The updater does not perform overlay copying. Active contents must exactly
+match the reviewed source manifest after a successful update, so stale files
+cannot remain active. Backups are retained until the customer removes them.
+
+These guarantees are intentionally bounded. The updater does not claim
+transactional recovery from SIGKILL or power loss, strong atomicity on network
+filesystems, complete ACL/xattr preservation, protection from a hostile
+same-UID process concurrently replacing paths or inodes, or a database-level
+transaction across multiple skills. Apply accepts exactly one explicit skill.
 
 ## Compare Installed Skills With v0.1.0
 
@@ -255,7 +278,7 @@ operation after reviewing the dry-run plan.
 
 ## Rollback
 
-The update helper stores backups under:
+For project-level installs, the update helper stores backups under:
 
 ```text
 .codex-skill-backups/
@@ -266,6 +289,17 @@ To roll back, copy the reviewed backup skill directory back into:
 ```text
 .agents/skills/<skill-name>/
 ```
+
+For direct `~/.codex/skills/<skill-name>` installs, the updater prints a backup
+under:
+
+```text
+~/.codex/skill-backups/
+```
+
+Restore only the reviewed skill backup to its exact
+`~/.codex/skills/<skill-name>/` destination. After restoration, compare the
+restored manifest or run the installed package checks before resuming use.
 
 Do not restore unrelated private files or broad repository snapshots.
 

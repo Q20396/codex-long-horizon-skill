@@ -153,19 +153,52 @@ duplicate layout `~/.codex/.agents/skills/<skill>`.
 Direct skill-directory targets must use a `skills/<skill>` layout, and the
 final directory name must match the selected skill.
 
-The updater backs up the existing installed skill under `.codex-skill-backups/`
-for project-level installs, or under `skill-backups/` next to the active Codex
-`skills/` directory for direct user-level installs. Before `--apply` copies
-files, it runs the local read-only `audit_skill_safety.py` check against the
-package skills. It does not delete files, make network calls, or modify `main`.
+The updater first compares the complete source and target manifests. If the
+target contains paths that are not in the source package, apply stops without
+writing anything. Review the listed paths before allowing their removal:
+
+```bash
+python3 .agents/skills/long-horizon-engineering/scripts/update_installed_skill.py \
+  --target-root /path/to/project \
+  --skill long-horizon-engineering \
+  --allow-remove-extra-files \
+  --apply
+```
+
+Approved target-only files are removed from the active installation by complete
+directory replacement, but remain in the retained backup. They are never
+silently preserved or silently removed.
+
+Before publish, the updater runs the local read-only `audit_skill_safety.py`,
+copies the source into a unique same-filesystem staging directory, and compares
+source and staging manifests by relative path, entry type, file size, and
+SHA-256. It retains a complete backup under `.codex-skill-backups/` for
+project-level installs, or under `skill-backups/` next to the active Codex
+`skills/` directory for direct user-level installs. It then replaces the active
+skill and verifies the published manifest again. Backups are not automatically
+deleted.
+
+If post-publish validation fails, the failed target is retained in a unique
+quarantine directory and the updater attempts to restore and verify the prior
+target. Recovery is best-effort, not a filesystem transaction. The updater
+does not guarantee safety against a hostile same-UID process replacing paths or
+inodes concurrently, SIGKILL or power-loss recovery, strong atomicity on
+network filesystems, complete ACL/xattr preservation, or a database-level
+transaction across multiple skills. Apply supports one explicit skill at a
+time and makes no network calls.
 
 ## Rollback
 
-Restore the reviewed backup skill directory from `.codex-skill-backups/` to:
+For a project-level install, restore the reviewed backup skill directory from
+`.codex-skill-backups/` to:
 
 ```text
 .agents/skills/<skill-name>/
 ```
+
+For a direct user-level install, use the backup printed by the updater under
+the installation root's `skill-backups/` directory and restore it to the exact
+reviewed `skills/<skill-name>/` target.
 
 Keep rollback scoped to the skill directory. Do not overwrite unrelated project
 files or private data.
