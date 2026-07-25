@@ -1,0 +1,126 @@
+{
+  "schema_version": "1.0",
+  "status": "proposed",
+  "execution_authorized": false,
+  "baseline_commit": "1fd15b8e2123f0a7cd85ff39ac778d265cedfb1b",
+  "source_manifest": ".agents/skills/long-horizon-engineering/package-manifest.json",
+  "source_manifest_sha256": "3a96d17d3b34c3ef0ceac05e6fb604302b2b28d416f5be744a1fdf4a1f792684",
+  "default_action": "retain-current-layer",
+  "physical_moves_authorized": false,
+  "manifest_changes_authorized": false,
+  "default_profile_change_authorized": false,
+  "candidate_extractions": [
+    {
+      "path": ".agents/skills/long-horizon-engineering/references/financial-research-report-protocol.md",
+      "current_layer": "bundled-optional",
+      "proposed_disposition": "candidate-separate-skill-extraction",
+      "target_boundary": "finance-domain-skill",
+      "rationale": "Domain research and valuation guidance is not required for software engineering."
+    },
+    {
+      "path": ".agents/skills/long-horizon-engineering/templates/market-data-source-log.md",
+      "current_layer": "bundled-optional",
+      "proposed_disposition": "candidate-separate-skill-extraction",
+      "target_boundary": "finance-domain-skill",
+      "rationale": "Market-data provenance belongs with the finance workflow that consumes it."
+    },
+    {
+      "path": ".agents/skills/long-horizon-engineering/templates/stock-research-report.md",
+      "current_layer": "bundled-optional",
+      "proposed_disposition": "candidate-separate-skill-extraction",
+      "target_boundary": "finance-domain-skill",
+      "rationale": "Stock research is an independent domain workflow and must not trigger LHE implicitly."
+    },
+    {
+      "path": ".agents/skills/long-horizon-engineering/templates/valuation-assumption-table.md",
+      "current_layer": "bundled-optional",
+      "proposed_disposition": "candidate-separate-skill-extraction",
+      "target_boundary": "finance-domain-skill",
+      "rationale": "Valuation assumptions belong to a separately governed investment-research skill."
+    },
+    {
+      "path": ".agents/skills/long-horizon-engineering/references/disaster-monitoring-enablement.md",
+      "current_layer": "bundled-optional",
+      "proposed_disposition": "candidate-separate-skill-extraction",
+      "target_boundary": "disaster-monitoring-skill",
+      "rationale": "Public-safety monitoring has distinct data freshness, jurisdiction, and escalation duties."
+    },
+    {
+      "path": ".agents/skills/long-horizon-engineering/templates/disaster-alert-rule.md",
+      "current_layer": "bundled-optional",
+      "proposed_disposition": "candidate-separate-skill-extraction",
+      "target_boundary": "disaster-monitoring-skill",
+      "rationale": "Alert rules belong with a separately reviewed monitoring capability."
+    },
+    {
+      "path": ".agents/skills/long-horizon-engineering/references/notebook-analysis-protocol.md",
+      "current_layer": "bundled-optional",
+      "proposed_disposition": "candidate-separate-skill-extraction",
+      "target_boundary": "knowledge-workspace-skill",
+      "rationale": "Notebook analysis can involve uploads and external workspaces outside LHE's core scope."
+    },
+    {
+      "path": ".agents/skills/long-horizon-engineering/references/obsidian-knowledge-workflow.md",
+      "current_layer": "bundled-optional",
+      "proposed_disposition": "candidate-separate-skill-extraction",
+      "target_boundary": "knowledge-workspace-skill",
+      "rationale": "Vault access and note mutation require an independent exact-path approval contract."
+    },
+    {
+      "path": ".agents/skills/long-horizon-engineering/scripts/validate_json_canvas.py",
+      "current_layer": "bundled-optional",
+      "proposed_disposition": "candidate-separate-skill-extraction",
+      "target_boundary": "knowledge-workspace-skill",
+      "rationale": "The validator is specific to the Obsidian and JSON Canvas workflow."
+    },
+    {
+      "path": ".agents/skills/long-horizon-engineering/templates/OBSIDIAN_ARTIFACT_PLAN_TEMPLATE.md",
+      "current_layer": "bundled-optional",
+      "proposed_disposition": "candidate-separate-skill-extraction",
+      "target_boundary": "knowledge-workspace-skill",
+      "rationale": "The template has no role in a minimal engineering package."
+    },
+    {
+      "path": ".agents/skills/long-horizon-engineering/references/presentation-delivery-protocol.md",
+      "current_layer": "bundled-optional",
+      "proposed_disposition": "candidate-separate-skill-extraction",
+      "target_boundary": "presentation-skill",
+      "rationale": "Presentation authoring has its own artifact and visual validation lifecycle."
+    },
+    {
+      "path": ".agents/skills/long-horizon-engineering/templates/deck-outline.md",
+      "current_layer": "bundled-optional",
+      "proposed_disposition": "candidate-separate-skill-extraction",
+      "target_boundary": "presentation-skill",
+      "rationale": "Deck structure is domain content for presentation authoring."
+    },
+    {
+      "path": ".agents/skills/long-horizon-engineering/templates/slide-qa-checklist.md",
+      "current_layer": "bundled-optional",
+      "proposed_disposition": "candidate-separate-skill-extraction",
+      "target_boundary": "presentation-skill",
+      "rationale": "Slide QA belongs with the presentation renderer and authoring workflow."
+    },
+    {
+      "path": ".agents/skills/long-horizon-engineering/references/writing-humanization-protocol.md",
+      "current_layer": "bundled-optional",
+      "proposed_disposition": "candidate-separate-skill-extraction",
+      "target_boundary": "content-writing-skill",
+      "rationale": "Writing style transformation is adjacent to, but independent from, engineering delivery."
+    },
+    {
+      "path": ".agents/skills/long-horizon-engineering/references/personal-workflow-review.md",
+      "current_layer": "bundled-optional",
+      "proposed_disposition": "candidate-separate-skill-extraction",
+      "target_boundary": "personal-workflow-skill",
+      "rationale": "Personal operating reviews are not an engineering package responsibility."
+    }
+  ],
+  "summary": {
+    "manifest_paths_reviewed": 165,
+    "core_retained": 40,
+    "bundled_optional_retained": 84,
+    "candidate_separate_skill_extractions": 15,
+    "existing_separate_skill_paths_retained": 26
+  }
+}
