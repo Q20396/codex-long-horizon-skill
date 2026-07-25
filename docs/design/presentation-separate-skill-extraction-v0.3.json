@@ -1,0 +1,108 @@
+{
+  "schema_version": "1.0",
+  "status": "candidate_only",
+  "baseline_commit": "c8bf79a8abb5740ba99c90c73df70cf568a54d9b",
+  "source_manifest": ".agents/skills/long-horizon-engineering/package-manifest.json",
+  "source_manifest_sha256": "3a96d17d3b34c3ef0ceac05e6fb604302b2b28d416f5be744a1fdf4a1f792684",
+  "source_classification": "docs/design/package-layering-classification-v0.3.json",
+  "source_classification_sha256": "66c009afa1b479a160c2ddd6c7200290f2006f3fc1c39c7ce474c36bfa272d31",
+  "candidate_id": "presentation-separate-skill-extraction-v0.3",
+  "target_boundary": "presentation-skill",
+  "registered": false,
+  "execution_authorized": false,
+  "physical_moves_authorized": false,
+  "manifest_changes_authorized": false,
+  "default_profile_change_authorized": false,
+  "runtime_changes_authorized": false,
+  "dependencies_authorized": false,
+  "network_authorized": false,
+  "publication_authorized": false,
+  "source_paths": [
+    {
+      "path": ".agents/skills/long-horizon-engineering/references/presentation-delivery-protocol.md",
+      "sha256": "1fa570b11e5f60fac759b27078aa535c1b91fb6ec7f4aa64cd726060a5b02fcb"
+    },
+    {
+      "path": ".agents/skills/long-horizon-engineering/templates/deck-outline.md",
+      "sha256": "bb0fde0b5625bc4e50df4cf53da6574df28951e89805a7a524e430c9315edc56"
+    },
+    {
+      "path": ".agents/skills/long-horizon-engineering/templates/slide-qa-checklist.md",
+      "sha256": "49961c12704b414dec0fdb8edb74592ed0dc43508537b3ae3c121ee85817cc09"
+    }
+  ],
+  "ownership_decision": {
+    "state": "unresolved",
+    "preferred_evaluation_order": [
+      "installed-platform-presentation-capability",
+      "repository-owned-separate-skill",
+      "compatibility-bridge"
+    ],
+    "selection_requirements": [
+      "No duplicate presentation runtime or trigger ownership.",
+      "Artifact generation and visual QA have one accountable owner.",
+      "Installation, permissions, release lifecycle, and rollback are independent from LHE.",
+      "LHE remains responsible only for engineering work and cross-capability coordination."
+    ]
+  },
+  "routing_contract": {
+    "positive_intents": [
+      "Create or revise a slide deck or presentation.",
+      "Generate or edit a PPTX artifact.",
+      "Render slides and perform visual slide QA.",
+      "Prepare speaker notes tied to a deck."
+    ],
+    "negative_intents": [
+      "Write an engineering implementation plan.",
+      "Review a code diff or architecture document.",
+      "Create an ordinary Markdown report.",
+      "Plan or render an AI video."
+    ],
+    "ambiguous_intent_action": "clarify",
+    "engineering_plus_presentation_action": "split-branches-and-preserve-authority"
+  },
+  "permission_contract": {
+    "default_mode": "local-read-only-planning",
+    "artifact_write_requires_exact_path_approval": true,
+    "binary_generation_requires_available_approved_tooling": true,
+    "external_asset_fetch_requires_separate_approval": true,
+    "publication_requires_separate_approval": true,
+    "account_or_session_access_requires_separate_approval": true,
+    "installation_is_not_use_authorization": true
+  },
+  "compatibility_contract": {
+    "legacy_full_unchanged": true,
+    "lhe_bundled_unchanged": true,
+    "core_only_unchanged": true,
+    "current_paths_remain_in_place": true,
+    "existing_checker_contract_unchanged": true,
+    "existing_doctor_contract_unchanged": true,
+    "no_migration_required": true
+  },
+  "future_implementation_gate": {
+    "required_evidence": [
+      "An approved owner and unique trigger contract.",
+      "Negative routing tests proving LHE does not claim presentation-only requests.",
+      "Clean-room package validation with and without the extracted capability.",
+      "Stable-to-candidate upgrade and rollback evidence in temporary directories.",
+      "No broken references in selected profiles.",
+      "A release note describing any installed-content change."
+    ],
+    "stop_conditions": [
+      "Ownership overlaps an installed presentation capability.",
+      "Extraction weakens LHE core safety or validation.",
+      "A selected profile contains a broken reference.",
+      "The implementation adds a provider, account, network, or publication side effect."
+    ]
+  },
+  "rollback_contract": {
+    "proposal_rollback": "Revert this contract and its tests.",
+    "future_extraction_rollback": [
+      "Restore the previous package manifest.",
+      "Restore the three source paths to bundled-optional.",
+      "Restore LHE routing references.",
+      "Re-run package, doctor, routing, clean-room install, and upgrade checks."
+    ],
+    "separate_installation_must_not_be_deleted_implicitly": true
+  }
+}
