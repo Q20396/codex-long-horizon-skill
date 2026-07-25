@@ -29,6 +29,11 @@ class PackageManifestContractTests(unittest.TestCase):
         self.assertEqual(manifest["profiles"]["legacy-full"]["components"], ["core", "bundled-optional"])
         self.assertEqual(manifest["profiles"]["core-only"]["components"], ["core"])
         self.assertEqual(manifest["profiles"]["core-only"]["separate_skills"], [])
+        self.assertEqual(
+            manifest["profiles"]["lhe-bundled"]["components"],
+            ["core", "bundled-optional"],
+        )
+        self.assertEqual(manifest["profiles"]["lhe-bundled"]["separate_skills"], [])
         self.assertFalse(manifest["migration"]["physical_layout_changed"])
         self.assertFalse(manifest["migration"]["default_install_changed"])
         self.assertTrue(manifest["migration"]["legacy_checker_fallback"])
@@ -136,6 +141,26 @@ class PackageManifestContractTests(unittest.TestCase):
         )
         self.assertEqual(contract.ai_video_required_files, ())
 
+    def test_checker_selects_lhe_bundled_profile(self) -> None:
+        spec = importlib.util.spec_from_file_location("check_skill_package", CHECKER)
+        module = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
+        spec.loader.exec_module(module)
+        manifest = self.load_json(MANIFEST)
+        contract, errors = module.load_package_contract("lhe-bundled")
+        self.assertEqual(errors, [])
+        self.assertTrue(contract.loaded_from_manifest)
+        self.assertEqual(contract.selected_profile, "lhe-bundled")
+        self.assertEqual(
+            set(contract.lhe_required_files),
+            {
+                path
+                for component_id in ("core", "bundled-optional")
+                for path in manifest["components"][component_id]["paths"]
+            },
+        )
+        self.assertEqual(contract.ai_video_required_files, ())
+
     def test_checker_rejects_unknown_profile(self) -> None:
         spec = importlib.util.spec_from_file_location("check_skill_package", CHECKER)
         module = importlib.util.module_from_spec(spec)
@@ -158,6 +183,18 @@ class PackageManifestContractTests(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn("profile: core-only", result.stdout)
+        self.assertNotIn("ai-video-production", result.stdout)
+
+    def test_cli_lhe_bundled_profile_does_not_require_ai_video(self) -> None:
+        result = subprocess.run(
+            [sys.executable, str(CHECKER), "--package", "--profile", "lhe-bundled"],
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("profile: lhe-bundled", result.stdout)
         self.assertNotIn("ai-video-production", result.stdout)
 
     def test_core_only_installed_layout_passes_without_optional_files(self) -> None:
@@ -211,6 +248,45 @@ class PackageManifestContractTests(unittest.TestCase):
         self.assertIn("profile: core-only", core_result.stdout)
         self.assertNotEqual(legacy_result.returncode, 0)
         self.assertIn("Missing required file", legacy_result.stdout)
+
+    def test_lhe_bundled_installed_layout_passes_without_ai_video(self) -> None:
+        manifest = self.load_json(MANIFEST)
+        with tempfile.TemporaryDirectory() as temp_name:
+            temp_root = Path(temp_name)
+            for component_id in ("core", "bundled-optional"):
+                for relative_path in manifest["components"][component_id]["paths"]:
+                    source = ROOT / relative_path
+                    destination = temp_root / relative_path
+                    destination.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(source, destination)
+            checker = (
+                temp_root
+                / ".agents"
+                / "skills"
+                / "long-horizon-engineering"
+                / "scripts"
+                / "check_skill_package.py"
+            )
+            bundled_result = subprocess.run(
+                [
+                    sys.executable,
+                    str(checker),
+                    "--installed",
+                    "--profile",
+                    "lhe-bundled",
+                ],
+                cwd=temp_root,
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+        self.assertEqual(
+            bundled_result.returncode,
+            0,
+            bundled_result.stdout + bundled_result.stderr,
+        )
+        self.assertIn("profile: lhe-bundled", bundled_result.stdout)
+        self.assertNotIn("ai-video-production", bundled_result.stdout)
 
     def test_cli_rejects_unknown_profile(self) -> None:
         result = subprocess.run(
