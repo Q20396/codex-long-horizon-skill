@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:codex-long-horizon-skill:schema:monitoring-review:1.0.0",
+  "title": "Public Equity Monitoring Review Plan",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "monitor_id",
+      "metric",
+      "source_id",
+      "comparison",
+      "threshold",
+      "freshness_days",
+      "review_cadence",
+      "next_review_at",
+      "approval_status",
+      "review_history"
+    ],
+    "properties": {
+      "monitor_id": {
+        "type": "string",
+        "pattern": "^MON-[A-Z0-9-]+$"
+      },
+      "metric": {
+        "type": "string",
+        "minLength": 1
+      },
+      "source_id": {
+        "type": "string",
+        "minLength": 1
+      },
+      "comparison": {
+        "enum": ["above", "below", "equal", "outside_range", "qualitative"]
+      },
+      "threshold": {
+        "type": ["number", "string", "null"]
+      },
+      "freshness_days": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "review_cadence": {
+        "enum": ["event_driven", "weekly", "monthly", "quarterly", "annual"]
+      },
+      "next_review_at": {
+        "type": ["string", "null"],
+        "format": "date-time"
+      },
+      "approval_status": {
+        "const": "draft_pending_human_approval"
+      },
+      "review_history": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "review_id",
+            "reviewed_at",
+            "expected_result",
+            "actual_result",
+            "variance",
+            "attribution",
+            "decision_impact",
+            "source_ids",
+            "reviewer_status"
+          ],
+          "properties": {
+            "review_id": {
+              "type": "string",
+              "pattern": "^REV-[A-Z0-9-]+$"
+            },
+            "reviewed_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "expected_result": {
+              "type": "string",
+              "minLength": 1
+            },
+            "actual_result": {
+              "type": "string",
+              "minLength": 1
+            },
+            "variance": {
+              "enum": [
+                "favorable",
+                "unfavorable",
+                "neutral",
+                "not_assessable"
+              ]
+            },
+            "attribution": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            },
+            "decision_impact": {
+              "enum": ["none", "strengthen", "weaken", "re_underwrite"]
+            },
+            "source_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            },
+            "reviewer_status": {
+              "const": "recorded_for_human_review"
+            }
+          }
+        }
+      }
+    }
+  }
+}

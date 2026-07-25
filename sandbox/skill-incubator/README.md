@@ -40,3 +40,7 @@ repository-owned code or authorize source import.
   locked design for public-equity research evidence. It is not an investment
   adviser, market-data connector, broker integration, portfolio manager, or
   trading system.
+- `architecture/investment-decision-gate.md` defines the approved contract-only
+  foundation for research readiness, human disposition, monitoring drafts, and
+  append-only review. It is not registered as a skill and has no runtime,
+  provider, account, broker, order, or execution integration.
