@@ -39,11 +39,29 @@ SCHEMA_SETS = (
         "sandbox/skill-incubator/architecture",
         lambda payload: [payload],
     ),
+    (
+        "investment-decision-gate.schema.json",
+        "sandbox/skill-incubator/schemas/investment-decision-gate.schema.json",
+        "tests/fixtures/investment-decision-gate",
+        lambda payload: [item["record"] for item in payload],
+    ),
+    (
+        "evidence-ledger.schema.json",
+        "sandbox/skill-incubator/schemas/evidence-ledger.schema.json",
+        "tests/fixtures/investment-decision-gate",
+        lambda payload: [item["record"]["evidence_ledger"] for item in payload],
+    ),
+    (
+        "monitoring-review.schema.json",
+        "sandbox/skill-incubator/schemas/monitoring-review.schema.json",
+        "tests/fixtures/investment-decision-gate",
+        lambda payload: [item["record"]["monitoring_plan"] for item in payload],
+    ),
 )
 
 
 def validate_root(root: Path) -> tuple[list[str], int, int]:
-    from jsonschema import Draft202012Validator
+    from jsonschema import Draft202012Validator, FormatChecker
 
     errors: list[str] = []
     checked_instances = 0
@@ -59,16 +77,36 @@ def validate_root(root: Path) -> tuple[list[str], int, int]:
         else:
             validated_schemas[relative] = schema
 
+    registry = None
+    if validated_schemas:
+        from referencing import Registry, Resource
+
+        registry = Registry().with_resources(
+            (schema["$id"], Resource.from_contents(schema))
+            for schema in validated_schemas.values()
+            if "$id" in schema
+        )
+
     for label, schema_relative, instances_relative, extract in SCHEMA_SETS:
         schema = validated_schemas.get(schema_relative)
         if schema is None:
             continue
-        validator = Draft202012Validator(schema)
+        validator = Draft202012Validator(
+            schema,
+            registry=registry,
+            format_checker=FormatChecker(),
+        )
         directory = root / instances_relative
         if label == "capability-family.schema.json":
             paths = [directory / "capability-families.json"]
         elif label == "public-equity-research-sandbox.schema.json":
             paths = [directory / "public-equity-research-sandbox.json"]
+        elif label in {
+            "investment-decision-gate.schema.json",
+            "evidence-ledger.schema.json",
+            "monitoring-review.schema.json",
+        }:
+            paths = [directory / "cases.json"]
         else:
             paths = sorted(directory.glob("*.json"))
         for path in paths:

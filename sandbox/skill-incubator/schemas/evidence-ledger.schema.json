@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:codex-long-horizon-skill:schema:evidence-ledger:1.0.0",
+  "title": "Public Equity Evidence Ledger",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "source_id",
+      "source_type",
+      "as_of",
+      "retrieved_at",
+      "reliability",
+      "purpose",
+      "direction",
+      "license_status",
+      "redistribution_allowed",
+      "claim_ref",
+      "limitations"
+    ],
+    "properties": {
+      "source_id": {
+        "type": "string",
+        "minLength": 1
+      },
+      "source_type": {
+        "enum": [
+          "filing",
+          "investor_relations",
+          "market_data",
+          "model",
+          "user_input",
+          "public_research",
+          "other"
+        ]
+      },
+      "as_of": {
+        "type": ["string", "null"],
+        "format": "date-time"
+      },
+      "retrieved_at": {
+        "type": ["string", "null"],
+        "format": "date-time"
+      },
+      "reliability": {
+        "enum": ["high", "medium", "low", "unverified"]
+      },
+      "purpose": {
+        "enum": ["fact", "estimate", "assumption", "context"]
+      },
+      "direction": {
+        "enum": ["support", "refute", "neutral", "conflict"]
+      },
+      "license_status": {
+        "enum": ["verified", "restricted", "unknown"]
+      },
+      "redistribution_allowed": {
+        "const": false
+      },
+      "claim_ref": {
+        "type": "string",
+        "minLength": 1
+      },
+      "limitations": {
+        "type": "array",
+        "items": {
+          "enum": [
+            "none",
+            "stale",
+            "conflict",
+            "license_restricted",
+            "missing",
+            "citation_only",
+            "unverified"
+          ]
+        },
+        "uniqueItems": true
+      }
+    }
+  }
+}

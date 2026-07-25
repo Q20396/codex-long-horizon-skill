@@ -1,0 +1,459 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:codex-long-horizon-skill:schema:investment-decision-gate:1.0.0",
+  "title": "Investment Decision Gate Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "record_id",
+    "research_packet_id",
+    "skill_version",
+    "created_at",
+    "as_of",
+    "issuer_or_security",
+    "workflow_owner",
+    "evidence_ledger",
+    "assumptions",
+    "valuation_or_decision_framework",
+    "counter_case",
+    "falsifiers",
+    "data_gaps",
+    "proposed_posture",
+    "gate_state",
+    "gate_failures",
+    "monitoring_plan",
+    "human_decision",
+    "audit"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "record_id": {
+      "type": "string",
+      "pattern": "^IDG-[A-Z0-9-]+$"
+    },
+    "research_packet_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "skill_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "as_of": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    },
+    "issuer_or_security": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["issuer", "ticker", "market", "currency"],
+      "properties": {
+        "issuer": {
+          "type": ["string", "null"]
+        },
+        "ticker": {
+          "type": ["string", "null"]
+        },
+        "market": {
+          "enum": ["ASX", "US_LISTED_EQUITIES", null]
+        },
+        "currency": {
+          "type": ["string", "null"],
+          "pattern": "^[A-Z]{3}$"
+        }
+      }
+    },
+    "workflow_owner": {
+      "enum": [
+        "thesis-tracker",
+        "earnings-deep-dive",
+        "model-audit-tieout",
+        "scenario-sensitivity-generator",
+        "manual-research",
+        "unknown"
+      ]
+    },
+    "evidence_ledger": {
+      "$ref": "urn:codex-long-horizon-skill:schema:evidence-ledger:1.0.0"
+    },
+    "assumptions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "assumption_id",
+          "text",
+          "classification",
+          "model_version",
+          "source_ids"
+        ],
+        "properties": {
+          "assumption_id": {
+            "type": "string",
+            "pattern": "^ASM-[A-Z0-9-]+$"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1
+          },
+          "classification": {
+            "enum": ["fact", "derived", "judgment"]
+          },
+          "model_version": {
+            "type": ["string", "null"]
+          },
+          "source_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true
+          }
+        }
+      }
+    },
+    "valuation_or_decision_framework": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "method",
+            "currency",
+            "as_of",
+            "model_version",
+            "key_assumption_ids"
+          ],
+          "properties": {
+            "method": {
+              "type": "string",
+              "minLength": 1
+            },
+            "currency": {
+              "type": "string",
+              "pattern": "^[A-Z]{3}$"
+            },
+            "as_of": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "model_version": {
+              "type": "string",
+              "minLength": 1
+            },
+            "key_assumption_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^ASM-[A-Z0-9-]+$"
+              },
+              "uniqueItems": true
+            }
+          }
+        }
+      ]
+    },
+    "counter_case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["summary", "source_ids"],
+      "properties": {
+        "summary": {
+          "type": ["string", "null"]
+        },
+        "source_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "falsifiers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["falsifier_id", "condition", "source_id", "status"],
+        "properties": {
+          "falsifier_id": {
+            "type": "string",
+            "pattern": "^FAL-[A-Z0-9-]+$"
+          },
+          "condition": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "enum": ["unobserved", "approaching", "triggered", "cleared"]
+          }
+        }
+      }
+    },
+    "data_gaps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["gap_id", "description", "materiality", "status"],
+        "properties": {
+          "gap_id": {
+            "type": "string",
+            "pattern": "^GAP-[A-Z0-9-]+$"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "materiality": {
+            "enum": ["low", "medium", "high", "critical"]
+          },
+          "status": {
+            "enum": ["open", "accepted_for_research_only", "resolved"]
+          }
+        }
+      }
+    },
+    "proposed_posture": {
+      "enum": [
+        "research_only",
+        "watch",
+        "wait_for_proof",
+        "decision_candidate"
+      ]
+    },
+    "gate_state": {
+      "enum": [
+        "research_only",
+        "blocked",
+        "conditional",
+        "decision_candidate",
+        "re_underwrite"
+      ]
+    },
+    "gate_failures": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "IDENTITY_INCOMPLETE",
+          "AS_OF_MISSING",
+          "EVIDENCE_MISSING",
+          "SRC_UNSPECIFIED",
+          "SOURCE_LICENSE_UNKNOWN",
+          "SOURCE_STALE",
+          "SOURCE_CONFLICT",
+          "VALUATION_MISSING",
+          "COUNTER_CASE_MISSING",
+          "FALSIFIER_MISSING",
+          "MATERIAL_GAP",
+          "DRAFT_THRESHOLD",
+          "THESIS_FALSIFIED",
+          "EXECUTION_BOUNDARY_VIOLATION"
+        ]
+      },
+      "uniqueItems": true
+    },
+    "monitoring_plan": {
+      "$ref": "urn:codex-long-horizon-skill:schema:monitoring-review:1.0.0"
+    },
+    "human_decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "decision_log_id"],
+      "properties": {
+        "status": {
+          "const": "pending"
+        },
+        "decision_log_id": {
+          "type": ["string", "null"]
+        }
+      }
+    },
+    "audit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_snapshot_ids",
+        "model_version",
+        "supersedes_record_id"
+      ],
+      "properties": {
+        "source_snapshot_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "model_version": {
+          "type": ["string", "null"]
+        },
+        "supersedes_record_id": {
+          "type": ["string", "null"]
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "gate_state": {
+            "const": "decision_candidate"
+          }
+        },
+        "required": ["gate_state"]
+      },
+      "then": {
+        "properties": {
+          "as_of": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "evidence_ledger": {
+            "minItems": 1,
+            "items": {
+              "properties": {
+                "reliability": {
+                  "not": {
+                    "const": "unverified"
+                  }
+                },
+                "license_status": {
+                  "not": {
+                    "const": "unknown"
+                  }
+                },
+                "limitations": {
+                  "not": {
+                    "contains": {
+                      "enum": ["stale", "conflict", "missing", "unverified"]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "valuation_or_decision_framework": {
+            "type": "object"
+          },
+          "counter_case": {
+            "properties": {
+              "summary": {
+                "type": "string",
+                "minLength": 1
+              },
+              "source_ids": {
+                "minItems": 1
+              }
+            }
+          },
+          "falsifiers": {
+            "minItems": 1
+          },
+          "proposed_posture": {
+            "const": "decision_candidate"
+          },
+          "issuer_or_security": {
+            "properties": {
+              "issuer": {
+                "type": "string",
+                "minLength": 1
+              },
+              "ticker": {
+                "type": "string",
+                "minLength": 1
+              },
+              "market": {
+                "enum": ["ASX", "US_LISTED_EQUITIES"]
+              },
+              "currency": {
+                "type": "string",
+                "pattern": "^[A-Z]{3}$"
+              }
+            }
+          },
+          "workflow_owner": {
+            "not": {
+              "const": "unknown"
+            }
+          },
+          "data_gaps": {
+            "not": {
+              "contains": {
+                "type": "object",
+                "properties": {
+                  "materiality": {
+                    "enum": ["high", "critical"]
+                  },
+                  "status": {
+                    "const": "open"
+                  }
+                },
+                "required": ["materiality", "status"]
+              }
+            }
+          },
+          "gate_failures": {
+            "maxItems": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "gate_state": {
+            "enum": ["blocked", "conditional"]
+          }
+        },
+        "required": ["gate_state"]
+      },
+      "then": {
+        "properties": {
+          "gate_failures": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "gate_state": {
+            "const": "re_underwrite"
+          }
+        },
+        "required": ["gate_state"]
+      },
+      "then": {
+        "properties": {
+          "gate_failures": {
+            "contains": {
+              "const": "THESIS_FALSIFIED"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "contract_id": "INVESTMENT-DECISION-GATE",
+  "name": "Investment Decision Gate",
+  "status": "contract_foundation_approved",
+  "registered_skill": false,
+  "runtime_integration_exists": false,
+  "automatic_execution_authorized": false,
+  "human_decision_required": true,
+  "research_only": true,
+  "broker_access_authorized": false,
+  "account_access_authorized": false,
+  "credential_access_authorized": false,
+  "position_execution_data_authorized": false,
+  "order_generation_authorized": false,
+  "order_transmission_authorized": false,
+  "trade_execution_authorized": false,
+  "network_execution_authorized": false,
+  "provider_access_authorized": false,
+  "customer_material_upload_authorized": false,
+  "customer_material_external_transfer_authorized": false,
+  "code_import_allowed": false,
+  "schema_version": "1.0.0",
+  "gate_states": [
+    "research_only",
+    "blocked",
+    "conditional",
+    "decision_candidate",
+    "re_underwrite"
+  ],
+  "human_decision_default": "pending",
+  "router_observation": {
+    "package": "public-equity-investing@0.1.31",
+    "missing_skill_id": "test-public-equity-investing-workflows",
+    "router_declares_skill": true,
+    "skill_directory_present": false,
+    "observed_occurrence_count": 1,
+    "verification_method": "read_only_installed_package_inventory",
+    "recommended_action": "remove_stale_user_visible_route",
+    "remediation_applied": false,
+    "replacement": "package_level_contract_and_regression_tests"
+  }
+}
