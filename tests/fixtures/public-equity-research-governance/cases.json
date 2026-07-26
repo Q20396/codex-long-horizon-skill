@@ -1,0 +1,1494 @@
+{
+  "fixture_version": "1.0.0",
+  "base_record": {
+    "schema_version": "1.0.0",
+    "record_id": "PERG-SYNTHETIC-BASE",
+    "created_at": "2026-07-26T09:00:00+10:00",
+    "research_context": {
+      "issuer_or_security": "Synthetic Issuer",
+      "market": "ASX",
+      "currency": "AUD",
+      "research_as_of": "2026-07-26T09:00:00+10:00",
+      "decision_at": "2026-07-26T09:00:00+10:00",
+      "purpose": "historical_review"
+    },
+    "point_in_time_status": "point_in_time_ready",
+    "point_in_time_block_reasons": [],
+    "sources": [
+      {
+        "source_id": "SRC-SUPPORT",
+        "source_locator": "urn:synthetic:asx-announcement:SUPPORT",
+        "source_version": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "source_type": "synthetic_fixture",
+        "effective_at": "2026-07-25T16:00:00+10:00",
+        "published_at": "2026-07-25T17:00:00+10:00",
+        "available_at": "2026-07-25T17:05:00+10:00",
+        "retrieved_at": "2026-07-25T17:10:00+10:00",
+        "time_precision": "exact_timestamp",
+        "timezone_basis": "synthetic Australia/Sydney fixture",
+        "license_status": "citation_only",
+        "reliability": "high"
+      },
+      {
+        "source_id": "SRC-DISCONFIRM",
+        "source_locator": "urn:synthetic:asx-announcement:DISCONFIRM",
+        "source_version": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+        "source_type": "synthetic_fixture",
+        "effective_at": "2026-07-25T16:00:00+10:00",
+        "published_at": "2026-07-25T17:15:00+10:00",
+        "available_at": "2026-07-25T17:20:00+10:00",
+        "retrieved_at": "2026-07-25T17:25:00+10:00",
+        "time_precision": "exact_timestamp",
+        "timezone_basis": "synthetic Australia/Sydney fixture",
+        "license_status": "citation_only",
+        "reliability": "medium"
+      }
+    ],
+    "core_claims": [
+      {
+        "claim_id": "CLAIM-DEMAND",
+        "claim": "Synthetic demand remains resilient.",
+        "bull_case": "The supporting fixture indicates stable demand.",
+        "bear_case": "The disconfirming fixture indicates demand risk.",
+        "supporting_evidence_ids": [
+          "SRC-SUPPORT"
+        ],
+        "disconfirming_evidence_ids": [
+          "SRC-DISCONFIRM"
+        ],
+        "falsification_condition": "A synthetic demand index falls below the stated threshold.",
+        "data_to_verify": [
+          "Validate the next synthetic demand observation."
+        ]
+      }
+    ],
+    "assumptions": [
+      {
+        "assumption_id": "ASSUMPTION-DEMAND",
+        "statement": "The synthetic demand measure is comparable over time."
+      }
+    ],
+    "scenarios": [
+      {
+        "scenario_id": "SCENARIO-BASE",
+        "name": "Synthetic base case",
+        "description": "Demand remains within the synthetic base range."
+      }
+    ],
+    "risks": [
+      {
+        "risk_id": "RISK-DEMAND",
+        "description": "Synthetic demand weakens."
+      }
+    ],
+    "missing_evidence": [
+      {
+        "missing_evidence_id": "MISSING-NEXT-OBSERVATION",
+        "description": "The next synthetic observation is not yet available."
+      }
+    ],
+    "recommendation": {
+      "conclusion": "The synthetic thesis is not decision-grade.",
+      "basis": "Current synthetic evidence is mixed.",
+      "opposing_view": "Demand may weaken before the next review.",
+      "risk_ids": [
+        "RISK-DEMAND"
+      ],
+      "missing_evidence_ids": [
+        "MISSING-NEXT-OBSERVATION"
+      ],
+      "next_research_action": {
+        "action_type": "data_validation",
+        "description": "Validate the next synthetic observation."
+      },
+      "human_disposition": "request_more_evidence"
+    },
+    "decision_log": [
+      {
+        "entry_id": "DECISION-001",
+        "recorded_at": "2026-07-26T09:05:00+10:00",
+        "research_as_of": "2026-07-26T09:00:00+10:00",
+        "source_ids": [
+          "SRC-SUPPORT",
+          "SRC-DISCONFIRM"
+        ],
+        "assumption_ids": [
+          "ASSUMPTION-DEMAND"
+        ],
+        "scenario_ids": [
+          "SCENARIO-BASE"
+        ],
+        "research_conclusion": "The synthetic thesis is not decision-grade.",
+        "research_recommendation": "Collect more synthetic evidence.",
+        "opposing_view": "Demand may weaken before the next review.",
+        "risk_ids": [
+          "RISK-DEMAND"
+        ],
+        "missing_evidence_ids": [
+          "MISSING-NEXT-OBSERVATION"
+        ],
+        "human_disposition": "request_more_evidence",
+        "human_disposition_at": "2026-07-26T09:04:00+10:00",
+        "approval_reference": "synthetic-customer-disposition-001",
+        "supersedes_entry_id": null,
+        "next_research_action": {
+          "action_type": "data_validation",
+          "description": "Validate the next synthetic observation."
+        }
+      }
+    ],
+    "boundaries": {
+      "network_action_performed": false,
+      "provider_access_performed": false,
+      "account_access_performed": false,
+      "credential_access_performed": false,
+      "customer_material_used": false,
+      "customer_material_uploaded": false,
+      "external_transfer_performed": false,
+      "order_generated": false,
+      "order_transmitted": false,
+      "trade_executed": false,
+      "automatic_rebalance_performed": false,
+      "background_monitoring_started": false,
+      "third_party_code_imported": false,
+      "third_party_code_executed": false,
+      "host_enforcement_claimed": false,
+      "installed_runtime_enforcement_claimed": false
+    }
+  },
+  "cases": [
+    {
+      "case_id": "valid-ready-record",
+      "expected_valid": true,
+      "expected_reason_codes": [],
+      "mutations": []
+    },
+    {
+      "case_id": "valid-date-only-blocked",
+      "expected_valid": true,
+      "expected_reason_codes": [],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/point_in_time_status",
+          "value": "point_in_time_blocked"
+        },
+        {
+          "op": "set",
+          "path": "/point_in_time_block_reasons",
+          "value": [
+            "TIME_PRECISION_DATE_ONLY"
+          ]
+        },
+        {
+          "op": "set",
+          "path": "/sources/0/time_precision",
+          "value": "date_only"
+        }
+      ]
+    },
+    {
+      "case_id": "valid-append-only-supersession",
+      "expected_valid": true,
+      "expected_reason_codes": [],
+      "mutations": [
+        {
+          "op": "append",
+          "path": "/decision_log",
+          "value": {
+            "entry_id": "DECISION-002",
+            "recorded_at": "2026-07-26T10:05:00+10:00",
+            "research_as_of": "2026-07-26T10:00:00+10:00",
+            "source_ids": [
+              "SRC-SUPPORT",
+              "SRC-DISCONFIRM"
+            ],
+            "assumption_ids": [
+              "ASSUMPTION-DEMAND"
+            ],
+            "scenario_ids": [
+              "SCENARIO-BASE"
+            ],
+            "research_conclusion": "The synthetic thesis remains incomplete.",
+            "research_recommendation": "Continue research review.",
+            "opposing_view": "The disconfirming evidence may dominate.",
+            "risk_ids": [
+              "RISK-DEMAND"
+            ],
+            "missing_evidence_ids": [
+              "MISSING-NEXT-OBSERVATION"
+            ],
+            "human_disposition": "superseded",
+            "human_disposition_at": "2026-07-26T10:04:00+10:00",
+            "approval_reference": "synthetic-customer-disposition-002",
+            "supersedes_entry_id": "DECISION-001",
+            "next_research_action": {
+              "action_type": "risk_review",
+              "description": "Review the synthetic demand risk."
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "missing-evidence-locator",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "EVIDENCE_LOCATOR_REQUIRED"
+      ],
+      "mutations": [
+        {
+          "op": "delete",
+          "path": "/sources/0/source_locator"
+        }
+      ]
+    },
+    {
+      "case_id": "missing-evidence-version",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "EVIDENCE_VERSION_REQUIRED"
+      ],
+      "mutations": [
+        {
+          "op": "delete",
+          "path": "/sources/0/source_version"
+        }
+      ]
+    },
+    {
+      "case_id": "credential-in-source-locator",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "SENSITIVE_ACCOUNT_OR_CREDENTIAL_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/sources/0/source_locator",
+          "value": "https://public.example.test/notice?token=synthetic"
+        }
+      ]
+    },
+    {
+      "case_id": "timestamp-without-offset",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "TIMESTAMP_OFFSET_REQUIRED"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/sources/0/retrieved_at",
+          "value": "2026-07-25T17:10:00"
+        }
+      ]
+    },
+    {
+      "case_id": "missing-source-time-not-blocked",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "TIME_PRECISION_BLOCKED"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/sources/0/available_at",
+          "value": null
+        }
+      ]
+    },
+    {
+      "case_id": "date-precision-not-blocked",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "TIME_PRECISION_BLOCKED"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/sources/0/time_precision",
+          "value": "date_only"
+        }
+      ]
+    },
+    {
+      "case_id": "look-ahead-not-blocked",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "POINT_IN_TIME_VIOLATION"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/sources/0/available_at",
+          "value": "2026-07-27T09:00:00+10:00"
+        }
+      ]
+    },
+    {
+      "case_id": "decision-reference-invalid",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "DECISION_REFERENCE_INVALID"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/decision_log/0/risk_ids",
+          "value": [
+            "RISK-NOT-PRESENT"
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "decision-supersession-missing",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "DECISION_SUPERSESSION_REQUIRED"
+      ],
+      "mutations": [
+        {
+          "op": "append",
+          "path": "/decision_log",
+          "value": {
+            "entry_id": "DECISION-002",
+            "recorded_at": "2026-07-26T10:05:00+10:00",
+            "research_as_of": "2026-07-26T10:00:00+10:00",
+            "source_ids": [
+              "SRC-SUPPORT"
+            ],
+            "assumption_ids": [
+              "ASSUMPTION-DEMAND"
+            ],
+            "scenario_ids": [
+              "SCENARIO-BASE"
+            ],
+            "research_conclusion": "A changed synthetic conclusion.",
+            "research_recommendation": "Continue research review.",
+            "opposing_view": "The earlier conclusion may remain correct.",
+            "risk_ids": [
+              "RISK-DEMAND"
+            ],
+            "missing_evidence_ids": [
+              "MISSING-NEXT-OBSERVATION"
+            ],
+            "human_disposition": "superseded",
+            "human_disposition_at": "2026-07-26T10:04:00+10:00",
+            "approval_reference": "synthetic-customer-disposition-002",
+            "supersedes_entry_id": null,
+            "next_research_action": {
+              "action_type": "thesis_revision",
+              "description": "Revise the synthetic thesis."
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "human-disposition-time-missing",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "HUMAN_DISPOSITION_TIMESTAMP_REQUIRED"
+      ],
+      "mutations": [
+        {
+          "op": "delete",
+          "path": "/decision_log/0/human_disposition_at"
+        }
+      ]
+    },
+    {
+      "case_id": "human-disposition-invalid",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "HUMAN_DISPOSITION_INVALID"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/decision_log/0/human_disposition",
+          "value": "approved_for_execution"
+        }
+      ]
+    },
+    {
+      "case_id": "core-claim-bear-case-missing",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "CORE_CLAIM_COMPLETENESS_REQUIRED"
+      ],
+      "mutations": [
+        {
+          "op": "delete",
+          "path": "/core_claims/0/bear_case"
+        }
+      ]
+    },
+    {
+      "case_id": "order-field-present",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "ORDER_FIELD_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/order",
+          "value": "synthetic forbidden value"
+        }
+      ]
+    },
+    {
+      "case_id": "quantity-field-present",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "QUANTITY_FIELD_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/quantity",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "case_id": "broker-payload-present",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "BROKER_PAYLOAD_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/broker_payload",
+          "value": {
+            "synthetic": true
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "credential-field-present",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "SENSITIVE_ACCOUNT_OR_CREDENTIAL_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/api_key",
+          "value": "synthetic-not-a-secret"
+        }
+      ]
+    },
+    {
+      "case_id": "order-instruction-present",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "ORDER_INSTRUCTION_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/next_research_action/description",
+          "value": "Submit an order."
+        }
+      ]
+    },
+    {
+      "case_id": "simulated-order-submission-present",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "SIMULATED_ORDER_SUBMISSION_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/next_research_action/description",
+          "value": "Simulate submitting an order."
+        }
+      ]
+    },
+    {
+      "case_id": "automatic-rebalance-present",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "AUTOMATION_EXECUTION_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/next_research_action/description",
+          "value": "Automatically rebalance the portfolio."
+        }
+      ]
+    },
+    {
+      "case_id": "execution-endpoint-present",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "REAL_ENDPOINT_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/execution_endpoint",
+          "value": "https://broker.example.test/v1/orders"
+        }
+      ]
+    },
+    {
+      "case_id": "customer-data-present",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "REAL_CUSTOMER_DATA_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/customer_name",
+          "value": "Synthetic Customer"
+        }
+      ]
+    },
+    {
+      "case_id": "host-enforcement-claimed",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "HOST_ENFORCEMENT_CLAIM_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/boundaries/host_enforcement_claimed",
+          "value": true
+        }
+      ]
+    },
+    {
+      "case_id": "private-absolute-source-locator",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "SENSITIVE_ACCOUNT_OR_CREDENTIAL_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/sources/0/source_locator",
+          "value": "/private/tmp/customer-portfolio.pdf"
+        }
+      ]
+    },
+    {
+      "case_id": "account-access-boundary-true",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "SENSITIVE_ACCOUNT_OR_CREDENTIAL_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/boundaries/account_access_performed",
+          "value": true
+        }
+      ]
+    },
+    {
+      "case_id": "external-transfer-boundary-true",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "BOUNDARY_ASSERTION_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/boundaries/external_transfer_performed",
+          "value": true
+        }
+      ]
+    },
+    {
+      "case_id": "customer-material-boundary-true",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "REAL_CUSTOMER_DATA_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/boundaries/customer_material_used",
+          "value": true
+        }
+      ]
+    },
+    {
+      "case_id": "third-party-import-boundary-true",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "BOUNDARY_ASSERTION_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/boundaries/third_party_code_imported",
+          "value": true
+        }
+      ]
+    },
+    {
+      "case_id": "order-in-conclusion",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "ORDER_INSTRUCTION_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/conclusion",
+          "value": "Submit an order after review."
+        }
+      ]
+    },
+    {
+      "case_id": "nested-order-payload",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "ORDER_FIELD_FORBIDDEN",
+        "QUANTITY_FIELD_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/next_research_action/order_payload",
+          "value": {
+            "symbol": "TEST",
+            "quantity": 1
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "invalid-retrieved-month",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "TIMESTAMP_OFFSET_REQUIRED"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/sources/0/retrieved_at",
+          "value": "2026-13-25T17:10:00+10:00"
+        }
+      ]
+    },
+    {
+      "case_id": "invalid-decision-month",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "TIMESTAMP_OFFSET_REQUIRED"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/research_context/decision_at",
+          "value": "2026-13-25T18:00:00+10:00"
+        }
+      ]
+    },
+    {
+      "case_id": "duplicate-source-id",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "ENTITY_ID_DUPLICATE"
+      ],
+      "mutations": [
+        {
+          "op": "append",
+          "path": "/sources",
+          "value": {
+            "source_id": "SRC-SUPPORT",
+            "source_locator": "urn:synthetic:asx-announcement:DUPLICATE",
+            "source_version": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+            "source_type": "synthetic_fixture",
+            "effective_at": "2026-07-25T16:00:00+10:00",
+            "published_at": "2026-07-25T17:00:00+10:00",
+            "available_at": "2026-07-25T17:05:00+10:00",
+            "retrieved_at": "2026-07-25T17:10:00+10:00",
+            "time_precision": "exact_timestamp",
+            "timezone_basis": "synthetic Australia/Sydney fixture",
+            "license_status": "citation_only",
+            "reliability": "medium"
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "duplicate-core-claim-id",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "ENTITY_ID_DUPLICATE"
+      ],
+      "mutations": [
+        {
+          "op": "append",
+          "path": "/core_claims",
+          "value": {
+            "claim_id": "CLAIM-DEMAND",
+            "claim": "A second synthetic claim uses the same ID.",
+            "bull_case": "Synthetic supporting evidence exists.",
+            "bear_case": "Synthetic disconfirming evidence exists.",
+            "supporting_evidence_ids": [
+              "SRC-SUPPORT"
+            ],
+            "disconfirming_evidence_ids": [
+              "SRC-DISCONFIRM"
+            ],
+            "falsification_condition": "The synthetic condition is not met.",
+            "data_to_verify": [
+              "Review the synthetic source."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "duplicate-risk-id",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "ENTITY_ID_DUPLICATE"
+      ],
+      "mutations": [
+        {
+          "op": "append",
+          "path": "/risks",
+          "value": {
+            "risk_id": "RISK-DEMAND",
+            "description": "A duplicate synthetic risk identifier."
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "duplicate-missing-evidence-id",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "ENTITY_ID_DUPLICATE"
+      ],
+      "mutations": [
+        {
+          "op": "append",
+          "path": "/missing_evidence",
+          "value": {
+            "missing_evidence_id": "MISSING-NEXT-OBSERVATION",
+            "description": "A duplicate synthetic missing-evidence identifier."
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "valid-broker-research",
+      "expected_valid": true,
+      "expected_reason_codes": [],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/basis",
+          "value": "Public broker research supports the synthetic evidence review."
+        }
+      ]
+    },
+    {
+      "case_id": "valid-broker-consensus",
+      "expected_valid": true,
+      "expected_reason_codes": [],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/opposing_view",
+          "value": "Public broker consensus may understate the synthetic risk."
+        }
+      ]
+    },
+    {
+      "case_id": "valid-public-broker-source",
+      "expected_valid": true,
+      "expected_reason_codes": [],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/basis",
+          "value": "A public broker source describes the synthetic consensus estimate."
+        }
+      ]
+    },
+    {
+      "case_id": "valid-analyst-credentials",
+      "expected_valid": true,
+      "expected_reason_codes": [],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/basis",
+          "value": "The analyst credentials were reviewed as source-quality context."
+        }
+      ]
+    },
+    {
+      "case_id": "valid-professional-credentials",
+      "expected_valid": true,
+      "expected_reason_codes": [],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/opposing_view",
+          "value": "Professional credentials do not remove the need for evidence."
+        }
+      ]
+    },
+    {
+      "case_id": "valid-accounting-research",
+      "expected_valid": true,
+      "expected_reason_codes": [],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/basis",
+          "value": "Accounting research supports review of the synthetic statements."
+        }
+      ]
+    },
+    {
+      "case_id": "valid-automated-valuation",
+      "expected_valid": true,
+      "expected_reason_codes": [],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/conclusion",
+          "value": "Automated valuation sensitivity analysis remains research-only."
+        }
+      ]
+    },
+    {
+      "case_id": "valid-automatic-data-cleaning",
+      "expected_valid": true,
+      "expected_reason_codes": [],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/next_research_action/description",
+          "value": "Use automatic data cleaning on the synthetic research fixture."
+        }
+      ]
+    },
+    {
+      "case_id": "automatic-trading-in-conclusion",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "AUTOMATED_EXECUTION_SEMANTICS_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/conclusion",
+          "value": "Enable automatic trading after the research review."
+        }
+      ]
+    },
+    {
+      "case_id": "automated-trading-punctuation",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "AUTOMATED_EXECUTION_SEMANTICS_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/opposing_view",
+          "value": "The proposal depends on automated/trading."
+        }
+      ]
+    },
+    {
+      "case_id": "automatic-rebalancing-in-next-action",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "AUTOMATED_EXECUTION_SEMANTICS_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/next_research_action/description",
+          "value": "Start automatic rebalancing."
+        }
+      ]
+    },
+    {
+      "case_id": "automated-rebalancing-punctuation",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "AUTOMATED_EXECUTION_SEMANTICS_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/risks/0/description",
+          "value": "The design includes automated:rebalancing."
+        }
+      ]
+    },
+    {
+      "case_id": "access-account-in-basis",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "ACCOUNT_ACCESS_SEMANTICS_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/basis",
+          "value": "Access the account to complete the research."
+        }
+      ]
+    },
+    {
+      "case_id": "account-access-in-opposing-view",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "ACCOUNT_ACCESS_SEMANTICS_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/opposing_view",
+          "value": "Account/access would be required."
+        }
+      ]
+    },
+    {
+      "case_id": "account-operation-in-next-action",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "ACCOUNT_ACCESS_SEMANTICS_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/next_research_action/description",
+          "value": "Perform an account operation."
+        }
+      ]
+    },
+    {
+      "case_id": "credential-access-account-in-conclusion",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "ACCOUNT_ACCESS_SEMANTICS_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/conclusion",
+          "value": "Use a credential to access the account."
+        }
+      ]
+    },
+    {
+      "case_id": "api-key-access-account-in-basis",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "ACCOUNT_ACCESS_SEMANTICS_FORBIDDEN",
+        "RESEARCH_OUTPUT_EXECUTION_OR_ACCOUNT_SEMANTICS_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/basis",
+          "value": "Use an API key to access the account."
+        }
+      ]
+    },
+    {
+      "case_id": "broker-payload-in-basis",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "RESEARCH_OUTPUT_EXECUTION_OR_ACCOUNT_SEMANTICS_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/basis",
+          "value": "Use a broker payload after research review."
+        }
+      ]
+    },
+    {
+      "case_id": "account-id-in-opposing-view",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "RESEARCH_OUTPUT_EXECUTION_OR_ACCOUNT_SEMANTICS_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/opposing_view",
+          "value": "Record account_id ACCT-123 in the rationale."
+        }
+      ]
+    },
+    {
+      "case_id": "credential-in-next-action",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "RESEARCH_OUTPUT_EXECUTION_OR_ACCOUNT_SEMANTICS_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/next_research_action/description",
+          "value": "Attach the credential token to the evidence."
+        }
+      ]
+    },
+    {
+      "case_id": "execution-endpoint-in-conclusion",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "RESEARCH_OUTPUT_EXECUTION_OR_ACCOUNT_SEMANTICS_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/conclusion",
+          "value": "Send the result to an execution endpoint."
+        }
+      ]
+    },
+    {
+      "case_id": "proposed-quantity-in-basis",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "RESEARCH_OUTPUT_EXECUTION_OR_ACCOUNT_SEMANTICS_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/basis",
+          "value": "The proposed quantity is 100 units."
+        }
+      ]
+    },
+    {
+      "case_id": "submit-to-broker-in-next-action",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "RESEARCH_OUTPUT_EXECUTION_OR_ACCOUNT_SEMANTICS_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/next_research_action/description",
+          "value": "Send the recommendation to a broker."
+        }
+      ]
+    },
+    {
+      "case_id": "nested-broker-payload-value",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "RESEARCH_OUTPUT_EXECUTION_OR_ACCOUNT_SEMANTICS_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/next_research_action/description",
+          "value": "Review the nested broker payload."
+        }
+      ]
+    },
+    {
+      "case_id": "broker-payload-hyphen",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "RESEARCH_OUTPUT_EXECUTION_OR_ACCOUNT_SEMANTICS_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/basis",
+          "value": "Review the broker-payload."
+        }
+      ]
+    },
+    {
+      "case_id": "broker-payload-underscore",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "RESEARCH_OUTPUT_EXECUTION_OR_ACCOUNT_SEMANTICS_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/basis",
+          "value": "Review the broker_payload."
+        }
+      ]
+    },
+    {
+      "case_id": "broker-payload-slash",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "RESEARCH_OUTPUT_EXECUTION_OR_ACCOUNT_SEMANTICS_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/basis",
+          "value": "Review the broker/payload."
+        }
+      ]
+    },
+    {
+      "case_id": "broker-payload-dot",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "RESEARCH_OUTPUT_EXECUTION_OR_ACCOUNT_SEMANTICS_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/basis",
+          "value": "Review the broker.payload."
+        }
+      ]
+    },
+    {
+      "case_id": "broker-payload-colon",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "RESEARCH_OUTPUT_EXECUTION_OR_ACCOUNT_SEMANTICS_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/basis",
+          "value": "Review the broker:payload."
+        }
+      ]
+    },
+    {
+      "case_id": "account-id-dot",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "RESEARCH_OUTPUT_EXECUTION_OR_ACCOUNT_SEMANTICS_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/opposing_view",
+          "value": "Record account.id ACCT-123."
+        }
+      ]
+    },
+    {
+      "case_id": "account-number-slash",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "RESEARCH_OUTPUT_EXECUTION_OR_ACCOUNT_SEMANTICS_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/opposing_view",
+          "value": "Record account/number 123."
+        }
+      ]
+    },
+    {
+      "case_id": "execution-endpoint-dot",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "RESEARCH_OUTPUT_EXECUTION_OR_ACCOUNT_SEMANTICS_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/conclusion",
+          "value": "Use the execution.endpoint."
+        }
+      ]
+    },
+    {
+      "case_id": "execution-endpoint-slash",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "RESEARCH_OUTPUT_EXECUTION_OR_ACCOUNT_SEMANTICS_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/conclusion",
+          "value": "Use the execution/endpoint."
+        }
+      ]
+    },
+    {
+      "case_id": "proposed-quantity-colon",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "RESEARCH_OUTPUT_EXECUTION_OR_ACCOUNT_SEMANTICS_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/basis",
+          "value": "Set proposed:quantity to 100."
+        }
+      ]
+    },
+    {
+      "case_id": "order-quantity-slash",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "RESEARCH_OUTPUT_EXECUTION_OR_ACCOUNT_SEMANTICS_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/basis",
+          "value": "Set order/quantity to 100."
+        }
+      ]
+    },
+    {
+      "case_id": "nested-broker-payload-punctuation",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "RESEARCH_OUTPUT_EXECUTION_OR_ACCOUNT_SEMANTICS_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/recommendation/next_research_action/description",
+          "value": "Review nested broker-payload metadata."
+        }
+      ]
+    },
+    {
+      "case_id": "account-singular-path-locator",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "LOCATOR_ACCOUNT_REFERENCE_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/sources/0/source_locator",
+          "value": "https://public.example.test/account/123"
+        }
+      ]
+    },
+    {
+      "case_id": "account-plural-path-locator",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "LOCATOR_ACCOUNT_REFERENCE_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/sources/0/source_locator",
+          "value": "https://public.example.test/accounts/123"
+        }
+      ]
+    },
+    {
+      "case_id": "account-query-locator",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "LOCATOR_ACCOUNT_REFERENCE_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/sources/0/source_locator",
+          "value": "https://public.example.test/source?account_id=123"
+        }
+      ]
+    },
+    {
+      "case_id": "account-fragment-locator",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "LOCATOR_ACCOUNT_REFERENCE_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/sources/0/source_locator",
+          "value": "https://public.example.test/source#account:123"
+        }
+      ]
+    },
+    {
+      "case_id": "account-encoded-once-locator",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "LOCATOR_ACCOUNT_REFERENCE_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/sources/0/source_locator",
+          "value": "https://public.example.test/%61ccounts/123"
+        }
+      ]
+    },
+    {
+      "case_id": "account-encoded-twice-locator",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "LOCATOR_ACCOUNT_REFERENCE_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/sources/0/source_locator",
+          "value": "https://public.example.test/%2561ccounts/123"
+        }
+      ]
+    },
+    {
+      "case_id": "account-encoded-query-locator",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "LOCATOR_ACCOUNT_REFERENCE_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/sources/0/source_locator",
+          "value": "https://public.example.test/source?%61ccount_id=123"
+        }
+      ]
+    },
+    {
+      "case_id": "execution-endpoint-slash-locator",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "SENSITIVE_ACCOUNT_OR_CREDENTIAL_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/sources/0/source_locator",
+          "value": "https://public.example.test/execution/endpoint/run"
+        }
+      ]
+    },
+    {
+      "case_id": "execution-endpoint-encoded-slash-locator",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "SENSITIVE_ACCOUNT_OR_CREDENTIAL_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/sources/0/source_locator",
+          "value": "https://public.example.test/execution%2Fendpoint/run"
+        }
+      ]
+    },
+    {
+      "case_id": "invalid-percent-escape-locator",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "SENSITIVE_ACCOUNT_OR_CREDENTIAL_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/sources/0/source_locator",
+          "value": "https://public.example.test/source/%ZZ"
+        }
+      ]
+    },
+    {
+      "case_id": "authority-percent-encoding-locator",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "LOCATOR_AUTHORITY_PERCENT_ENCODING_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/sources/0/source_locator",
+          "value": "https://public%ZZ.example.test/source"
+        }
+      ]
+    },
+    {
+      "case_id": "decode-bound-exceeded-locator",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "SENSITIVE_ACCOUNT_OR_CREDENTIAL_FORBIDDEN"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/sources/0/source_locator",
+          "value": "https://public.example.test/%25252561ccounts/123"
+        }
+      ]
+    },
+    {
+      "case_id": "duplicate-decision-entry-id",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "ENTITY_ID_DUPLICATE"
+      ],
+      "mutations": [
+        {
+          "op": "append",
+          "path": "/decision_log",
+          "value": {
+            "entry_id": "DECISION-001",
+            "recorded_at": "2026-07-26T10:05:00+10:00",
+            "research_as_of": "2026-07-26T10:00:00+10:00",
+            "source_ids": [
+              "SRC-SUPPORT",
+              "SRC-DISCONFIRM"
+            ],
+            "assumption_ids": [
+              "ASSUMPTION-DEMAND"
+            ],
+            "scenario_ids": [
+              "SCENARIO-BASE"
+            ],
+            "research_conclusion": "The synthetic thesis remains incomplete.",
+            "research_recommendation": "Continue research review.",
+            "opposing_view": "The earlier conclusion may remain correct.",
+            "risk_ids": [
+              "RISK-DEMAND"
+            ],
+            "missing_evidence_ids": [
+              "MISSING-NEXT-OBSERVATION"
+            ],
+            "human_disposition": "superseded",
+            "human_disposition_at": "2026-07-26T10:04:00+10:00",
+            "approval_reference": "synthetic-customer-disposition-duplicate",
+            "supersedes_entry_id": "DECISION-001",
+            "next_research_action": {
+              "action_type": "risk_review",
+              "description": "Review the synthetic demand risk."
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
