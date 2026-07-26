@@ -131,6 +131,7 @@ INSTALLED_REQUIRED_FILES = [
     ".agents/skills/long-horizon-engineering/references/skill-authoring-methodology.md",
     ".agents/skills/long-horizon-engineering/references/skill-lifecycle-management.md",
     ".agents/skills/long-horizon-engineering/references/skill-optimization-protocol.md",
+    ".agents/skills/long-horizon-engineering/references/skill-routing-and-promotion-contract.md",
     ".agents/skills/long-horizon-engineering/references/skillopt-training-layer.md",
     ".agents/skills/long-horizon-engineering/references/ship-readiness-protocol.md",
     ".agents/skills/long-horizon-engineering/references/tdd-protocol.md",
@@ -222,6 +223,7 @@ INSTALLED_REQUIRED_FILES = [
     ".agents/skills/long-horizon-engineering/schemas/decision-map.schema.json",
     ".agents/skills/long-horizon-engineering/schemas/frontier.schema.json",
     ".agents/skills/long-horizon-engineering/schemas/package-manifest.schema.json",
+    ".agents/skills/long-horizon-engineering/schemas/skill-routing-decision.schema.json",
 ]
 
 AI_VIDEO_REQUIRED_FILES = [
@@ -262,6 +264,8 @@ POST_LEGACY_REQUIRED_FILES = {
     ".agents/skills/long-horizon-engineering/templates/SELF_IMPROVEMENT_REVIEW_TEMPLATE.md",
     ".agents/skills/long-horizon-engineering/templates/SKILL_USAGE_REVIEW_TEMPLATE.yaml",
     ".agents/skills/long-horizon-engineering/schemas/package-manifest.schema.json",
+    ".agents/skills/long-horizon-engineering/references/skill-routing-and-promotion-contract.md",
+    ".agents/skills/long-horizon-engineering/schemas/skill-routing-decision.schema.json",
 }
 
 

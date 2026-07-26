@@ -1,0 +1,703 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "skill-routing-decision.schema.json",
+  "title": "LHE Static Skill Routing And Promotion Decision",
+  "description": "A static governance record. It is not a runtime router or host-enforced permission boundary.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "decision_id",
+    "evaluated_at",
+    "routing_input",
+    "candidates",
+    "routing_decision",
+    "promotion_assessment",
+    "contract_boundaries"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "decision_id": {
+      "type": "string",
+      "pattern": "^ROUTE-[A-Z0-9][A-Z0-9-]{2,63}$"
+    },
+    "evaluated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "routing_input": {
+      "$ref": "#/$defs/routingInput"
+    },
+    "candidates": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/candidate"
+      }
+    },
+    "routing_decision": {
+      "$ref": "#/$defs/routingDecision"
+    },
+    "promotion_assessment": {
+      "$ref": "#/$defs/promotionAssessment"
+    },
+    "contract_boundaries": {
+      "$ref": "#/$defs/contractBoundaries"
+    }
+  },
+  "$defs": {
+    "routeId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9.-]{1,127}$"
+    },
+    "effectClass": {
+      "enum": [
+        "local-read",
+        "local-write",
+        "network-read",
+        "network-write",
+        "external-transfer",
+        "account-session-access",
+        "install",
+        "execute",
+        "publish",
+        "merge",
+        "release"
+      ]
+    },
+    "routingInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "intent_id",
+        "safety_gate",
+        "explicit_target_id",
+        "explicit_workflow_id",
+        "granted_effects"
+      ],
+      "properties": {
+        "intent_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9.-]{1,127}$"
+        },
+        "safety_gate": {
+          "enum": [
+            "pass",
+            "stop"
+          ]
+        },
+        "explicit_target_id": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/routeId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "explicit_workflow_id": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/routeId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "granted_effects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/effectClass"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "route_id",
+        "route_kind",
+        "availability",
+        "activation_policy",
+        "intent_match",
+        "exact_explicit_match",
+        "executable",
+        "required_effects"
+      ],
+      "properties": {
+        "route_id": {
+          "$ref": "#/$defs/routeId"
+        },
+        "route_kind": {
+          "enum": [
+            "installed-skill",
+            "installed-plugin",
+            "connector",
+            "workflow",
+            "proposal",
+            "sandbox-candidate"
+          ]
+        },
+        "availability": {
+          "enum": [
+            "installed-callable",
+            "installed-unavailable",
+            "not-installed",
+            "not-callable",
+            "proposal-only",
+            "sandbox-only"
+          ]
+        },
+        "activation_policy": {
+          "enum": [
+            "implicit",
+            "explicit-only",
+            "proposal-only",
+            "sandbox-only"
+          ]
+        },
+        "intent_match": {
+          "type": "boolean"
+        },
+        "exact_explicit_match": {
+          "type": "boolean"
+        },
+        "executable": {
+          "type": "boolean"
+        },
+        "required_effects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/effectClass"
+          },
+          "uniqueItems": true
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "activation_policy": {
+                "enum": [
+                  "proposal-only",
+                  "sandbox-only"
+                ]
+              }
+            },
+            "required": [
+              "activation_policy"
+            ]
+          },
+          "then": {
+            "properties": {
+              "executable": {
+                "const": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "availability": {
+                "enum": [
+                  "proposal-only",
+                  "sandbox-only"
+                ]
+              }
+            },
+            "required": [
+              "availability"
+            ]
+          },
+          "then": {
+            "properties": {
+              "executable": {
+                "const": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "route_kind": {
+                "const": "proposal"
+              }
+            },
+            "required": [
+              "route_kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "availability": {
+                "const": "proposal-only"
+              },
+              "activation_policy": {
+                "const": "proposal-only"
+              },
+              "executable": {
+                "const": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "route_kind": {
+                "const": "sandbox-candidate"
+              }
+            },
+            "required": [
+              "route_kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "availability": {
+                "const": "sandbox-only"
+              },
+              "activation_policy": {
+                "const": "sandbox-only"
+              },
+              "executable": {
+                "const": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "routingDecision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "precedence_step",
+        "outcome",
+        "selected_route_id",
+        "reason_code",
+        "granted_effects_before",
+        "granted_effects_after",
+        "authority_expanded",
+        "install_authorized_by_routing",
+        "execution_authorized_by_routing",
+        "promotion_authorized_by_routing"
+      ],
+      "properties": {
+        "precedence_step": {
+          "enum": [
+            "safety-stop-gate",
+            "explicit-exact-installed-callable",
+            "explicit-unavailable",
+            "explicit-workflow",
+            "single-implicit-intent",
+            "ambiguity",
+            "no-match"
+          ]
+        },
+        "outcome": {
+          "enum": [
+            "blocked",
+            "selected",
+            "unavailable",
+            "clarification-required",
+            "no-match"
+          ]
+        },
+        "selected_route_id": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/routeId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason_code": {
+          "enum": [
+            "SAFETY_STOP",
+            "EXPLICIT_CALLABLE_SELECTED",
+            "EXPLICIT_TARGET_UNAVAILABLE",
+            "EXPLICIT_WORKFLOW_SELECTED",
+            "SINGLE_IMPLICIT_MATCH",
+            "AMBIGUOUS_IMPLICIT_MATCH",
+            "NO_ELIGIBLE_MATCH"
+          ]
+        },
+        "granted_effects_before": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/effectClass"
+          },
+          "uniqueItems": true
+        },
+        "granted_effects_after": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/effectClass"
+          },
+          "uniqueItems": true
+        },
+        "authority_expanded": {
+          "const": false
+        },
+        "install_authorized_by_routing": {
+          "const": false
+        },
+        "execution_authorized_by_routing": {
+          "const": false
+        },
+        "promotion_authorized_by_routing": {
+          "const": false
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "outcome": {
+                "const": "selected"
+              }
+            },
+            "required": [
+              "outcome"
+            ]
+          },
+          "then": {
+            "properties": {
+              "selected_route_id": {
+                "$ref": "#/$defs/routeId"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "selected_route_id": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "sourceIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_id",
+        "immutable_ref",
+        "mutable_ref_used"
+      ],
+      "properties": {
+        "source_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9.-]{1,127}$"
+        },
+        "immutable_ref": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "mutable_ref_used": {
+          "const": false
+        }
+      }
+    },
+    "gate": {
+      "enum": [
+        "passed",
+        "failed",
+        "not-verified",
+        "not-applicable"
+      ]
+    },
+    "decisionReference": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "reference_id",
+            "claim_status"
+          ],
+          "properties": {
+            "reference_id": {
+              "type": "string",
+              "pattern": "^[A-Z0-9][A-Z0-9._-]{2,127}$"
+            },
+            "claim_status": {
+              "const": "unverified_claim"
+            }
+          }
+        }
+      ]
+    },
+    "promotionAssessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lifecycle_namespace",
+        "lifecycle_status",
+        "current_package_disposition",
+        "proposed_package_disposition",
+        "source_identity",
+        "license_gate",
+        "security_gate",
+        "architecture_gate",
+        "validation_gate",
+        "eligibility",
+        "promotion_state",
+        "default_profile_change_requested",
+        "assessment_actor",
+        "approval_required",
+        "human_disposition",
+        "human_disposition_actor",
+        "decision_reference",
+        "next_stage_authorized",
+        "automatic_promotion"
+      ],
+      "properties": {
+        "lifecycle_namespace": {
+          "enum": [
+            "installed-skill-lifecycle",
+            "incubator-experiment-lifecycle",
+            "source-lifecycle"
+          ]
+        },
+        "lifecycle_status": {
+          "enum": [
+            "active",
+            "frozen",
+            "locked",
+            "proposed",
+            "approved_for_design",
+            "approved_for_isolated_build",
+            "testing",
+            "rejected",
+            "retained_in_sandbox",
+            "candidate_optional",
+            "approved_optional",
+            "candidate_core",
+            "approved_core",
+            "deprecated"
+          ]
+        },
+        "current_package_disposition": {
+          "$ref": "#/$defs/packageDisposition"
+        },
+        "proposed_package_disposition": {
+          "$ref": "#/$defs/packageDisposition"
+        },
+        "source_identity": {
+          "$ref": "#/$defs/sourceIdentity"
+        },
+        "license_gate": {
+          "$ref": "#/$defs/gate"
+        },
+        "security_gate": {
+          "$ref": "#/$defs/gate"
+        },
+        "architecture_gate": {
+          "$ref": "#/$defs/gate"
+        },
+        "validation_gate": {
+          "$ref": "#/$defs/gate"
+        },
+        "eligibility": {
+          "enum": [
+            "not-assessed",
+            "ineligible",
+            "eligible"
+          ]
+        },
+        "promotion_state": {
+          "const": "not-promoted"
+        },
+        "default_profile_change_requested": {
+          "const": false
+        },
+        "assessment_actor": {
+          "enum": [
+            "planner",
+            "builder",
+            "evaluator"
+          ]
+        },
+        "approval_required": {
+          "const": true
+        },
+        "human_disposition": {
+          "const": "pending"
+        },
+        "human_disposition_actor": {
+          "const": "none"
+        },
+        "decision_reference": {
+          "$ref": "#/$defs/decisionReference"
+        },
+        "next_stage_authorized": {
+          "const": false
+        },
+        "automatic_promotion": {
+          "const": false
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "lifecycle_namespace": {
+                "const": "installed-skill-lifecycle"
+              }
+            },
+            "required": [
+              "lifecycle_namespace"
+            ]
+          },
+          "then": {
+            "properties": {
+              "lifecycle_status": {
+                "enum": [
+                  "active",
+                  "frozen"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "lifecycle_namespace": {
+                "const": "incubator-experiment-lifecycle"
+              }
+            },
+            "required": [
+              "lifecycle_namespace"
+            ]
+          },
+          "then": {
+            "properties": {
+              "lifecycle_status": {
+                "enum": [
+                  "locked",
+                  "proposed",
+                  "approved_for_design",
+                  "approved_for_isolated_build",
+                  "testing",
+                  "rejected",
+                  "retained_in_sandbox",
+                  "candidate_optional",
+                  "approved_optional",
+                  "candidate_core",
+                  "approved_core",
+                  "deprecated"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "lifecycle_namespace": {
+                "const": "source-lifecycle"
+              }
+            },
+            "required": [
+              "lifecycle_namespace"
+            ]
+          },
+          "then": {
+            "properties": {
+              "lifecycle_status": {
+                "const": "locked"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "eligibility": {
+                "const": "eligible"
+              }
+            },
+            "required": [
+              "eligibility"
+            ]
+          },
+          "then": {
+            "properties": {
+              "license_gate": {
+                "const": "passed"
+              },
+              "security_gate": {
+                "const": "passed"
+              },
+              "architecture_gate": {
+                "const": "passed"
+              },
+              "validation_gate": {
+                "const": "passed"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "packageDisposition": {
+      "enum": [
+        "core",
+        "bundled-optional",
+        "separate-skill",
+        "sandbox-only",
+        "rejected",
+        "deferred",
+        "archived"
+      ]
+    },
+    "contractBoundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "static_contract",
+        "schema_validated_only",
+        "runtime_router",
+        "host_enforced",
+        "physical_package_migration",
+        "third_party_material_included"
+      ],
+      "properties": {
+        "static_contract": {
+          "const": true
+        },
+        "schema_validated_only": {
+          "const": true
+        },
+        "runtime_router": {
+          "const": false
+        },
+        "host_enforced": {
+          "const": false
+        },
+        "physical_package_migration": {
+          "const": false
+        },
+        "third_party_material_included": {
+          "const": false
+        }
+      }
+    }
+  }
+}
