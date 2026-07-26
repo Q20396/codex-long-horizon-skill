@@ -230,6 +230,17 @@ Evaluator reviews evidence and reports findings. The Evaluator does not edit,
 approve its own proposal, or authorize push, merge, deployment, publication, or
 other high-impact actions. Human approval remains required for those actions.
 
+## Routing And Promotion Governance
+
+When route selection or skill promotion needs a reviewable structured decision,
+use `references/skill-routing-and-promotion-contract.md`. Its fixed precedence
+separates selection, ambiguity, authority, package disposition, and promotion
+eligibility. A selected or eligible result is not installation, execution,
+promotion, merge, release, or deployment authorization. The contract is static
+and defined by a Draft 2020-12 schema plus dependency-free contract tests; it
+is not a runtime router or host-enforced isolation. A formal Draft 2020-12
+engine result must be reported separately when that engine is unavailable.
+
 ## Safe Update / Self-Check Protocol
 
 When the user asks to check for updates, update skills, upgrade skills, or

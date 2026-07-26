@@ -4,7 +4,7 @@
   "execution_authorized": false,
   "baseline_commit": "1fd15b8e2123f0a7cd85ff39ac778d265cedfb1b",
   "source_manifest": ".agents/skills/long-horizon-engineering/package-manifest.json",
-  "source_manifest_sha256": "3a96d17d3b34c3ef0ceac05e6fb604302b2b28d416f5be744a1fdf4a1f792684",
+  "source_manifest_sha256": "e031653a41464a092669ef331da4e52f8f5cbc34ed5b061222f3e1aa25f6e378",
   "default_action": "retain-current-layer",
   "physical_moves_authorized": false,
   "manifest_changes_authorized": false,
@@ -117,8 +117,8 @@
     }
   ],
   "summary": {
-    "manifest_paths_reviewed": 165,
-    "core_retained": 40,
+    "manifest_paths_reviewed": 167,
+    "core_retained": 42,
     "bundled_optional_retained": 84,
     "candidate_separate_skill_extractions": 15,
     "existing_separate_skill_paths_retained": 26
