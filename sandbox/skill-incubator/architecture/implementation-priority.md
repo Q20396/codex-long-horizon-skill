@@ -27,3 +27,17 @@ structure, not stars, rankings, downloads, or screenshot claims.
 fully cover traceability, and `MAD-SKILL-002` does not fully cover scheduled
 automation. Those statements are intentionally partial-overlap design
 assessments, not implementation claims.
+
+## Public Equity Research Governance Candidate
+
+This candidate remains outside the registered experiment and skill catalogs.
+Its internal implementation order is:
+
+1. point-in-time and look-ahead blocking;
+2. append-only research decisions and non-execution human disposition;
+3. bull/bear evidence and falsification for each core claim;
+4. a uniform research-only recommendation surface.
+
+This ordering is a contract dependency, not permission to integrate the
+installed Public Equity Investing plugin, retrieve market data, monitor a
+portfolio, or perform any investment action.
