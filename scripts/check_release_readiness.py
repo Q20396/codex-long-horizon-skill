@@ -4,9 +4,12 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import os
 import re
 import subprocess
+import sys
 from datetime import date
 from pathlib import Path
 
@@ -27,13 +30,68 @@ STALE_RELEASE_MARKERS = [
 ]
 
 REQUIRED_RELEASE_FILES = [
+    Path("requirements-release.txt"),
+    Path("scripts/validate_formal_schemas.py"),
     Path("scripts/validate_plugin_package.py"),
     Path("scripts/test_fresh_install.py"),
     Path("scripts/full_skill_validation.py"),
     Path("scripts/check_release_readiness.py"),
     Path("tests/test_release_tooling.py"),
+    Path("tests/test_formal_schema_validation.py"),
     Path("tests/expected-triggers.json"),
     Path(".agents/plugins/marketplace.json"),
+]
+FORMAL_SCHEMA_ARTIFACTS = [
+    {
+        "name": "attrs",
+        "version": "26.1.0",
+        "wheel": "attrs-26.1.0-py3-none-any.whl",
+        "sha256": "c647aa4a12dfbad9333ca4e71fe62ddc36f4e63b2d260a37a8b83d2f043ac309",
+    },
+    {
+        "name": "jsonschema",
+        "version": "4.26.0",
+        "wheel": "jsonschema-4.26.0-py3-none-any.whl",
+        "sha256": "d489f15263b8d200f8387e64b4c3a75f06629559fb73deb8fdfb525f2dab50ce",
+    },
+    {
+        "name": "jsonschema-specifications",
+        "version": "2025.9.1",
+        "wheel": "jsonschema_specifications-2025.9.1-py3-none-any.whl",
+        "sha256": "98802fee3a11ee76ecaca44429fda8a41bff98b00a0f2838151b113f210cc6fe",
+    },
+    {
+        "name": "referencing",
+        "version": "0.37.0",
+        "wheel": "referencing-0.37.0-py3-none-any.whl",
+        "sha256": "381329a9f99628c9069361716891d34ad94af76e461dcb0335825aecc7692231",
+    },
+    {
+        "name": "rpds-py",
+        "version": "2026.6.3",
+        "wheel": "rpds_py-2026.6.3-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+        "sha256": "9c1255b302953c86a486b81d330d5ee1d5bd937691ce271b6be0ef0e299eaab7",
+    },
+    {
+        "name": "typing-extensions",
+        "version": "4.16.0",
+        "wheel": "typing_extensions-4.16.0-py3-none-any.whl",
+        "sha256": "481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8",
+    },
+]
+FORMAL_REMEDIATION_BASELINE_REFERENCE = (
+    "cf74dd05fa805f2f369c563e3974bc942f29c7cc"
+)
+FORMAL_CANDIDATE_PARENT = "6f1f48381f465b460a9390643fc835b666604207"
+FORMAL_CANDIDATE_PATHS = [
+    ".github/workflows/check-skill.yml",
+    "docs/maintainers/release-checklist.md",
+    "docs/releases/v0.3.0.md",
+    "requirements-release.txt",
+    "scripts/check_release_readiness.py",
+    "scripts/validate_formal_schemas.py",
+    "tests/test_formal_schema_validation.py",
+    "tests/test_release_tooling.py",
 ]
 
 
@@ -51,6 +109,14 @@ def load_json(path: Path) -> dict:
     if not isinstance(data, dict):
         raise ValueError(f"{path.relative_to(ROOT)} must contain a JSON object")
     return data
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def parse_args() -> argparse.Namespace:
@@ -82,6 +148,32 @@ def parse_args() -> argparse.Namespace:
         "--allow-existing-tag",
         action="store_true",
         help="Routine CI mode; validates artifacts without caring whether the local tag exists.",
+    )
+    parser.add_argument(
+        "--formal-schema-result",
+        type=Path,
+        help=(
+            "New temporary output path for a controlled validate_formal_schemas.py "
+            "execution. A pre-existing receipt is rejected."
+        ),
+    )
+    parser.add_argument(
+        "--formal-schema-pip-report",
+        type=Path,
+        help="Temporary pip --report input for the controlled formal execution.",
+    )
+    parser.add_argument(
+        "--formal-schema-acquisition-result",
+        type=Path,
+        help=(
+            "Job-local acquisition receipt replayed by the formal validator "
+            "without a second network acquisition."
+        ),
+    )
+    parser.add_argument(
+        "--formal-schema-evidence-dir",
+        type=Path,
+        help="Job-local raw evidence directory for offline formal validation.",
     )
     return parser.parse_args()
 
@@ -285,6 +377,183 @@ def tag_errors(version: str, pre_tag: bool, errors: list[str]) -> None:
         errors.append(f"local tag already exists; cannot run pre-tag gate for {tag}")
 
 
+def formal_worktree_errors(errors: list[str]) -> None:
+    status = run(["git", "status", "--porcelain=v1", "--untracked-files=all"])
+    if status.returncode != 0:
+        errors.append("formal gate could not verify clean candidate git state")
+    elif status.stdout.strip():
+        errors.append(
+            "formal gate requires a clean candidate worktree; "
+            "staged, unstaged, and untracked paths are forbidden"
+        )
+
+
+def formal_schema_errors(args: argparse.Namespace, errors: list[str]) -> None:
+    paths = {
+        "--formal-schema-result": args.formal_schema_result,
+        "--formal-schema-pip-report": args.formal_schema_pip_report,
+        "--formal-schema-acquisition-result": args.formal_schema_acquisition_result,
+        "--formal-schema-evidence-dir": args.formal_schema_evidence_dir,
+    }
+    supplied = {name for name, value in paths.items() if value is not None}
+    if args.pre_tag_static:
+        if supplied:
+            errors.append("formal schema inputs are forbidden with --pre-tag-static")
+        return
+    if not supplied and not args.pre_tag:
+        return
+    missing = [name for name, value in paths.items() if value is None]
+    if missing:
+        errors.append(
+            "formal Draft 2020-12 schema gate is UNVERIFIED; "
+            f"controlled formal execution requires {', '.join(missing)}"
+        )
+        return
+    formal_worktree_errors(errors)
+    if errors:
+        return
+    path = args.formal_schema_result.resolve()
+    if path.exists():
+        errors.append(
+            "formal schema result output already exists; prewritten PASS receipts "
+            "are not accepted"
+        )
+        return
+    command = [
+        sys.executable,
+        "scripts/validate_formal_schemas.py",
+        "--formal",
+        "--pip-report",
+        str(args.formal_schema_pip_report.resolve()),
+        "--acquisition-result",
+        str(args.formal_schema_acquisition_result.resolve()),
+        "--evidence-dir",
+        str(args.formal_schema_evidence_dir.resolve()),
+        "--run-id",
+        os.environ.get("GITHUB_RUN_ID", ""),
+        "--run-attempt",
+        os.environ.get("GITHUB_RUN_ATTEMPT", ""),
+        "--workflow-ref",
+        os.environ.get("GITHUB_WORKFLOW_REF", ""),
+        "--job-name",
+        os.environ.get("GITHUB_JOB", ""),
+        "--result",
+        str(path),
+    ]
+    execution = run(command)
+    if execution.returncode != 0:
+        output = (execution.stdout + execution.stderr).strip()
+        errors.append(
+            "controlled formal Draft 2020-12 execution failed: "
+            + (output or "validator returned no diagnostic")
+        )
+        return
+    try:
+        result = load_json(path)
+    except (OSError, ValueError) as exc:
+        errors.append(f"formal schema result could not be validated: {exc}")
+        return
+    expected = {
+        "status": "PASS",
+        "gate": "formal-draft-2020-12",
+        "draft": "https://json-schema.org/draft/2020-12/schema",
+        "system": "Linux",
+        "machine": "x86_64",
+        "schema_count": 20,
+        "fixture_validated_schema_count": 4,
+        "syntax_only_schema_count": 16,
+        "candidate_worktree_clean": True,
+        "candidate_parent": FORMAL_CANDIDATE_PARENT,
+        "candidate_remediation_baseline_reference": (
+            FORMAL_REMEDIATION_BASELINE_REFERENCE
+        ),
+        "candidate_remediation_paths": FORMAL_CANDIDATE_PATHS,
+    }
+    for field, value in expected.items():
+        if result.get(field) != value:
+            errors.append(
+                f"formal schema result {field} {result.get(field)!r} "
+                f"does not match {value!r}"
+            )
+    python_version = result.get("python_version")
+    if not isinstance(python_version, str) or not python_version.startswith("3.11."):
+        errors.append("formal schema result must record an exact CPython 3.11 patch")
+    artifacts = result.get("artifacts")
+    if artifacts != FORMAL_SCHEMA_ARTIFACTS:
+        errors.append("formal schema result does not match the six locked artifacts")
+    expected_hashes = {
+        "validator_sha256": sha256_file(ROOT / "scripts/validate_formal_schemas.py"),
+        "lock_sha256": sha256_file(ROOT / "requirements-release.txt"),
+        "pip_report_sha256": sha256_file(args.formal_schema_pip_report.resolve()),
+        "acquisition_receipt_sha256": sha256_file(
+            args.formal_schema_acquisition_result.resolve()
+        ),
+        "raw_evidence_manifest_sha256": sha256_file(
+            args.formal_schema_evidence_dir.resolve() / "manifest.json"
+        ),
+    }
+    for field, value in expected_hashes.items():
+        if result.get(field) != value:
+            errors.append(f"formal schema result {field} does not match candidate files")
+    try:
+        head = run(["git", "rev-parse", "HEAD"])
+        tree = run(["git", "show", "-s", "--format=%T", "HEAD"])
+    except OSError as exc:
+        errors.append(f"could not bind formal schema result to git state: {exc}")
+        return
+    if head.returncode != 0 or tree.returncode != 0:
+        errors.append("could not bind formal schema result to git state")
+        return
+    if result.get("candidate_commit") != head.stdout.strip():
+        errors.append("formal schema result candidate_commit does not match HEAD")
+    if result.get("candidate_tree") != tree.stdout.strip():
+        errors.append("formal schema result candidate_tree does not match HEAD tree")
+    parent = run(["git", "rev-parse", "HEAD^"])
+    paths_result = run(
+        [
+            "git",
+            "diff",
+            "--name-only",
+            f"{FORMAL_CANDIDATE_PARENT}..HEAD",
+        ]
+    )
+    diff_result = subprocess.run(
+        [
+            "git",
+            "diff",
+            "--binary",
+            f"{FORMAL_CANDIDATE_PARENT}..HEAD",
+            "--",
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        check=False,
+    )
+    if (
+        parent.returncode != 0
+        or parent.stdout.strip() != FORMAL_CANDIDATE_PARENT
+    ):
+        errors.append("formal schema result candidate parent mismatch")
+    actual_paths = sorted(path for path in paths_result.stdout.splitlines() if path)
+    if paths_result.returncode != 0 or actual_paths != sorted(FORMAL_CANDIDATE_PATHS):
+        errors.append("formal schema result Phase B path inventory mismatch")
+    actual_diff_sha256 = hashlib.sha256(diff_result.stdout).hexdigest()
+    if (
+        diff_result.returncode != 0
+        or result.get("candidate_remediation_diff_sha256") != actual_diff_sha256
+    ):
+        errors.append("formal schema result remediation diff hash mismatch")
+    expected_job_identity = {
+        "run_id": os.environ.get("GITHUB_RUN_ID", ""),
+        "run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT", ""),
+        "workflow_ref": os.environ.get("GITHUB_WORKFLOW_REF", ""),
+        "job_name": os.environ.get("GITHUB_JOB", ""),
+    }
+    if result.get("job_identity") != expected_job_identity:
+        errors.append("formal schema result job identity mismatch")
+    formal_worktree_errors(errors)
+
+
 def validate(args: argparse.Namespace) -> list[str]:
     version = args.version
     errors: list[str] = []
@@ -297,11 +566,7 @@ def validate(args: argparse.Namespace) -> list[str]:
     package_errors(version, release_date, errors)
     changelog_errors(version, release_date, errors)
     tag_errors(version, args.pre_tag, errors)
-    if args.pre_tag:
-        errors.append(
-            "formal Draft 2020-12 schema gate is UNVERIFIED; "
-            "Phase B authorization and locked dependency intake are required before tagging"
-        )
+    formal_schema_errors(args, errors)
     return errors
 
 
