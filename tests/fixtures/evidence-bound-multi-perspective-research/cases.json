@@ -1,0 +1,879 @@
+{
+  "base_record": {
+    "schema_version": "1.0.0",
+    "record_id": "SYN-CONTRACT-001",
+    "candidate": {
+      "package_disposition": "sandbox-only",
+      "activation": "explicit-only",
+      "runtime_executable": false,
+      "host_enforced": false,
+      "automatic_retrieval": false,
+      "third_party_material_included": false
+    },
+    "private_evidence": {
+      "private_evidence_mode": "blocked",
+      "private_materials_present": false
+    },
+    "human_state": {
+      "human_disposition": "pending",
+      "next_stage_authorized": false,
+      "promotion_state": "not-promoted"
+    },
+    "research_contract": {
+      "topic": "Synthetic market structure question",
+      "decision_question": "Which synthetic explanation has stronger bounded support?",
+      "decision_at": "2026-07-27T10:00:00+10:00",
+      "as_of": "2026-07-27T09:00:00+10:00",
+      "jurisdiction_or_market": "Synthetic Market",
+      "approved_source_origins": [
+        "primary",
+        "authoritative_secondary",
+        "secondary",
+        "unverified"
+      ],
+      "confidentiality": "synthetic-only",
+      "stop_conditions": [
+        "Stop when a required source is unavailable.",
+        "Stop before any private-material access."
+      ]
+    },
+    "entities": [
+      {
+        "entity_id": "SYN-ENTITY-001",
+        "entity_kind": "synthetic_organization",
+        "synthetic_label": "Synthetic Entity Alpha"
+      }
+    ],
+    "sources": [
+      {
+        "source_id": "SYN-SOURCE-001",
+        "source_origin": "primary",
+        "source_locator": "https://records.example.invalid/source-001",
+        "source_version": "v1",
+        "published_at": "2026-07-27T07:00:00+10:00",
+        "available_at": "2026-07-27T07:30:00+10:00",
+        "retrieved_at": "2026-07-27T08:00:00+10:00",
+        "derivative_of": null,
+        "independence_group": "SYN-INDEPENDENCE-001"
+      },
+      {
+        "source_id": "SYN-SOURCE-002",
+        "source_origin": "unverified",
+        "source_locator": "https://research.example.invalid/lead-002",
+        "source_version": "v1",
+        "published_at": "2026-07-27T07:10:00+10:00",
+        "available_at": "2026-07-27T07:40:00+10:00",
+        "retrieved_at": "2026-07-27T08:10:00+10:00",
+        "derivative_of": null,
+        "independence_group": "SYN-INDEPENDENCE-002"
+      }
+    ],
+    "evidence": [
+      {
+        "evidence_id": "SYN-EVIDENCE-001",
+        "source_id": "SYN-SOURCE-001",
+        "direction": "supports",
+        "quality": "high",
+        "atomic_statement": "The synthetic primary record reports metric A.",
+        "as_of": "2026-07-27T07:30:00+10:00"
+      },
+      {
+        "evidence_id": "SYN-EVIDENCE-002",
+        "source_id": "SYN-SOURCE-001",
+        "direction": "context",
+        "quality": "medium",
+        "atomic_statement": "The synthetic primary record defines the comparison period.",
+        "as_of": "2026-07-27T07:30:00+10:00"
+      },
+      {
+        "evidence_id": "SYN-EVIDENCE-003",
+        "source_id": "SYN-SOURCE-002",
+        "direction": "supports",
+        "quality": "unverified",
+        "atomic_statement": "The synthetic lead proposes an alternative explanation.",
+        "as_of": "2026-07-27T07:40:00+10:00"
+      },
+      {
+        "evidence_id": "SYN-EVIDENCE-004",
+        "source_id": "SYN-SOURCE-001",
+        "direction": "refutes",
+        "quality": "medium",
+        "atomic_statement": "The synthetic primary record also reports limiting context.",
+        "as_of": "2026-07-27T07:30:00+10:00"
+      }
+    ],
+    "claims": [
+      {
+        "claim_id": "SYN-CLAIM-001",
+        "entity_id": "SYN-ENTITY-001",
+        "claim_kind": "factual_statement",
+        "epistemic_status": "FACT",
+        "certainty_level": "source_supported",
+        "statement": "The source-supported synthetic metric is reported.",
+        "limitations": [
+          "FACT denotes source support, not objective certainty."
+        ],
+        "evidence_ids": [
+          "SYN-EVIDENCE-001"
+        ],
+        "as_of": "2026-07-27T07:30:00+10:00"
+      },
+      {
+        "claim_id": "SYN-CLAIM-002",
+        "entity_id": "SYN-ENTITY-001",
+        "claim_kind": "analytical_inference",
+        "epistemic_status": "INFERENCE",
+        "certainty_level": "bounded",
+        "statement": "A synthetic alternative explanation remains plausible.",
+        "limitations": [
+          "The unverified lead is bounded by primary-source context."
+        ],
+        "evidence_ids": [
+          "SYN-EVIDENCE-002",
+          "SYN-EVIDENCE-003"
+        ],
+        "as_of": "2026-07-27T07:40:00+10:00"
+      },
+      {
+        "claim_id": "SYN-CLAIM-003",
+        "entity_id": "SYN-ENTITY-001",
+        "claim_kind": "research_question",
+        "epistemic_status": "UNKNOWN",
+        "certainty_level": "unresolved",
+        "statement": "Whether a second independent source exists remains unknown.",
+        "limitations": [],
+        "evidence_ids": [],
+        "as_of": "2026-07-27T09:00:00+10:00"
+      }
+    ],
+    "lenses": [
+      {
+        "lens_id": "SYN-LENS-001",
+        "name": "Evidence quality",
+        "questions": [
+          "Which evidence is primary?",
+          "What observation would refute the inference?"
+        ],
+        "authority_claimed": false
+      }
+    ],
+    "contradictions": [
+      {
+        "contradiction_id": "SYN-CONTRADICTION-001",
+        "proposition": "The synthetic explanations describe the same bounded proposition.",
+        "claim_boundaries": [
+          {
+            "claim_id": "SYN-CLAIM-001",
+            "as_of": "2026-07-27T07:30:00+10:00",
+            "jurisdiction_or_market": "Synthetic Market",
+            "entity_id": "SYN-ENTITY-001",
+            "defined_terms": [
+              "metric A",
+              "comparison period"
+            ]
+          },
+          {
+            "claim_id": "SYN-CLAIM-002",
+            "as_of": "2026-07-27T07:40:00+10:00",
+            "jurisdiction_or_market": "Synthetic Market",
+            "entity_id": "SYN-ENTITY-001",
+            "defined_terms": [
+              "metric A",
+              "comparison period"
+            ]
+          }
+        ],
+        "status": "direct-conflict",
+        "normalization": {
+          "normalization_id": "SYN-NORMALIZATION-001",
+          "normalization_basis": "Synthetic evidence defines a shared comparison scope.",
+          "normalization_scope": {
+            "time": "Both observations are normalized to the decision window.",
+            "jurisdiction_or_market": "Both use Synthetic Market.",
+            "subject": "Both concern SYN-ENTITY-001.",
+            "defined_terms": "Both use the fixture definitions."
+          },
+          "normalization_evidence_ids": [
+            "SYN-EVIDENCE-002",
+            "SYN-EVIDENCE-004"
+          ]
+        },
+        "consensus_treated_as_proof": false
+      }
+    ],
+    "deliverable": {
+      "deliverable_kind": "general_research_support",
+      "fact_claim_ids": [
+        "SYN-CLAIM-001"
+      ],
+      "inference_claim_ids": [
+        "SYN-CLAIM-002"
+      ],
+      "unknown_claim_ids": [
+        "SYN-CLAIM-003"
+      ],
+      "evidence_ids": [
+        "SYN-EVIDENCE-001",
+        "SYN-EVIDENCE-002",
+        "SYN-EVIDENCE-003",
+        "SYN-EVIDENCE-004"
+      ],
+      "contradiction_ids": [
+        "SYN-CONTRADICTION-001"
+      ],
+      "risks": [
+        "The synthetic unverified source may be inaccurate."
+      ],
+      "recommendation": "Review a second independent synthetic source before disposition.",
+      "next_research_actions": [
+        {
+          "action_type": "source_review",
+          "description": "Review another synthetic source."
+        }
+      ],
+      "limitations": [
+        "This fixture is static general research support only."
+      ],
+      "references": [
+        "SYN-SOURCE-001",
+        "SYN-SOURCE-002"
+      ],
+      "self_critique": {
+        "identified_gaps": [
+          "No second independent source is present."
+        ],
+        "independent_review_claimed": false
+      }
+    },
+    "contract_boundaries": {
+      "static_contract": true,
+      "schema_validated_only": true,
+      "runtime_integration": false,
+      "host_enforced": false,
+      "network_access": false,
+      "external_action": false,
+      "private_material_access": false,
+      "third_party_execution": false
+    }
+  },
+  "positive_cases": [
+    {
+      "case_id": "valid-direct-conflict",
+      "mutations": [],
+      "expected_reason_codes": []
+    },
+    {
+      "case_id": "valid-not-directly-comparable",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/contradictions/0/status",
+          "value": "not-directly-comparable"
+        },
+        {
+          "op": "set",
+          "path": "/contradictions/0/normalization",
+          "value": null
+        }
+      ],
+      "expected_reason_codes": []
+    },
+    {
+      "case_id": "valid-unverified-unknown-lead",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/claims/2/evidence_ids",
+          "value": [
+            "SYN-EVIDENCE-003"
+          ]
+        }
+      ],
+      "expected_reason_codes": []
+    },
+    {
+      "case_id": "valid-derivative-shared-independence-group",
+      "mutations": [
+        {
+          "op": "append",
+          "path": "/sources",
+          "value": {
+            "source_id": "SYN-SOURCE-003",
+            "source_origin": "secondary",
+            "source_locator": "https://research.example.invalid/derivative-valid",
+            "source_version": "v1",
+            "published_at": "2026-07-27T07:15:00+10:00",
+            "available_at": "2026-07-27T07:45:00+10:00",
+            "retrieved_at": "2026-07-27T08:15:00+10:00",
+            "derivative_of": "SYN-SOURCE-001",
+            "independence_group": "SYN-INDEPENDENCE-001"
+          }
+        }
+      ],
+      "expected_reason_codes": []
+    }
+  ],
+  "negative_cases": [
+    {
+      "case_id": "claim-kind-invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/claims/0/claim_kind",
+          "value": "authoritative_finding"
+        }
+      ],
+      "expected_reason_codes": [
+        "CLAIM_KIND_INVALID",
+        "FIELD_ENUM_INVALID"
+      ]
+    },
+    {
+      "case_id": "certainty-level-invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/claims/0/certainty_level",
+          "value": "bounded"
+        }
+      ],
+      "expected_reason_codes": [
+        "CERTAINTY_LEVEL_INVALID"
+      ]
+    },
+    {
+      "case_id": "limitations-required",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/claims/0/limitations",
+          "value": []
+        }
+      ],
+      "expected_reason_codes": [
+        "LIMITATIONS_REQUIRED"
+      ]
+    },
+    {
+      "case_id": "invalid-synthetic-identifier",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/entities/0/entity_id",
+          "value": "REAL-ENTITY-001"
+        }
+      ],
+      "expected_reason_codes": [
+        "INVALID_SYNTHETIC_IDENTIFIER",
+        "UNRESOLVED_EVIDENCE_REFERENCE"
+      ]
+    },
+    {
+      "case_id": "duplicate-identifier",
+      "mutations": [
+        {
+          "op": "append",
+          "path": "/entities",
+          "value": {
+            "entity_id": "SYN-ENTITY-001",
+            "entity_kind": "synthetic_subject",
+            "synthetic_label": "Synthetic Entity Duplicate"
+          }
+        }
+      ],
+      "expected_reason_codes": [
+        "DUPLICATE_IDENTIFIER"
+      ]
+    },
+    {
+      "case_id": "cross-namespace-duplicate-identifier",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/sources/1/source_id",
+          "value": "SYN-ENTITY-001"
+        }
+      ],
+      "expected_reason_codes": [
+        "CROSS_NAMESPACE_DUPLICATE_IDENTIFIER",
+        "INVALID_SYNTHETIC_IDENTIFIER",
+        "UNRESOLVED_EVIDENCE_REFERENCE"
+      ]
+    },
+    {
+      "case_id": "unresolved-evidence-reference",
+      "mutations": [
+        {
+          "op": "append",
+          "path": "/claims/0/evidence_ids",
+          "value": "SYN-EVIDENCE-999"
+        }
+      ],
+      "expected_reason_codes": [
+        "UNRESOLVED_EVIDENCE_REFERENCE"
+      ]
+    },
+    {
+      "case_id": "reference-target-type-mismatch",
+      "mutations": [
+        {
+          "op": "append",
+          "path": "/claims/0/evidence_ids",
+          "value": "SYN-SOURCE-001"
+        }
+      ],
+      "expected_reason_codes": [
+        "INVALID_SYNTHETIC_IDENTIFIER",
+        "REFERENCE_TARGET_TYPE_MISMATCH",
+        "UNRESOLVED_EVIDENCE_REFERENCE"
+      ]
+    },
+    {
+      "case_id": "unknown-nested-field",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/deliverable/self_critique/debug_note",
+          "value": "not modeled"
+        }
+      ],
+      "expected_reason_codes": [
+        "UNKNOWN_NESTED_FIELD"
+      ]
+    },
+    {
+      "case_id": "required-field-missing",
+      "mutations": [
+        {
+          "op": "delete",
+          "path": "/deliverable/recommendation"
+        }
+      ],
+      "expected_reason_codes": [
+        "REQUIRED_FIELD_MISSING"
+      ]
+    },
+    {
+      "case_id": "field-type-invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/deliverable/risks",
+          "value": "not-an-array"
+        }
+      ],
+      "expected_reason_codes": [
+        "FIELD_TYPE_INVALID"
+      ]
+    },
+    {
+      "case_id": "entity-kind-enum-invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/entities/0/entity_kind",
+          "value": "real_company"
+        }
+      ],
+      "expected_reason_codes": [
+        "FIELD_ENUM_INVALID"
+      ]
+    },
+    {
+      "case_id": "evidence-direction-enum-invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/evidence/0/direction",
+          "value": "execute"
+        }
+      ],
+      "expected_reason_codes": [
+        "FIELD_ENUM_INVALID"
+      ]
+    },
+    {
+      "case_id": "evidence-quality-enum-invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/evidence/0/quality",
+          "value": "model_verified"
+        }
+      ],
+      "expected_reason_codes": [
+        "FIELD_ENUM_INVALID"
+      ]
+    },
+    {
+      "case_id": "research-action-type-enum-invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/deliverable/next_research_actions/0/action_type",
+          "value": "submit_order"
+        }
+      ],
+      "expected_reason_codes": [
+        "FIELD_ENUM_INVALID"
+      ]
+    },
+    {
+      "case_id": "private-local-path",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/sources/0/source_locator",
+          "value": "/private/client/evidence.pdf"
+        }
+      ],
+      "expected_reason_codes": [
+        "PRIVATE_LOCAL_PATH_FORBIDDEN"
+      ]
+    },
+    {
+      "case_id": "private-evidence-lock-override",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/private_evidence/private_evidence_mode",
+          "value": "authorized"
+        }
+      ],
+      "expected_reason_codes": [
+        "FIELD_CONST_INVALID",
+        "PRIVATE_EVIDENCE_LOCK_OVERRIDE"
+      ]
+    },
+    {
+      "case_id": "private-material-present",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/private_evidence/private_materials_present",
+          "value": true
+        }
+      ],
+      "expected_reason_codes": [
+        "FIELD_CONST_INVALID",
+        "PRIVATE_MATERIAL_PRESENT_FORBIDDEN"
+      ]
+    },
+    {
+      "case_id": "source-origin-invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/sources/0/source_origin",
+          "value": "trusted_by_model"
+        }
+      ],
+      "expected_reason_codes": [
+        "FIELD_ENUM_INVALID",
+        "SOURCE_ORIGIN_INVALID"
+      ]
+    },
+    {
+      "case_id": "source-origin-not-approved",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/research_contract/approved_source_origins",
+          "value": [
+            "unverified"
+          ]
+        }
+      ],
+      "expected_reason_codes": [
+        "SOURCE_ORIGIN_NOT_APPROVED"
+      ]
+    },
+    {
+      "case_id": "unverified-source-fact-forbidden",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/claims/0/evidence_ids",
+          "value": [
+            "SYN-EVIDENCE-003"
+          ]
+        }
+      ],
+      "expected_reason_codes": [
+        "UNVERIFIED_SOURCE_FACT_FORBIDDEN"
+      ]
+    },
+    {
+      "case_id": "unverified-inference-unbounded",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/claims/1/evidence_ids",
+          "value": [
+            "SYN-EVIDENCE-003"
+          ]
+        }
+      ],
+      "expected_reason_codes": [
+        "UNVERIFIED_SOURCE_INFERENCE_UNBOUNDED"
+      ]
+    },
+    {
+      "case_id": "derivative-independence-inflation",
+      "mutations": [
+        {
+          "op": "append",
+          "path": "/sources",
+          "value": {
+            "source_id": "SYN-SOURCE-003",
+            "source_origin": "secondary",
+            "source_locator": "https://research.example.invalid/derivative-003",
+            "source_version": "v1",
+            "published_at": "2026-07-27T07:15:00+10:00",
+            "available_at": "2026-07-27T07:45:00+10:00",
+            "retrieved_at": "2026-07-27T08:15:00+10:00",
+            "derivative_of": "SYN-SOURCE-001",
+            "independence_group": "SYN-INDEPENDENCE-001"
+          }
+        },
+        {
+          "op": "append",
+          "path": "/evidence",
+          "value": {
+            "evidence_id": "SYN-EVIDENCE-005",
+            "source_id": "SYN-SOURCE-003",
+            "direction": "supports",
+            "quality": "medium",
+            "atomic_statement": "A derivative repeats the primary statement.",
+            "as_of": "2026-07-27T07:45:00+10:00"
+          }
+        },
+        {
+          "op": "append",
+          "path": "/claims/0/evidence_ids",
+          "value": "SYN-EVIDENCE-005"
+        }
+      ],
+      "expected_reason_codes": [
+        "DERIVATIVE_SOURCE_INDEPENDENCE_INFLATION"
+      ]
+    },
+    {
+      "case_id": "derivative-independence-group-mismatch",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/sources/1/derivative_of",
+          "value": "SYN-SOURCE-001"
+        }
+      ],
+      "expected_reason_codes": [
+        "DERIVATIVE_INDEPENDENCE_GROUP_MISMATCH"
+      ]
+    },
+    {
+      "case_id": "timestamp-offset-required",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/research_contract/decision_at",
+          "value": "2026-07-27T10:00:00"
+        }
+      ],
+      "expected_reason_codes": [
+        "TIMESTAMP_OFFSET_REQUIRED"
+      ]
+    },
+    {
+      "case_id": "timestamp-invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/research_contract/decision_at",
+          "value": "2026-13-40T10:00:00+10:00"
+        }
+      ],
+      "expected_reason_codes": [
+        "TIMESTAMP_INVALID"
+      ]
+    },
+    {
+      "case_id": "lookahead-evidence",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/sources/0/available_at",
+          "value": "2026-07-27T11:00:00+10:00"
+        }
+      ],
+      "expected_reason_codes": [
+        "LOOKAHEAD_EVIDENCE_FORBIDDEN"
+      ]
+    },
+    {
+      "case_id": "contradiction-boundary-missing",
+      "mutations": [
+        {
+          "op": "delete",
+          "path": "/contradictions/0/claim_boundaries/0/defined_terms"
+        }
+      ],
+      "expected_reason_codes": [
+        "CONTRADICTION_BOUNDARY_MISSING",
+        "REQUIRED_FIELD_MISSING"
+      ]
+    },
+    {
+      "case_id": "direct-conflict-normalization-required",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/contradictions/0/normalization",
+          "value": null
+        }
+      ],
+      "expected_reason_codes": [
+        "DIRECT_CONFLICT_NORMALIZATION_REQUIRED"
+      ]
+    },
+    {
+      "case_id": "direct-conflict-scope-required",
+      "mutations": [
+        {
+          "op": "delete",
+          "path": "/contradictions/0/normalization/normalization_scope/subject"
+        }
+      ],
+      "expected_reason_codes": [
+        "DIRECT_CONFLICT_SCOPE_REQUIRED",
+        "REQUIRED_FIELD_MISSING"
+      ]
+    },
+    {
+      "case_id": "direct-conflict-evidence-required",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/contradictions/0/normalization/normalization_evidence_ids",
+          "value": []
+        }
+      ],
+      "expected_reason_codes": [
+        "DIRECT_CONFLICT_EVIDENCE_REQUIRED"
+      ]
+    },
+    {
+      "case_id": "direct-conflict-same-claim",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/contradictions/0/claim_boundaries/1/claim_id",
+          "value": "SYN-CLAIM-001"
+        }
+      ],
+      "expected_reason_codes": [
+        "DIRECT_CONFLICT_SAME_CLAIM_FORBIDDEN"
+      ]
+    },
+    {
+      "case_id": "consensus-treated-as-proof",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/contradictions/0/consensus_treated_as_proof",
+          "value": true
+        }
+      ],
+      "expected_reason_codes": [
+        "CONSENSUS_TREATED_AS_PROOF",
+        "FIELD_CONST_INVALID"
+      ]
+    },
+    {
+      "case_id": "lens-authority-claimed",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/lenses/0/authority_claimed",
+          "value": true
+        }
+      ],
+      "expected_reason_codes": [
+        "FIELD_CONST_INVALID",
+        "LENS_AUTHORITY_CLAIM_FORBIDDEN"
+      ]
+    },
+    {
+      "case_id": "deliverable-kind-invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/deliverable/deliverable_kind",
+          "value": "legal_opinion"
+        }
+      ],
+      "expected_reason_codes": [
+        "DELIVERABLE_KIND_INVALID",
+        "FIELD_CONST_INVALID"
+      ]
+    },
+    {
+      "case_id": "nested-external-action",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/deliverable/self_critique/contact",
+          "value": {
+            "recipient": "synthetic"
+          }
+        }
+      ],
+      "expected_reason_codes": [
+        "EXTERNAL_ACTION_FIELD_FORBIDDEN",
+        "UNKNOWN_NESTED_FIELD"
+      ]
+    },
+    {
+      "case_id": "self-critique-independent-review",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/deliverable/self_critique/independent_review_claimed",
+          "value": true
+        }
+      ],
+      "expected_reason_codes": [
+        "FIELD_CONST_INVALID",
+        "SELF_CRITIQUE_AS_INDEPENDENT_REVIEW"
+      ]
+    },
+    {
+      "case_id": "human-state-override",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/human_state/human_disposition",
+          "value": "approved"
+        }
+      ],
+      "expected_reason_codes": [
+        "FIELD_CONST_INVALID",
+        "HUMAN_STATE_OVERRIDE_FORBIDDEN"
+      ]
+    },
+    {
+      "case_id": "static-authority-escalation",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/candidate/runtime_executable",
+          "value": true
+        }
+      ],
+      "expected_reason_codes": [
+        "FIELD_CONST_INVALID",
+        "STATIC_CONTRACT_AUTHORITY_ESCALATION"
+      ]
+    }
+  ]
+}
