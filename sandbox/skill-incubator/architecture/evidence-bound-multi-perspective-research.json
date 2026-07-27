@@ -1,0 +1,93 @@
+{
+  "contract_id": "SYN-CONTRACT-001",
+  "name": "Evidence-Bound Multi-Perspective Research Contract",
+  "schema_version": "1.0.0",
+  "package_disposition": "sandbox-only",
+  "activation": "explicit-only",
+  "runtime_executable": false,
+  "host_enforced": false,
+  "automatic_retrieval": false,
+  "third_party_material_included": false,
+  "private_evidence_mode": "blocked",
+  "private_materials_present": false,
+  "deliverable_kind": "general_research_support",
+  "human_disposition": "pending",
+  "next_stage_authorized": false,
+  "promotion_state": "not-promoted",
+  "source_origins": [
+    "primary",
+    "authoritative_secondary",
+    "secondary",
+    "unverified"
+  ],
+  "claim_kinds": [
+    "factual_statement",
+    "analytical_inference",
+    "research_question"
+  ],
+  "epistemic_statuses": [
+    "FACT",
+    "INFERENCE",
+    "UNKNOWN"
+  ],
+  "certainty_levels": [
+    "source_supported",
+    "bounded",
+    "unresolved"
+  ],
+  "contradiction_statuses": [
+    "direct-conflict",
+    "not-directly-comparable"
+  ],
+  "stable_reason_codes": [
+    "CLAIM_KIND_INVALID",
+    "CERTAINTY_LEVEL_INVALID",
+    "LIMITATIONS_REQUIRED",
+    "INVALID_SYNTHETIC_IDENTIFIER",
+    "DUPLICATE_IDENTIFIER",
+    "CROSS_NAMESPACE_DUPLICATE_IDENTIFIER",
+    "UNRESOLVED_EVIDENCE_REFERENCE",
+    "REFERENCE_TARGET_TYPE_MISMATCH",
+    "UNKNOWN_NESTED_FIELD",
+    "REQUIRED_FIELD_MISSING",
+    "FIELD_TYPE_INVALID",
+    "FIELD_ENUM_INVALID",
+    "FIELD_CONST_INVALID",
+    "PRIVATE_LOCAL_PATH_FORBIDDEN",
+    "PRIVATE_EVIDENCE_LOCK_OVERRIDE",
+    "PRIVATE_MATERIAL_PRESENT_FORBIDDEN",
+    "SOURCE_ORIGIN_INVALID",
+    "SOURCE_ORIGIN_NOT_APPROVED",
+    "UNVERIFIED_SOURCE_FACT_FORBIDDEN",
+    "UNVERIFIED_SOURCE_INFERENCE_UNBOUNDED",
+    "DERIVATIVE_SOURCE_INDEPENDENCE_INFLATION",
+    "DERIVATIVE_INDEPENDENCE_GROUP_MISMATCH",
+    "TIMESTAMP_OFFSET_REQUIRED",
+    "TIMESTAMP_INVALID",
+    "LOOKAHEAD_EVIDENCE_FORBIDDEN",
+    "CONTRADICTION_BOUNDARY_MISSING",
+    "DIRECT_CONFLICT_NORMALIZATION_REQUIRED",
+    "DIRECT_CONFLICT_SCOPE_REQUIRED",
+    "DIRECT_CONFLICT_EVIDENCE_REQUIRED",
+    "DIRECT_CONFLICT_SAME_CLAIM_FORBIDDEN",
+    "CONSENSUS_TREATED_AS_PROOF",
+    "LENS_AUTHORITY_CLAIM_FORBIDDEN",
+    "DELIVERABLE_KIND_INVALID",
+    "EXTERNAL_ACTION_FIELD_FORBIDDEN",
+    "SELF_CRITIQUE_AS_INDEPENDENT_REVIEW",
+    "HUMAN_STATE_OVERRIDE_FORBIDDEN",
+    "STATIC_CONTRACT_AUTHORITY_ESCALATION"
+  ],
+  "static_validation_limits": [
+    "claim_truth",
+    "source_accessibility",
+    "source_authority",
+    "real_source_independence",
+    "real_world_normalization",
+    "private_access_authority",
+    "professional_sufficiency",
+    "complete_natural_language_detection",
+    "runtime_behavior",
+    "host_enforcement"
+  ]
+}

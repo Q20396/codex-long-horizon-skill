@@ -1,0 +1,785 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/lhe/evidence-bound-multi-perspective-research.schema.json",
+  "title": "Evidence-Bound Multi-Perspective Research Record",
+  "type": "object",
+  "additionalProperties": false,
+  "unevaluatedProperties": false,
+  "required": [
+    "schema_version",
+    "record_id",
+    "candidate",
+    "private_evidence",
+    "human_state",
+    "research_contract",
+    "entities",
+    "sources",
+    "evidence",
+    "claims",
+    "lenses",
+    "contradictions",
+    "deliverable",
+    "contract_boundaries"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "record_id": {
+      "$ref": "#/$defs/contractIdentifier"
+    },
+    "candidate": {
+      "$ref": "#/$defs/candidate"
+    },
+    "private_evidence": {
+      "$ref": "#/$defs/privateEvidence"
+    },
+    "human_state": {
+      "$ref": "#/$defs/humanState"
+    },
+    "research_contract": {
+      "$ref": "#/$defs/researchContract"
+    },
+    "entities": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/entity"
+      }
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/source"
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/evidence"
+      }
+    },
+    "claims": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/claim"
+      }
+    },
+    "lenses": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/lens"
+      }
+    },
+    "contradictions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/contradiction"
+      }
+    },
+    "deliverable": {
+      "$ref": "#/$defs/deliverable"
+    },
+    "contract_boundaries": {
+      "$ref": "#/$defs/contractBoundaries"
+    }
+  },
+  "$defs": {
+    "offsetDateTime": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})$"
+    },
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "contractIdentifier": {
+      "type": "string",
+      "pattern": "^SYN-CONTRACT-[0-9]{3}$"
+    },
+    "entityIdentifier": {
+      "type": "string",
+      "pattern": "^SYN-ENTITY-[0-9]{3}$"
+    },
+    "sourceIdentifier": {
+      "type": "string",
+      "pattern": "^SYN-SOURCE-[0-9]{3}$"
+    },
+    "evidenceIdentifier": {
+      "type": "string",
+      "pattern": "^SYN-EVIDENCE-[0-9]{3}$"
+    },
+    "claimIdentifier": {
+      "type": "string",
+      "pattern": "^SYN-CLAIM-[0-9]{3}$"
+    },
+    "lensIdentifier": {
+      "type": "string",
+      "pattern": "^SYN-LENS-[0-9]{3}$"
+    },
+    "contradictionIdentifier": {
+      "type": "string",
+      "pattern": "^SYN-CONTRADICTION-[0-9]{3}$"
+    },
+    "normalizationIdentifier": {
+      "type": "string",
+      "pattern": "^SYN-NORMALIZATION-[0-9]{3}$"
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "required": [
+        "package_disposition",
+        "activation",
+        "runtime_executable",
+        "host_enforced",
+        "automatic_retrieval",
+        "third_party_material_included"
+      ],
+      "properties": {
+        "package_disposition": {
+          "const": "sandbox-only"
+        },
+        "activation": {
+          "const": "explicit-only"
+        },
+        "runtime_executable": {
+          "const": false
+        },
+        "host_enforced": {
+          "const": false
+        },
+        "automatic_retrieval": {
+          "const": false
+        },
+        "third_party_material_included": {
+          "const": false
+        }
+      }
+    },
+    "privateEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "required": [
+        "private_evidence_mode",
+        "private_materials_present"
+      ],
+      "properties": {
+        "private_evidence_mode": {
+          "const": "blocked"
+        },
+        "private_materials_present": {
+          "const": false
+        }
+      }
+    },
+    "humanState": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "required": [
+        "human_disposition",
+        "next_stage_authorized",
+        "promotion_state"
+      ],
+      "properties": {
+        "human_disposition": {
+          "const": "pending"
+        },
+        "next_stage_authorized": {
+          "const": false
+        },
+        "promotion_state": {
+          "const": "not-promoted"
+        }
+      }
+    },
+    "researchContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "required": [
+        "topic",
+        "decision_question",
+        "decision_at",
+        "as_of",
+        "jurisdiction_or_market",
+        "approved_source_origins",
+        "confidentiality",
+        "stop_conditions"
+      ],
+      "properties": {
+        "topic": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "decision_question": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "decision_at": {
+          "$ref": "#/$defs/offsetDateTime"
+        },
+        "as_of": {
+          "$ref": "#/$defs/offsetDateTime"
+        },
+        "jurisdiction_or_market": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "approved_source_origins": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/sourceOrigin"
+          }
+        },
+        "confidentiality": {
+          "const": "synthetic-only"
+        },
+        "stop_conditions": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/nonEmptyString"
+          }
+        }
+      }
+    },
+    "entity": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "required": [
+        "entity_id",
+        "entity_kind",
+        "synthetic_label"
+      ],
+      "properties": {
+        "entity_id": {
+          "$ref": "#/$defs/entityIdentifier"
+        },
+        "entity_kind": {
+          "enum": [
+            "synthetic_subject",
+            "synthetic_organization",
+            "synthetic_market"
+          ]
+        },
+        "synthetic_label": {
+          "type": "string",
+          "pattern": "^Synthetic [A-Za-z0-9 -]+$"
+        }
+      }
+    },
+    "sourceOrigin": {
+      "enum": [
+        "primary",
+        "authoritative_secondary",
+        "secondary",
+        "unverified"
+      ]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "required": [
+        "source_id",
+        "source_origin",
+        "source_locator",
+        "source_version",
+        "published_at",
+        "available_at",
+        "retrieved_at",
+        "derivative_of",
+        "independence_group"
+      ],
+      "properties": {
+        "source_id": {
+          "$ref": "#/$defs/sourceIdentifier"
+        },
+        "source_origin": {
+          "$ref": "#/$defs/sourceOrigin"
+        },
+        "source_locator": {
+          "type": "string",
+          "pattern": "^https://(?:example\\.invalid|research\\.example\\.invalid|market\\.example\\.invalid|records\\.example\\.invalid)(?:[/?#][^\\s]*)?$"
+        },
+        "source_version": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "published_at": {
+          "$ref": "#/$defs/offsetDateTime"
+        },
+        "available_at": {
+          "$ref": "#/$defs/offsetDateTime"
+        },
+        "retrieved_at": {
+          "$ref": "#/$defs/offsetDateTime"
+        },
+        "derivative_of": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^SYN-SOURCE-[0-9]{3}$"
+        },
+        "independence_group": {
+          "type": "string",
+          "pattern": "^SYN-INDEPENDENCE-[0-9]{3}$"
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "required": [
+        "evidence_id",
+        "source_id",
+        "direction",
+        "quality",
+        "atomic_statement",
+        "as_of"
+      ],
+      "properties": {
+        "evidence_id": {
+          "$ref": "#/$defs/evidenceIdentifier"
+        },
+        "source_id": {
+          "$ref": "#/$defs/sourceIdentifier"
+        },
+        "direction": {
+          "enum": [
+            "supports",
+            "refutes",
+            "context"
+          ]
+        },
+        "quality": {
+          "enum": [
+            "high",
+            "medium",
+            "low",
+            "unverified"
+          ]
+        },
+        "atomic_statement": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "as_of": {
+          "$ref": "#/$defs/offsetDateTime"
+        }
+      }
+    },
+    "claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "required": [
+        "claim_id",
+        "entity_id",
+        "claim_kind",
+        "epistemic_status",
+        "certainty_level",
+        "statement",
+        "limitations",
+        "evidence_ids",
+        "as_of"
+      ],
+      "properties": {
+        "claim_id": {
+          "$ref": "#/$defs/claimIdentifier"
+        },
+        "entity_id": {
+          "$ref": "#/$defs/entityIdentifier"
+        },
+        "claim_kind": {
+          "enum": [
+            "factual_statement",
+            "analytical_inference",
+            "research_question"
+          ]
+        },
+        "epistemic_status": {
+          "enum": [
+            "FACT",
+            "INFERENCE",
+            "UNKNOWN"
+          ]
+        },
+        "certainty_level": {
+          "enum": [
+            "source_supported",
+            "bounded",
+            "unresolved"
+          ]
+        },
+        "statement": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "limitations": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/nonEmptyString"
+          }
+        },
+        "evidence_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/evidenceIdentifier"
+          }
+        },
+        "as_of": {
+          "$ref": "#/$defs/offsetDateTime"
+        }
+      }
+    },
+    "lens": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "required": [
+        "lens_id",
+        "name",
+        "questions",
+        "authority_claimed"
+      ],
+      "properties": {
+        "lens_id": {
+          "$ref": "#/$defs/lensIdentifier"
+        },
+        "name": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "questions": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/nonEmptyString"
+          }
+        },
+        "authority_claimed": {
+          "const": false
+        }
+      }
+    },
+    "claimBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "required": [
+        "claim_id",
+        "as_of",
+        "jurisdiction_or_market",
+        "entity_id",
+        "defined_terms"
+      ],
+      "properties": {
+        "claim_id": {
+          "$ref": "#/$defs/claimIdentifier"
+        },
+        "as_of": {
+          "$ref": "#/$defs/offsetDateTime"
+        },
+        "jurisdiction_or_market": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "entity_id": {
+          "$ref": "#/$defs/entityIdentifier"
+        },
+        "defined_terms": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/nonEmptyString"
+          }
+        }
+      }
+    },
+    "normalizationScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "required": [
+        "time",
+        "jurisdiction_or_market",
+        "subject",
+        "defined_terms"
+      ],
+      "properties": {
+        "time": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "jurisdiction_or_market": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "subject": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "defined_terms": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      }
+    },
+    "normalization": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "required": [
+        "normalization_id",
+        "normalization_basis",
+        "normalization_scope",
+        "normalization_evidence_ids"
+      ],
+      "properties": {
+        "normalization_id": {
+          "$ref": "#/$defs/normalizationIdentifier"
+        },
+        "normalization_basis": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "normalization_scope": {
+          "$ref": "#/$defs/normalizationScope"
+        },
+        "normalization_evidence_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/evidenceIdentifier"
+          }
+        }
+      }
+    },
+    "contradiction": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "required": [
+        "contradiction_id",
+        "proposition",
+        "claim_boundaries",
+        "status",
+        "normalization",
+        "consensus_treated_as_proof"
+      ],
+      "properties": {
+        "contradiction_id": {
+          "$ref": "#/$defs/contradictionIdentifier"
+        },
+        "proposition": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "claim_boundaries": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "$ref": "#/$defs/claimBoundary"
+          }
+        },
+        "status": {
+          "enum": [
+            "direct-conflict",
+            "not-directly-comparable"
+          ]
+        },
+        "normalization": {
+          "$ref": "#/$defs/normalization"
+        },
+        "consensus_treated_as_proof": {
+          "const": false
+        }
+      }
+    },
+    "researchAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "required": [
+        "action_type",
+        "description"
+      ],
+      "properties": {
+        "action_type": {
+          "enum": [
+            "source_review",
+            "evidence_gap_analysis",
+            "boundary_reconciliation",
+            "request_human_disposition"
+          ]
+        },
+        "description": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      }
+    },
+    "selfCritique": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "required": [
+        "identified_gaps",
+        "independent_review_claimed"
+      ],
+      "properties": {
+        "identified_gaps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nonEmptyString"
+          }
+        },
+        "independent_review_claimed": {
+          "const": false
+        }
+      }
+    },
+    "deliverable": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "required": [
+        "deliverable_kind",
+        "fact_claim_ids",
+        "inference_claim_ids",
+        "unknown_claim_ids",
+        "evidence_ids",
+        "contradiction_ids",
+        "risks",
+        "recommendation",
+        "next_research_actions",
+        "limitations",
+        "references",
+        "self_critique"
+      ],
+      "properties": {
+        "deliverable_kind": {
+          "const": "general_research_support"
+        },
+        "fact_claim_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/claimIdentifier"
+          }
+        },
+        "inference_claim_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/claimIdentifier"
+          }
+        },
+        "unknown_claim_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/claimIdentifier"
+          }
+        },
+        "evidence_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/evidenceIdentifier"
+          }
+        },
+        "contradiction_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/contradictionIdentifier"
+          }
+        },
+        "risks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nonEmptyString"
+          }
+        },
+        "recommendation": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "next_research_actions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/researchAction"
+          }
+        },
+        "limitations": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/nonEmptyString"
+          }
+        },
+        "references": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/sourceIdentifier"
+          }
+        },
+        "self_critique": {
+          "$ref": "#/$defs/selfCritique"
+        }
+      }
+    },
+    "contractBoundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "required": [
+        "static_contract",
+        "schema_validated_only",
+        "runtime_integration",
+        "host_enforced",
+        "network_access",
+        "external_action",
+        "private_material_access",
+        "third_party_execution"
+      ],
+      "properties": {
+        "static_contract": {
+          "const": true
+        },
+        "schema_validated_only": {
+          "const": true
+        },
+        "runtime_integration": {
+          "const": false
+        },
+        "host_enforced": {
+          "const": false
+        },
+        "network_access": {
+          "const": false
+        },
+        "external_action": {
+          "const": false
+        },
+        "private_material_access": {
+          "const": false
+        },
+        "third_party_execution": {
+          "const": false
+        }
+      }
+    }
+  }
+}
