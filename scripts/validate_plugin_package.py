@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / ".codex-plugin" / "plugin.json"
 MARKETPLACE = ROOT / ".agents" / "plugins" / "marketplace.json"
 EXPECTED_NAME = "codex-long-horizon-skill"
-EXPECTED_VERSION = "0.2.4"
+EXPECTED_VERSION = "0.3.0"
 EXPECTED_REPOSITORY = "https://github.com/Q20396/codex-long-horizon-skill"
 EXPECTED_LICENSE = "MIT"
 SEMVER = re.compile(r"^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$")
@@ -200,8 +200,12 @@ def validate_marketplace(errors: list[str], manifest: dict) -> dict:
         if source_type == "url":
             if source.get("url") != EXPECTED_REPOSITORY + ".git":
                 errors.append(f"marketplace source.url must be {EXPECTED_REPOSITORY}.git")
-            if source.get("ref") != "main":
-                errors.append("marketplace source.ref must be main")
+            expected_ref = f"v{EXPECTED_VERSION}"
+            if source.get("ref") != expected_ref:
+                errors.append(
+                    "marketplace source.ref must match prospective immutable "
+                    f"release tag {expected_ref!r}"
+                )
         else:
             errors.append("marketplace source.source must be url for root plugin CLI installs")
 

@@ -19,14 +19,18 @@ For plugin-based installs, see [docs/plugin-install.md](docs/plugin-install.md).
 
 ### Plugin Upgrade
 
-Refresh the configured marketplace:
+Pinned marketplace registrations must not be assumed to advance to a new tag
+through `marketplace upgrade`. For a future verified v0.3.0 upgrade, first
+review the immutable tag and exact commit, then use a separately approved,
+isolated CLI workflow to remove the prior registration and add:
 
 ```bash
-codex plugin marketplace upgrade codex-long-horizon-skills
+codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.3.0
 ```
 
-If your Codex surface does not show the refreshed plugin immediately, restart
-Codex.
+The `v0.3.0` ref is prospective during Phase A. Remote tag resolution, real CLI
+rebind behavior, plugin installation, and installed Skill updates remain
+unverified and separately approval-gated.
 
 ### Direct Skill Upgrade
 
@@ -128,7 +132,7 @@ filesystems, complete ACL/xattr preservation, protection from a hostile
 same-UID process concurrently replacing paths or inodes, or a database-level
 transaction across multiple skills. Apply accepts exactly one explicit skill.
 
-## Compare Installed Skills With v0.1.0
+## Compare Installed Skills With A Reviewed Release
 
 The release tag is a human-readable input. The exact commit SHA is the
 reproducible comparison identity.
@@ -139,7 +143,7 @@ Use the repository-local long-horizon-engineering skill.
 Perform a read-only comparison of my installed skills against this published
 release:
 
-https://github.com/Q20396/codex-long-horizon-skill/releases/tag/v0.1.0
+https://github.com/Q20396/codex-long-horizon-skill/releases/tag/vX.Y.Z
 
 Reference identity:
 
@@ -154,7 +158,7 @@ I explicitly authorize limited network access only for:
 
 - Reading public release and tag metadata from
   Q20396/codex-long-horizon-skill
-- Resolving tag v0.1.0 to its exact commit SHA
+- Resolving the reviewed tag to its exact commit SHA
 - Reading the referenced public Git objects required for this comparison
 
 Do not access any other repository, service, account, or data source.
@@ -231,7 +235,7 @@ For each installed skill, report:
 15. Risk level for each meaningful difference
 16. Whether human review is required
 
-For installed skills that do not exist in the v0.1.0 release:
+For installed skills that do not exist in the reviewed release:
 
 - Mark them as outside the reference release scope.
 - Do not classify them as files that should be deleted.
@@ -325,7 +329,8 @@ Do not restore unrelated private files or broad repository snapshots.
 
 ## Release Preparedness
 
-v0.1.0 release notes are prepared in
-[docs/releases/v0.1.0.md](docs/releases/v0.1.0.md), but the release is not
-published until a maintainer reviews, merges, validates from `origin/main`,
-creates the tag, and publishes the GitHub Release.
+The v0.3.0 Phase A notes are in
+[docs/releases/v0.3.0.md](docs/releases/v0.3.0.md). Phase A can establish only
+an internally consistent static candidate. Formal Draft 2020-12 validation,
+remote tag evidence, isolated marketplace resolution, GitHub Release creation,
+and installed updates are separate later gates.

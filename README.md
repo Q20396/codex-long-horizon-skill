@@ -25,14 +25,17 @@ Install once. Reuse everywhere.
 
 ## Quick Start
 
-Add the latest stable repository marketplace:
+The Phase A candidate uses the prospective immutable `v0.3.0` marketplace
+reference:
 
 ```bash
-codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.2.4
+codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.3.0
 ```
 
-Use `--ref main` only when you intentionally want the newest unreleased
-repository state:
+Do not run that command until the tag and isolated marketplace resolution are
+independently verified. Phase A validates only static metadata; it does not
+prove the remote tag or an installable marketplace exists. Use `--ref main`
+only when you intentionally accept mutable, unreleased repository state:
 
 ```bash
 codex plugin marketplace add Q20396/codex-long-horizon-skill --ref main

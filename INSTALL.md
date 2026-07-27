@@ -9,20 +9,28 @@ This repository contains reusable Codex skills:
 
 Plugin installation is the preferred reusable distribution path.
 
-Add the latest stable repository marketplace:
+The Phase A candidate uses the prospective immutable `v0.3.0` marketplace
+reference:
 
 ```bash
-codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.2.4
+codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.3.0
 ```
 
-Use `--ref main` only when you intentionally want the newest unreleased
-repository state:
+Do not run this command until the tag and isolated marketplace resolution are
+independently verified. Phase A performs static checks only and is not
+release-ready. Use `--ref main` only when you intentionally accept mutable,
+unreleased repository state:
 
 ```bash
 codex plugin marketplace add Q20396/codex-long-horizon-skill --ref main
 ```
 
-Refresh after updates:
+Do not assume `marketplace upgrade` advances a marketplace pinned to another
+tag. A future verified upgrade must explicitly remove the prior registration
+and add the reviewed tag again; actual CLI rebind behavior remains unverified
+until a separately approved isolated CLI check.
+
+Refresh a mutable marketplace only when that behavior is intentional:
 
 ```bash
 codex plugin marketplace upgrade codex-long-horizon-skills

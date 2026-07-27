@@ -6,6 +6,25 @@ All notable changes to this project are summarized here.
 
 No unreleased changes.
 
+## 0.3.0 - 2026-07-27
+
+- Prepared a main-line governance and catalog candidate containing package
+  profiles and layering evidence, the static Routing and Promotion contract,
+  sandbox-only PEI and evidence-bound research contracts, and bundled-optional
+  UI Adapter and Goal Driven Delivery material.
+- Kept all static, sandbox-only, bundled-optional, and explicit-only contracts
+  separate from runtime routing, host enforcement, installation, promotion,
+  financial execution, and external actions.
+- Carried forward the independently verified updater replacement behavior
+  already present on `main`; the updater code and replacement contract test
+  were not modified by this release-prep candidate.
+- Recorded that v0.2.5 is an independent maintenance release from v0.2.4,
+  while v0.3.0 starts a new governance/catalog release line from `main`.
+- Marked the marketplace `v0.3.0` reference as prospective until a later,
+  separately approved tag and isolated marketplace verification stage.
+- Kept formal Draft 2020-12 schema validation UNVERIFIED in local Phase A;
+  Phase A evidence does not establish release readiness.
+
 ## 0.2.4 - 2026-07-24
 
 - Added a proposal-only renderer runtime sandbox protocol and approval card for

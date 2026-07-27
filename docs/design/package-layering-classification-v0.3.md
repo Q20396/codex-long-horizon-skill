@@ -15,17 +15,21 @@ remains the only authoritative path inventory.
 
 | Result | Paths | Decision |
 | --- | ---: | --- |
-| Retain in `core` | 40 | All current core paths remain necessary for the safe engineering, recovery, validation, or package-management contract. |
-| Retain in `bundled-optional` | 84 | These paths remain useful engineering extensions or safety boundary documents. |
-| Candidate separate-skill extraction | 15 | Domain workflows should be reviewed as independently routed skills before any physical change. |
+| Retain in `core` | 42 | All current core paths remain necessary for the safe engineering, recovery, validation, or package-management contract. |
+| `bundled-optional` inventory | 101 | This inventory contains 86 retained paths and 15 candidate extraction paths. |
+| Retain in `bundled-optional` | 86 | These paths remain useful engineering extensions or safety boundary documents. |
+| Candidate separate-skill extraction | 15 | These paths are a subset of the 101-path `bundled-optional` inventory; domain workflows should be reviewed as independently routed skills before any physical change. |
 | Retain existing `separate-skill` | 26 | `ai-video-production` remains independently routed and governed. |
 
-All 165 manifest paths receive a deterministic result: an exact override in the
-proposal or `retain-current-layer` through the declared default action.
+The 15 candidate extraction paths are a subset of the 101-path
+`bundled-optional` inventory (`86 + 15 = 101`). The complete manifest inventory
+remains `42 + 101 + 26 = 169`. All 169 manifest paths receive a deterministic
+result: an exact override in the proposal or `retain-current-layer` through the
+declared default action.
 
 ## Core Review
 
-No core demotion is proposed. The 40 core paths cover:
+No core demotion is proposed. The 42 core paths cover:
 
 - entry point and package manifest;
 - approval, privacy, safety, capability, and stop boundaries;

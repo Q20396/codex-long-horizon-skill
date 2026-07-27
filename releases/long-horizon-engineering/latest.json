@@ -1,15 +1,15 @@
 {
   "skill_id": "long-horizon-engineering",
-  "version": "0.2.4",
+  "version": "0.3.0",
   "repo": "https://github.com/Q20396/codex-long-horizon-skill",
   "path": ".agents/skills/long-horizon-engineering",
   "channel": "stable",
-  "release_date": "2026-07-24",
+  "release_date": "2026-07-27",
   "risk": "low",
   "summary": [
-    "Updated the stable marketplace installation reference to v0.2.4.",
-    "Kept --ref main documented only for intentionally tracking unreleased repository state.",
-    "Retained explicit user authorization before checking and updating."
+    "Prepared the main-line governance and catalog contracts as a static v0.3.0 candidate.",
+    "Kept sandbox-only, bundled-optional, and explicit-only capabilities distinct from runtime enforcement.",
+    "Retained explicit customer authorization before installation, external effects, or promotion."
   ],
   "requires_manual_approval": true,
   "auto_update": false

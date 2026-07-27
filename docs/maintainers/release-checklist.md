@@ -1,6 +1,7 @@
 # Maintainer Release Checklist
 
-Use this reusable checklist before publishing a release.
+Use this reusable checklist across the local static-candidate and later release
+stages. Completing Phase A does not establish release readiness.
 
 - [ ] Release PR merged into `main`.
 - [ ] Main CI passes.
@@ -14,8 +15,14 @@ Use this reusable checklist before publishing a release.
 - [ ] Release notes use neutral `Release` and `Date` metadata.
 - [ ] Release notes contain no preparation markers.
 - [ ] CHANGELOG has a dated version section.
-- [ ] Routine CI uses `check_release_readiness.py --allow-existing-tag`.
-- [ ] Final local pre-tag gate uses `check_release_readiness.py --pre-tag`.
+- [ ] Phase A uses `check_release_readiness.py --pre-tag-static`.
+- [ ] Phase A records formal Draft 2020-12 validation as UNVERIFIED.
+- [ ] No `requirements-release.txt` or release dependency is created or
+      installed during Phase A.
+- [ ] Phase B dependency intake is separately approved and records exact
+      versions and hashes before formal schema validation.
+- [ ] Routine post-release CI uses `check_release_readiness.py --allow-existing-tag`.
+- [ ] Final Phase B pre-tag gate uses `check_release_readiness.py --pre-tag`.
 - [ ] Remote tag absence is checked separately.
 - [ ] GitHub Release absence is checked separately.
 - [ ] Strict plugin-install result is recorded.
@@ -34,11 +41,11 @@ Suggested routine checks:
 ```bash
 python3 -m unittest discover -s tests -p "test_*.py"
 python3 scripts/test_fresh_install.py --skip-codex-cli --verbose
-python3 scripts/check_release_readiness.py --version <version> --allow-existing-tag
+python3 scripts/check_release_readiness.py --version <version> --pre-tag-static
 python3 scripts/full_skill_validation.py
 ```
 
-Suggested final pre-tag checks:
+Suggested Phase B checks after separate dependency and network authorization:
 
 ```bash
 python3 scripts/check_release_readiness.py --version <version> --pre-tag
