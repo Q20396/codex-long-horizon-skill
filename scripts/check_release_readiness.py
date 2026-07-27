@@ -169,6 +169,57 @@ def changelog_errors(version: str, release_date: str | None, errors: list[str]) 
         )
 
 
+def release_metadata_errors(
+    version: str,
+    release_date: str | None,
+    errors: list[str],
+) -> None:
+    if release_date is None:
+        return
+
+    skill_paths = [
+        ROOT / ".agents" / "skills" / "long-horizon-engineering" / "SKILL.md",
+        ROOT / ".agents" / "skills" / "ai-video-production" / "SKILL.md",
+    ]
+    for path in skill_paths:
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            errors.append(f"unable to read skill metadata: {path.relative_to(ROOT)}")
+            continue
+        match = re.search(r"^version:\s*(\S+)\s*$", text, re.MULTILINE)
+        if match is None or match.group(1) != version:
+            actual = match.group(1) if match else None
+            errors.append(
+                f"{path.relative_to(ROOT)} version {actual!r} does not match {version!r}"
+            )
+
+    aggregate = load_json(ROOT / "releases" / "latest.json")
+    if aggregate.get("updated_at") != release_date:
+        errors.append("releases/latest.json updated_at does not match release date")
+    skills = aggregate.get("skills")
+    if not isinstance(skills, dict):
+        errors.append("releases/latest.json skills must be an object")
+    else:
+        for skill_id in ("long-horizon-engineering", "ai-video-production"):
+            entry = skills.get(skill_id)
+            if not isinstance(entry, dict) or entry.get("version") != version:
+                errors.append(
+                    f"releases/latest.json {skill_id} version does not match {version!r}"
+                )
+
+    for skill_id in ("long-horizon-engineering", "ai-video-production"):
+        manifest_path = ROOT / "releases" / skill_id / "latest.json"
+        manifest = load_json(manifest_path)
+        if manifest.get("version") != version:
+            errors.append(f"{manifest_path.relative_to(ROOT)} version does not match {version!r}")
+        if manifest.get("release_date") != release_date:
+            errors.append(
+                f"{manifest_path.relative_to(ROOT)} release_date does not match "
+                f"{release_date!r}"
+            )
+
+
 def package_errors(version: str, errors: list[str]) -> None:
     manifest_path = ROOT / ".codex-plugin" / "plugin.json"
     if not manifest_path.is_file():
@@ -182,7 +233,20 @@ def package_errors(version: str, errors: list[str]) -> None:
     if not marketplace_path.is_file():
         errors.append(".agents/plugins/marketplace.json missing")
     else:
-        load_json(marketplace_path)
+        marketplace = load_json(marketplace_path)
+        plugins = marketplace.get("plugins")
+        expected_ref = f"v{version}"
+        if not isinstance(plugins, list) or len(plugins) != 1:
+            errors.append("marketplace must contain exactly one plugin entry")
+        else:
+            source = plugins[0].get("source")
+            if not isinstance(source, dict):
+                errors.append("marketplace source must be an object")
+            elif source.get("ref") != expected_ref:
+                errors.append(
+                    f"marketplace source.ref {source.get('ref')!r} does not match "
+                    f"immutable release tag {expected_ref!r}"
+                )
 
     for path in REQUIRED_RELEASE_FILES:
         if not (ROOT / path).is_file():
@@ -216,6 +280,7 @@ def validate(args: argparse.Namespace) -> list[str]:
     package_errors(version, errors)
     release_date = release_notes_errors(version, errors)
     changelog_errors(version, release_date, errors)
+    release_metadata_errors(version, release_date, errors)
     tag_errors(version, args.pre_tag, errors)
     return errors
 

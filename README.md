@@ -28,7 +28,7 @@ Install once. Reuse everywhere.
 Add the latest stable repository marketplace:
 
 ```bash
-codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.2.4
+codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.2.5
 ```
 
 Use `--ref main` only when you intentionally want the newest unreleased
@@ -41,6 +41,11 @@ codex plugin marketplace add Q20396/codex-long-horizon-skill --ref main
 Then enable the plugin in your Codex surface if prompted. See
 [Plugin installation](docs/plugin-install.md) for verification, upgrade, and
 removal notes.
+
+Stable registrations are pinned. Do not assume a marketplace upgrade command
+advances an existing release ref; use the documented explicit rebind procedure.
+Real CLI behavior and remote tag resolution require the separate post-tag
+network validation gate.
 
 Or clone this repository for direct skill installation:
 

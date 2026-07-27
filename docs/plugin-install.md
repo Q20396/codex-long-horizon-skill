@@ -10,7 +10,7 @@ This repository can be used in two ways:
 Add the latest stable release as a marketplace:
 
 ```bash
-codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.2.4
+codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.2.5
 ```
 
 Use `--ref main` only when you intentionally want the newest unreleased
@@ -20,11 +20,19 @@ repository state:
 codex plugin marketplace add Q20396/codex-long-horizon-skill --ref main
 ```
 
-Refresh the marketplace after updates:
+An existing stable marketplace registration is pinned to the release ref used
+when it was added. Do not assume `marketplace upgrade` changes that ref. To move
+from the v0.2.4 stable registration to v0.2.5, use an explicit rebind:
 
 ```bash
-codex plugin marketplace upgrade codex-long-horizon-skills
+codex plugin marketplace remove codex-long-horizon-skills
+codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.2.5
 ```
+
+Review locally installed Codex CLI capabilities before running these commands.
+The exact remove/add behavior and resolved remote tag remain unverified until
+the separately approved post-tag network/CLI validation stage. This repository
+does not promise automatic advancement between pinned stable tags.
 
 Remove the marketplace when you no longer want it:
 
