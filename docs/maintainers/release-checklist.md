@@ -2,10 +2,13 @@
 
 Use this reusable checklist before publishing a release.
 
-- [ ] Release PR merged into `main`.
-- [ ] Main CI passes.
+- [ ] Maintenance release PR targets `release/0.2.x`, based exactly on the
+      previous stable tag, and contains no later `main` content.
+- [ ] Maintenance-line CI passes.
 - [ ] Working tree is clean.
 - [ ] `.codex-plugin/plugin.json` version matches the target release.
+- [ ] `.agents/plugins/marketplace.json` uses the immutable matching `v<version>`
+      ref; mutable or mismatched refs fail validation.
 - [ ] README skill catalog is synchronized.
 - [ ] Package checks pass.
 - [ ] Routing contract passes.
@@ -19,9 +22,14 @@ Use this reusable checklist before publishing a release.
 - [ ] Remote tag absence is checked separately.
 - [ ] GitHub Release absence is checked separately.
 - [ ] Strict plugin-install result is recorded.
-- [ ] Fresh `origin/main` commit is recorded.
+- [ ] Exact maintenance-line merge commit is recorded.
 - [ ] Annotated tag targets the exact validated commit.
 - [ ] Annotated tag is pushed before GitHub Release creation.
+- [ ] After tag push and before GitHub Release creation, a separately approved
+      network gate verifies the remote peeled tag, tag tree/manifest,
+      clean-room marketplace resolution, and plugin identity/version.
+- [ ] Any post-tag verification failure blocks the GitHub Release and
+      installation recommendation.
 - [ ] `gh release create --verify-tag` is used.
 - [ ] Published Release is not draft.
 - [ ] Published Release is not prerelease.
@@ -42,5 +50,10 @@ Suggested final pre-tag checks:
 
 ```bash
 python3 scripts/check_release_readiness.py --version <version> --pre-tag
-python3 scripts/test_fresh_install.py --require-codex-cli --require-plugin-install --verbose
+python3 scripts/test_fresh_install.py --skip-codex-cli --verbose
 ```
+
+Pre-tag checks are local and static. Real Codex CLI marketplace behavior,
+remote tag resolution, and pinned-registration rebinding require a later,
+separately approved network/CLI stage. Do not promise that `marketplace
+upgrade` advances an immutable stable ref.

@@ -59,6 +59,7 @@ REQUIRED_CORE_FILES = [
     Path("docs/releases/v0.2.2.md"),
     Path("docs/releases/v0.2.3.md"),
     Path("docs/releases/v0.2.4.md"),
+    Path("docs/releases/v0.2.5.md"),
     Path("examples/bug-investigation/expected-output.md"),
     Path("examples/bug-investigation/prompt.md"),
     Path("examples/bug-investigation/workflow.md"),
@@ -151,7 +152,7 @@ CORE_COMMANDS = [
     [PYTHON, "scripts/generate_skill_catalog.py", "--check"],
     [PYTHON, "scripts/validate_plugin_package.py"],
     [PYTHON, "scripts/test_fresh_install.py", "--skip-codex-cli"],
-    [PYTHON, "scripts/check_release_readiness.py", "--version", "0.2.4", "--allow-existing-tag"],
+    [PYTHON, "scripts/check_release_readiness.py", "--version", "0.2.5", "--allow-existing-tag"],
     [PYTHON, "scripts/test_skill_update_selfcheck.py"],
     ["git", "diff", "--check"],
 ]
@@ -168,7 +169,7 @@ CI_EXPECTED = [
     ("test_fresh_install.py --skip-codex-cli", ["test_fresh_install.py", "--skip-codex-cli"]),
     (
         "check_release_readiness.py --allow-existing-tag",
-        ["check_release_readiness.py", "--version", "0.2.4", "--allow-existing-tag"],
+        ["check_release_readiness.py", "--version", "0.2.5", "--allow-existing-tag"],
     ),
     ("skill_update_selfcheck.py --help", ["skill_update_selfcheck.py", "--help"]),
     ("test_skill_update_selfcheck.py", ["test_skill_update_selfcheck.py"]),
@@ -176,6 +177,64 @@ CI_EXPECTED = [
     ("git diff --check", ["git", "diff", "--check"]),
     ("update dry-run smoke test", ["update_installed_skill.py", "--target-root"]),
 ]
+
+ALLOWED_RELEASE_WARNINGS = {
+    (
+        "Optional Integration Checks",
+        ".agents/skills/long-horizon-engineering/scripts/audit_skill_optimization_readiness.py",
+        "optional related file missing",
+    ),
+    (
+        "Optional Integration Checks",
+        ".agents/skills/long-horizon-engineering/references/disaster-monitoring-protocol.md",
+        "optional related file missing",
+    ),
+    (
+        "Optional Integration Checks",
+        ".agents/skills/long-horizon-engineering/scripts/enable_disaster_monitoring.py",
+        "optional related file missing",
+    ),
+    (
+        "Optional Integration Checks",
+        ".agents/skills/long-horizon-engineering/templates/situation-report.md",
+        "optional related file missing",
+    ),
+    (
+        "Optional Integration Checks",
+        ".agents/skills/long-horizon-engineering/templates/source-reliability-table.md",
+        "optional related file missing",
+    ),
+    (
+        "Optional Integration Checks",
+        ".agents/skills/long-horizon-engineering/templates/incident-timeline.md",
+        "optional related file missing",
+    ),
+    (
+        "Optional Integration Checks",
+        ".agents/skills/long-horizon-engineering/templates/affected-area-summary.md",
+        "optional related file missing",
+    ),
+    (
+        "Optional Integration Checks",
+        ".agents/skills/long-horizon-engineering/templates/public-safety-communication-checklist.md",
+        "optional related file missing",
+    ),
+    (
+        "Optional Integration Checks",
+        ".agents/skills/long-horizon-engineering/templates/public-alert-draft.md",
+        "optional related file missing",
+    ),
+    (
+        "Optional Disaster Monitoring Scaffold",
+        "scaffold",
+        "not present; skipped",
+    ),
+    (
+        "Optional SkillOpt Readiness",
+        "readiness script",
+        "not present; skipped",
+    ),
+}
 
 BIDI_CONTROLS = {
     chr(value)
@@ -581,6 +640,16 @@ def check_ci_coverage(report: Report) -> None:
             report.partial("CI Coverage", label, "not found in workflow")
 
 
+def enforce_release_warning_allowlist(report: Report) -> None:
+    for check in list(report.warnings()):
+        if (check.section, check.name, check.detail) not in ALLOWED_RELEASE_WARNINGS:
+            report.fail(
+                "Release Warning Gate",
+                check.name,
+                f"unapproved warning from {check.section}: {check.detail}",
+            )
+
+
 def print_report(report: Report) -> None:
     print("# Full Codex Skill Validation Report")
     ordered_sections = [
@@ -670,6 +739,7 @@ def main() -> int:
     run_static_checks(report)
     run_bidi_scan(report)
     check_ci_coverage(report)
+    enforce_release_warning_allowlist(report)
 
     print_report(report)
     return 0 if not report.failures() else 1

@@ -1,14 +1,14 @@
 {
   "skill_id": "ai-video-production",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "repo": "https://github.com/Q20396/codex-long-horizon-skill",
   "path": ".agents/skills/ai-video-production",
   "channel": "stable",
-  "release_date": "2026-07-24",
+  "release_date": "2026-07-27",
   "risk": "low",
   "summary": [
-    "Added a proposal-only renderer runtime sandbox boundary for AI video planning.",
-    "Kept renderer installation, preview, rendering, and external processing separately approval-gated.",
+    "Updated release metadata to keep the bundled plugin version synchronized at v0.2.5.",
+    "Included no functional AI video changes in this maintenance release.",
     "Retained explicit user authorization before checking and updating."
   ],
   "requires_manual_approval": true,

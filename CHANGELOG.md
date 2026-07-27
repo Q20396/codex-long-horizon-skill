@@ -6,6 +6,20 @@ All notable changes to this project are summarized here.
 
 No unreleased changes.
 
+## 0.2.5 - 2026-07-27
+
+- Replaced updater overlay copies with same-filesystem staging, exact
+  source/staging/target manifest verification, retained backups, quarantine,
+  and best-effort recovery.
+- Required one explicit skill for apply, blocked target-only files unless
+  removal is explicitly approved, and rejected symlinks, hardlinks, and
+  special filesystem entries within the supported boundary.
+- Pinned the stable repository marketplace source to `v0.2.5` and documented
+  that moving an existing pinned marketplace registration requires an explicit
+  rebind; automatic tag advancement is not promised.
+- Updated `ai-video-production` release metadata only; this release contains no
+  functional AI video payload.
+
 ## 0.2.4 - 2026-07-24
 
 - Added a proposal-only renderer runtime sandbox protocol and approval card for

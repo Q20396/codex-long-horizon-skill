@@ -26,6 +26,14 @@ def load_module(name: str, path: Path):
 
 
 VALIDATOR = load_module("validate_plugin_package_under_test", ROOT / "scripts" / "validate_plugin_package.py")
+FRESH_INSTALL = load_module(
+    "test_fresh_install_under_test",
+    ROOT / "scripts" / "test_fresh_install.py",
+)
+FULL_VALIDATION = load_module(
+    "full_skill_validation_under_test",
+    ROOT / "scripts" / "full_skill_validation.py",
+)
 
 
 def write_fake_codex(bin_dir: Path) -> Path:
@@ -249,7 +257,7 @@ def write_fake_codex(bin_dir: Path) -> Path:
                         "pluginId": f"{plugin_name}@{marketplace_name}",
                         "name": plugin_name,
                         "marketplaceName": marketplace_name,
-                        "version": "0.2.4",
+                        "version": "0.2.5",
                         "installedPath": str(installed),
                     }))
                 else:
@@ -260,16 +268,16 @@ def write_fake_codex(bin_dir: Path) -> Path:
                 installed = codex_home / "plugins" / plugin_name
                 if "--json" in argv:
                     if scenario == "plugin_list_available_only":
-                        print(json.dumps({"installed": [], "available": [{"name": plugin_name, "marketplaceName": marketplace_name, "version": "0.2.4"}]}))
+                        print(json.dumps({"installed": [], "available": [{"name": plugin_name, "marketplaceName": marketplace_name, "version": "0.2.5"}]}))
                         raise SystemExit(0)
                     if scenario == "plugin_list_wrong_version":
                         print(json.dumps({"installed": [{"name": plugin_name, "marketplaceName": marketplace_name, "version": "9.9.9", "installed": installed.exists()}]}))
                         raise SystemExit(0)
-                    print(json.dumps({"installed": [{"name": plugin_name, "marketplaceName": marketplace_name, "version": "0.2.4", "installed": installed.exists()}]}))
+                    print(json.dumps({"installed": [{"name": plugin_name, "marketplaceName": marketplace_name, "version": "0.2.5", "installed": installed.exists()}]}))
                 elif scenario == "plugin_list_text_substring":
                     print(f"{plugin_name}-old {marketplace_name} 0.2.1 installed")
                 else:
-                    print(f"{plugin_name} {marketplace_name} 0.2.4 installed")
+                    print(f"{plugin_name} {marketplace_name} 0.2.5 installed")
                 raise SystemExit(0)
 
             print(f"unhandled fake codex command: {argv}", file=sys.stderr)
@@ -397,22 +405,70 @@ class FrontMatterParserTests(unittest.TestCase):
         self.assertIn("marketplace source.url must be https://github.com/Q20396/codex-long-horizon-skill.git", output)
 
     def test_validator_rejects_wrong_marketplace_ref(self) -> None:
-        repo = self.temp / "repo-wrong-ref"
-        shutil.copytree(ROOT, repo, ignore=shutil.ignore_patterns(".git", "__pycache__"))
-        marketplace = repo / ".agents" / "plugins" / "marketplace.json"
-        data = json.loads(marketplace.read_text(encoding="utf-8"))
-        data["plugins"][0]["source"]["ref"] = "release-candidate"
-        marketplace.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
-        result = subprocess.run(
-            [sys.executable, "scripts/validate_plugin_package.py"],
-            cwd=repo,
-            text=True,
-            capture_output=True,
-            check=False,
-        )
-        output = result.stdout + result.stderr
-        self.assertNotEqual(result.returncode, 0)
-        self.assertIn("marketplace source.ref must be main", output)
+        for index, bad_ref in enumerate(
+            ["main", "master", "latest", "v0.2.4", "release-candidate", None]
+        ):
+            with self.subTest(ref=bad_ref):
+                repo = self.temp / f"repo-wrong-ref-{index}"
+                shutil.copytree(
+                    ROOT,
+                    repo,
+                    ignore=shutil.ignore_patterns(".git", "__pycache__"),
+                )
+                marketplace = repo / ".agents" / "plugins" / "marketplace.json"
+                data = json.loads(marketplace.read_text(encoding="utf-8"))
+                if bad_ref is None:
+                    data["plugins"][0]["source"].pop("ref")
+                else:
+                    data["plugins"][0]["source"]["ref"] = bad_ref
+                marketplace.write_text(
+                    json.dumps(data, indent=2) + "\n",
+                    encoding="utf-8",
+                )
+                result = subprocess.run(
+                    [sys.executable, "scripts/validate_plugin_package.py"],
+                    cwd=repo,
+                    text=True,
+                    capture_output=True,
+                    check=False,
+                )
+                output = result.stdout + result.stderr
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(
+                    "marketplace source.ref must be immutable release tag v0.2.5",
+                    output,
+                )
+
+    def test_fresh_install_marketplace_root_requires_matching_tag(self) -> None:
+        for index, bad_ref in enumerate(
+            ["main", "master", "latest", "v0.2.4", "release-candidate", None]
+        ):
+            with self.subTest(ref=bad_ref):
+                repo = self.temp / f"fresh-wrong-ref-{index}"
+                shutil.copytree(
+                    ROOT,
+                    repo,
+                    ignore=shutil.ignore_patterns(".git", "__pycache__"),
+                )
+                marketplace = repo / ".agents" / "plugins" / "marketplace.json"
+                data = json.loads(marketplace.read_text(encoding="utf-8"))
+                if bad_ref is None:
+                    data["plugins"][0]["source"].pop("ref")
+                else:
+                    data["plugins"][0]["source"]["ref"] = bad_ref
+                marketplace.write_text(
+                    json.dumps(data, indent=2) + "\n",
+                    encoding="utf-8",
+                )
+                self.assertIsNone(
+                    FRESH_INSTALL.verify_marketplace_root(
+                        repo,
+                        marketplace_name="codex-long-horizon-skills",
+                        plugin_name="codex-long-horizon-skill",
+                        version="0.2.5",
+                        boundary=self.temp,
+                    )
+                )
 
 
 class ReleaseReadinessTests(unittest.TestCase):
@@ -437,7 +493,7 @@ class ReleaseReadinessTests(unittest.TestCase):
         if env:
             run_env.update(env)
         return subprocess.run(
-            [sys.executable, "scripts/check_release_readiness.py", "--version", "0.2.4", *args],
+            [sys.executable, "scripts/check_release_readiness.py", "--version", "0.2.5", *args],
             cwd=repo,
             env=run_env,
             text=True,
@@ -446,7 +502,7 @@ class ReleaseReadinessTests(unittest.TestCase):
         )
 
     def release_notes(self, repo: Path) -> Path:
-        return repo / "docs" / "releases" / "v0.2.4.md"
+        return repo / "docs" / "releases" / "v0.2.5.md"
 
     def changelog(self, repo: Path) -> Path:
         return repo / "CHANGELOG.md"
@@ -460,7 +516,7 @@ class ReleaseReadinessTests(unittest.TestCase):
             capture_output=True,
             text=True,
         )
-        subprocess.run(["git", "tag", "v0.2.4"], cwd=repo, check=True, capture_output=True, text=True)
+        subprocess.run(["git", "tag", "v0.2.5"], cwd=repo, check=True, capture_output=True, text=True)
 
     def assert_failed_without_traceback(self, result: subprocess.CompletedProcess[str], expected: str) -> None:
         output = result.stdout + result.stderr
@@ -513,7 +569,7 @@ class ReleaseReadinessTests(unittest.TestCase):
     def test_missing_dated_changelog_heading_fails(self) -> None:
         repo = self.copy_repo("missing-changelog-heading")
         self.changelog(repo).write_text(
-            self.changelog(repo).read_text(encoding="utf-8").replace("## 0.2.4 - 2026-07-24", "## 0.2.4"),
+            self.changelog(repo).read_text(encoding="utf-8").replace("## 0.2.5 - 2026-07-27", "## 0.2.5"),
             encoding="utf-8",
         )
         result = self.run_readiness(repo, "--allow-existing-tag")
@@ -524,7 +580,7 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.changelog(repo).write_text(
             "# Changelog\n\nAll notable changes to this project are summarized here.\n\n"
             "## Unreleased\n\nNo unreleased changes.\n\n"
-            "## 0.2.4 - 2026-07-24\n\n"
+            "## 0.2.5 - 2026-07-27\n\n"
             "## 2026-06-15\n\n- Older work.\n",
             encoding="utf-8",
         )
@@ -536,6 +592,19 @@ class ReleaseReadinessTests(unittest.TestCase):
         result = self.run_readiness(repo, "--allow-existing-tag")
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
+    def test_release_warning_gate_allows_only_known_optional_omissions(self) -> None:
+        report = FULL_VALIDATION.Report()
+        section, name, detail = next(iter(FULL_VALIDATION.ALLOWED_RELEASE_WARNINGS))
+        report.warn(section, name, detail)
+        FULL_VALIDATION.enforce_release_warning_allowlist(report)
+        self.assertEqual(report.failures(), [])
+
+    def test_release_warning_gate_rejects_new_warning(self) -> None:
+        report = FULL_VALIDATION.Report()
+        report.warn("Unexpected", "new warning", "not allowlisted")
+        FULL_VALIDATION.enforce_release_warning_allowlist(report)
+        self.assertEqual(len(report.failures()), 1)
+
     def test_manifest_version_mismatch_fails(self) -> None:
         repo = self.copy_repo("manifest-mismatch")
         manifest = repo / ".codex-plugin" / "plugin.json"
@@ -543,14 +612,65 @@ class ReleaseReadinessTests(unittest.TestCase):
         data["version"] = "9.9.9"
         manifest.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
         result = self.run_readiness(repo, "--allow-existing-tag")
-        self.assert_failed_without_traceback(result, "plugin version '9.9.9' does not match '0.2.4'")
+        self.assert_failed_without_traceback(result, "plugin version '9.9.9' does not match '0.2.5'")
+
+    def test_marketplace_ref_must_match_release_version(self) -> None:
+        for index, bad_ref in enumerate(
+            ["main", "master", "latest", "v0.2.4", "release-candidate", None]
+        ):
+            with self.subTest(ref=bad_ref):
+                repo = self.copy_repo(f"marketplace-ref-mismatch-{index}")
+                marketplace = repo / ".agents" / "plugins" / "marketplace.json"
+                data = json.loads(marketplace.read_text(encoding="utf-8"))
+                if bad_ref is None:
+                    data["plugins"][0]["source"].pop("ref")
+                else:
+                    data["plugins"][0]["source"]["ref"] = bad_ref
+                marketplace.write_text(
+                    json.dumps(data, indent=2) + "\n",
+                    encoding="utf-8",
+                )
+                result = self.run_readiness(repo, "--allow-existing-tag")
+                self.assert_failed_without_traceback(
+                    result,
+                    "does not match immutable release tag 'v0.2.5'",
+                )
+
+    def test_skill_version_must_match_release_version(self) -> None:
+        repo = self.copy_repo("skill-version-mismatch")
+        skill = repo / ".agents" / "skills" / "ai-video-production" / "SKILL.md"
+        skill.write_text(
+            skill.read_text(encoding="utf-8").replace(
+                "version: 0.2.5",
+                "version: 9.9.9",
+                1,
+            ),
+            encoding="utf-8",
+        )
+        result = self.run_readiness(repo, "--allow-existing-tag")
+        self.assert_failed_without_traceback(
+            result,
+            "ai-video-production/SKILL.md version '9.9.9' does not match '0.2.5'",
+        )
+
+    def test_release_manifest_date_must_match_release_notes(self) -> None:
+        repo = self.copy_repo("release-manifest-date-mismatch")
+        manifest = repo / "releases" / "long-horizon-engineering" / "latest.json"
+        data = json.loads(manifest.read_text(encoding="utf-8"))
+        data["release_date"] = "2026-07-26"
+        manifest.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+        result = self.run_readiness(repo, "--allow-existing-tag")
+        self.assert_failed_without_traceback(
+            result,
+            "release_date does not match '2026-07-27'",
+        )
 
     def test_release_note_date_must_match_changelog_date(self) -> None:
         repo = self.copy_repo("mismatched-release-date")
         self.changelog(repo).write_text(
             self.changelog(repo).read_text(encoding="utf-8").replace(
-                "## 0.2.4 - 2026-07-24",
-                "## 0.2.4 - 2026-07-23",
+                "## 0.2.5 - 2026-07-27",
+                "## 0.2.5 - 2026-07-26",
             ),
             encoding="utf-8",
         )
@@ -609,9 +729,9 @@ class ReleaseReadinessTests(unittest.TestCase):
         repo = self.copy_repo("duplicated-changelog")
         text = self.changelog(repo).read_text(encoding="utf-8")
         duplicated = (
-            "- Added a proposal-only renderer runtime sandbox protocol and approval card for\n"
-            "  AI video work. Environment inspection, dependency installation, preview,\n"
-            "  final render, external processing, and sharing remain separate approvals.\n"
+            "- Replaced updater overlay copies with same-filesystem staging, exact\n"
+            "  source/staging/target manifest verification, retained backups, quarantine,\n"
+            "  and best-effort recovery.\n"
         )
         unreleased_heading = "## Unreleased\n"
         self.assertIn(unreleased_heading, text)
