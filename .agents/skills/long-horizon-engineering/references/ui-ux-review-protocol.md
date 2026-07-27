@@ -21,6 +21,42 @@ visual identity.
    animation.
 8. Record findings with evidence and validation steps.
 
+## Design-Skill Integration Boundary
+
+Before involving a downstream design skill, define the product goal, target
+user, affected pages, and exact files the skill may inspect. Default to
+audit-only; the design skill must not directly refactor or write project files.
+
+Before build work, list and confirm each proposed effect separately:
+
+1. Global CSS
+2. `tokens.css`, `tokens.json`, or a Tailwind theme
+3. `design.md` or other design-system documentation
+4. `.hallmark/` or any tool state, cache, or log directory
+5. Images, fonts, animation, or third-party components
+6. External URL research or asset downloads
+
+The downstream skill must not change routes, data fetching, APIs,
+authentication, payment, analytics, business rules, domain logic, production
+configuration, dependencies, or unrelated components unless the task
+separately authorizes those changes.
+
+For responsive work, validate at a minimum of 320, 375, 414, and 768 CSS pixels.
+Check:
+
+- No horizontal scrolling
+- No clipped, overlapping, or unreadable text
+- Keyboard access and visible `:focus-visible` behavior
+- `prefers-reduced-motion`
+- Empty, loading, error, disabled, hover, focus, and active states
+- Wrapping and information density with realistic Chinese content
+
+A visual finding must cite at least one of: a code location, screenshot or
+browser observation, design token, rendered observation, or actual validation
+result. Static inspection must not be reported as browser verification.
+Anti-template or anti-slop guidance is only a review prompt; it is not evidence
+of functional correctness or commercial effectiveness.
+
 ## Accessibility Checks
 
 - Keyboard access works for interactive controls.

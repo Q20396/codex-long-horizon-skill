@@ -198,6 +198,17 @@ Load only the references that match the task:
   speech, voice-cloning, or voice-enabled MCP tool
 - `references/three-d-asset-provider-sandbox.md` before proposing an external
   3D asset provider, hosted 3D-generation service, or 3D asset MCP tool
+- `references/ui-design-skill-adapter.md` when coordinating Hallmark or a
+  similar downstream UI or design skill; it defines authority, file-write,
+  external-source, design-token, and validation boundaries
+
+When this skill coordinates a downstream design or UI specialist, LHE safety,
+privacy, authority, file-scope, validation, and delivery rules take precedence.
+The downstream skill defaults to read-only audit. Creating or changing global
+styles, design tokens, design-system files, project state, external assets, or
+URL access requires an exact file-level plan and user approval before execution.
+Visual review does not replace build, typecheck, test, browser, or accessibility
+validation.
 
 ## Explicit-Only Extensions
 
