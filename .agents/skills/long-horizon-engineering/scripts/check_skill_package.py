@@ -135,6 +135,7 @@ INSTALLED_REQUIRED_FILES = [
     ".agents/skills/long-horizon-engineering/references/skillopt-training-layer.md",
     ".agents/skills/long-horizon-engineering/references/ship-readiness-protocol.md",
     ".agents/skills/long-horizon-engineering/references/tdd-protocol.md",
+    ".agents/skills/long-horizon-engineering/references/ui-design-skill-adapter.md",
     ".agents/skills/long-horizon-engineering/references/ui-ux-review-protocol.md",
     ".agents/skills/long-horizon-engineering/references/usage-and-trigger-review.md",
     ".agents/skills/long-horizon-engineering/references/upgrade-audit-protocol.md",

@@ -100,6 +100,7 @@ INSTALLED_REQUIRED_PATHS = [
     ".agents/skills/long-horizon-engineering/references/skillopt-training-layer.md",
     ".agents/skills/long-horizon-engineering/references/systematic-debugging-protocol.md",
     ".agents/skills/long-horizon-engineering/references/tdd-protocol.md",
+    ".agents/skills/long-horizon-engineering/references/ui-design-skill-adapter.md",
     ".agents/skills/long-horizon-engineering/references/ui-ux-review-protocol.md",
     ".agents/skills/long-horizon-engineering/references/upgrade-audit-protocol.md",
     ".agents/skills/long-horizon-engineering/references/writing-humanization-protocol.md",
