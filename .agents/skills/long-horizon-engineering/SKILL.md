@@ -103,6 +103,14 @@ out-of-scope paths, acceptance criteria and evidence, stop conditions, and the
 rollback path. A plan is a proposal, not permission to edit, run high-impact
 commands, or promote a result.
 
+When the user explicitly requests a single resumable goal-delivery record, use
+the bundled-optional
+`templates/GOAL_DRIVEN_DELIVERY_CONTRACT.md`. It is an explicit-only thin layer
+over the existing Planner/Builder/Evaluator, implementation-plan,
+working-state, and verification-evidence contracts. Do not create or persist an
+instance without approval for its exact file path, and do not treat it as
+execution, promotion, or next-stage authority.
+
 For complex implementation plans, use `templates/implementation-plan.md` when a
 written plan would reduce risk.
 
