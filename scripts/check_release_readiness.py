@@ -63,9 +63,20 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--version", required=True, help="Release version, for example 0.1.0.")
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument(
+        "--pre-tag-static",
+        action="store_true",
+        help=(
+            "Phase A local/no-network gate; validates static candidate evidence "
+            "but leaves formal Draft 2020-12 validation UNVERIFIED."
+        ),
+    )
+    mode.add_argument(
         "--pre-tag",
         action="store_true",
-        help="Final local gate before tagging; fails if refs/tags/vVERSION already exists.",
+        help=(
+            "Reserved Phase B gate before tagging; requires separately approved "
+            "formal Draft 2020-12 validation."
+        ),
     )
     mode.add_argument(
         "--allow-existing-tag",
@@ -169,7 +180,20 @@ def changelog_errors(version: str, release_date: str | None, errors: list[str]) 
         )
 
 
-def package_errors(version: str, errors: list[str]) -> None:
+def skill_version(path: Path, errors: list[str]) -> str | None:
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        errors.append(f"{path.relative_to(ROOT)} could not be read: {exc}")
+        return None
+    match = re.search(r"^version:\s*(\S+)\s*$", text, re.MULTILINE)
+    if not match:
+        errors.append(f"{path.relative_to(ROOT)} is missing version metadata")
+        return None
+    return match.group(1)
+
+
+def package_errors(version: str, release_date: str | None, errors: list[str]) -> None:
     manifest_path = ROOT / ".codex-plugin" / "plugin.json"
     if not manifest_path.is_file():
         errors.append(".codex-plugin/plugin.json missing")
@@ -182,7 +206,63 @@ def package_errors(version: str, errors: list[str]) -> None:
     if not marketplace_path.is_file():
         errors.append(".agents/plugins/marketplace.json missing")
     else:
-        load_json(marketplace_path)
+        marketplace = load_json(marketplace_path)
+        plugins = marketplace.get("plugins")
+        ref = None
+        if isinstance(plugins, list) and len(plugins) == 1 and isinstance(plugins[0], dict):
+            source = plugins[0].get("source")
+            if isinstance(source, dict):
+                ref = source.get("ref")
+        expected_ref = f"v{version}"
+        if ref != expected_ref:
+            errors.append(
+                f"marketplace source ref {ref!r} does not match prospective "
+                f"immutable release tag {expected_ref!r}"
+            )
+
+    for skill_name in ["long-horizon-engineering", "ai-video-production"]:
+        path = ROOT / ".agents" / "skills" / skill_name / "SKILL.md"
+        actual = skill_version(path, errors)
+        if actual is not None and actual != version:
+            errors.append(
+                f"{skill_name}/SKILL.md version {actual!r} does not match {version!r}"
+            )
+
+    release_manifests = [
+        ROOT / "releases" / "long-horizon-engineering" / "latest.json",
+        ROOT / "releases" / "ai-video-production" / "latest.json",
+    ]
+    for path in release_manifests:
+        data = load_json(path)
+        relative = path.relative_to(ROOT)
+        if data.get("version") != version:
+            errors.append(
+                f"{relative} version {data.get('version')!r} does not match {version!r}"
+            )
+        if release_date is not None and data.get("release_date") != release_date:
+            errors.append(
+                f"{relative} release_date {data.get('release_date')!r} "
+                f"does not match {release_date!r}"
+            )
+
+    latest = load_json(ROOT / "releases" / "latest.json")
+    if release_date is not None and latest.get("updated_at") != release_date:
+        errors.append(
+            f"releases/latest.json updated_at {latest.get('updated_at')!r} "
+            f"does not match {release_date!r}"
+        )
+    skills = latest.get("skills")
+    if not isinstance(skills, dict):
+        errors.append("releases/latest.json skills must be an object")
+    else:
+        for skill_name in ["long-horizon-engineering", "ai-video-production"]:
+            entry = skills.get(skill_name)
+            actual = entry.get("version") if isinstance(entry, dict) else None
+            if actual != version:
+                errors.append(
+                    f"releases/latest.json {skill_name} version {actual!r} "
+                    f"does not match {version!r}"
+                )
 
     for path in REQUIRED_RELEASE_FILES:
         if not (ROOT / path).is_file():
@@ -213,16 +293,26 @@ def validate(args: argparse.Namespace) -> list[str]:
         errors.append("version must be plain semantic version syntax")
         return errors
 
-    package_errors(version, errors)
     release_date = release_notes_errors(version, errors)
+    package_errors(version, release_date, errors)
     changelog_errors(version, release_date, errors)
     tag_errors(version, args.pre_tag, errors)
+    if args.pre_tag:
+        errors.append(
+            "formal Draft 2020-12 schema gate is UNVERIFIED; "
+            "Phase B authorization and locked dependency intake are required before tagging"
+        )
     return errors
 
 
 def main() -> int:
     args = parse_args()
-    mode = "pre-tag" if args.pre_tag else "allow-existing-tag"
+    if args.pre_tag_static:
+        mode = "pre-tag-static"
+    elif args.pre_tag:
+        mode = "pre-tag"
+    else:
+        mode = "allow-existing-tag"
     try:
         errors = validate(args)
     except Exception as exc:
@@ -234,7 +324,14 @@ def main() -> int:
             print(f"ERROR: {error}")
         return 1
 
-    print(f"Release readiness check passed for v{args.version} ({mode}).")
+    if args.pre_tag_static:
+        print(
+            f"Static candidate check passed for v{args.version} ({mode}); "
+            "formal Draft 2020-12 schema validation is UNVERIFIED and "
+            "this result is not release-ready."
+        )
+    else:
+        print(f"Release readiness check passed for v{args.version} ({mode}).")
     return 0
 
 

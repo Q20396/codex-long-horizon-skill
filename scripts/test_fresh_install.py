@@ -329,7 +329,7 @@ def verify_marketplace_root(
         if url not in {EXPECTED_REPOSITORY, EXPECTED_REPOSITORY + ".git"}:
             return None
         ref = source.get("ref")
-        if ref not in {None, "main"}:
+        if ref != f"v{version}":
             return None
         return str(root)
     plugin_path_value = source.get("path", "./")

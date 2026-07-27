@@ -58,6 +58,7 @@ PACKAGE_ONLY_FILES = [
     "docs/maintainers/release-checklist.md",
     "docs/plugin-install.md",
     "docs/releases/v0.1.0.md",
+    "docs/releases/v0.3.0.md",
     "prompts/bug-investigation.md",
     "prompts/large-refactor.md",
     "prompts/pr-review.md",
@@ -633,7 +634,7 @@ def check_skill_front_matter(skill_dir: Path, expected_name: str) -> list[str]:
     if "description:" not in front_matter:
         errors.append(f"{display_path} front matter must include description.")
     required_metadata = {
-        "version": "0.2.4",
+        "version": "0.3.0",
         "repo": "https://github.com/Q20396/codex-long-horizon-skill",
         "skill_id": expected_name,
         "update_channel": "stable",

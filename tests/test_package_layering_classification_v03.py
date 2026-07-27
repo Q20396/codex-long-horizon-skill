@@ -134,6 +134,53 @@ class PackageLayeringClassificationV03Tests(unittest.TestCase):
         ):
             self.assertIn(value, text)
 
+    def test_report_counts_match_inventory_and_candidate_subset(self) -> None:
+        proposal = self.load_json(PROPOSAL)
+        summary = proposal["summary"]
+        bundled_inventory = (
+            summary["bundled_optional_retained"]
+            + summary["candidate_separate_skill_extractions"]
+        )
+        total_inventory = (
+            summary["core_retained"]
+            + bundled_inventory
+            + summary["existing_separate_skill_paths_retained"]
+        )
+        text = REPORT.read_text(encoding="utf-8")
+
+        expected_rows = (
+            f"| Retain in `core` | {summary['core_retained']} |",
+            f"| `bundled-optional` inventory | {bundled_inventory} |",
+            f"| Retain in `bundled-optional` | "
+            f"{summary['bundled_optional_retained']} |",
+            f"| Candidate separate-skill extraction | "
+            f"{summary['candidate_separate_skill_extractions']} |",
+            f"| Retain existing `separate-skill` | "
+            f"{summary['existing_separate_skill_paths_retained']} |",
+        )
+        report_rows = tuple(
+            line for line in text.splitlines() if line.startswith("|")
+        )
+        for expected in expected_rows:
+            self.assertEqual(
+                sum(row.startswith(expected) for row in report_rows),
+                1,
+                f"Expected exactly one report row starting with: {expected}",
+            )
+
+        self.assertIn(
+            f"`{summary['bundled_optional_retained']} + "
+            f"{summary['candidate_separate_skill_extractions']} = "
+            f"{bundled_inventory}`",
+            text,
+        )
+        self.assertIn(
+            f"`{summary['core_retained']} + {bundled_inventory} + "
+            f"{summary['existing_separate_skill_paths_retained']} = "
+            f"{total_inventory}`",
+            text,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

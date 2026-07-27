@@ -7,20 +7,28 @@ This repository can be used in two ways:
 
 ## Plugin Installation
 
-Add the latest stable release as a marketplace:
+The Phase A candidate names the prospective immutable `v0.3.0` marketplace
+reference:
 
 ```bash
-codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.2.4
+codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.3.0
 ```
 
-Use `--ref main` only when you intentionally want the newest unreleased
-repository state:
+Do not run this command until the remote tag and isolated marketplace
+resolution have been independently verified. Phase A checks the repository
+metadata only. Use `--ref main` only when you intentionally accept mutable,
+unreleased repository state:
 
 ```bash
 codex plugin marketplace add Q20396/codex-long-horizon-skill --ref main
 ```
 
-Refresh the marketplace after updates:
+Do not assume `marketplace upgrade` changes a pinned ref. A stable upgrade must
+explicitly rebind registration to the newly reviewed immutable tag in a
+separately approved isolated CLI workflow. Actual CLI rebind behavior is
+unverified during Phase A.
+
+Refresh only an intentionally mutable marketplace after updates:
 
 ```bash
 codex plugin marketplace upgrade codex-long-horizon-skills
