@@ -154,6 +154,7 @@ INSTALLED_REQUIRED_FILES = [
     ".agents/skills/long-horizon-engineering/templates/PROJECT_CONTEXT_MAP_TEMPLATE.md",
     ".agents/skills/long-horizon-engineering/templates/COMPUTE_CAPABILITY_INTAKE.md",
     ".agents/skills/long-horizon-engineering/templates/DECISION_MAP_TEMPLATE.md",
+    ".agents/skills/long-horizon-engineering/templates/GOAL_DRIVEN_DELIVERY_CONTRACT.md",
     ".agents/skills/long-horizon-engineering/templates/LOCAL_VOICE_TOOL_APPROVAL_CARD.md",
     ".agents/skills/long-horizon-engineering/templates/THREE_D_ASSET_DELIVERY_APPROVAL_CARD.md",
     ".agents/skills/long-horizon-engineering/templates/IMPROVEMENT_SCAN_TEMPLATE.md",

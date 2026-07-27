@@ -20,7 +20,7 @@ LHE uses three package layers:
 The exact path inventory is owned exclusively by
 `.agents/skills/long-horizon-engineering/package-manifest.json`. Documentation
 MUST NOT maintain a second path list. At the time this specification was
-written, that manifest classifies 42 `core` paths, 100 `bundled-optional` paths,
+written, that manifest classifies 42 `core` paths, 101 `bundled-optional` paths,
 and 26 `ai-video-production` paths as one `separate-skill`.
 
 ## Layer Rules

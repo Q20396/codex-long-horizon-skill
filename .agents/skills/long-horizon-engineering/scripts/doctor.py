@@ -116,6 +116,7 @@ INSTALLED_REQUIRED_PATHS = [
     ".agents/skills/long-horizon-engineering/scripts/test_expected_triggers.py",
     ".agents/skills/long-horizon-engineering/templates/implementation-plan.md",
     ".agents/skills/long-horizon-engineering/templates/DECISION_MAP_TEMPLATE.md",
+    ".agents/skills/long-horizon-engineering/templates/GOAL_DRIVEN_DELIVERY_CONTRACT.md",
     ".agents/skills/long-horizon-engineering/templates/APPROVED_TOOL_CONTRACT_CARD.md",
     ".agents/skills/long-horizon-engineering/templates/LOCAL_VOICE_TOOL_APPROVAL_CARD.md",
     ".agents/skills/long-horizon-engineering/templates/THREE_D_ASSET_DELIVERY_APPROVAL_CARD.md",
