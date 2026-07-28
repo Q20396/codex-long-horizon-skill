@@ -126,6 +126,7 @@ jobs:
       PIP_NO_INPUT: "1"
       PIP_NO_CACHE_DIR: "1"
       PIP_DISABLE_PIP_VERSION_CHECK: "1"
+      FORMAL_CANDIDATE_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
     steps:
       - name: Check out candidate without persisted credentials
         uses: actions/checkout@v4
@@ -174,6 +175,7 @@ jobs:
             --pip-report "$RUNNER_TEMP/formal-schema-pip-report.json" \
             --evidence-dir "$RUNNER_TEMP/formal-schema-evidence" \
             --result "$RUNNER_TEMP/formal-schema-evidence/acquisition-receipt.json" \
+            --candidate-base "$FORMAL_CANDIDATE_BASE" \
             --run-id "$GITHUB_RUN_ID" \
             --run-attempt "$GITHUB_RUN_ATTEMPT" \
             --workflow-ref "$GITHUB_WORKFLOW_REF" \
@@ -190,6 +192,7 @@ jobs:
             --formal-schema-pip-report "$RUNNER_TEMP/formal-schema-pip-report.json" \
             --formal-schema-acquisition-result "$RUNNER_TEMP/formal-schema-evidence/acquisition-receipt.json" \
             --formal-schema-evidence-dir "$RUNNER_TEMP/formal-schema-evidence" \
+            --formal-schema-candidate-base "$FORMAL_CANDIDATE_BASE" \
             --formal-schema-result "$RUNNER_TEMP/formal-schema-result.json"
 
       - name: Report checkout status paths after formal gate failure

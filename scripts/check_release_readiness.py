@@ -79,11 +79,11 @@ FORMAL_SCHEMA_ARTIFACTS = [
         "sha256": "481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8",
     },
 ]
-FORMAL_REMEDIATION_BASELINE_REFERENCE = (
-    "cf74dd05fa805f2f369c563e3974bc942f29c7cc"
-)
-FORMAL_CANDIDATE_PARENT = "6f1f48381f465b460a9390643fc835b666604207"
-FORMAL_CANDIDATE_PATHS = [
+FORMAL_BOOTSTRAP_PARENT = "6f1f48381f465b460a9390643fc835b666604207"
+FORMAL_BOOTSTRAP_COMMIT = "5f8540db1994839ad644b8fa3203642d82c1d581"
+FORMAL_BOOTSTRAP_TREE = "9b13edb16d90db0d5f69a252bfebe69fa2c10d04"
+FORMAL_REMEDIATION_BASELINE_REFERENCE = "cf74dd05fa805f2f369c563e3974bc942f29c7cc"
+FORMAL_BOOTSTRAP_PATHS = [
     ".github/workflows/check-skill.yml",
     "docs/maintainers/release-checklist.md",
     "docs/releases/v0.3.0.md",
@@ -174,6 +174,10 @@ def parse_args() -> argparse.Namespace:
         "--formal-schema-evidence-dir",
         type=Path,
         help="Job-local raw evidence directory for offline formal validation.",
+    )
+    parser.add_argument(
+        "--formal-schema-candidate-base",
+        help="Full immutable base commit for the current descendant candidate.",
     )
     return parser.parse_args()
 
@@ -394,6 +398,7 @@ def formal_schema_errors(args: argparse.Namespace, errors: list[str]) -> None:
         "--formal-schema-pip-report": args.formal_schema_pip_report,
         "--formal-schema-acquisition-result": args.formal_schema_acquisition_result,
         "--formal-schema-evidence-dir": args.formal_schema_evidence_dir,
+        "--formal-schema-candidate-base": args.formal_schema_candidate_base,
     }
     supplied = {name for name, value in paths.items() if value is not None}
     if args.pre_tag_static:
@@ -408,6 +413,9 @@ def formal_schema_errors(args: argparse.Namespace, errors: list[str]) -> None:
             "formal Draft 2020-12 schema gate is UNVERIFIED; "
             f"controlled formal execution requires {', '.join(missing)}"
         )
+        return
+    if not re.fullmatch(r"[0-9a-f]{40}", args.formal_schema_candidate_base):
+        errors.append("formal schema candidate base must be a full commit SHA")
         return
     formal_worktree_errors(errors)
     if errors:
@@ -429,6 +437,8 @@ def formal_schema_errors(args: argparse.Namespace, errors: list[str]) -> None:
         str(args.formal_schema_acquisition_result.resolve()),
         "--evidence-dir",
         str(args.formal_schema_evidence_dir.resolve()),
+        "--candidate-base",
+        args.formal_schema_candidate_base,
         "--run-id",
         os.environ.get("GITHUB_RUN_ID", ""),
         "--run-attempt",
@@ -459,15 +469,19 @@ def formal_schema_errors(args: argparse.Namespace, errors: list[str]) -> None:
         "draft": "https://json-schema.org/draft/2020-12/schema",
         "system": "Linux",
         "machine": "x86_64",
-        "schema_count": 20,
-        "fixture_validated_schema_count": 4,
-        "syntax_only_schema_count": 16,
         "candidate_worktree_clean": True,
-        "candidate_parent": FORMAL_CANDIDATE_PARENT,
-        "candidate_remediation_baseline_reference": (
-            FORMAL_REMEDIATION_BASELINE_REFERENCE
-        ),
-        "candidate_remediation_paths": FORMAL_CANDIDATE_PATHS,
+        "candidate_base_commit": args.formal_schema_candidate_base,
+        "candidate_merge_base": args.formal_schema_candidate_base,
+        "approval_authority": "none",
+        "next_stage_authorized": False,
+        "bootstrap_identity": {
+            "commit": FORMAL_BOOTSTRAP_COMMIT,
+            "tree": FORMAL_BOOTSTRAP_TREE,
+            "parent": FORMAL_BOOTSTRAP_PARENT,
+            "remediation_baseline_reference": FORMAL_REMEDIATION_BASELINE_REFERENCE,
+            "paths": sorted(FORMAL_BOOTSTRAP_PATHS),
+            "authority": "provenance-only",
+        },
     }
     for field, value in expected.items():
         if result.get(field) != value:
@@ -495,6 +509,65 @@ def formal_schema_errors(args: argparse.Namespace, errors: list[str]) -> None:
     for field, value in expected_hashes.items():
         if result.get(field) != value:
             errors.append(f"formal schema result {field} does not match candidate files")
+    schema_binding = result.get("schema_inventory_binding")
+    schema_root = ROOT / "sandbox" / "skill-incubator" / "schemas"
+    schema_files = sorted(schema_root.glob("*.schema.json"))
+    if not isinstance(schema_binding, dict):
+        errors.append("formal schema result schema inventory binding is missing")
+    else:
+        recorded_files = schema_binding.get("files")
+        if not isinstance(recorded_files, list):
+            errors.append("formal schema result schema inventory files are invalid")
+        else:
+            actual_schema_files = [
+                {
+                    "name": schema_path.name,
+                    "sha256": sha256_file(schema_path),
+                    "validation": next(
+                        (
+                            item.get("validation")
+                            for item in recorded_files
+                            if isinstance(item, dict)
+                            and item.get("name") == schema_path.name
+                        ),
+                        None,
+                    ),
+                }
+                for schema_path in schema_files
+            ]
+            if recorded_files != actual_schema_files:
+                errors.append("formal schema result schema inventory file binding mismatch")
+            validation_values = [
+                item.get("validation")
+                for item in actual_schema_files
+                if isinstance(item, dict)
+            ]
+            if any(
+                value not in {"fixture-validated", "syntax-only"}
+                for value in validation_values
+            ):
+                errors.append("formal schema result schema classification is invalid")
+            fixture_count = validation_values.count("fixture-validated")
+            syntax_count = validation_values.count("syntax-only")
+            if (
+                result.get("schema_count") != len(actual_schema_files)
+                or result.get("fixture_validated_schema_count") != fixture_count
+                or result.get("syntax_only_schema_count") != syntax_count
+                or schema_binding.get("schema_count") != len(actual_schema_files)
+                or schema_binding.get("fixture_validated_schema_count") != fixture_count
+                or schema_binding.get("syntax_only_schema_count") != syntax_count
+            ):
+                errors.append("formal schema result schema classification counts mismatch")
+            inventory_sha256 = hashlib.sha256(
+                json.dumps(
+                    actual_schema_files,
+                    ensure_ascii=True,
+                    separators=(",", ":"),
+                    sort_keys=True,
+                ).encode("utf-8")
+            ).hexdigest()
+            if schema_binding.get("inventory_sha256") != inventory_sha256:
+                errors.append("formal schema result schema inventory hash mismatch")
     try:
         head = run(["git", "rev-parse", "HEAD"])
         tree = run(["git", "show", "-s", "--format=%T", "HEAD"])
@@ -508,13 +581,48 @@ def formal_schema_errors(args: argparse.Namespace, errors: list[str]) -> None:
         errors.append("formal schema result candidate_commit does not match HEAD")
     if result.get("candidate_tree") != tree.stdout.strip():
         errors.append("formal schema result candidate_tree does not match HEAD tree")
-    parent = run(["git", "rev-parse", "HEAD^"])
+    bootstrap_commit = run(["git", "rev-parse", f"{FORMAL_BOOTSTRAP_COMMIT}^{{commit}}"])
+    bootstrap_tree = run(
+        ["git", "show", "-s", "--format=%T", FORMAL_BOOTSTRAP_COMMIT]
+    )
+    bootstrap_parent = run(["git", "rev-parse", f"{FORMAL_BOOTSTRAP_COMMIT}^"])
+    bootstrap_paths = run(
+        [
+            "git",
+            "diff",
+            "--name-only",
+            f"{FORMAL_BOOTSTRAP_PARENT}..{FORMAL_BOOTSTRAP_COMMIT}",
+        ]
+    )
+    if (
+        bootstrap_commit.returncode != 0
+        or bootstrap_commit.stdout.strip() != FORMAL_BOOTSTRAP_COMMIT
+        or bootstrap_tree.returncode != 0
+        or bootstrap_tree.stdout.strip() != FORMAL_BOOTSTRAP_TREE
+        or bootstrap_parent.returncode != 0
+        or bootstrap_parent.stdout.strip() != FORMAL_BOOTSTRAP_PARENT
+        or bootstrap_paths.returncode != 0
+        or sorted(bootstrap_paths.stdout.splitlines())
+        != sorted(FORMAL_BOOTSTRAP_PATHS)
+    ):
+        errors.append("formal schema bootstrap provenance mismatch")
+    base = run(
+        [
+            "git",
+            "rev-parse",
+            f"{args.formal_schema_candidate_base}^{{commit}}",
+        ]
+    )
+    merge_base = run(
+        ["git", "merge-base", args.formal_schema_candidate_base, "HEAD"]
+    )
+    parents = run(["git", "show", "-s", "--format=%P", "HEAD"])
     paths_result = run(
         [
             "git",
             "diff",
             "--name-only",
-            f"{FORMAL_CANDIDATE_PARENT}..HEAD",
+            f"{args.formal_schema_candidate_base}..HEAD",
         ]
     )
     diff_result = subprocess.run(
@@ -522,7 +630,7 @@ def formal_schema_errors(args: argparse.Namespace, errors: list[str]) -> None:
             "git",
             "diff",
             "--binary",
-            f"{FORMAL_CANDIDATE_PARENT}..HEAD",
+            f"{args.formal_schema_candidate_base}..HEAD",
             "--",
         ],
         cwd=ROOT,
@@ -530,19 +638,36 @@ def formal_schema_errors(args: argparse.Namespace, errors: list[str]) -> None:
         check=False,
     )
     if (
-        parent.returncode != 0
-        or parent.stdout.strip() != FORMAL_CANDIDATE_PARENT
+        base.returncode != 0
+        or base.stdout.strip() != args.formal_schema_candidate_base
+        or merge_base.returncode != 0
+        or merge_base.stdout.strip() != args.formal_schema_candidate_base
     ):
-        errors.append("formal schema result candidate parent mismatch")
+        errors.append("formal schema result candidate base or merge-base mismatch")
     actual_paths = sorted(path for path in paths_result.stdout.splitlines() if path)
-    if paths_result.returncode != 0 or actual_paths != sorted(FORMAL_CANDIDATE_PATHS):
-        errors.append("formal schema result Phase B path inventory mismatch")
+    if paths_result.returncode != 0 or not actual_paths:
+        errors.append("formal schema result changed-path inventory is invalid")
+    if result.get("candidate_changed_paths") != actual_paths:
+        errors.append("formal schema result changed-path inventory mismatch")
+    actual_paths_sha256 = hashlib.sha256(
+        json.dumps(
+            actual_paths,
+            ensure_ascii=True,
+            separators=(",", ":"),
+            sort_keys=True,
+        ).encode("utf-8")
+    ).hexdigest()
+    if result.get("candidate_changed_paths_sha256") != actual_paths_sha256:
+        errors.append("formal schema result changed-path hash mismatch")
+    actual_parents = parents.stdout.split()
+    if parents.returncode != 0 or result.get("candidate_parents") != actual_parents:
+        errors.append("formal schema result candidate parents mismatch")
     actual_diff_sha256 = hashlib.sha256(diff_result.stdout).hexdigest()
     if (
         diff_result.returncode != 0
-        or result.get("candidate_remediation_diff_sha256") != actual_diff_sha256
+        or result.get("candidate_diff_sha256") != actual_diff_sha256
     ):
-        errors.append("formal schema result remediation diff hash mismatch")
+        errors.append("formal schema result candidate diff hash mismatch")
     expected_job_identity = {
         "run_id": os.environ.get("GITHUB_RUN_ID", ""),
         "run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT", ""),

@@ -55,18 +55,23 @@ JOB_IDENTITY = {
     "workflow_ref": "Q20396/codex-long-horizon-skill/.github/workflows/check-skill.yml@refs/pull/86/merge",
     "job_name": "formal-schema-gate",
 }
+CANDIDATE_BASE = "a" * 40
 
 
 def synthetic_candidate() -> dict:
     return {
+        "binding_version": 1,
         "commit": "1" * 40,
         "tree": "2" * 40,
-        "parent": VALIDATOR.FORMAL_CANDIDATE_PARENT,
-        "remediation_baseline_reference": (
-            VALIDATOR.REMEDIATION_BASELINE_REFERENCE
+        "base_commit": CANDIDATE_BASE,
+        "merge_base": CANDIDATE_BASE,
+        "parents": ["9" * 40],
+        "changed_paths": ["candidate.txt"],
+        "changed_paths_sha256": VALIDATOR.sha256_bytes(
+            VALIDATOR.canonical_json_bytes(["candidate.txt"])
         ),
-        "remediation_paths": sorted(VALIDATOR.FORMAL_CANDIDATE_PATHS),
-        "remediation_diff_sha256": "3" * 64,
+        "diff_sha256": "3" * 64,
+        "worktree_clean": True,
     }
 
 
@@ -93,13 +98,26 @@ def write_synthetic_evidence(
     manifest_path.write_bytes(VALIDATOR.canonical_json_bytes(manifest) + b"\n")
     now = VALIDATOR.utc_now()
     receipt = {
-        "schema_version": 1,
+        "schema_version": 2,
         "status": "PASS",
         "gate": "formal-acquisition",
         "acquisition_started_at": VALIDATOR.iso_utc(now - timedelta(seconds=1)),
         "acquired_at": VALIDATOR.iso_utc(now),
         "job_identity": dict(JOB_IDENTITY),
+        "bootstrap_identity": {
+            "commit": VALIDATOR.BOOTSTRAP_COMMIT,
+            "tree": VALIDATOR.BOOTSTRAP_TREE,
+            "parent": VALIDATOR.BOOTSTRAP_PARENT,
+            "remediation_baseline_reference": (
+                VALIDATOR.REMEDIATION_BASELINE_REFERENCE
+            ),
+            "paths": sorted(VALIDATOR.BOOTSTRAP_PATHS),
+            "authority": "provenance-only",
+        },
         "candidate": synthetic_candidate(),
+        "schema_inventory": VALIDATOR.schema_inventory_binding(
+            VALIDATOR.validate_schema_inventory()[1]
+        ),
         "validator_sha256": VALIDATOR.sha256_file(SCRIPT_PATH),
         "lock_sha256": VALIDATOR.sha256_file(VALIDATOR.LOCK_PATH),
         "pip_report_sha256": VALIDATOR.sha256_file(report),
@@ -112,7 +130,10 @@ def write_synthetic_evidence(
         "limitations": [
             "Job-local evidence is not a cryptographic signature.",
             "PyPI publish attestations do not prove source-to-wheel provenance.",
+            "Bootstrap identity records gate provenance only and grants no authority.",
         ],
+        "approval_authority": "none",
+        "next_stage_authorized": False,
     }
     receipt_path = evidence_dir / "acquisition-receipt.json"
     receipt_path.write_text(
@@ -190,16 +211,26 @@ class FormalSchemaStaticTests(unittest.TestCase):
                     any("clean candidate worktree" in error for error in errors)
                 )
 
-    def test_candidate_binding_requires_child_parent_paths_and_diff_hash(self) -> None:
+    def test_bootstrap_identity_is_provenance_only_and_exact(self) -> None:
+        errors, identity = VALIDATOR.bootstrap_identity()
+        self.assertEqual([], errors)
+        self.assertEqual(VALIDATOR.BOOTSTRAP_COMMIT, identity["commit"])
+        self.assertEqual(VALIDATOR.BOOTSTRAP_TREE, identity["tree"])
+        self.assertEqual(VALIDATOR.BOOTSTRAP_PARENT, identity["parent"])
+        self.assertEqual("provenance-only", identity["authority"])
+        self.assertEqual(sorted(VALIDATOR.BOOTSTRAP_PATHS), identity["paths"])
+
+    def test_candidate_binding_uses_current_base_merge_base_paths_and_diff(self) -> None:
         values = {
+            ("rev-parse", f"{CANDIDATE_BASE}^{{commit}}"): CANDIDATE_BASE,
             ("rev-parse", "HEAD"): "1" * 40,
             ("show", "-s", "--format=%T", "HEAD"): "2" * 40,
-            ("rev-parse", "HEAD^"): VALIDATOR.FORMAL_CANDIDATE_PARENT,
-            (
-                "diff",
-                "--name-only",
-                f"{VALIDATOR.FORMAL_CANDIDATE_PARENT}..HEAD",
-            ): "\n".join(reversed(VALIDATOR.FORMAL_CANDIDATE_PATHS)),
+            ("show", "-s", "--format=%P", "HEAD"): "9" * 40,
+            ("merge-base", CANDIDATE_BASE, "1" * 40): CANDIDATE_BASE,
+            ("diff", "--name-only", f"{CANDIDATE_BASE}..{'1' * 40}"): (
+                "tests/new-contract.py\nsandbox/new-contract.json"
+            ),
+            ("status", "--porcelain=v1", "--untracked-files=all"): "",
         }
         diff = subprocess.CompletedProcess(
             args=["git", "diff"],
@@ -215,22 +246,21 @@ class FormalSchemaStaticTests(unittest.TestCase):
             ),
             mock.patch.object(VALIDATOR.subprocess, "run", return_value=diff),
         ):
-            errors, binding = VALIDATOR.candidate_binding()
+            errors, binding = VALIDATOR.candidate_binding(CANDIDATE_BASE)
         self.assertEqual([], errors)
         self.assertEqual(
-            sorted(VALIDATOR.FORMAL_CANDIDATE_PATHS),
-            binding["remediation_paths"],
+            ["sandbox/new-contract.json", "tests/new-contract.py"],
+            binding["changed_paths"],
         )
-        self.assertEqual(
-            VALIDATOR.REMEDIATION_BASELINE_REFERENCE,
-            binding["remediation_baseline_reference"],
-        )
+        self.assertEqual(CANDIDATE_BASE, binding["base_commit"])
+        self.assertEqual(CANDIDATE_BASE, binding["merge_base"])
+        self.assertTrue(binding["worktree_clean"])
         self.assertEqual(
             VALIDATOR.sha256_bytes(diff.stdout),
-            binding["remediation_diff_sha256"],
+            binding["diff_sha256"],
         )
 
-        values[("rev-parse", "HEAD^")] = "9" * 40
+        values[("merge-base", CANDIDATE_BASE, "1" * 40)] = "8" * 40
         with (
             mock.patch.object(
                 VALIDATOR,
@@ -239,8 +269,14 @@ class FormalSchemaStaticTests(unittest.TestCase):
             ),
             mock.patch.object(VALIDATOR.subprocess, "run", return_value=diff),
         ):
-            errors, _ = VALIDATOR.candidate_binding()
-        self.assertTrue(any("approved Phase A merge" in error for error in errors))
+            errors, _ = VALIDATOR.candidate_binding(CANDIDATE_BASE)
+        self.assertTrue(any("merge-base" in error for error in errors))
+
+    def test_candidate_binding_rejects_missing_zero_or_dirty_identity(self) -> None:
+        for base in ("", "main", "0" * 40):
+            with self.subTest(base=base):
+                errors, _ = VALIDATOR.candidate_binding(base)
+                self.assertTrue(any("nonzero full commit SHA" in error for error in errors))
 
     def test_fixture_coverage_rejects_unmapped_schema(self) -> None:
         positives, negatives = VALIDATOR.materialized_fixture_cases()
@@ -400,6 +436,7 @@ class FormalSchemaStaticTests(unittest.TestCase):
                     evidence_dir,
                     report,
                     JOB_IDENTITY,
+                    CANDIDATE_BASE,
                 )
 
     def test_acquisition_receipt_is_offline_replayed_and_bound(self) -> None:
@@ -426,6 +463,47 @@ class FormalSchemaStaticTests(unittest.TestCase):
                 "foreign-candidate",
                 lambda receipt: receipt["candidate"].update({"commit": "9" * 40}),
                 "candidate identity mismatch",
+            ),
+            (
+                "foreign-base",
+                lambda receipt: receipt["candidate"].update({"base_commit": "8" * 40}),
+                "candidate identity mismatch",
+            ),
+            (
+                "foreign-tree",
+                lambda receipt: receipt["candidate"].update({"tree": "8" * 40}),
+                "candidate identity mismatch",
+            ),
+            (
+                "foreign-diff",
+                lambda receipt: receipt["candidate"].update(
+                    {"diff_sha256": "8" * 64}
+                ),
+                "candidate identity mismatch",
+            ),
+            (
+                "foreign-paths",
+                lambda receipt: receipt["candidate"].update(
+                    {"changed_paths": ["old-phase-b-path"]}
+                ),
+                "candidate identity mismatch",
+            ),
+            (
+                "foreign-schema-inventory",
+                lambda receipt: receipt["schema_inventory"].update(
+                    {"inventory_sha256": "8" * 64}
+                ),
+                "schema inventory mismatch",
+            ),
+            (
+                "bootstrap-as-authority",
+                lambda receipt: receipt.update({"approval_authority": "bootstrap"}),
+                "must not grant approval",
+            ),
+            (
+                "next-stage",
+                lambda receipt: receipt.update({"next_stage_authorized": True}),
+                "must not grant approval",
             ),
             (
                 "false-status",
@@ -464,6 +542,27 @@ class FormalSchemaStaticTests(unittest.TestCase):
                 errors, _, _ = self.validate_synthetic_receipt(mutator)
                 self.assertTrue(any(expected in error for error in errors), errors)
 
+    def test_old_phase_b_receipt_cannot_authorize_descendant(self) -> None:
+        def old_binding(receipt: dict) -> None:
+            receipt["candidate"] = {
+                "binding_version": 1,
+                "commit": VALIDATOR.BOOTSTRAP_COMMIT,
+                "tree": VALIDATOR.BOOTSTRAP_TREE,
+                "base_commit": VALIDATOR.BOOTSTRAP_PARENT,
+                "merge_base": VALIDATOR.BOOTSTRAP_PARENT,
+                "parents": [VALIDATOR.BOOTSTRAP_PARENT],
+                "changed_paths": sorted(VALIDATOR.BOOTSTRAP_PATHS),
+                "changed_paths_sha256": "4" * 64,
+                "diff_sha256": "5" * 64,
+                "worktree_clean": True,
+            }
+
+        errors, _, _ = self.validate_synthetic_receipt(old_binding)
+        self.assertTrue(
+            any("candidate identity mismatch" in error for error in errors),
+            errors,
+        )
+
     def test_raw_evidence_manifest_rejects_foreign_host_and_extra_file(self) -> None:
         errors, _, _ = self.validate_synthetic_receipt(
             manifest_mutator=lambda manifest: manifest.update(
@@ -485,7 +584,11 @@ class FormalSchemaStaticTests(unittest.TestCase):
                 VALIDATOR, "candidate_binding", return_value=([], synthetic_candidate())
             ):
                 errors, _, _ = VALIDATOR.validate_acquisition_receipt(
-                    receipt_path, evidence_dir, report, JOB_IDENTITY
+                    receipt_path,
+                    evidence_dir,
+                    report,
+                    JOB_IDENTITY,
+                    CANDIDATE_BASE,
                 )
             self.assertTrue(
                 any("file inventory mismatch" in error for error in errors), errors
@@ -579,7 +682,11 @@ class FormalSchemaStaticTests(unittest.TestCase):
             evidence_dir.mkdir()
             path = evidence_dir / "missing.json"
             errors, _, receipt_hash = VALIDATOR.validate_acquisition_receipt(
-                path, evidence_dir, report, JOB_IDENTITY
+                path,
+                evidence_dir,
+                report,
+                JOB_IDENTITY,
+                CANDIDATE_BASE,
             )
         self.assertTrue(any("could not be validated" in error for error in errors))
         self.assertEqual("", receipt_hash)
@@ -607,6 +714,7 @@ class FormalSchemaStaticTests(unittest.TestCase):
         )
         self.assertNotEqual(0, result.returncode)
         self.assertIn("--formal requires --pip-report", result.stdout)
+        self.assertIn("--candidate-base", result.stdout)
 
     def assert_formal_workflow_structure(self, text: str) -> None:
         lines = text.splitlines()
@@ -628,6 +736,11 @@ class FormalSchemaStaticTests(unittest.TestCase):
         self.assertLess(env_index, steps_index)
         self.assertIn(
             '      PYTHONDONTWRITEBYTECODE: "1"',
+            formal_lines[env_index + 1 : steps_index],
+        )
+        self.assertIn(
+            "      FORMAL_CANDIDATE_BASE: "
+            "${{ github.event.pull_request.base.sha || github.event.before }}",
             formal_lines[env_index + 1 : steps_index],
         )
 
@@ -679,6 +792,8 @@ class FormalSchemaStaticTests(unittest.TestCase):
             "--formal-schema-pip-report",
             "--formal-schema-acquisition-result",
             "--formal-schema-evidence-dir",
+            "--candidate-base \"$FORMAL_CANDIDATE_BASE\"",
+            "--formal-schema-candidate-base \"$FORMAL_CANDIDATE_BASE\"",
             "--evidence-dir",
             "--allow-existing-tag",
             "if: failure()",
@@ -704,6 +819,13 @@ class FormalSchemaStaticTests(unittest.TestCase):
             formal,
         )
         self.assertEqual(1, formal.count("--verify-acquisition"))
+        self.assertEqual(1, formal.count("--candidate-base \"$FORMAL_CANDIDATE_BASE\""))
+        self.assertEqual(
+            1,
+            formal.count(
+                "--formal-schema-candidate-base \"$FORMAL_CANDIDATE_BASE\""
+            ),
+        )
         self.assertLess(
             formal.index("- name: Acquire official evidence once"),
             formal.index("- name: Run formal Draft 2020-12 gate"),
@@ -712,6 +834,22 @@ class FormalSchemaStaticTests(unittest.TestCase):
             "- name: Run formal Draft 2020-12 gate", 1
         )[1]
         self.assertNotIn("--verify-acquisition", formal_step)
+
+    def test_workflow_rejects_missing_or_step_local_candidate_base(self) -> None:
+        text = WORKFLOW.read_text(encoding="utf-8")
+        job_level = (
+            "      FORMAL_CANDIDATE_BASE: "
+            "${{ github.event.pull_request.base.sha || github.event.before }}\n"
+        )
+        mutated = text.replace(job_level, "", 1).replace(
+            "      - name: Acquire official evidence once\n",
+            "      - name: Acquire official evidence once\n"
+            "        env:\n"
+            "          FORMAL_CANDIDATE_BASE: ${{ github.event.pull_request.base.sha }}\n",
+            1,
+        )
+        with self.assertRaises(AssertionError):
+            self.assert_formal_workflow_structure(mutated)
 
     def test_workflow_rejects_step_local_bytecode_guard(self) -> None:
         text = WORKFLOW.read_text(encoding="utf-8")
@@ -790,6 +928,7 @@ class FormalSchemaEngineTests(unittest.TestCase):
                     acquisition,
                     evidence_dir,
                     JOB_IDENTITY,
+                    CANDIDATE_BASE,
                 )
             self.assertEqual(
                 VALIDATOR.sha256_file(report), result["pip_report_sha256"]
