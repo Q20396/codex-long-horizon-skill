@@ -34,6 +34,10 @@ FRESH_INSTALL = load_module(
     "test_fresh_install_under_test",
     ROOT / "scripts" / "test_fresh_install.py",
 )
+RELEASE_READINESS = load_module(
+    "check_release_readiness_under_test",
+    ROOT / "scripts" / "check_release_readiness.py",
+)
 
 
 def write_fake_codex(bin_dir: Path) -> Path:
@@ -511,6 +515,87 @@ class ReleaseReadinessTests(unittest.TestCase):
         )
         subprocess.run(["git", "tag", "v0.3.0"], cwd=repo, check=True, capture_output=True, text=True)
 
+    def init_committed_repo(self, repo: Path) -> tuple[str, str]:
+        subprocess.run(
+            ["git", "init"],
+            cwd=repo,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        subprocess.run(
+            ["git", "add", "."],
+            cwd=repo,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        subprocess.run(
+            [
+                "git",
+                "-c",
+                "user.name=Test",
+                "-c",
+                "user.email=test@example.com",
+                "commit",
+                "-m",
+                "candidate",
+            ],
+            cwd=repo,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        head = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=repo,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        tree = subprocess.run(
+            ["git", "show", "-s", "--format=%T", "HEAD"],
+            cwd=repo,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        return head, tree
+
+    def write_formal_result(
+        self,
+        repo: Path,
+        *,
+        status: str = "PASS",
+        artifact_override: list[dict] | None = None,
+    ) -> Path:
+        head, tree = self.init_committed_repo(repo)
+        result = {
+            "status": status,
+            "gate": "formal-draft-2020-12",
+            "draft": "https://json-schema.org/draft/2020-12/schema",
+            "candidate_commit": head,
+            "candidate_tree": tree,
+            "python_version": "3.11.15",
+            "system": "Linux",
+            "machine": "x86_64",
+            "schema_count": 20,
+            "validator_sha256": RELEASE_READINESS.sha256_file(
+                repo / "scripts" / "validate_formal_schemas.py"
+            ),
+            "lock_sha256": RELEASE_READINESS.sha256_file(
+                repo / "requirements-release.txt"
+            ),
+            "artifacts": (
+                RELEASE_READINESS.FORMAL_SCHEMA_ARTIFACTS
+                if artifact_override is None
+                else artifact_override
+            ),
+        }
+        path = self.temp / f"{repo.name}-formal-result.json"
+        path.write_text(json.dumps(result), encoding="utf-8")
+        return path
+
     def assert_failed_without_traceback(self, result: subprocess.CompletedProcess[str], expected: str) -> None:
         output = result.stdout + result.stderr
         self.assertNotEqual(result.returncode, 0, output)
@@ -683,6 +768,98 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.assert_failed_without_traceback(
             result,
             "formal Draft 2020-12 schema gate is UNVERIFIED",
+        )
+
+    def test_pre_tag_rejects_handwritten_pass_receipt(self) -> None:
+        repo = self.copy_repo("pre-tag-handwritten-pass")
+        result_path = self.write_formal_result(repo)
+        result = self.run_readiness(
+            repo,
+            "--pre-tag",
+            "--formal-schema-result",
+            str(result_path),
+            "--formal-schema-pip-report",
+            str(self.temp / "pip-report.json"),
+            "--formal-schema-acquisition-result",
+            str(self.temp / "acquisition.json"),
+            "--formal-schema-evidence-dir",
+            str(self.temp / "formal-evidence"),
+        )
+        self.assert_failed_without_traceback(
+            result,
+            "prewritten PASS receipts are not accepted",
+        )
+
+    def test_pre_tag_rejects_dirty_candidate_before_formal_execution(self) -> None:
+        repo = self.copy_repo("pre-tag-dirty-candidate")
+        result_path = self.write_formal_result(repo)
+        result_path.unlink()
+        readme = repo / "README.md"
+        readme.write_text(
+            readme.read_text(encoding="utf-8") + "\nDirty formal probe.\n",
+            encoding="utf-8",
+        )
+        result = self.run_readiness(
+            repo,
+            "--pre-tag",
+            "--formal-schema-result",
+            str(result_path),
+            "--formal-schema-pip-report",
+            str(self.temp / "pip-report.json"),
+            "--formal-schema-acquisition-result",
+            str(self.temp / "acquisition.json"),
+            "--formal-schema-evidence-dir",
+            str(self.temp / "formal-evidence"),
+        )
+        self.assert_failed_without_traceback(
+            result,
+            "formal gate requires a clean candidate worktree",
+        )
+
+    def test_pre_tag_requires_all_controlled_formal_inputs(self) -> None:
+        repo = self.copy_repo("pre-tag-formal-inputs")
+        result_path = self.temp / "new-formal-result.json"
+        result = self.run_readiness(
+            repo,
+            "--pre-tag",
+            "--formal-schema-result",
+            str(result_path),
+        )
+        self.assert_failed_without_traceback(
+            result,
+            "--formal-schema-pip-report",
+        )
+
+    def test_pre_tag_requires_job_local_evidence_directory(self) -> None:
+        repo = self.copy_repo("pre-tag-formal-evidence-dir")
+        result = self.run_readiness(
+            repo,
+            "--pre-tag",
+            "--formal-schema-result",
+            str(self.temp / "formal-result.json"),
+            "--formal-schema-pip-report",
+            str(self.temp / "pip-report.json"),
+            "--formal-schema-acquisition-result",
+            str(self.temp / "acquisition.json"),
+        )
+        self.assert_failed_without_traceback(
+            result,
+            "--formal-schema-evidence-dir",
+        )
+
+    def test_non_formal_mode_rejects_formal_schema_result(self) -> None:
+        repo = self.copy_repo("static-with-formal-result")
+        result_path = self.temp / "unused-formal-result.json"
+        result_path.write_text("{}", encoding="utf-8")
+        result = self.run_readiness(
+            repo,
+            "--pre-tag-static",
+            "--formal-schema-result",
+            str(result_path),
+        )
+        self.assert_failed_without_traceback(
+            result,
+            "formal schema inputs are forbidden with --pre-tag-static",
         )
 
     def test_pre_tag_fails_with_local_tag(self) -> None:

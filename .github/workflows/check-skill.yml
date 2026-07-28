@@ -6,6 +6,9 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 jobs:
   check-skill:
     runs-on: ubuntu-latest
@@ -112,3 +115,85 @@ jobs:
           python3 .agents/skills/long-horizon-engineering/scripts/update_installed_skill.py \
             --target-root /tmp/codex-skill-ci-dry-run \
             --skill ai-video-production
+
+  formal-schema-gate:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONNOUSERSITE: "1"
+      PIP_NO_INPUT: "1"
+      PIP_NO_CACHE_DIR: "1"
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
+    steps:
+      - name: Check out candidate without persisted credentials
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Set up approved Python matrix
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          architecture: "x64"
+
+      - name: Record isolated runner identity
+        run: |
+          python3 --version
+          python3 -m pip --version
+          uname -a
+          printf 'ImageOS=%s\nImageVersion=%s\n' "$ImageOS" "$ImageVersion"
+          git rev-parse HEAD
+          git show -s --format=%T HEAD
+
+      - name: Validate lock and dependency-free fallback
+        run: |
+          python3 scripts/validate_formal_schemas.py --check-lock
+          python3 -m unittest tests.test_formal_schema_validation -v
+
+      - name: Install exact wheels in a temporary virtual environment
+        run: |
+          python3 -m venv "$RUNNER_TEMP/lhe-formal-schema-venv"
+          "$RUNNER_TEMP/lhe-formal-schema-venv/bin/python" -m pip install \
+            --isolated \
+            --index-url https://pypi.org/simple \
+            --only-binary=:all: \
+            --require-hashes \
+            --no-input \
+            --no-cache-dir \
+            --report "$RUNNER_TEMP/formal-schema-pip-report.json" \
+            -r requirements-release.txt
+
+      - name: Acquire official evidence once
+        run: |
+          python3 scripts/validate_formal_schemas.py \
+            --verify-acquisition \
+            --pip-report "$RUNNER_TEMP/formal-schema-pip-report.json" \
+            --evidence-dir "$RUNNER_TEMP/formal-schema-evidence" \
+            --result "$RUNNER_TEMP/formal-schema-evidence/acquisition-receipt.json" \
+            --run-id "$GITHUB_RUN_ID" \
+            --run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --workflow-ref "$GITHUB_WORKFLOW_REF" \
+            --job-name "$GITHUB_JOB"
+
+      - name: Run formal Draft 2020-12 gate in routine post-tag-safe mode
+        run: |
+          "$RUNNER_TEMP/lhe-formal-schema-venv/bin/python" \
+            -m unittest tests.test_formal_schema_validation -v
+          "$RUNNER_TEMP/lhe-formal-schema-venv/bin/python" \
+            scripts/check_release_readiness.py \
+            --version 0.3.0 \
+            --allow-existing-tag \
+            --formal-schema-pip-report "$RUNNER_TEMP/formal-schema-pip-report.json" \
+            --formal-schema-acquisition-result "$RUNNER_TEMP/formal-schema-evidence/acquisition-receipt.json" \
+            --formal-schema-evidence-dir "$RUNNER_TEMP/formal-schema-evidence" \
+            --formal-schema-result "$RUNNER_TEMP/formal-schema-result.json"
+
+      - name: Report checkout status paths after formal gate failure
+        if: failure()
+        run: |
+          printf '%s\n' 'Formal schema gate failed; checkout status paths follow:'
+          git status --porcelain=v1 --untracked-files=all || true
