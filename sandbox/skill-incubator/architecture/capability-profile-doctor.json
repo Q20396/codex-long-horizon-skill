@@ -1,0 +1,62 @@
+{
+  "contract_id": "SYN-CONTRACT-CPD-001",
+  "name": "Capability Profile / Doctor Contract",
+  "schema_version": "1.0.0",
+  "package_disposition": "sandbox-only",
+  "activation": "explicit-only",
+  "doctor_mode": "static-declaration-only",
+  "runtime_executable": false,
+  "host_enforced": false,
+  "human_disposition": "pending",
+  "next_stage_authorized": false,
+  "promotion_state": "not-promoted",
+  "capability_statuses": [
+    "declared",
+    "locally_observed",
+    "unverified",
+    "blocked"
+  ],
+  "comparative_dispositions": [
+    "adopt-principle-only",
+    "reject",
+    "defer"
+  ],
+  "stable_reason_codes": [
+    "UNKNOWN_FIELD",
+    "REQUIRED_FIELD_MISSING",
+    "FIELD_TYPE_INVALID",
+    "FIELD_ENUM_INVALID",
+    "FIELD_CONST_INVALID",
+    "ARRAY_MIN_ITEMS_VIOLATION",
+    "ARRAY_MAX_ITEMS_VIOLATION",
+    "ARRAY_UNIQUE_ITEMS_VIOLATION",
+    "STRING_MIN_LENGTH_VIOLATION",
+    "STRING_MAX_LENGTH_VIOLATION",
+    "STRING_PATTERN_VIOLATION",
+    "SCHEMA_PATTERN_INVALID",
+    "INVALID_SYNTHETIC_IDENTIFIER",
+    "DUPLICATE_IDENTIFIER",
+    "UNRESOLVED_EVIDENCE_REFERENCE",
+    "REFERENCE_TARGET_TYPE_MISMATCH",
+    "STATUS_EVIDENCE_MISMATCH",
+    "RECOVERY_SUGGESTION_REQUIRED",
+    "BOUNDARY_OVERRIDE_FORBIDDEN",
+    "SENSITIVE_FIELD_FORBIDDEN",
+    "EXTERNAL_EFFECT_FORBIDDEN",
+    "EXTERNAL_COMPARISON_AUTHORITY_FORBIDDEN",
+    "EXTERNAL_STATEMENT_IMPLEMENTATION_EVIDENCE_CONFLATION",
+    "NON_SYNTHETIC_FIXTURE_FORBIDDEN",
+    "OBSERVATION_TIMESTAMP_INVALID",
+    "STATIC_CAPABILITY_AUTHORITY_ESCALATION"
+  ],
+  "static_validation_limits": [
+    "capability_availability",
+    "source_accuracy",
+    "installation_state",
+    "runtime_behavior",
+    "permissions",
+    "security",
+    "compatibility",
+    "host_enforcement"
+  ]
+}

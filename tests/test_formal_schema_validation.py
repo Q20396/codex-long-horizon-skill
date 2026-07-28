@@ -164,6 +164,12 @@ class FormalSchemaStaticTests(unittest.TestCase):
             VALIDATOR.FIXTURE_VALIDATED_SCHEMAS
             & set(VALIDATOR.SYNTAX_ONLY_SCHEMAS)
         )
+        self.assertIn(
+            "dependency-free fixtures",
+            VALIDATOR.SYNTAX_ONLY_SCHEMAS[
+                "capability-profile-doctor.schema.json"
+            ],
+        )
 
     def test_schema_inventory_rejects_missing_local_fragment(self) -> None:
         original = VALIDATOR.load_json
@@ -943,7 +949,7 @@ class FormalSchemaEngineTests(unittest.TestCase):
         self.assertGreater(result["positive_fixture_count"], 0)
         self.assertGreater(result["negative_fixture_count"], 0)
         self.assertEqual(4, result["fixture_validated_schema_count"])
-        self.assertEqual(16, result["syntax_only_schema_count"])
+        self.assertEqual(17, result["syntax_only_schema_count"])
 
 
 if __name__ == "__main__":
