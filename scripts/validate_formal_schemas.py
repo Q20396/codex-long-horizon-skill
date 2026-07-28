@@ -26,14 +26,14 @@ from urllib.request import Request, urlopen
 ROOT = Path(__file__).resolve().parents[1]
 LOCK_PATH = ROOT / "requirements-release.txt"
 DRAFT_2020_12 = "https://json-schema.org/draft/2020-12/schema"
-EXPECTED_COMMIT = "6f1f48381f465b460a9390643fc835b666604207"
-EXPECTED_TREE = "0a532cc4de5cb22a5ed948f32077378fb3a99b74"
+BOOTSTRAP_PARENT = "6f1f48381f465b460a9390643fc835b666604207"
+BOOTSTRAP_COMMIT = "5f8540db1994839ad644b8fa3203642d82c1d581"
+BOOTSTRAP_TREE = "9b13edb16d90db0d5f69a252bfebe69fa2c10d04"
 TARGET_PYTHON = (3, 11)
 TARGET_SYSTEM = "Linux"
 TARGET_MACHINE = "x86_64"
 REMEDIATION_BASELINE_REFERENCE = "cf74dd05fa805f2f369c563e3974bc942f29c7cc"
-FORMAL_CANDIDATE_PARENT = EXPECTED_COMMIT
-FORMAL_CANDIDATE_PATHS = (
+BOOTSTRAP_PATHS = (
     ".github/workflows/check-skill.yml",
     "docs/maintainers/release-checklist.md",
     "docs/releases/v0.3.0.md",
@@ -256,31 +256,61 @@ def validate_metadata_url(url: str) -> tuple[str, int | None]:
     return parsed.hostname, port
 
 
-def candidate_binding() -> tuple[list[str], dict[str, Any]]:
+def bootstrap_identity() -> tuple[list[str], dict[str, Any]]:
     errors: list[str] = []
     try:
-        commit = git_value("rev-parse", "HEAD")
-        tree = git_value("show", "-s", "--format=%T", "HEAD")
-        parent = git_value("rev-parse", "HEAD^")
+        commit = git_value("rev-parse", f"{BOOTSTRAP_COMMIT}^{{commit}}")
+        tree = git_value("show", "-s", "--format=%T", BOOTSTRAP_COMMIT)
+        parent = git_value("rev-parse", f"{BOOTSTRAP_COMMIT}^")
         paths_text = git_value(
             "diff",
             "--name-only",
-            f"{FORMAL_CANDIDATE_PARENT}..HEAD",
+            f"{BOOTSTRAP_PARENT}..{BOOTSTRAP_COMMIT}",
         )
     except RuntimeError as exc:
-        return [f"candidate identity could not be verified: {exc}"], {}
+        return [f"formal gate bootstrap identity could not be verified: {exc}"], {}
     paths = sorted(path for path in paths_text.splitlines() if path)
-    if parent != FORMAL_CANDIDATE_PARENT:
-        errors.append(
-            "formal candidate parent does not match the approved Phase A merge"
-        )
-    if paths != sorted(FORMAL_CANDIDATE_PATHS):
-        errors.append(
-            "formal candidate Phase B path inventory mismatch: "
-            f"expected={sorted(FORMAL_CANDIDATE_PATHS)} actual={paths}"
-        )
+    if commit != BOOTSTRAP_COMMIT or tree != BOOTSTRAP_TREE:
+        errors.append("formal gate bootstrap commit or tree mismatch")
+    if parent != BOOTSTRAP_PARENT:
+        errors.append("formal gate bootstrap parent mismatch")
+    if paths != sorted(BOOTSTRAP_PATHS):
+        errors.append("formal gate bootstrap path inventory mismatch")
+    return errors, {
+        "commit": commit,
+        "tree": tree,
+        "parent": parent,
+        "remediation_baseline_reference": REMEDIATION_BASELINE_REFERENCE,
+        "paths": paths,
+        "authority": "provenance-only",
+    }
+
+
+def candidate_binding(base_commit: str) -> tuple[list[str], dict[str, Any]]:
+    errors: list[str] = []
+    if not isinstance(base_commit, str) or not re.fullmatch(
+        r"[0-9a-f]{40}", base_commit
+    ) or base_commit == "0" * 40:
+        return ["formal candidate base must be a nonzero full commit SHA"], {}
+    try:
+        base = git_value("rev-parse", f"{base_commit}^{{commit}}")
+        commit = git_value("rev-parse", "HEAD")
+        tree = git_value("show", "-s", "--format=%T", "HEAD")
+        parents_text = git_value("show", "-s", "--format=%P", "HEAD")
+        merge_base = git_value("merge-base", base, commit)
+        paths_text = git_value("diff", "--name-only", f"{base}..{commit}")
+    except RuntimeError as exc:
+        return [f"candidate identity could not be verified: {exc}"], {}
+    parents = parents_text.split()
+    paths = sorted(path for path in paths_text.splitlines() if path)
+    if base != base_commit:
+        errors.append("formal candidate base does not resolve to the supplied commit")
+    if merge_base != base:
+        errors.append("formal candidate base is not the candidate merge-base")
+    if not paths:
+        errors.append("formal candidate changed-path inventory must not be empty")
     diff = subprocess.run(
-        ["git", "diff", "--binary", f"{FORMAL_CANDIDATE_PARENT}..HEAD", "--"],
+        ["git", "diff", "--binary", f"{base}..{commit}", "--"],
         cwd=ROOT,
         capture_output=True,
         check=False,
@@ -291,12 +321,16 @@ def candidate_binding() -> tuple[list[str], dict[str, Any]]:
     else:
         diff_sha256 = sha256_bytes(diff.stdout)
     return errors, {
+        "binding_version": 1,
         "commit": commit,
         "tree": tree,
-        "parent": parent,
-        "remediation_baseline_reference": REMEDIATION_BASELINE_REFERENCE,
-        "remediation_paths": paths,
-        "remediation_diff_sha256": diff_sha256,
+        "base_commit": base,
+        "merge_base": merge_base,
+        "parents": parents,
+        "changed_paths": paths,
+        "changed_paths_sha256": sha256_bytes(canonical_json_bytes(paths)),
+        "diff_sha256": diff_sha256,
+        "worktree_clean": not validate_clean_worktree(),
     }
 
 
@@ -823,6 +857,29 @@ def validate_schema_inventory() -> tuple[list[str], dict[str, dict[str, Any]]]:
     return errors, schemas
 
 
+def schema_inventory_binding(schemas: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    schema_root = ROOT / "sandbox/skill-incubator/schemas"
+    files = [
+        {
+            "name": name,
+            "sha256": sha256_file(schema_root / name),
+            "validation": (
+                "fixture-validated"
+                if name in FIXTURE_VALIDATED_SCHEMAS
+                else "syntax-only"
+            ),
+        }
+        for name in sorted(schemas)
+    ]
+    return {
+        "schema_count": len(files),
+        "fixture_validated_schema_count": len(FIXTURE_VALIDATED_SCHEMAS),
+        "syntax_only_schema_count": len(SYNTAX_ONLY_SCHEMAS),
+        "files": files,
+        "inventory_sha256": sha256_bytes(canonical_json_bytes(files)),
+    }
+
+
 def pointer_parent(document: Any, pointer: str) -> tuple[Any, str]:
     parts = pointer.lstrip("/").split("/")
     current = document
@@ -1067,12 +1124,17 @@ def acquire_evidence(
     evidence_dir: Path,
     receipt_path: Path,
     identity: dict[str, str],
+    candidate_base: str,
 ) -> tuple[list[str], dict[str, Any]]:
     errors = validate_clean_worktree()
     errors.extend(validate_lock())
+    bootstrap_errors, bootstrap = bootstrap_identity()
+    errors.extend(bootstrap_errors)
+    inventory_errors, schemas = validate_schema_inventory()
+    errors.extend(inventory_errors)
     report_errors, artifacts = validate_pip_report(pip_report)
     errors.extend(report_errors)
-    candidate_errors, candidate = candidate_binding()
+    candidate_errors, candidate = candidate_binding(candidate_base)
     errors.extend(candidate_errors)
     identity_errors, normalized_identity = job_identity(**identity)
     errors.extend(identity_errors)
@@ -1092,13 +1154,15 @@ def acquire_evidence(
     manifest_path, manifest_sha256 = session.write_manifest()
     completed = utc_now()
     receipt = {
-        "schema_version": 1,
+        "schema_version": 2,
         "status": "PASS" if not errors else "FAIL",
         "gate": "formal-acquisition",
         "acquisition_started_at": iso_utc(started),
         "acquired_at": iso_utc(completed),
         "job_identity": normalized_identity,
+        "bootstrap_identity": bootstrap,
         "candidate": candidate,
+        "schema_inventory": schema_inventory_binding(schemas),
         "validator_sha256": sha256_file(Path(__file__).resolve()),
         "lock_sha256": sha256_file(LOCK_PATH),
         "pip_report_sha256": sha256_file(pip_report),
@@ -1111,7 +1175,10 @@ def acquire_evidence(
         "limitations": [
             "Job-local evidence is not a cryptographic signature.",
             "PyPI publish attestations do not prove source-to-wheel provenance.",
+            "Bootstrap identity records gate provenance only and grants no authority.",
         ],
+        "approval_authority": "none",
+        "next_stage_authorized": False,
     }
     write_json(receipt_path, receipt)
     return errors, receipt
@@ -1211,6 +1278,7 @@ def validate_acquisition_receipt(
     evidence_dir: Path,
     pip_report: Path,
     identity: dict[str, str],
+    candidate_base: str,
 ) -> tuple[list[str], dict[str, Any], str]:
     errors: list[str] = []
     try:
@@ -1226,7 +1294,9 @@ def validate_acquisition_receipt(
         "acquisition_started_at",
         "acquired_at",
         "job_identity",
+        "bootstrap_identity",
         "candidate",
+        "schema_inventory",
         "validator_sha256",
         "lock_sha256",
         "pip_report_sha256",
@@ -1237,23 +1307,38 @@ def validate_acquisition_receipt(
         "artifacts",
         "packages",
         "limitations",
+        "approval_authority",
+        "next_stage_authorized",
     }
     if set(receipt) != receipt_keys:
         errors.append("acquisition receipt structure is not closed")
     if (
-        receipt.get("schema_version") != 1
+        receipt.get("schema_version") != 2
         or receipt.get("status") != "PASS"
         or receipt.get("gate") != "formal-acquisition"
     ):
         errors.append("acquisition receipt does not record valid PASS evidence")
+    if (
+        receipt.get("approval_authority") != "none"
+        or receipt.get("next_stage_authorized") is not False
+    ):
+        errors.append("acquisition receipt must not grant approval or next-stage authority")
     identity_errors, normalized_identity = job_identity(**identity)
     errors.extend(identity_errors)
     if receipt.get("job_identity") != normalized_identity:
         errors.append("acquisition receipt job identity mismatch")
-    candidate_errors, candidate = candidate_binding()
+    bootstrap_errors, bootstrap = bootstrap_identity()
+    errors.extend(bootstrap_errors)
+    if receipt.get("bootstrap_identity") != bootstrap:
+        errors.append("acquisition receipt bootstrap provenance mismatch")
+    candidate_errors, candidate = candidate_binding(candidate_base)
     errors.extend(candidate_errors)
     if receipt.get("candidate") != candidate:
         errors.append("acquisition receipt candidate identity mismatch")
+    inventory_errors, schemas = validate_schema_inventory()
+    errors.extend(inventory_errors)
+    if receipt.get("schema_inventory") != schema_inventory_binding(schemas):
+        errors.append("acquisition receipt schema inventory mismatch")
     expected_hashes = {
         "validator_sha256": sha256_file(Path(__file__).resolve()),
         "lock_sha256": sha256_file(LOCK_PATH),
@@ -1326,6 +1411,7 @@ def validate_formal(
     acquisition_result: Path,
     evidence_dir: Path,
     identity: dict[str, str],
+    candidate_base: str,
 ) -> tuple[list[str], dict[str, Any]]:
     errors = validate_clean_worktree()
     errors.extend(validate_lock())
@@ -1348,10 +1434,14 @@ def validate_formal(
         evidence_dir,
         pip_report,
         identity,
+        candidate_base,
     )
     errors.extend(acquisition_errors)
-    candidate_errors, candidate = candidate_binding()
+    bootstrap_errors, bootstrap = bootstrap_identity()
+    errors.extend(bootstrap_errors)
+    candidate_errors, candidate = candidate_binding(candidate_base)
     errors.extend(candidate_errors)
+    inventory_binding = schema_inventory_binding(schemas)
 
     positive_count = 0
     negative_count = 0
@@ -1415,17 +1505,16 @@ def validate_formal(
         "draft": DRAFT_2020_12,
         "candidate_commit": candidate.get("commit", "UNKNOWN"),
         "candidate_tree": candidate.get("tree", "UNKNOWN"),
-        "candidate_parent": candidate.get("parent", "UNKNOWN"),
-        "candidate_remediation_baseline_reference": candidate.get(
-            "remediation_baseline_reference", "UNKNOWN"
+        "candidate_base_commit": candidate.get("base_commit", "UNKNOWN"),
+        "candidate_merge_base": candidate.get("merge_base", "UNKNOWN"),
+        "candidate_parents": candidate.get("parents", []),
+        "candidate_changed_paths": candidate.get("changed_paths", []),
+        "candidate_changed_paths_sha256": candidate.get(
+            "changed_paths_sha256", ""
         ),
-        "candidate_remediation_paths": candidate.get("remediation_paths", []),
-        "candidate_remediation_diff_sha256": candidate.get(
-            "remediation_diff_sha256", ""
-        ),
-        "candidate_worktree_clean": not validate_clean_worktree(),
-        "phase_a_baseline_commit": EXPECTED_COMMIT,
-        "phase_a_baseline_tree": EXPECTED_TREE,
+        "candidate_diff_sha256": candidate.get("diff_sha256", ""),
+        "candidate_worktree_clean": candidate.get("worktree_clean", False),
+        "bootstrap_identity": bootstrap,
         "validator_sha256": sha256_file(Path(__file__).resolve()),
         "lock_sha256": sha256_file(LOCK_PATH),
         "python_version": platform.python_version(),
@@ -1439,6 +1528,7 @@ def validate_formal(
             "fixture_validated": sorted(FIXTURE_VALIDATED_SCHEMAS),
             "syntax_only": dict(sorted(SYNTAX_ONLY_SCHEMAS.items())),
         },
+        "schema_inventory_binding": inventory_binding,
         "positive_fixture_count": positive_count,
         "negative_fixture_count": negative_count,
         "artifacts": artifacts,
@@ -1451,7 +1541,10 @@ def validate_formal(
         "limitations": [
             "PyPI publish attestations do not prove source-to-wheel provenance.",
             "This gate does not authorize tagging, release, installation, or runtime effects.",
+            "Bootstrap identity records gate provenance only and cannot authorize descendants.",
         ],
+        "approval_authority": "none",
+        "next_stage_authorized": False,
     }
     return errors, result
 
@@ -1471,6 +1564,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--acquisition-result", type=Path)
     parser.add_argument("--evidence-dir", type=Path)
     parser.add_argument("--result", type=Path)
+    parser.add_argument(
+        "--candidate-base",
+        help="Full immutable base commit for the current descendant candidate.",
+    )
     parser.add_argument("--run-id", default=os.environ.get("GITHUB_RUN_ID", ""))
     parser.add_argument(
         "--run-attempt",
@@ -1515,6 +1612,8 @@ def main(argv: list[str] | None = None) -> int:
                 missing.append("--evidence-dir")
             if args.result is None:
                 missing.append("--result")
+            if args.candidate_base is None:
+                missing.append("--candidate-base")
             if missing:
                 errors = [f"--verify-acquisition requires {' and '.join(missing)}"]
                 payload = {"status": "FAIL", "gate": "formal-acquisition"}
@@ -1524,6 +1623,7 @@ def main(argv: list[str] | None = None) -> int:
                     args.evidence_dir.resolve(),
                     args.result.resolve(),
                     identity,
+                    args.candidate_base,
                 )
         else:
             missing = []
@@ -1533,6 +1633,8 @@ def main(argv: list[str] | None = None) -> int:
                 missing.append("--acquisition-result")
             if args.evidence_dir is None:
                 missing.append("--evidence-dir")
+            if args.candidate_base is None:
+                missing.append("--candidate-base")
             if missing:
                 errors = [f"--formal requires {' and '.join(missing)}"]
                 payload = {"status": "FAIL", "gate": "formal-draft-2020-12"}
@@ -1542,6 +1644,7 @@ def main(argv: list[str] | None = None) -> int:
                     args.acquisition_result.resolve(),
                     args.evidence_dir.resolve(),
                     identity,
+                    args.candidate_base,
                 )
     except Exception as exc:
         errors = [f"validator failed closed: {exc}"]

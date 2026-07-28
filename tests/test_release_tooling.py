@@ -784,6 +784,8 @@ class ReleaseReadinessTests(unittest.TestCase):
             str(self.temp / "acquisition.json"),
             "--formal-schema-evidence-dir",
             str(self.temp / "formal-evidence"),
+            "--formal-schema-candidate-base",
+            "a" * 40,
         )
         self.assert_failed_without_traceback(
             result,
@@ -810,6 +812,8 @@ class ReleaseReadinessTests(unittest.TestCase):
             str(self.temp / "acquisition.json"),
             "--formal-schema-evidence-dir",
             str(self.temp / "formal-evidence"),
+            "--formal-schema-candidate-base",
+            "a" * 40,
         )
         self.assert_failed_without_traceback(
             result,
@@ -845,6 +849,25 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.assert_failed_without_traceback(
             result,
             "--formal-schema-evidence-dir",
+        )
+
+    def test_pre_tag_requires_current_descendant_candidate_base(self) -> None:
+        repo = self.copy_repo("pre-tag-candidate-base")
+        result = self.run_readiness(
+            repo,
+            "--pre-tag",
+            "--formal-schema-result",
+            str(self.temp / "formal-result.json"),
+            "--formal-schema-pip-report",
+            str(self.temp / "pip-report.json"),
+            "--formal-schema-acquisition-result",
+            str(self.temp / "acquisition.json"),
+            "--formal-schema-evidence-dir",
+            str(self.temp / "formal-evidence"),
+        )
+        self.assert_failed_without_traceback(
+            result,
+            "--formal-schema-candidate-base",
         )
 
     def test_non_formal_mode_rejects_formal_schema_result(self) -> None:

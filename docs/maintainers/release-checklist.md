@@ -63,11 +63,16 @@ Suggested Phase B checks after separate dependency and network authorization:
 ```bash
 python3 scripts/validate_formal_schemas.py --check-lock
 python3 scripts/validate_formal_schemas.py --verify-acquisition \
-  --result "$RUNNER_TEMP/formal-schema-acquisition.json"
+  --candidate-base <full-base-commit> \
+  --pip-report "$RUNNER_TEMP/formal-schema-pip-report.json" \
+  --evidence-dir "$RUNNER_TEMP/formal-schema-evidence" \
+  --result "$RUNNER_TEMP/formal-schema-evidence/acquisition-receipt.json"
 "$RUNNER_TEMP/lhe-formal-schema-venv/bin/python" \
   scripts/check_release_readiness.py --version <version> --pre-tag \
+  --formal-schema-candidate-base <full-base-commit> \
   --formal-schema-pip-report "$RUNNER_TEMP/formal-schema-pip-report.json" \
-  --formal-schema-acquisition-result "$RUNNER_TEMP/formal-schema-acquisition.json" \
+  --formal-schema-acquisition-result "$RUNNER_TEMP/formal-schema-evidence/acquisition-receipt.json" \
+  --formal-schema-evidence-dir "$RUNNER_TEMP/formal-schema-evidence" \
   --formal-schema-result "$RUNNER_TEMP/formal-schema-result.json"
 ```
 
@@ -78,10 +83,24 @@ hashes to its output. Routine PR/main CI uses `--allow-existing-tag` with the
 same formal inputs; only a separately approved release-candidate invocation
 uses `--pre-tag` and enforces tag absence.
 
+The fixed bootstrap identity records the reviewed origin of the lock, validator,
+and gate definition only. It is provenance evidence, not an expected parent or
+path allowlist for later pull requests and grants no approval authority.
+Every descendant run receives its own immutable base commit and recomputes the
+candidate commit, tree, parents, merge-base, clean state, changed-path
+inventory, binary diff hash, and schema inventory. The acquisition receipt and
+formal result must bind that complete current identity. A receipt from an older
+candidate, another base, another job run, or a different schema inventory
+cannot be reused.
+
 The formal invocation must start and finish with a clean candidate worktree.
 Any staged, unstaged, or untracked path blocks the gate. Pip report artifact
 URLs must use HTTPS on `files.pythonhosted.org` with no userinfo, query,
 fragment, direct/VCS marker, or nonstandard port.
+
+Job-local receipts are deterministic evidence records, not cryptographic
+signatures or source-to-wheel provenance. They never authorize tagging,
+release, Marketplace resolution, installation, or runtime effects.
 
 Marketplace/CLI resolution, plugin installation, tagging, GitHub Release
 creation, and installed Skill updates remain separate approval stages.
