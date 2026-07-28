@@ -1,0 +1,595 @@
+{
+  "base_record": {
+    "profile_id": "SYN-PROFILE-001",
+    "schema_version": "1.0.0",
+    "package_disposition": "sandbox-only",
+    "activation": "explicit-only",
+    "doctor_mode": "static-declaration-only",
+    "runtime_executable": false,
+    "host_enforced": false,
+    "human_disposition": "pending",
+    "next_stage_authorized": false,
+    "promotion_state": "not-promoted",
+    "boundaries": {
+      "installed_skill_read": false,
+      "user_config_read": false,
+      "account_read": false,
+      "credential_read": false,
+      "project_material_read": false,
+      "log_read": false,
+      "network_access": false,
+      "subprocess_execution": false,
+      "dependency_install": false,
+      "default_profile_mutation": false,
+      "routing_change": false,
+      "capability_action": false
+    },
+    "capabilities": [
+      {
+        "capability_id": "SYN-CAP-001",
+        "name": "Synthetic static review capability",
+        "status": "declared",
+        "evidence_ids": [
+          "SYN-EVIDENCE-001"
+        ],
+        "effects": [],
+        "limitations": [
+          "Declaration evidence does not prove runtime availability."
+        ]
+      }
+    ],
+    "evidence": [
+      {
+        "evidence_id": "SYN-EVIDENCE-001",
+        "evidence_kind": "declaration",
+        "source_origin": "lhe_implementation",
+        "source_locator": "synthetic://lhe/declaration/001",
+        "observed_at": "2026-01-01T00:00:00+00:00",
+        "statement": "A synthetic contract declares a static review capability."
+      },
+      {
+        "evidence_id": "SYN-EVIDENCE-002",
+        "evidence_kind": "static_repository_observation",
+        "source_origin": "lhe_implementation",
+        "source_locator": "synthetic://lhe/static-observation/001",
+        "observed_at": "2026-01-01T00:00:00+00:00",
+        "statement": "A synthetic repository observation records a static artifact."
+      },
+      {
+        "evidence_id": "SYN-EVIDENCE-003",
+        "evidence_kind": "comparative_source_statement",
+        "source_origin": "external_source_statement",
+        "source_locator": "synthetic://external/statement/001",
+        "observed_at": "2026-01-01T00:00:00+00:00",
+        "statement": "A synthetic external source states a comparative design principle."
+      }
+    ],
+    "diagnostics": [
+      {
+        "diagnostic_id": "SYN-DIAG-001",
+        "capability_id": "SYN-CAP-001",
+        "severity": "info",
+        "reason_code": "CAPABILITY_DECLARATION_ONLY",
+        "recovery_suggestion": "Obtain separately approved implementation evidence before changing status."
+      }
+    ],
+    "comparative_references": [
+      {
+        "comparison_id": "SYN-COMPARE-001",
+        "external_statement_evidence_id": "SYN-EVIDENCE-003",
+        "lhe_implementation_evidence_ids": [
+          "SYN-EVIDENCE-002"
+        ],
+        "adoption_disposition": "defer",
+        "automatic_dependency": false,
+        "authority_granted": false,
+        "implementation_equivalence_claimed": false
+      }
+    ]
+  },
+  "positive_cases": [
+    {
+      "case_id": "declared-capability",
+      "mutations": []
+    },
+    {
+      "case_id": "locally-observed-static-capability",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/capabilities/0/status",
+          "value": "locally_observed"
+        },
+        {
+          "op": "set",
+          "path": "/capabilities/0/evidence_ids",
+          "value": [
+            "SYN-EVIDENCE-002"
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "unverified-capability",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/capabilities/0/status",
+          "value": "unverified"
+        },
+        {
+          "op": "set",
+          "path": "/capabilities/0/evidence_ids",
+          "value": []
+        },
+        {
+          "op": "set",
+          "path": "/diagnostics/0/severity",
+          "value": "warning"
+        },
+        {
+          "op": "set",
+          "path": "/diagnostics/0/reason_code",
+          "value": "CAPABILITY_EVIDENCE_UNVERIFIED"
+        }
+      ]
+    },
+    {
+      "case_id": "blocked-capability",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/capabilities/0/status",
+          "value": "blocked"
+        },
+        {
+          "op": "set",
+          "path": "/capabilities/0/evidence_ids",
+          "value": []
+        },
+        {
+          "op": "set",
+          "path": "/diagnostics/0/severity",
+          "value": "blocking"
+        },
+        {
+          "op": "set",
+          "path": "/diagnostics/0/reason_code",
+          "value": "CAPABILITY_BLOCKED"
+        }
+      ]
+    }
+  ],
+  "negative_cases": [
+    {
+      "case_id": "unknown-nested-field",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/capabilities/0/extension",
+          "value": true
+        }
+      ],
+      "expected_reason_codes": [
+        "UNKNOWN_FIELD"
+      ]
+    },
+    {
+      "case_id": "required-field-missing",
+      "mutations": [
+        {
+          "op": "delete",
+          "path": "/capabilities/0/name"
+        }
+      ],
+      "expected_reason_codes": [
+        "REQUIRED_FIELD_MISSING"
+      ]
+    },
+    {
+      "case_id": "field-type-invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/capabilities/0/status",
+          "value": 7
+        }
+      ],
+      "expected_reason_codes": [
+        "FIELD_TYPE_INVALID"
+      ]
+    },
+    {
+      "case_id": "field-enum-invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/capabilities/0/status",
+          "value": "available"
+        }
+      ],
+      "expected_reason_codes": [
+        "FIELD_ENUM_INVALID"
+      ]
+    },
+    {
+      "case_id": "field-const-and-runtime-authority-invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/runtime_executable",
+          "value": true
+        }
+      ],
+      "expected_reason_codes": [
+        "FIELD_CONST_INVALID",
+        "STATIC_CAPABILITY_AUTHORITY_ESCALATION"
+      ]
+    },
+    {
+      "case_id": "invalid-synthetic-identifier",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/capabilities/0/capability_id",
+          "value": "CAP-001"
+        }
+      ],
+      "expected_reason_codes": [
+        "INVALID_SYNTHETIC_IDENTIFIER",
+        "STRING_PATTERN_VIOLATION"
+      ]
+    },
+    {
+      "case_id": "duplicate-identifier",
+      "mutations": [
+        {
+          "op": "append",
+          "path": "/evidence",
+          "value": {
+            "evidence_id": "SYN-EVIDENCE-001",
+            "evidence_kind": "declaration",
+            "source_origin": "lhe_implementation",
+            "source_locator": "synthetic://lhe/declaration/duplicate",
+            "observed_at": "2026-01-01T00:00:00+00:00",
+            "statement": "A duplicate synthetic identifier."
+          }
+        }
+      ],
+      "expected_reason_codes": [
+        "DUPLICATE_IDENTIFIER"
+      ]
+    },
+    {
+      "case_id": "unresolved-evidence-reference",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/capabilities/0/evidence_ids",
+          "value": [
+            "SYN-EVIDENCE-999"
+          ]
+        }
+      ],
+      "expected_reason_codes": [
+        "UNRESOLVED_EVIDENCE_REFERENCE"
+      ]
+    },
+    {
+      "case_id": "reference-target-type-mismatch",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/capabilities/0/evidence_ids",
+          "value": [
+            "SYN-CAP-001"
+          ]
+        }
+      ],
+      "expected_reason_codes": [
+        "INVALID_SYNTHETIC_IDENTIFIER",
+        "REFERENCE_TARGET_TYPE_MISMATCH",
+        "STRING_PATTERN_VIOLATION"
+      ]
+    },
+    {
+      "case_id": "status-evidence-mismatch",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/capabilities/0/status",
+          "value": "locally_observed"
+        }
+      ],
+      "expected_reason_codes": [
+        "STATUS_EVIDENCE_MISMATCH"
+      ]
+    },
+    {
+      "case_id": "recovery-suggestion-required",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/diagnostics/0/recovery_suggestion",
+          "value": ""
+        }
+      ],
+      "expected_reason_codes": [
+        "RECOVERY_SUGGESTION_REQUIRED",
+        "STRING_MIN_LENGTH_VIOLATION"
+      ]
+    },
+    {
+      "case_id": "boundary-override-forbidden",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/boundaries/network_access",
+          "value": true
+        }
+      ],
+      "expected_reason_codes": [
+        "FIELD_CONST_INVALID",
+        "BOUNDARY_OVERRIDE_FORBIDDEN"
+      ]
+    },
+    {
+      "case_id": "sensitive-field-forbidden",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/capabilities/0/credential",
+          "value": "synthetic-placeholder"
+        }
+      ],
+      "expected_reason_codes": [
+        "UNKNOWN_FIELD",
+        "SENSITIVE_FIELD_FORBIDDEN"
+      ]
+    },
+    {
+      "case_id": "external-effect-forbidden",
+      "mutations": [
+        {
+          "op": "append",
+          "path": "/capabilities/0/effects",
+          "value": "network"
+        }
+      ],
+      "expected_reason_codes": [
+        "ARRAY_MAX_ITEMS_VIOLATION",
+        "EXTERNAL_EFFECT_FORBIDDEN"
+      ]
+    },
+    {
+      "case_id": "external-comparison-authority-forbidden",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/comparative_references/0/authority_granted",
+          "value": true
+        }
+      ],
+      "expected_reason_codes": [
+        "FIELD_CONST_INVALID",
+        "EXTERNAL_COMPARISON_AUTHORITY_FORBIDDEN"
+      ]
+    },
+    {
+      "case_id": "external-statement-implementation-conflation",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/comparative_references/0/external_statement_evidence_id",
+          "value": "SYN-EVIDENCE-002"
+        }
+      ],
+      "expected_reason_codes": [
+        "EXTERNAL_STATEMENT_IMPLEMENTATION_EVIDENCE_CONFLATION"
+      ]
+    },
+    {
+      "case_id": "non-synthetic-fixture-forbidden",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/evidence/0/source_locator",
+          "value": "https://example.com/real"
+        }
+      ],
+      "expected_reason_codes": [
+        "NON_SYNTHETIC_FIXTURE_FORBIDDEN",
+        "STRING_PATTERN_VIOLATION"
+      ]
+    },
+    {
+      "case_id": "observation-timestamp-invalid",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/evidence/0/observed_at",
+          "value": "2026-02-30T00:00:00"
+        }
+      ],
+      "expected_reason_codes": [
+        "OBSERVATION_TIMESTAMP_INVALID",
+        "STRING_PATTERN_VIOLATION"
+      ]
+    },
+    {
+      "case_id": "static-capability-authority-escalation",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/human_disposition",
+          "value": "approved"
+        }
+      ],
+      "expected_reason_codes": [
+        "FIELD_CONST_INVALID",
+        "STATIC_CAPABILITY_AUTHORITY_ESCALATION"
+      ]
+    },
+    {
+      "case_id": "comparison-implementation-evidence-min-items",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/comparative_references/0/lhe_implementation_evidence_ids",
+          "value": []
+        }
+      ],
+      "expected_reason_codes": [
+        "ARRAY_MIN_ITEMS_VIOLATION"
+      ]
+    },
+    {
+      "case_id": "capability-limitations-min-items",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/capabilities/0/limitations",
+          "value": []
+        }
+      ],
+      "expected_reason_codes": [
+        "ARRAY_MIN_ITEMS_VIOLATION"
+      ]
+    },
+    {
+      "case_id": "capability-evidence-ids-unique",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/capabilities/0/evidence_ids",
+          "value": [
+            "SYN-EVIDENCE-001",
+            "SYN-EVIDENCE-001"
+          ]
+        }
+      ],
+      "expected_reason_codes": [
+        "ARRAY_UNIQUE_ITEMS_VIOLATION"
+      ]
+    },
+    {
+      "case_id": "capability-name-min-length",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/capabilities/0/name",
+          "value": ""
+        }
+      ],
+      "expected_reason_codes": [
+        "STRING_MIN_LENGTH_VIOLATION"
+      ]
+    },
+    {
+      "case_id": "profile-id-pattern-mismatch",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/profile_id",
+          "value": "PROFILE-001"
+        }
+      ],
+      "expected_reason_codes": [
+        "INVALID_SYNTHETIC_IDENTIFIER",
+        "STRING_PATTERN_VIOLATION"
+      ]
+    }
+  ],
+  "schema_keyword_cases": [
+    {
+      "case_id": "schema-min-items",
+      "instance": [],
+      "schema": {
+        "type": "array",
+        "minItems": 1
+      },
+      "expected_reason_codes": [
+        "ARRAY_MIN_ITEMS_VIOLATION"
+      ]
+    },
+    {
+      "case_id": "schema-max-items",
+      "instance": [
+        "one"
+      ],
+      "schema": {
+        "type": "array",
+        "maxItems": 0
+      },
+      "expected_reason_codes": [
+        "ARRAY_MAX_ITEMS_VIOLATION"
+      ]
+    },
+    {
+      "case_id": "schema-unique-items-deep-json",
+      "instance": [
+        {
+          "nested": [
+            1
+          ]
+        },
+        {
+          "nested": [
+            1
+          ]
+        }
+      ],
+      "schema": {
+        "type": "array",
+        "uniqueItems": true
+      },
+      "expected_reason_codes": [
+        "ARRAY_UNIQUE_ITEMS_VIOLATION"
+      ]
+    },
+    {
+      "case_id": "schema-min-length",
+      "instance": "",
+      "schema": {
+        "type": "string",
+        "minLength": 1
+      },
+      "expected_reason_codes": [
+        "STRING_MIN_LENGTH_VIOLATION"
+      ]
+    },
+    {
+      "case_id": "schema-max-length",
+      "instance": "too-long",
+      "schema": {
+        "type": "string",
+        "maxLength": 3
+      },
+      "expected_reason_codes": [
+        "STRING_MAX_LENGTH_VIOLATION"
+      ]
+    },
+    {
+      "case_id": "schema-pattern-mismatch",
+      "instance": "ABC",
+      "schema": {
+        "type": "string",
+        "pattern": "^[a-z]+$"
+      },
+      "expected_reason_codes": [
+        "STRING_PATTERN_VIOLATION"
+      ]
+    },
+    {
+      "case_id": "schema-pattern-invalid",
+      "instance": "synthetic",
+      "schema": {
+        "type": "string",
+        "pattern": "["
+      },
+      "expected_reason_codes": [
+        "SCHEMA_PATTERN_INVALID"
+      ]
+    }
+  ]
+}

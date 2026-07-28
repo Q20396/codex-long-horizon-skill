@@ -168,6 +168,7 @@ SCHEMA_INVENTORY = (
     "base-experiment-contract.schema.json",
     "candidate-pattern.schema.json",
     "candidate-state.schema.json",
+    "capability-profile-doctor.schema.json",
     "capability-family.schema.json",
     "decision-record.schema.json",
     "deduplication-record.schema.json",
@@ -200,6 +201,11 @@ SYNTAX_ONLY_SCHEMAS = {
     for name in SCHEMA_INVENTORY
     if name not in FIXTURE_VALIDATED_SCHEMAS
 }
+SYNTAX_ONLY_SCHEMAS["capability-profile-doctor.schema.json"] = (
+    "Synthetic instances are validated by the capability profile contract's "
+    "dependency-free fixtures; this formal gate checks Draft 2020-12 syntax, "
+    "dialect, identity, and reference integrity."
+)
 PYPI_ARTIFACT_HOSTS = {"files.pythonhosted.org"}
 
 DIRECT_REQUIREMENTS = {

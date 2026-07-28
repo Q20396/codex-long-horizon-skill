@@ -579,7 +579,7 @@ class ReleaseReadinessTests(unittest.TestCase):
             "python_version": "3.11.15",
             "system": "Linux",
             "machine": "x86_64",
-            "schema_count": 20,
+            "schema_count": 21,
             "validator_sha256": RELEASE_READINESS.sha256_file(
                 repo / "scripts" / "validate_formal_schemas.py"
             ),
