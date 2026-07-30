@@ -778,6 +778,8 @@ class FormalSchemaStaticTests(unittest.TestCase):
         formal = text.split("  formal-schema-gate:", 1)[1]
         required = (
             "runs-on: ubuntu-24.04",
+            "uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+            "uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065",
             "permissions:\n      contents: read",
             'python-version: "3.11"',
             'architecture: "x64"',
@@ -856,6 +858,21 @@ class FormalSchemaStaticTests(unittest.TestCase):
         )
         with self.assertRaises(AssertionError):
             self.assert_formal_workflow_structure(mutated)
+
+    def test_workflow_pins_checkout_and_python_actions(self) -> None:
+        text = WORKFLOW.read_text(encoding="utf-8")
+        self.assertEqual(
+            2,
+            text.count(
+                "uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262"
+            ),
+        )
+        self.assertEqual(
+            2,
+            text.count(
+                "uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065"
+            ),
+        )
 
     def test_workflow_rejects_step_local_bytecode_guard(self) -> None:
         text = WORKFLOW.read_text(encoding="utf-8")
