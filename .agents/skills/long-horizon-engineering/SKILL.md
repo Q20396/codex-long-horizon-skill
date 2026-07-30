@@ -274,10 +274,14 @@ replace, delete, or modify installed skills.
 
 After permission, compare installed local skills with the GitHub version.
 
-Installed local paths:
+Installed local paths depend on the installation mode:
 
-- `~/.agents/skills/long-horizon-engineering`
-- `~/.agents/skills/ai-video-production`
+- project-level: `.agents/skills/<skill_id>` below the approved project root;
+- Codex user-level: `~/.codex/skills/<skill_id>`.
+
+The legacy `~/.agents/skills` layout is not the assumed Codex user-level
+target. Do not infer an installed path: ask for, or inspect only with approval,
+the exact target before comparing or updating it.
 
 Remote repo paths:
 
