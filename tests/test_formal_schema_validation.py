@@ -873,6 +873,7 @@ class FormalSchemaStaticTests(unittest.TestCase):
                 "uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065"
             ),
         )
+        self.assertEqual(2, text.count("persist-credentials: false"))
 
     def test_workflow_rejects_step_local_bytecode_guard(self) -> None:
         text = WORKFLOW.read_text(encoding="utf-8")
