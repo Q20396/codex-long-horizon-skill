@@ -373,11 +373,14 @@ published `v0.1.0` release, see [UPGRADE_GUIDE.md](UPGRADE_GUIDE.md).
 ## Safe skill update self-check
 
 This GitHub repository is the source of truth for the latest published skills.
-Customers may have older installed versions under `~/.agents/skills`. The
-self-check compares local installed skills with the GitHub version. The default
-check is read-only: Codex asks before online checking, asks again before
-updating, creates backups before replacement, prints rollback commands, and does
-not auto-update.
+Project-level installations use `.agents/skills/<skill_id>` below the approved
+project root. Codex user-level installations use
+`~/.codex/skills/<skill_id>`. The legacy self-check script below is for the
+legacy/project-style `.agents/skills` layout; use the direct
+`--target-skill-dir` updater flow for a Codex user-level installation. Every
+check is read-only by default: Codex asks before online checking, asks again
+before updating, creates backups before replacement, prints rollback commands,
+and does not auto-update.
 
 Customer prompt:
 
@@ -422,13 +425,14 @@ Apply mode refuses traversal paths, unsupported skill ids, symlinked skill
 targets, symlinked remote skill folders, and unsafe symlinks before replacing
 anything.
 
-Backups are created under:
+For the legacy/project-style self-check flow, backups are created under:
 
 ```text
 ~/.agents/skills/.backups/YYYYMMDD-HHMMSS/<skill_id>
 ```
 
-Rollback can be done by copying the backup folder back to:
+For the same legacy/project-style flow, rollback can be done by copying the
+backup folder back to:
 
 ```text
 ~/.agents/skills/<skill_id>
