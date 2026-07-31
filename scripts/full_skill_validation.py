@@ -24,6 +24,8 @@ TMP_ROOT = (
 LHE = Path(".agents/skills/long-horizon-engineering")
 AI_VIDEO = Path(".agents/skills/ai-video-production")
 LHE_SCRIPTS = LHE / "scripts"
+DEFAULT_COMMAND_TIMEOUT_SECONDS = 120
+FULL_UNITTEST_TIMEOUT_SECONDS = 300
 
 REQUIRED_CORE_FILES = [
     LHE / "SKILL.md",
@@ -181,6 +183,8 @@ CORE_COMMANDS = [
     [PYTHON, "scripts/test_assemble_skill_profile.py"],
     ["git", "diff", "--check"],
 ]
+
+FULL_UNITTEST_COMMAND = [PYTHON, "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py"]
 
 CI_EXPECTED = [
     ("check_skill_package.py", ["check_skill_package.py"]),
@@ -368,15 +372,35 @@ def rel(path: Path) -> str:
     return str(path)
 
 
-def run_command(args: list[str], *, cwd: Path = ROOT, timeout: int = 120) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        args,
-        cwd=cwd,
-        check=False,
-        capture_output=True,
-        text=True,
-        timeout=timeout,
-    )
+def subprocess_text(value) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bytes):
+        return value.decode("utf-8", errors="replace")
+    return value
+
+
+def run_command(
+    args: list[str],
+    *,
+    cwd: Path = ROOT,
+    timeout: int = DEFAULT_COMMAND_TIMEOUT_SECONDS,
+) -> subprocess.CompletedProcess[str]:
+    try:
+        return subprocess.run(
+            args,
+            cwd=cwd,
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired as exc:
+        stdout = subprocess_text(exc.stdout)
+        stderr = subprocess_text(exc.stderr)
+        message = f"command timed out after {timeout} seconds"
+        stderr = f"{stderr.rstrip()}\n{message}\n" if stderr else f"{message}\n"
+        return subprocess.CompletedProcess(args, 124, stdout=stdout, stderr=stderr)
 
 
 def cmd_label(args: list[str]) -> str:
@@ -463,7 +487,12 @@ def check_optional_group(report: Report, name: str, files: list[Path], required_
 
 def run_core_commands(report: Report) -> None:
     for args in CORE_COMMANDS:
-        result = run_command(args)
+        timeout = (
+            FULL_UNITTEST_TIMEOUT_SECONDS
+            if args == FULL_UNITTEST_COMMAND
+            else DEFAULT_COMMAND_TIMEOUT_SECONDS
+        )
+        result = run_command(args, timeout=timeout)
         label = cmd_label(args)
         if result.returncode == 0:
             report.pass_("Core Command Results", label, summarize_output(result))

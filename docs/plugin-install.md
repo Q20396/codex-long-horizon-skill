@@ -63,11 +63,16 @@ For repository-scoped use, copy the skills into a target project:
 <project>/.agents/skills/ai-video-production/
 ```
 
-For user-scoped use, if supported by your Codex surface, install them under:
+For a direct Codex user-level installation, use the canonical Codex skills
+directory:
 
 ```text
-$HOME/.agents/skills/
+$HOME/.codex/skills/
 ```
+
+Do not treat `$HOME/.agents/skills/` as the current Codex user-level default.
+That legacy/project-style layout is supported only where a caller explicitly
+selects it.
 
 Direct installation is useful while authoring or testing a skill in one
 repository. Plugin installation is preferred when sharing reusable skills across

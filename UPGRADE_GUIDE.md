@@ -152,9 +152,9 @@ Reference identity:
 - Repository:
   https://github.com/Q20396/codex-long-horizon-skill
 - Requested tag:
-  v0.1.0
+  v0.3.1
 - Expected exact commit SHA:
-  9afa84f96aa2e3feb1f3f5ec6f0615aeaa8761ef
+  b038994636482ce9987bd59a63b0778c5f380496
 
 I explicitly authorize limited network access only for:
 
@@ -167,10 +167,10 @@ Do not access any other repository, service, account, or data source.
 
 Before comparing:
 
-1. Resolve v0.1.0 to an exact commit SHA.
+1. Resolve v0.3.1 to an exact commit SHA.
 2. Verify that it equals:
 
-   9afa84f96aa2e3feb1f3f5ec6f0615aeaa8761ef
+   b038994636482ce9987bd59a63b0778c5f380496
 
 3. Record both the requested tag and resolved SHA.
 4. If the SHA differs, stop and report possible tag movement.

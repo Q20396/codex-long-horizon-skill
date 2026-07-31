@@ -147,7 +147,8 @@ Release workflows pin third-party Actions to immutable full commit SHAs:
 The current pins are recoverable from local reviewed repository commit
 `20be877a16bf41e3817c8d173aa58053adc02cdc`, whose parent is the current
 candidate base `dfa529d705c34ea61b88a607073cc49ce5241735`. Official-source
-verification completed on 2026-07-30 and recorded these immutable identities:
+verification completed on 2026-07-30 and was rechecked on 2026-08-01 without
+identity drift. The checks recorded these immutable identities:
 
 - [`actions/checkout@11d5960...`](https://github.com/actions/checkout/commit/11d5960a326750d5838078e36cf38b85af677262)
   is the GitHub-verified commit for
@@ -162,10 +163,11 @@ verification completed on 2026-07-30 and recorded these immutable identities:
   `efa8de904209196588db1453bdb44079b3c393d7`, and its MIT `LICENSE` blob is
   `a426ef259d6c5d705e9c1405075c3b318093c65e`.
 
-At that check time, each official repository's GitHub security-advisories API
-returned an empty list. That is a dated observation, not proof that the Actions
-are vulnerability-free or that their transitive runtime artifacts are
-reproducible.
+At the 2026-08-01 recheck, each official repository's GitHub
+security-advisories API returned an empty list, and the tag/commit plus
+`action.yml`/`LICENSE` blob identities above were unchanged. That is a dated
+observation, not proof that the Actions are vulnerability-free or that their
+transitive runtime artifacts are reproducible.
 
 An update requires a dedicated review that resolves the intended upstream
 release from the official Action repository, records the exact replacement
@@ -176,3 +178,13 @@ executable workflow.
 
 Marketplace/CLI resolution, plugin installation, tagging, GitHub Release
 creation, and installed Skill updates remain separate approval stages.
+
+## Repository security-control gate
+
+Before each release, query and record the current repository state for private
+vulnerability reporting, Code Scanning analysis, Dependabot alerts/security
+updates, Secret Scanning, and push protection. At the 2026-08-01 post-release
+audit, GitHub reported those controls as disabled or unavailable. This does not
+invalidate source validation, but it remains an explicit security-observability
+gap. Enabling a repository control is a separate administration action; source
+changes and CI must not claim it happened.
