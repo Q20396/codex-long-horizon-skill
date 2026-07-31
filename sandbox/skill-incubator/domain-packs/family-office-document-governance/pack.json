@@ -1,0 +1,19 @@
+{
+  "pack_id": "family-office-document-governance",
+  "status": "sandbox-only",
+  "activation": "explicit-only",
+  "descriptor_only": true,
+  "installed": false,
+  "callable": false,
+  "executable": false,
+  "purpose": "Organize document provenance, inventory, retention questions, evidence gaps, and review status.",
+  "boundaries": [
+    "no-customer-data-upload",
+    "no-record-custody",
+    "no-automatic-folder-scan",
+    "no-background-monitoring",
+    "no-delete-or-export-authority"
+  ],
+  "required_provider": "local-case-evidence-provider",
+  "next_safe_action": "Approve a bounded local metadata or synthetic-evidence workflow."
+}

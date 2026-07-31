@@ -109,7 +109,7 @@ class GoalDrivenDeliveryContractTests(unittest.TestCase):
         optional = manifest["components"]["bundled-optional"]["paths"]
         self.assertIn(template_path, optional)
         self.assertNotIn(template_path, manifest["components"]["core"]["paths"])
-        self.assertEqual(len(manifest["components"]["core"]["paths"]), 42)
+        self.assertEqual(len(manifest["components"]["core"]["paths"]), 43)
         self.assertEqual(len(optional), 101)
         self.assertEqual(
             sum(len(item["paths"]) for item in manifest["separate_skills"]),
@@ -126,8 +126,8 @@ class GoalDrivenDeliveryContractTests(unittest.TestCase):
             classification["source_manifest_sha256"],
             hashlib.sha256(MANIFEST.read_bytes()).hexdigest(),
         )
-        self.assertEqual(classification["summary"]["manifest_paths_reviewed"], 169)
-        self.assertEqual(classification["summary"]["core_retained"], 42)
+        self.assertEqual(classification["summary"]["manifest_paths_reviewed"], 170)
+        self.assertEqual(classification["summary"]["core_retained"], 43)
         self.assertEqual(
             classification["summary"]["bundled_optional_retained"],
             86,

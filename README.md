@@ -1,18 +1,21 @@
-# Codex Long Horizon Skills
+# Long-Horizon Engineering
 
-Production-oriented Codex skills for large engineering projects, long-running
-tasks, repository migrations, PR workflows, AI-assisted development, and
-review-gated execution.
+Long-Horizon Engineering (LHE) is a local-first governance and evidence kernel
+for complex, high-stakes work. It turns a plain-language request into bounded
+scope, source-linked `FACT` / `INFERENCE` / `UNKNOWN`, a visible authority
+boundary, and exactly one next safe action for the customer to decide.
 
-Designed for:
+The public package supports long-running software engineering and static
+discovery of descriptor-only capability cards for Australian legal-evidence
+organization, family and office document governance, and Australian/US
+public-equity research. Those cards are suggestions. They are not installed
+domain skills, advice, account connections, storage services, or execution
+authority.
 
-- Large repositories
-- Multi-hour engineering sessions
-- Controlled execution with validation
-- Recoverable workflows
-- Repeatable validation
-
-Install once. Reuse everywhere.
+LHE never uploads customer-sensitive information, keeps no model memory or
+telemetry, and does not autonomously read accounts, install code, route to
+uninstalled skills, persist customer records, publish, trade, file, contact, or
+advance a workflow stage.
 
 ## Skill Catalog
 
@@ -20,41 +23,93 @@ Install once. Reuse everywhere.
 | Skill | Purpose | Best For |
 | --- | --- | --- |
 | [`ai-video-production`](.agents/skills/ai-video-production/SKILL.md) | Use for AI-assisted video or animation planning: video briefs, scripts, storyboards, shot lists, visual prompts, asset manifests, preview plans, and render handoffs. Do not use for general repository engineering or automatic rendering, uploading, publishing, or posting. | Video briefs, scripts, storyboards, visual prompts, asset manifests, and render handoffs. |
-| [`long-horizon-engineering`](.agents/skills/long-horizon-engineering/SKILL.md) | Use for long-running software engineering work: repository exploration, multi-file changes, debugging, migrations, refactors, CI/build failures, staged validation, PR review response, or safe resumption. Do not use for simple edits, unrelated research, writing, media, or legal/financial tasks. | Large refactors, migrations, debugging, PR workflows, resumable tasks, and validation-heavy engineering. |
+| [`long-horizon-engineering`](.agents/skills/long-horizon-engineering/SKILL.md) | Use for long-running software engineering and local static capability discovery. It may suggest descriptor-only legal-evidence, document-governance, or public-equity packs; keywords never authorize, install, load, or execute them. Do not use for simple edits, legal or financial advice, media, or automatic external actions. | Large refactors, migrations, debugging, PR workflows, resumable tasks, and validation-heavy engineering. |
 <!-- skill-catalog:end -->
 
-## Quick Start
+## Customer Quick Start
 
-The Phase A candidate uses the prospective immutable `v0.3.0` marketplace
-reference:
+LHE helps a customer turn a plain-language outcome
+into a bounded plan, evidence-backed recommendation, and one next safe action.
+It is not an autonomous engineering runtime and does not grant itself permission
+to read extra files, write code, use the network, install tools, or make the
+customer's decision.
+
+Start in Codex with:
+
+```text
+Use the long-horizon-engineering skill in guided customer mode.
+My desired outcome is: <plain-language outcome>.
+The decision I need to make is: <decision>.
+The material I can provide is: <non-sensitive excerpt, synthetic attachment,
+exact approved local path, or not provided>.
+Start with intake only. Show the files and permissions you need before reading
+or changing anything. End with a Customer Outcome Brief and one next safe action.
+```
+
+The response will make required inputs, evidence quality, limits, permissions,
+and the pending customer decision visible. It presents the plain-language
+customer outcome first, then a separate operator boundary and engineering
+evidence appendix. Customers do not need to understand schemas, receipts, CI,
+commits, or hashes. Use the
+[copy-paste customer prompt](prompts/customer-guided-decision.md) or see the
+[guided customer walkthrough](docs/customer-guided-workflow.md) for a realistic
+intake-to-evidence-to-decision example.
+
+For sensitive legal, family, office, or financial material, do not paste or
+upload the content. LHE can first suggest the relevant descriptor card and
+identify the exact local capability or provider approval that would be needed.
+The future Local Case Evidence Provider remains a sandbox-only,
+`declared-disabled` interface; no Dropbox, Gmail, Outlook, Google Drive, or
+storage runtime is included. Its local pilot is `fixture-only` and exercises
+synthetic contracts without network, accounts, credentials, persistence, or
+encryption. Passing that pilot does not validate a production connector.
+
+## Package Profiles
+
+- `local-governance-core`: recommended minimal profile for high-sensitive work.
+  It contains the engineering governance kernel and static capability catalog.
+- `core-only`: compatibility alias for the same current core content.
+- `lhe-bundled`: core plus bundled optional references and templates.
+- `legacy-full`: compatibility default; includes bundled optional content and
+  the separately packaged AI video skill.
+
+Profiles describe package selection only. They do not prove host isolation,
+activate a profile, install a domain pack, or grant permissions.
+
+## Installation Status
+
+The repository currently describes an unreleased v0.3 static candidate. The
+prospective immutable marketplace reference is recorded as `v0.3.0`, while its
+installation policy is `NOT_AVAILABLE` until a tag, candidate-bound formal gate,
+isolated marketplace resolution, release decision, and installation guidance
+are independently approved and verified.
 
 ```bash
 codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.3.0
 ```
 
-Do not run that command until the tag and isolated marketplace resolution are
-independently verified. Phase A validates only static metadata; it does not
-prove the remote tag or an installable marketplace exists. Use `--ref main`
-only when you intentionally accept mutable, unreleased repository state:
+The command above is documentary only and must not be run while the marketplace
+entry is `NOT_AVAILABLE`. Static metadata does not prove that the tag or an
+installable marketplace exists. A `main` reference is mutable, unreleased
+source and is not a stable installation channel:
 
 ```bash
 codex plugin marketplace add Q20396/codex-long-horizon-skill --ref main
 ```
 
-Then enable the plugin in your Codex surface if prompted. See
+See
 [Plugin installation](docs/plugin-install.md) for verification, upgrade, and
 removal notes.
 
-Or clone this repository for direct skill installation:
-
-Clone this repository:
+For source review or local development, clone the repository:
 
 ```bash
 git clone https://github.com/Q20396/codex-long-horizon-skill.git
 cd codex-long-horizon-skill
 ```
 
-Copy the skills into a target project:
+Copying skills into a target project is a separate, explicit local installation
+decision. Review the selected profile and exact paths first:
 
 ```bash
 mkdir -p /path/to/project/.agents

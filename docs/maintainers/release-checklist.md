@@ -32,8 +32,26 @@ stages. Completing Phase A does not establish release readiness.
       provenance remain recorded limitations.
 - [ ] Dependency-free fallback and formal Draft 2020-12 results are reported
       separately; neither result substitutes for the other.
-- [ ] The formal result binds the exact candidate commit/tree and six installed
-      wheel filenames/hashes.
+- [ ] Release notes report schema coverage from the formal validator inventory;
+      no separate hand-maintained manifest is treated as authoritative.
+- [ ] Confirm the current inventory is 23 schemas: 7 fixture-validated and 16
+      syntax-only. The local capability catalog and local case provider have
+      dependency-free synthetic contracts but remain syntax-only in the formal
+      gate.
+- [ ] An unreleased candidate keeps marketplace
+      `policy.installation: NOT_AVAILABLE`; making it available requires a
+      separately reviewed release-state change after tag and isolated
+      marketplace-resolution evidence.
+- [ ] The formal result binds the exact candidate commit, tree, base,
+      merge-base, parents, changed paths, diff, schema inventory, and six
+      installed wheel filenames/hashes.
+- [ ] The final content-frozen release candidate produces its own formal result;
+      an earlier PR, `main`, or job-local receipt is not reused.
+- [ ] Local release preparation uses a clean linked worktree based on the
+      recorded full `origin/main` commit.
+- [ ] Full validation reports every optional omission and its scoped waiver
+      rationale; the current registry contains exactly 11 known omissions and
+      any new or changed warning fails the release warning gate.
 - [ ] Routine post-release CI uses `check_release_readiness.py --allow-existing-tag`.
 - [ ] Final Phase B pre-tag gate uses `check_release_readiness.py --pre-tag`.
 - [ ] Remote tag absence is checked separately.
@@ -54,7 +72,8 @@ Suggested routine checks:
 ```bash
 python3 -m unittest discover -s tests -p "test_*.py"
 python3 scripts/test_fresh_install.py --skip-codex-cli --verbose
-python3 scripts/check_release_readiness.py --version <version> --pre-tag-static
+python3 scripts/check_release_readiness.py --version <version> --pre-tag-static \
+  --release-hygiene-base <full-origin-main-commit>
 python3 scripts/full_skill_validation.py
 ```
 
@@ -77,11 +96,13 @@ python3 scripts/validate_formal_schemas.py --verify-acquisition \
 ```
 
 `--formal-schema-result` is a new output path, not a trusted input receipt.
-Release readiness invokes the formal validator directly, which rechecks the
-acquisition receipt against the approved live sources and binds both input
-hashes to its output. Routine PR/main CI uses `--allow-existing-tag` with the
-same formal inputs; only a separately approved release-candidate invocation
-uses `--pre-tag` and enforces tag absence.
+The CI job performs one approved online acquisition into a fresh temporary
+evidence directory. Release readiness invokes the formal validator directly
+after that phase; the validator consumes the same raw evidence, acquisition
+receipt, and real pip report offline and binds their hashes to its output. It
+must not issue a second live acquisition. Routine PR/main CI uses
+`--allow-existing-tag` with those candidate-local inputs; only a separately
+approved release-candidate invocation uses `--pre-tag` and enforces tag absence.
 
 The fixed bootstrap identity records the reviewed origin of the lock, validator,
 and gate definition only. It is provenance evidence, not an expected parent or
@@ -101,6 +122,43 @@ fragment, direct/VCS marker, or nonstandard port.
 Job-local receipts are deterministic evidence records, not cryptographic
 signatures or source-to-wheel provenance. They never authorize tagging,
 release, Marketplace resolution, installation, or runtime effects.
+
+## GitHub Actions pin evidence
+
+Release workflows pin third-party Actions to immutable full commit SHAs:
+
+- `actions/checkout`: `11d5960a326750d5838078e36cf38b85af677262`
+- `actions/setup-python`: `a26af69be951a213d495a4c3e4e4022e16d87065`
+
+The current pins are recoverable from local reviewed repository commit
+`20be877a16bf41e3817c8d173aa58053adc02cdc`, whose parent is the current
+candidate base `dfa529d705c34ea61b88a607073cc49ce5241735`. Official-source
+verification completed on 2026-07-30 and recorded these immutable identities:
+
+- [`actions/checkout@11d5960...`](https://github.com/actions/checkout/commit/11d5960a326750d5838078e36cf38b85af677262)
+  is the GitHub-verified commit for
+  [release `v4.4.0`](https://github.com/actions/checkout/releases/tag/v4.4.0);
+  its fixed-commit `action.yml` blob is
+  `24e73e5a12126edc2adb9e5cd1bf245ce85bde56`, and its MIT `LICENSE` blob is
+  `a67dca8b4f65d6bd351f6b1e333ce2cd84d843a5`.
+- [`actions/setup-python@a26af69...`](https://github.com/actions/setup-python/commit/a26af69be951a213d495a4c3e4e4022e16d87065)
+  is the GitHub-verified commit for
+  [release `v5.6.0`](https://github.com/actions/setup-python/releases/tag/v5.6.0);
+  its fixed-commit `action.yml` blob is
+  `efa8de904209196588db1453bdb44079b3c393d7`, and its MIT `LICENSE` blob is
+  `a426ef259d6c5d705e9c1405075c3b318093c65e`.
+
+At that check time, each official repository's GitHub security-advisories API
+returned an empty list. That is a dated observation, not proof that the Actions
+are vulnerability-free or that their transitive runtime artifacts are
+reproducible.
+
+An update requires a dedicated review that resolves the intended upstream
+release from the official Action repository, records the exact replacement
+commit and license/security evidence, reviews the diff from the current pin,
+and reruns both workflow contract tests and the full package checks. Major tags
+such as `@v4` or `@v5` are documentation hints only and are not accepted in the
+executable workflow.
 
 Marketplace/CLI resolution, plugin installation, tagging, GitHub Release
 creation, and installed Skill updates remain separate approval stages.

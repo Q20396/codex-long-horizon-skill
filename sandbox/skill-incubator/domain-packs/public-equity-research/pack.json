@@ -1,0 +1,20 @@
+{
+  "pack_id": "public-equity-research",
+  "status": "sandbox-only",
+  "activation": "explicit-only",
+  "descriptor_only": true,
+  "installed": false,
+  "callable": false,
+  "executable": false,
+  "purpose": "Structure public-source Australian and US equity research, evidence, assumptions, risks, and uncertainty.",
+  "boundaries": [
+    "not-personal-financial-advice",
+    "no-customer-data-upload",
+    "no-broker-or-account-access",
+    "no-order-or-trading-action",
+    "no-automatic-monitoring",
+    "point-in-time-evidence-required"
+  ],
+  "required_provider": null,
+  "next_safe_action": "Approve a separate public-source research envelope with a fixed market and as-of time."
+}

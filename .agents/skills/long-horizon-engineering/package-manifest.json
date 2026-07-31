@@ -19,6 +19,12 @@
       ],
       "separate_skills": []
     },
+    "local-governance-core": {
+      "components": [
+        "core"
+      ],
+      "separate_skills": []
+    },
     "lhe-bundled": {
       "components": [
         "core",
@@ -33,6 +39,7 @@
       "required": true,
       "paths": [
         ".agents/skills/long-horizon-engineering/SKILL.md",
+        ".agents/skills/long-horizon-engineering/catalog/local-capability-catalog.json",
         ".agents/skills/long-horizon-engineering/package-manifest.json",
         ".agents/skills/long-horizon-engineering/references/approved-tool-contract-card.md",
         ".agents/skills/long-horizon-engineering/references/capability-boundaries.md",

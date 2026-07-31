@@ -1,0 +1,204 @@
+{
+  "base_record": {
+    "schema_version": "1.0.0",
+    "run_id": "SYN-RUN-001",
+    "case_id": "SYN-CASE-001",
+    "synthetic_only": true,
+    "provider_contract_id": "local-case-evidence-provider",
+    "provider_status": "declared-disabled",
+    "state": "DISCONNECTED",
+    "customer_data_upload": false,
+    "raw_content_to_model": false,
+    "model_memory": false,
+    "telemetry": false,
+    "customer_approval": "pending",
+    "connector": {
+      "connector_type": "synthetic-mailbox",
+      "future_target_connector": "gmail",
+      "adapter_id": "synthetic-local-read-only-adapter",
+      "execution_mode": "fixture-only",
+      "status": "disabled",
+      "scopes": [],
+      "network_access": false,
+      "account_access": false,
+      "credentials_present": false,
+      "automatic_reconnect": false,
+      "expires_at": "2030-01-01T00:15:00+00:00"
+    },
+    "source_request": {
+      "locator": "synthetic://mailbox/legal-folder",
+      "metadata_only": true,
+      "maximum_items": 25,
+      "allowed_content_types": [
+        "application/pdf",
+        "message/rfc822"
+      ]
+    },
+    "evidence_handling": {
+      "active_content_detected": false,
+      "prompt_injection_detected": false,
+      "raw_snapshot_retained": false,
+      "raw_snapshot_approved": false,
+      "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "source_version": "synthetic-v1"
+    },
+    "cursor": {
+      "status": "not-established",
+      "checkpoint_hash": null,
+      "last_checked_at": "2030-01-01T00:00:00+00:00"
+    },
+    "retention": {
+      "policy": "metadata-only",
+      "legal_hold_status": "counsel-direction-required",
+      "delete_authorized": false,
+      "export_authorized": false
+    },
+    "claims": [
+      {
+        "claim_id": "SYN-CLAIM-001",
+        "classification": "FACT",
+        "source_locator": "synthetic://mailbox/legal-folder/message-1",
+        "source_version": "synthetic-v1",
+        "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "extraction_method": "synthetic-local-parser",
+        "extracted_at": "2030-01-01T00:01:00+00:00"
+      },
+      {
+        "claim_id": "SYN-CLAIM-002",
+        "classification": "INFERENCE",
+        "source_locator": "synthetic://mailbox/legal-folder/message-1",
+        "source_version": "synthetic-v1",
+        "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "extraction_method": "synthetic-local-parser",
+        "extracted_at": "2030-01-01T00:01:00+00:00"
+      },
+      {
+        "claim_id": "SYN-CLAIM-003",
+        "classification": "UNKNOWN",
+        "source_locator": "synthetic://mailbox/legal-folder/missing",
+        "source_version": "synthetic-v1",
+        "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "extraction_method": "synthetic-gap-record",
+        "extracted_at": "2030-01-01T00:01:00+00:00"
+      }
+    ]
+  },
+  "negative_mutations": [
+    {
+      "case_id": "SYN-PROVIDER-NEG-001",
+      "mutations": [
+        {"path": "/customer_data_upload", "value": true}
+      ],
+      "expected_reason": "CUSTOMER_DATA_UPLOAD_FORBIDDEN"
+    },
+    {
+      "case_id": "SYN-PROVIDER-NEG-002",
+      "mutations": [
+        {"path": "/raw_content_to_model", "value": true}
+      ],
+      "expected_reason": "RAW_CONTENT_TO_MODEL_FORBIDDEN"
+    },
+    {
+      "case_id": "SYN-PROVIDER-NEG-003",
+      "mutations": [
+        {"path": "/provider_status", "value": "enabled"}
+      ],
+      "expected_reason": "PROVIDER_RUNTIME_UNIMPLEMENTED"
+    },
+    {
+      "case_id": "SYN-PROVIDER-NEG-004",
+      "mutations": [
+        {"path": "/connector/scopes", "value": ["mail.send"]}
+      ],
+      "expected_reason": "CONNECTOR_SCOPE_FORBIDDEN"
+    },
+    {
+      "case_id": "SYN-PROVIDER-NEG-005",
+      "mutations": [
+        {"path": "/connector/automatic_reconnect", "value": true}
+      ],
+      "expected_reason": "AUTOMATIC_RECONNECT_FORBIDDEN"
+    },
+    {
+      "case_id": "SYN-PROVIDER-NEG-006",
+      "mutations": [
+        {"path": "/state", "value": "INDEXED"},
+        {"path": "/evidence_handling/active_content_detected", "value": true}
+      ],
+      "expected_reason": "ACTIVE_CONTENT_QUARANTINE_REQUIRED"
+    },
+    {
+      "case_id": "SYN-PROVIDER-NEG-007",
+      "mutations": [
+        {"path": "/state", "value": "INDEXED"},
+        {"path": "/evidence_handling/prompt_injection_detected", "value": true}
+      ],
+      "expected_reason": "PROMPT_INJECTION_QUARANTINE_REQUIRED"
+    },
+    {
+      "case_id": "SYN-PROVIDER-NEG-008",
+      "mutations": [
+        {"path": "/state", "value": "INDEXED"},
+        {"path": "/cursor/status", "value": "stale"}
+      ],
+      "expected_reason": "STALE_CURSOR_BLOCK_REQUIRED"
+    },
+    {
+      "case_id": "SYN-PROVIDER-NEG-009",
+      "mutations": [
+        {"path": "/evidence_handling/raw_snapshot_retained", "value": true}
+      ],
+      "expected_reason": "RAW_SNAPSHOT_APPROVAL_REQUIRED"
+    },
+    {
+      "case_id": "SYN-PROVIDER-NEG-010",
+      "mutations": [
+        {"path": "/retention/legal_hold_status", "value": "active"},
+        {"path": "/retention/delete_authorized", "value": true}
+      ],
+      "expected_reason": "LEGAL_HOLD_DELETE_FORBIDDEN"
+    },
+    {
+      "case_id": "SYN-PROVIDER-NEG-011",
+      "mutations": [
+        {"path": "/retention/export_authorized", "value": true}
+      ],
+      "expected_reason": "EXPORT_APPROVAL_REQUIRED"
+    },
+    {
+      "case_id": "SYN-PROVIDER-NEG-012",
+      "mutations": [
+        {"path": "/connector/token", "value": "synthetic-secret"}
+      ],
+      "expected_reason": "CREDENTIAL_FIELD_FORBIDDEN"
+    },
+    {
+      "case_id": "SYN-PROVIDER-NEG-013",
+      "mutations": [
+        {"path": "/connector/execution_mode", "value": "live"}
+      ],
+      "expected_reason": "SYNTHETIC_PILOT_RUNTIME_FORBIDDEN"
+    },
+    {
+      "case_id": "SYN-PROVIDER-NEG-014",
+      "mutations": [
+        {"path": "/connector/network_access", "value": true}
+      ],
+      "expected_reason": "CONNECTOR_NETWORK_FORBIDDEN"
+    },
+    {
+      "case_id": "SYN-PROVIDER-NEG-015",
+      "mutations": [
+        {"path": "/connector/account_access", "value": true}
+      ],
+      "expected_reason": "CONNECTOR_ACCOUNT_ACCESS_FORBIDDEN"
+    },
+    {
+      "case_id": "SYN-PROVIDER-NEG-016",
+      "mutations": [
+        {"path": "/connector/credentials_present", "value": true}
+      ],
+      "expected_reason": "CREDENTIAL_FIELD_FORBIDDEN"
+    }
+  ]
+}

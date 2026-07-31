@@ -4,15 +4,23 @@ Use this protocol when Codex may interact with an external app, hosted notebook,
 browser session, cloud document system, media service, search product, or other
 runtime outside the repository.
 
-External apps can be useful, but they may move private content outside the
-local project. Treat source upload, account login, browser automation, and
-connected-app access as explicit approval gates.
+External apps can be useful, but they may move content outside the local
+project. Treat public-source access, account login, browser automation, and
+connected-app access as explicit approval gates. Customer-sensitive
+information must never be uploaded or sent to an external app.
 
 ## Core Rule
 
-Do not upload, paste, import, sync, or summarize private source material into an
-external app unless the user explicitly approves the exact source subset and
-the purpose.
+Do not upload, paste, import, sync, transmit, or summarize customer-sensitive
+source material into an external app, model provider, search service, hosted
+notebook, or remote analysis system. Customer approval does not create an
+exception. Only public, synthetic, or demonstrably non-sensitive material may
+be considered for a separately approved external transfer.
+
+An approved connected source may be read only by a separately installed,
+default-disabled local provider that downloads the minimum approved scope into
+an encrypted local case store. LHE Core must not connect to the source, receive
+credentials, retain raw content, or forward the content to a model provider.
 
 ## Sensitive Source Types
 
@@ -35,15 +43,16 @@ Treat these as sensitive by default:
 Ask or confirm:
 
 - Which app or runtime will be used
-- What source material would be read or uploaded
+- What public or synthetic source material would be read or transferred
 - Whether metadata-only review is enough
 - Whether private content will be quoted, summarized, transformed, or stored
 - Whether the app stores history, files, cookies, sessions, or derived outputs
 - Whether the output is for private use, public sharing, or a PR
 - What local alternative exists
 
-Use `templates/source-upload-consent-checklist.md` when the decision needs a
-written record.
+Use `templates/source-upload-consent-checklist.md` as an external-transfer
+prohibition and non-sensitive-source classification checklist. The legacy file
+name does not imply that customer-sensitive uploads can be approved.
 
 ## Safe Defaults
 

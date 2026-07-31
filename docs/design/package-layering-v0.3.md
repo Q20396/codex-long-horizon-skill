@@ -20,7 +20,7 @@ LHE uses three package layers:
 The exact path inventory is owned exclusively by
 `.agents/skills/long-horizon-engineering/package-manifest.json`. Documentation
 MUST NOT maintain a second path list. At the time this specification was
-written, that manifest classifies 42 `core` paths, 101 `bundled-optional` paths,
+written, that manifest classifies 43 `core` paths, 101 `bundled-optional` paths,
 and 26 `ai-video-production` paths as one `separate-skill`.
 
 ## Layer Rules
@@ -83,6 +83,7 @@ The following current profiles retain their meanings during migration:
 | `legacy-full` | `core`, `bundled-optional` | `ai-video-production` | Current default and compatibility baseline. |
 | `lhe-bundled` | `core`, `bundled-optional` | none | Full LHE without independent skills. |
 | `core-only` | `core` | none | Minimal LHE installation. |
+| `local-governance-core` | `core` | none | Compatibility alias for the minimal local-only governance/evidence kernel. Recommended for high-sensitivity workflows; it does not install domain packs or providers. |
 
 During the compatibility period, `legacy-full` may continue to validate the
 combined source package. That compatibility behavior does not combine install,
@@ -107,6 +108,8 @@ The specification phase preserves all current behavior:
   checker fallback;
 - profile selection remains explicit;
 - selecting `core-only` or `lhe-bundled` does not install a separate skill.
+- `local-governance-core` selects the same files as `core-only`; the alias is a
+  customer-facing declaration, not host isolation or a new runtime.
 
 No v0.3 implementation PR may change more than one of these concerns at once:
 

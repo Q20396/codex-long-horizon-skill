@@ -178,6 +178,8 @@ SCHEMA_INVENTORY = (
     "experiment.schema.json",
     "gate-result.schema.json",
     "investment-decision-gate.schema.json",
+    "local-capability-catalog.schema.json",
+    "local-case-evidence-provider.schema.json",
     "monitoring-review.schema.json",
     "promotion.schema.json",
     "proposal-evidence.schema.json",
@@ -188,8 +190,11 @@ SCHEMA_INVENTORY = (
     "result.schema.json",
 )
 FIXTURE_VALIDATED_SCHEMAS = {
+    "decision-record.schema.json",
     "evidence-bound-multi-perspective-research.schema.json",
+    "gate-result.schema.json",
     "investment-decision-gate.schema.json",
+    "promotion.schema.json",
     "public-equity-data-freshness.schema.json",
     "public-equity-research-governance.schema.json",
 }
@@ -205,6 +210,16 @@ SYNTAX_ONLY_SCHEMAS["capability-profile-doctor.schema.json"] = (
     "Synthetic instances are validated by the capability profile contract's "
     "dependency-free fixtures; this formal gate checks Draft 2020-12 syntax, "
     "dialect, identity, and reference integrity."
+)
+SYNTAX_ONLY_SCHEMAS["local-capability-catalog.schema.json"] = (
+    "Synthetic instances are validated by the local capability catalog's "
+    "dependency-free contract tests; this formal gate checks Draft 2020-12 "
+    "syntax, dialect, identity, and reference integrity."
+)
+SYNTAX_ONLY_SCHEMAS["local-case-evidence-provider.schema.json"] = (
+    "Synthetic instances are validated by the local case evidence provider's "
+    "dependency-free contract tests; this formal gate checks Draft 2020-12 "
+    "syntax, dialect, identity, and reference integrity."
 )
 PYPI_ARTIFACT_HOSTS = {"files.pythonhosted.org"}
 
@@ -1019,6 +1034,29 @@ def materialized_fixture_cases() -> tuple[
             "boundaries.network_action_performed",
         )
     )
+
+    authority = load_json(
+        ROOT / "tests/fixtures/formal-authority-boundaries/cases.json"
+    )
+    for schema_case in authority["schemas"]:
+        schema_name = schema_case["schema"]
+        base_record = schema_case["base_record"]
+        positives.append(
+            (
+                schema_name,
+                schema_case["positive_case_id"],
+                deepcopy(base_record),
+            )
+        )
+        for case in schema_case["negative_cases"]:
+            negatives.append(
+                (
+                    schema_name,
+                    case["case_id"],
+                    apply_mutations(base_record, case["mutations"]),
+                    case["expected_path"],
+                )
+            )
     return positives, negatives
 
 

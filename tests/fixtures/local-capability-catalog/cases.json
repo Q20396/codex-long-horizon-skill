@@ -1,0 +1,86 @@
+{
+  "positive_keyword_cases": [
+    {
+      "case_id": "SYN-DISCOVERY-001",
+      "prompt": "Help me organize Australian legal evidence and build a case chronology.",
+      "expected_capability_ids": [
+        "australian-legal-evidence"
+      ]
+    },
+    {
+      "case_id": "SYN-DISCOVERY-002",
+      "prompt": "I need document governance for family office documents.",
+      "expected_capability_ids": [
+        "family-office-document-governance"
+      ]
+    },
+    {
+      "case_id": "SYN-DISCOVERY-003",
+      "prompt": "Prepare ASX research with point-in-time investment evidence.",
+      "expected_capability_ids": [
+        "public-equity-research"
+      ]
+    },
+    {
+      "case_id": "SYN-DISCOVERY-004",
+      "prompt": "Please summarize a generic public paragraph.",
+      "expected_capability_ids": []
+    }
+  ],
+  "negative_mutations": [
+    {
+      "case_id": "SYN-DISCOVERY-NEG-001",
+      "path": "/authority/keyword_match_grants_authority",
+      "value": true,
+      "expected_reason": "KEYWORD_AUTHORITY_FORBIDDEN"
+    },
+    {
+      "case_id": "SYN-DISCOVERY-NEG-002",
+      "path": "/authority/auto_load_uninstalled_code",
+      "value": true,
+      "expected_reason": "UNINSTALLED_AUTOLOAD_FORBIDDEN"
+    },
+    {
+      "case_id": "SYN-DISCOVERY-NEG-003",
+      "path": "/authority/customer_sensitive_data_upload",
+      "value": true,
+      "expected_reason": "CUSTOMER_DATA_UPLOAD_FORBIDDEN"
+    },
+    {
+      "case_id": "SYN-DISCOVERY-NEG-004",
+      "path": "/capabilities/0/executable",
+      "value": true,
+      "expected_reason": "CAPABILITY_EXECUTION_FORBIDDEN"
+    },
+    {
+      "case_id": "SYN-DISCOVERY-NEG-005",
+      "path": "/capabilities/1/availability",
+      "value": "installed",
+      "expected_reason": "CAPABILITY_DESCRIPTOR_ONLY"
+    },
+    {
+      "case_id": "SYN-DISCOVERY-NEG-006",
+      "path": "/providers/0/runtime_present",
+      "value": true,
+      "expected_reason": "PROVIDER_RUNTIME_UNIMPLEMENTED"
+    },
+    {
+      "case_id": "SYN-DISCOVERY-NEG-007",
+      "path": "/providers/0/network_access",
+      "value": true,
+      "expected_reason": "PROVIDER_EFFECT_FORBIDDEN"
+    },
+    {
+      "case_id": "SYN-DISCOVERY-NEG-008",
+      "path": "/providers/0/synthetic_pilot_status",
+      "value": "runtime-ready",
+      "expected_reason": "SYNTHETIC_PILOT_RUNTIME_FORBIDDEN"
+    },
+    {
+      "case_id": "SYN-DISCOVERY-NEG-009",
+      "path": "/capabilities/0/required_provider",
+      "value": "undeclared-provider",
+      "expected_reason": "PROVIDER_REFERENCE_UNRESOLVED"
+    }
+  ]
+}

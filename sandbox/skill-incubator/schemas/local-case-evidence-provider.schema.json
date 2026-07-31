@@ -1,0 +1,385 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:codex-long-horizon-skill:schema:local-case-evidence-provider:1.0.0",
+  "title": "Local Case Evidence Provider Synthetic Run Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run_id",
+    "case_id",
+    "synthetic_only",
+    "provider_contract_id",
+    "provider_status",
+    "state",
+    "customer_data_upload",
+    "raw_content_to_model",
+    "model_memory",
+    "telemetry",
+    "customer_approval",
+    "connector",
+    "source_request",
+    "evidence_handling",
+    "cursor",
+    "retention",
+    "claims"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "run_id": {
+      "type": "string",
+      "pattern": "^SYN-RUN-[0-9]{3}$"
+    },
+    "case_id": {
+      "type": "string",
+      "pattern": "^SYN-CASE-[0-9]{3}$"
+    },
+    "synthetic_only": {"const": true},
+    "provider_contract_id": {"const": "local-case-evidence-provider"},
+    "provider_status": {"const": "declared-disabled"},
+    "state": {
+      "enum": [
+        "DISCONNECTED",
+        "APPROVAL_PENDING",
+        "CONNECTED_ONE_RUN",
+        "ENUMERATING",
+        "FETCHING_APPROVED",
+        "LOCAL_VERIFYING",
+        "INDEXED",
+        "CHECKPOINTED",
+        "BLOCKED",
+        "QUARANTINED"
+      ]
+    },
+    "customer_data_upload": {"const": false},
+    "raw_content_to_model": {"const": false},
+    "model_memory": {"const": false},
+    "telemetry": {"const": false},
+    "customer_approval": {
+      "enum": ["pending", "not-recorded"]
+    },
+    "connector": {"$ref": "#/$defs/connector"},
+    "source_request": {"$ref": "#/$defs/sourceRequest"},
+    "evidence_handling": {"$ref": "#/$defs/evidenceHandling"},
+    "cursor": {"$ref": "#/$defs/cursor"},
+    "retention": {"$ref": "#/$defs/retention"},
+    "claims": {
+      "type": "array",
+      "minItems": 3,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/claim"}
+    }
+  },
+  "$defs": {
+    "offsetDateTime": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})$"
+    },
+    "connector": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "connector_type",
+        "future_target_connector",
+        "adapter_id",
+        "execution_mode",
+        "status",
+        "scopes",
+        "network_access",
+        "account_access",
+        "credentials_present",
+        "automatic_reconnect",
+        "expires_at"
+      ],
+      "properties": {
+        "connector_type": {"const": "synthetic-mailbox"},
+        "future_target_connector": {
+          "enum": ["dropbox", "gmail", "outlook", "google-drive"]
+        },
+        "adapter_id": {"const": "synthetic-local-read-only-adapter"},
+        "execution_mode": {"const": "fixture-only"},
+        "status": {"const": "disabled"},
+        "scopes": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "network_access": {"const": false},
+        "account_access": {"const": false},
+        "credentials_present": {"const": false},
+        "automatic_reconnect": {"const": false},
+        "expires_at": {"$ref": "#/$defs/offsetDateTime"}
+      }
+    },
+    "sourceRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "locator",
+        "metadata_only",
+        "maximum_items",
+        "allowed_content_types"
+      ],
+      "properties": {
+        "locator": {
+          "type": "string",
+          "pattern": "^synthetic://[a-z0-9][a-z0-9./-]*$"
+        },
+        "metadata_only": {"const": true},
+        "maximum_items": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "allowed_content_types": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": ["application/pdf", "message/rfc822"]
+          }
+        }
+      }
+    },
+    "evidenceHandling": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "active_content_detected",
+        "prompt_injection_detected",
+        "raw_snapshot_retained",
+        "raw_snapshot_approved",
+        "content_sha256",
+        "source_version"
+      ],
+      "properties": {
+        "active_content_detected": {"type": "boolean"},
+        "prompt_injection_detected": {"type": "boolean"},
+        "raw_snapshot_retained": {"type": "boolean"},
+        "raw_snapshot_approved": {"type": "boolean"},
+        "content_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "source_version": {"type": "string", "minLength": 1}
+      }
+    },
+    "cursor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "checkpoint_hash",
+        "last_checked_at"
+      ],
+      "properties": {
+        "status": {
+          "enum": ["not-established", "current", "stale", "invalid"]
+        },
+        "checkpoint_hash": {
+          "type": ["string", "null"],
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "last_checked_at": {"$ref": "#/$defs/offsetDateTime"}
+      }
+    },
+    "retention": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy",
+        "legal_hold_status",
+        "delete_authorized",
+        "export_authorized"
+      ],
+      "properties": {
+        "policy": {
+          "enum": ["metadata-only", "encrypted-snapshot-explicit"]
+        },
+        "legal_hold_status": {
+          "enum": ["counsel-direction-required", "active", "not-applicable"]
+        },
+        "delete_authorized": {"const": false},
+        "export_authorized": {"const": false}
+      }
+    },
+    "claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "claim_id",
+        "classification",
+        "source_locator",
+        "source_version",
+        "content_sha256",
+        "extraction_method",
+        "extracted_at"
+      ],
+      "properties": {
+        "claim_id": {
+          "type": "string",
+          "pattern": "^SYN-CLAIM-[0-9]{3}$"
+        },
+        "classification": {
+          "enum": ["FACT", "INFERENCE", "UNKNOWN"]
+        },
+        "source_locator": {
+          "type": "string",
+          "pattern": "^synthetic://[a-z0-9][a-z0-9./-]*$"
+        },
+        "source_version": {"type": "string", "minLength": 1},
+        "content_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "extraction_method": {"type": "string", "minLength": 1},
+        "extracted_at": {"$ref": "#/$defs/offsetDateTime"}
+      }
+    },
+    "syntheticPilot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "synthetic_only",
+        "customer_sensitive_data_present",
+        "pilot_id",
+        "mode",
+        "adapter_id",
+        "provider_status",
+        "runtime_connector_present",
+        "network_access",
+        "account_access",
+        "credentials_present",
+        "encrypted_store_present",
+        "os_credential_integration_present",
+        "checkpoints",
+        "customer_outcome",
+        "intentionally_unimplemented"
+      ],
+      "properties": {
+        "schema_version": {"const": "1.0.0"},
+        "synthetic_only": {"const": true},
+        "customer_sensitive_data_present": {"const": false},
+        "pilot_id": {
+          "type": "string",
+          "pattern": "^SYN-PILOT-[0-9]{3}$"
+        },
+        "mode": {"const": "fixture-only"},
+        "adapter_id": {"const": "synthetic-local-read-only-adapter"},
+        "provider_status": {"const": "declared-disabled"},
+        "runtime_connector_present": {"const": false},
+        "network_access": {"const": false},
+        "account_access": {"const": false},
+        "credentials_present": {"const": false},
+        "encrypted_store_present": {"const": false},
+        "os_credential_integration_present": {"const": false},
+        "checkpoints": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/syntheticCheckpoint"}
+        },
+        "customer_outcome": {"$ref": "#/$defs/syntheticCustomerOutcome"},
+        "intentionally_unimplemented": {
+          "const": [
+            "connector-runtime",
+            "account-authentication",
+            "network-access",
+            "encrypted-local-store",
+            "os-credential-integration",
+            "background-sync",
+            "customer-data-processing"
+          ]
+        }
+      }
+    },
+    "syntheticCheckpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "checkpoint_id",
+        "checkpoint_sha256",
+        "previous_checkpoint_sha256",
+        "cursor_status",
+        "source_locator",
+        "source_version",
+        "item_hashes",
+        "delta_item_hashes"
+      ],
+      "properties": {
+        "checkpoint_id": {
+          "type": "string",
+          "pattern": "^SYN-CHECKPOINT-[0-9]{3}$"
+        },
+        "checkpoint_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "previous_checkpoint_sha256": {
+          "type": ["string", "null"],
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "cursor_status": {"const": "current"},
+        "source_locator": {
+          "type": "string",
+          "pattern": "^synthetic://[a-z0-9][a-z0-9./-]*$"
+        },
+        "source_version": {"type": "string", "minLength": 1},
+        "item_hashes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        },
+        "delta_item_hashes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      }
+    },
+    "syntheticCustomerOutcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "FACT",
+        "INFERENCE",
+        "UNKNOWN",
+        "status",
+        "next_safe_action",
+        "decision_authority"
+      ],
+      "properties": {
+        "FACT": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "INFERENCE": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "UNKNOWN": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "status": {"const": "MORE_EVIDENCE_NEEDED"},
+        "next_safe_action": {"type": "string", "minLength": 1},
+        "decision_authority": {"const": "customer"}
+      }
+    }
+  }
+}

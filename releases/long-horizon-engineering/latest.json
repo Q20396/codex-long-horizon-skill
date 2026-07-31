@@ -3,9 +3,10 @@
   "version": "0.3.0",
   "repo": "https://github.com/Q20396/codex-long-horizon-skill",
   "path": ".agents/skills/long-horizon-engineering",
-  "channel": "stable",
+  "channel": "candidate",
+  "released": false,
   "release_date": "2026-07-27",
-  "risk": "low",
+  "risk": "not-assessed",
   "summary": [
     "Prepared the main-line governance and catalog contracts as a static v0.3.0 candidate.",
     "Kept sandbox-only, bundled-optional, and explicit-only capabilities distinct from runtime enforcement.",

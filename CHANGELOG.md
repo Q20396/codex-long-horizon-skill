@@ -22,6 +22,21 @@ No unreleased changes.
   while v0.3.0 starts a new governance/catalog release line from `main`.
 - Marked the marketplace `v0.3.0` reference as prospective until a later,
   separately approved tag and isolated marketplace verification stage.
+- Added a customer-first guided intake and three-layer outcome contract with
+  fixed `FACT` / `INFERENCE` / `UNKNOWN`, one status, one next safe action, and
+  customer-retained decision authority.
+- Added the `local-governance-core` profile and a packaged static capability
+  catalog. Legal-evidence, family/office document-governance, and public-equity
+  cards are descriptor-only sandbox records and cannot be auto-loaded,
+  installed, routed, or executed.
+- Added a declared-disabled Local Case Evidence Provider interface for a future
+  encrypted local index, provenance ledger, cursor, retention, deletion,
+  export, and legal-hold controls. No connector or account runtime is included.
+- Removed customer-sensitive transfer exceptions and added negative contracts
+  for upload, prompt injection, active content, connector scope, stale cursors,
+  raw snapshots, deletion under legal hold, account access, and trading.
+- Marked the unreleased marketplace entry `NOT_AVAILABLE`; the prospective tag
+  reference does not establish a release or installable package.
 - Kept formal Draft 2020-12 schema validation UNVERIFIED in local Phase A;
   Phase A evidence does not establish release readiness.
 

@@ -4,10 +4,9 @@ Do not include secrets, API keys, client names, legal evidence, family
 information, medical information, financial account details, identity documents,
 private correspondence, precise coordinates, or confidential source content.
 
-Location is used only to configure alert rules. Default setup should use
-manually added monitored locations. GPS/current location is optional,
-user-initiated, one-time, and approximate unless the customer explicitly
-requests precise monitoring.
+Location is used only to configure local alert rules. Default setup should use
+manually added, demonstrably non-sensitive public regions. Do not include
+precise, household, family, office, travel, or customer-associated locations.
 
 ## Rule Summary
 

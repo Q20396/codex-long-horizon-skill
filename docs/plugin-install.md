@@ -7,17 +7,17 @@ This repository can be used in two ways:
 
 ## Plugin Installation
 
-The Phase A candidate names the prospective immutable `v0.3.0` marketplace
-reference:
+The unreleased candidate names the prospective immutable `v0.3.0` marketplace
+reference and sets `policy.installation: NOT_AVAILABLE`:
 
 ```bash
 codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.3.0
 ```
 
-Do not run this command until the remote tag and isolated marketplace
-resolution have been independently verified. Phase A checks the repository
-metadata only. Use `--ref main` only when you intentionally accept mutable,
-unreleased repository state:
+Do not run this command while the policy is `NOT_AVAILABLE`. The remote tag,
+candidate-bound formal gate, isolated marketplace resolution, release decision,
+and installation guidance must first be verified. Use `--ref main` only for
+intentionally mutable, unreleased repository state:
 
 ```bash
 codex plugin marketplace add Q20396/codex-long-horizon-skill --ref main

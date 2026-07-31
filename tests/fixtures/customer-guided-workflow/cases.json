@@ -1,0 +1,364 @@
+{
+  "synthetic_only": true,
+  "cases": [
+    {
+      "case_id": "CASE-CUSTOMER-READY-001",
+      "customer_submission": {
+        "desired_outcome": "Decide whether a synthetic weekly checklist is ready for a bounded prototype.",
+        "decision_question": "Is the available evidence sufficient to consider a separate prototype authorization?",
+        "audience": "operations lead",
+        "timing": "before the next synthetic review",
+        "success_criteria": [
+          "required checklist fields are present",
+          "no production data or external service is required"
+        ],
+        "materials": [
+          {
+            "locator": "docs/synthetic-process.md",
+            "submission_form": "exact_approved_path",
+            "sensitivity": "synthetic",
+            "permitted_use": "read_only",
+            "availability": "available"
+          },
+          {
+            "locator": "TEST-RESULT-SYNTHETIC-001",
+            "submission_form": "pasted_non_sensitive_text",
+            "sensitivity": "synthetic",
+            "permitted_use": "read_only",
+            "availability": "available"
+          }
+        ],
+        "allowed_effects": [
+          "read"
+        ],
+        "forbidden_effects": [
+          "write",
+          "network",
+          "install",
+          "external_action"
+        ],
+        "stop_conditions": [
+          "Stop if production data is required."
+        ]
+            },
+            "outcome_brief": {
+                "customer_layer": {
+                    "request_understood": "Decide whether the available synthetic evidence is sufficient to consider a separately authorized local prototype.",
+                    "evidence": [
+                        {
+                            "classification": "FACT",
+                            "finding": "The supplied synthetic checklist defines every required field."
+                        },
+                        {
+                            "classification": "INFERENCE",
+                            "finding": "A bounded local prototype appears feasible without adding an external service."
+                        },
+                        {
+                            "classification": "UNKNOWN",
+                            "finding": "Production behavior has not been tested."
+                        }
+                    ],
+                    "status": "READY_FOR_CUSTOMER_DECISION",
+                    "recommendation": "The evidence is sufficient for the customer to decide whether to authorize a separately scoped prototype; it is not implementation approval.",
+                    "next_safe_action": "Customer decides whether to authorize a separately scoped local prototype.",
+                    "decision_needed": "Do you approve creating a separate prototype implementation scope?"
+                },
+                "operator_layer": {
+                    "approved_read_scope": [
+                        "docs/synthetic-process.md",
+                        "TEST-RESULT-SYNTHETIC-001"
+                    ],
+                    "allowed_effects": [
+                        "read"
+                    ],
+                    "forbidden_effects": [
+                        "write",
+                        "network",
+                        "install",
+                        "external_action"
+                    ],
+                    "sensitive_data_handling": "synthetic_only",
+                    "stop_conditions": [
+                        "Stop if production data is required."
+                    ],
+                    "work_not_performed": [
+                        "implementation",
+                        "production_data_access",
+                        "runtime_validation"
+                    ],
+                    "customer_approval_required": true,
+                    "human_disposition": "PENDING",
+                    "next_stage_authorized": false
+                },
+                "engineering_evidence_layer": {
+                    "claims": [
+                        {
+                            "claim_id": "CLAIM-READY-001",
+                            "classification": "FACT",
+                            "source_locator": "docs/synthetic-process.md",
+                            "verification_status": "statically_observed"
+                        },
+                        {
+                            "claim_id": "CLAIM-READY-002",
+                            "classification": "INFERENCE",
+                            "source_locator": "TEST-RESULT-SYNTHETIC-001",
+                            "verification_status": "bounded_inference"
+                        },
+                        {
+                            "claim_id": "CLAIM-READY-003",
+                            "classification": "UNKNOWN",
+                            "source_locator": "not_provided",
+                            "verification_status": "not_verified"
+                        }
+                    ],
+                    "validation_performed": [
+                        "approved documentation and synthetic result review"
+                    ],
+                    "validation_not_performed": [
+                        "production run",
+                        "implementation test"
+                    ],
+                    "known_limitations": [
+                        "Static evidence does not prove production behavior or authorize implementation."
+                    ]
+                }
+            }
+        },
+    {
+      "case_id": "CASE-CUSTOMER-MORE-EVIDENCE-001",
+      "customer_submission": {
+        "desired_outcome": "Decide whether a local CSV summary can replace a manual synthetic workflow.",
+        "decision_question": "Is implementation ready to authorize?",
+        "audience": "operations lead",
+        "timing": "before planning",
+        "success_criteria": [
+          "existing parser behavior is understood",
+          "no production data is read"
+        ],
+        "materials": [
+          {
+            "locator": "docs/import-process.md",
+            "submission_form": "exact_approved_path",
+            "sensitivity": "synthetic",
+            "permitted_use": "read_only",
+            "availability": "available"
+          },
+          {
+            "locator": "src/parser.py",
+            "submission_form": "not_provided",
+            "sensitivity": "unknown",
+            "permitted_use": "none",
+            "availability": "not_available"
+          }
+        ],
+        "allowed_effects": [
+          "read"
+        ],
+        "forbidden_effects": [
+          "write",
+          "network",
+          "install",
+          "external_action"
+        ],
+        "stop_conditions": [
+          "Stop before reading an unapproved parser path."
+        ]
+            },
+            "outcome_brief": {
+                "customer_layer": {
+                    "request_understood": "Decide whether the current evidence is sufficient to consider replacing a manual synthetic workflow.",
+                    "evidence": [
+                        {
+                            "classification": "FACT",
+                            "finding": "The supplied documentation describes a manual synthetic workflow."
+                        },
+                        {
+                            "classification": "INFERENCE",
+                            "finding": "A deterministic local transform may reduce repeated manual work."
+                        },
+                        {
+                            "classification": "UNKNOWN",
+                            "finding": "Parser behavior and rollback compatibility have not been inspected."
+                        }
+                    ],
+                    "status": "MORE_EVIDENCE_NEEDED",
+                    "recommendation": "Do not authorize implementation until the existing parser and its tests are reviewed within a separate read-only scope.",
+                    "next_safe_action": "Approve read-only inspection of src/parser.py and its exact existing test path.",
+                    "decision_needed": "Do you approve that exact read-only inspection?"
+                },
+                "operator_layer": {
+                    "approved_read_scope": [
+                        "docs/import-process.md"
+                    ],
+                    "allowed_effects": [
+                        "read"
+                    ],
+                    "forbidden_effects": [
+                        "write",
+                        "network",
+                        "install",
+                        "external_action"
+                    ],
+                    "sensitive_data_handling": "synthetic_only",
+                    "stop_conditions": [
+                        "Stop before reading an unapproved parser path."
+                    ],
+                    "work_not_performed": [
+                        "parser_source_read",
+                        "implementation",
+                        "runtime_validation"
+                    ],
+                    "customer_approval_required": true,
+                    "human_disposition": "PENDING",
+                    "next_stage_authorized": false
+                },
+                "engineering_evidence_layer": {
+                    "claims": [
+                        {
+                            "claim_id": "CLAIM-MISSING-001",
+                            "classification": "FACT",
+                            "source_locator": "docs/import-process.md",
+                            "verification_status": "statically_observed"
+                        },
+                        {
+                            "claim_id": "CLAIM-MISSING-002",
+                            "classification": "INFERENCE",
+                            "source_locator": "docs/import-process.md",
+                            "verification_status": "bounded_inference"
+                        },
+                        {
+                            "claim_id": "CLAIM-MISSING-003",
+                            "classification": "UNKNOWN",
+                            "source_locator": "src/parser.py",
+                            "verification_status": "outside_approved_scope"
+                        }
+                    ],
+                    "validation_performed": [
+                        "approved documentation review"
+                    ],
+                    "validation_not_performed": [
+                        "parser inspection",
+                        "build",
+                        "tests"
+                    ],
+                    "known_limitations": [
+                        "Implementation feasibility and rollback compatibility remain unknown."
+                    ]
+                }
+            }
+        },
+    {
+      "case_id": "CASE-CUSTOMER-BLOCKED-001",
+      "customer_submission": {
+        "desired_outcome": "Assess a workflow that would send a private account export to an external service.",
+        "decision_question": "May the external workflow proceed?",
+        "audience": "account owner",
+        "timing": "not specified",
+        "success_criteria": [
+          "no private account data is disclosed",
+          "customer retains decision authority"
+        ],
+        "materials": [
+          {
+            "locator": "PRIVATE-ACCOUNT-EXPORT",
+            "submission_form": "not_provided",
+            "sensitivity": "restricted",
+            "permitted_use": "none",
+            "availability": "not_available"
+          }
+        ],
+        "allowed_effects": [
+          "read"
+        ],
+        "forbidden_effects": [
+          "network",
+          "external_action",
+          "write",
+          "install"
+        ],
+        "stop_conditions": [
+          "Stop before private-material access or external contact."
+        ]
+            },
+            "outcome_brief": {
+                "customer_layer": {
+                    "request_understood": "Assess whether a workflow involving a private account export and an external service may proceed.",
+                    "evidence": [
+                        {
+                            "classification": "FACT",
+                            "finding": "The requested workflow requires an external action that the customer has forbidden."
+                        },
+                        {
+                            "classification": "INFERENCE",
+                            "finding": "A non-sensitive synthetic substitute may permit a later bounded review."
+                        },
+                        {
+                            "classification": "UNKNOWN",
+                            "finding": "The private export and external service behavior were not inspected."
+                        }
+                    ],
+                    "status": "BLOCKED",
+                    "recommendation": "Do not inspect the private export or contact the external service under the current authorization.",
+                    "next_safe_action": "Customer may provide one non-sensitive synthetic substitute for a separate read-only review.",
+                    "decision_needed": "Do you want to provide that synthetic substitute?"
+                },
+                "operator_layer": {
+                    "approved_read_scope": [],
+                    "allowed_effects": [
+                        "read"
+                    ],
+                    "forbidden_effects": [
+                        "network",
+                        "external_action",
+                        "write",
+                        "install"
+                    ],
+                    "sensitive_data_handling": "restricted_material_not_accessed",
+                    "stop_conditions": [
+                        "Stop before private-material access or external contact."
+                    ],
+                    "work_not_performed": [
+                        "private_material_access",
+                        "external_service_contact",
+                        "implementation"
+                    ],
+                    "customer_approval_required": true,
+                    "human_disposition": "PENDING",
+                    "next_stage_authorized": false
+                },
+                "engineering_evidence_layer": {
+                    "claims": [
+                        {
+                            "claim_id": "CLAIM-BLOCKED-001",
+                            "classification": "FACT",
+                            "source_locator": "customer_submission.forbidden_effects",
+                            "verification_status": "scope_declared"
+                        },
+                        {
+                            "claim_id": "CLAIM-BLOCKED-002",
+                            "classification": "INFERENCE",
+                            "source_locator": "customer_submission.stop_conditions",
+                            "verification_status": "bounded_inference"
+                        },
+                        {
+                            "claim_id": "CLAIM-BLOCKED-003",
+                            "classification": "UNKNOWN",
+                            "source_locator": "PRIVATE-ACCOUNT-EXPORT",
+                            "verification_status": "not_accessed"
+                        }
+                    ],
+                    "validation_performed": [
+                        "authorization and stop-condition review"
+                    ],
+                    "validation_not_performed": [
+                        "private export inspection",
+                        "external service access"
+                    ],
+                    "known_limitations": [
+                        "No claim about private content or external service behavior was verified."
+                    ]
+                }
+            }
+        }
+  ]
+}

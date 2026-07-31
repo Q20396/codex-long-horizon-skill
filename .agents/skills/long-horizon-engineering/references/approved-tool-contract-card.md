@@ -60,7 +60,7 @@ Classify every material effect. A tool can have more than one class.
 | Local read | Version check, local status command | Use only in approved scope. |
 | Workspace write | Generate files, alter configuration | Ask for exact path approval. |
 | Network read | Fetch public metadata or documentation | Ask before network access. |
-| External transfer | Upload, paste, sync, or notify | Ask for exact source and destination approval. |
+| External transfer | Upload, paste, sync, or notify | Customer-sensitive information is prohibited. Public, synthetic, or demonstrably non-sensitive material requires exact source and destination approval. |
 | Account or session access | Login, browser cookies, connected app data | Ask before access; do not reuse hidden session state. |
 | System or production action | Service control, deployment, billing, permissions | Plan-only until the user confirms the exact action. |
 

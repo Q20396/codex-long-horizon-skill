@@ -31,13 +31,10 @@ Sensitive data includes:
 
 - Do not store sensitive data in `PROJECT_MEMORY.md`, `TASK_LOG.md`,
   `WORKING_STATE.md`, or `HANDOFF_REPORT.md`.
-- Before reading sensitive materials, tell the user why access is needed, which
-  files or folders would be read, whether metadata is enough, whether content
-  would be quoted, summarized, or recorded, and how sensitive content will be
-  minimized or omitted. Wait for explicit approval before reading sensitive
-  content.
-- Do not quote private source material unless the user explicitly asks and it is
-  necessary for the task.
+- LHE Core must not place raw sensitive material in model context. A future
+  independently reviewed local provider may process the minimum approved scope
+  and expose only redacted structured claims, hashes, and locators.
+- Do not quote private source material into chat or a remote model.
 - Do not summarize sensitive documents into public or reusable logs.
 - Prefer references such as "client contract file", "private evidence
   document", or "confidential source material" instead of copying details.
@@ -45,8 +42,10 @@ Sensitive data includes:
 - Keep client-specific work in the private target repository, not in this
   reusable skill repository.
 - Never commit real client data into this public skill repository.
-- Never push private client data to GitHub unless the user explicitly approves
-  the exact reviewed subset.
+- Never push, upload, paste, sync, transmit, or publish customer-sensitive
+  information to GitHub, a model provider, search service, hosted notebook,
+  external app, or other remote destination. Customer approval does not create
+  an exception to this product boundary.
 - If unsure whether data is sensitive, treat it as sensitive and ask.
 - Do not use GPS, device location, addresses, or client operating locations for
   legal, regulatory, or industry guidance unless the user explicitly approves
@@ -62,9 +61,9 @@ records, confidential source documents, or credentials.
 
 ### Private Target Repository
 
-Codex may work with private materials only within the approved task scope. Use
-minimal references in summaries, logs, and PR text. Avoid copying raw content
-into persistent files.
+LHE may work with non-sensitive repository structure and exact approved
+locators. Raw private content requires a separately reviewed local mechanism;
+use only redacted structured references in LHE summaries, logs, and PR text.
 
 ### Sensitive Repository
 
@@ -72,9 +71,10 @@ For legal, financial, family, medical, client, or confidential research
 repositories, default to plan-only mode until the user approves specific files,
 commands, edits, staging paths, and push targets.
 
-## Before Reading Sensitive Content
+## Before Local Sensitive Processing
 
-When sensitive content may need to be read, ask first and include:
+When a future local provider may need to process sensitive content, ask first
+and include:
 
 - Why the material is needed
 - Which files, folders, labels, or records would be read
@@ -84,8 +84,9 @@ When sensitive content may need to be read, ask first and include:
 - Where any summary would appear
 - How sensitive details will be minimized, omitted, or redacted
 
-Do not proceed from metadata inspection to content inspection until the user
-explicitly approves the sensitive read scope.
+LHE Core must not proceed from metadata to raw content. Customer approval can
+authorize a separately reviewed local provider scope, but cannot authorize
+external transfer or remote-model ingestion.
 
 ## Git Safety
 
@@ -93,8 +94,9 @@ explicitly approves the sensitive read scope.
 - Stage explicit reviewed paths only.
 - Inspect staged file names before committing.
 - Do not stage raw source documents, screenshots, evidence files, exports,
-  identity documents, contracts, or financial records unless explicitly
-  approved.
+  identity documents, contracts, or financial records in a reusable or public
+  repository. A separately approved local encrypted case store is not a Git
+  repository and must remain outside LHE Core.
 - Ask before pushing any branch that may contain private data.
 - Do not open public PRs containing private data.
 
@@ -106,8 +108,7 @@ When reporting on sensitive work:
 - Use generic labels for confidential materials.
 - Redact secrets and private identifiers.
 - Mention that sensitive details were intentionally omitted.
-- Avoid copying private source text into chat unless explicitly requested and
-  safe.
+- Do not copy private source text into chat.
 
 ## Stop And Ask
 

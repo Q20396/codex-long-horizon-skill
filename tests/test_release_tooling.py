@@ -10,6 +10,7 @@ import tempfile
 import textwrap
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -37,6 +38,10 @@ FRESH_INSTALL = load_module(
 RELEASE_READINESS = load_module(
     "check_release_readiness_under_test",
     ROOT / "scripts" / "check_release_readiness.py",
+)
+FORMAL_VALIDATOR = load_module(
+    "validate_formal_schemas_release_evidence_under_test",
+    ROOT / "scripts" / "validate_formal_schemas.py",
 )
 
 
@@ -670,12 +675,231 @@ class ReleaseReadinessTests(unittest.TestCase):
         result = self.run_readiness(repo, "--allow-existing-tag")
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
+    def test_release_notes_match_formal_schema_inventory(self) -> None:
+        notes = self.release_notes(ROOT).read_text(encoding="utf-8")
+        normalized = " ".join(notes.split())
+        schema_count = len(FORMAL_VALIDATOR.SCHEMA_INVENTORY)
+        fixture_count = len(FORMAL_VALIDATOR.FIXTURE_VALIDATED_SCHEMAS)
+        syntax_only_count = len(FORMAL_VALIDATOR.SYNTAX_ONLY_SCHEMAS)
+
+        self.assertEqual(schema_count, fixture_count + syntax_only_count)
+        self.assertIn(
+            f"contains {schema_count} Draft 2020-12 schemas",
+            normalized,
+        )
+        self.assertIn(
+            f"{fixture_count} schemas have explicit positive and negative "
+            "instance fixtures",
+            normalized,
+        )
+        self.assertIn(
+            f"remaining {syntax_only_count} are explicitly syntax-only",
+            normalized,
+        )
+
+    def test_release_docs_preserve_single_acquisition_boundary(self) -> None:
+        notes = self.release_notes(ROOT).read_text(encoding="utf-8")
+        checklist = (
+            ROOT / "docs" / "maintainers" / "release-checklist.md"
+        ).read_text(encoding="utf-8")
+        normalized_notes = " ".join(notes.split())
+        normalized_checklist = " ".join(checklist.split())
+        combined = normalized_notes + " " + normalized_checklist
+
+        self.assertIn("one approved online acquisition", normalized_notes)
+        self.assertIn("one approved online acquisition", normalized_checklist)
+        self.assertIn(
+            "does not perform a second live acquisition",
+            normalized_notes,
+        )
+        self.assertIn(
+            "must not issue a second live acquisition",
+            normalized_checklist,
+        )
+        self.assertIn("consumes the same raw evidence", combined)
+        self.assertNotIn("live-recomputed acquisition", combined)
+        self.assertNotIn("rechecks the acquisition receipt against", combined)
+
+    def test_release_docs_record_action_and_security_provenance(self) -> None:
+        checklist = (
+            ROOT / "docs" / "maintainers" / "release-checklist.md"
+        ).read_text(encoding="utf-8")
+        release_notes = self.release_notes(ROOT).read_text(encoding="utf-8")
+        security = (ROOT / "SECURITY.md").read_text(encoding="utf-8")
+        normalized_checklist = " ".join(checklist.split())
+        normalized_release_notes = " ".join(release_notes.split())
+
+        self.assertIn("11d5960a326750d5838078e36cf38b85af677262", checklist)
+        self.assertIn("a26af69be951a213d495a4c3e4e4022e16d87065", checklist)
+        self.assertIn("20be877a16bf41e3817c8d173aa58053adc02cdc", checklist)
+        self.assertIn("Official-source verification completed", normalized_checklist)
+        self.assertIn("v4.4.0", checklist)
+        self.assertIn("v5.6.0", checklist)
+        self.assertIn(
+            "https://github.com/actions/checkout/commit/"
+            "11d5960a326750d5838078e36cf38b85af677262",
+            checklist,
+        )
+        self.assertIn(
+            "https://github.com/actions/setup-python/commit/"
+            "a26af69be951a213d495a4c3e4e4022e16d87065",
+            checklist,
+        )
+        self.assertIn("GitHub security-advisories API returned an empty list", normalized_checklist)
+        self.assertIn("not proof that the Actions are vulnerability-free", normalized_checklist)
+        self.assertIn("ubuntu:24.04", normalized_release_notes)
+        self.assertIn("CPython 3.11.15", normalized_release_notes)
+        self.assertIn("all 36 positive and 13 negative fixture cases passed", normalized_release_notes)
+        self.assertIn("content validation only", normalized_release_notes)
+        self.assertIn("did not produce a candidate-bound formal release receipt", normalized_release_notes)
+        self.assertIn("remains PENDING", normalized_release_notes)
+        self.assertIn("still not release-ready", normalized_release_notes)
+        self.assertIn("release/0.2.x", security)
+        self.assertIn("Security-maintenance only", security)
+        self.assertIn("No feature backports", security)
+        self.assertIn("v0.3.0 is published", security)
+        self.assertIn("replacement install path is independently verified", security)
+
+    def test_release_hygiene_binds_origin_main_clean_linked_worktree(self) -> None:
+        expected = "a" * 40
+        commands = {
+            ("git", "rev-parse", f"{expected}^{{commit}}"): expected,
+            (
+                "git",
+                "rev-parse",
+                "refs/remotes/origin/main^{commit}",
+            ): expected,
+            ("git", "merge-base", expected, "HEAD"): expected,
+            ("git", "status", "--porcelain=v1", "--untracked-files=all"): "",
+            (
+                "git",
+                "rev-parse",
+                "--path-format=absolute",
+                "--git-dir",
+            ): "/repo/.git/worktrees/release",
+            (
+                "git",
+                "rev-parse",
+                "--path-format=absolute",
+                "--git-common-dir",
+            ): "/repo/.git",
+        }
+
+        def fake_run(command: list[str]) -> subprocess.CompletedProcess[str]:
+            return subprocess.CompletedProcess(
+                command,
+                0,
+                stdout=commands[tuple(command)] + "\n",
+                stderr="",
+            )
+
+        with mock.patch.object(RELEASE_READINESS, "run", side_effect=fake_run):
+            errors: list[str] = []
+            RELEASE_READINESS.release_hygiene_errors(expected, errors)
+        self.assertEqual([], errors)
+
+    def test_release_hygiene_rejects_stale_dirty_or_primary_worktree(self) -> None:
+        expected = "a" * 40
+        base_commands = {
+            ("git", "rev-parse", f"{expected}^{{commit}}"): expected,
+            (
+                "git",
+                "rev-parse",
+                "refs/remotes/origin/main^{commit}",
+            ): expected,
+            ("git", "merge-base", expected, "HEAD"): expected,
+            ("git", "status", "--porcelain=v1", "--untracked-files=all"): "",
+            (
+                "git",
+                "rev-parse",
+                "--path-format=absolute",
+                "--git-dir",
+            ): "/repo/.git/worktrees/release",
+            (
+                "git",
+                "rev-parse",
+                "--path-format=absolute",
+                "--git-common-dir",
+            ): "/repo/.git",
+        }
+        mutations = (
+            (
+                ("git", "rev-parse", "refs/remotes/origin/main^{commit}"),
+                "b" * 40,
+                "does not match local origin/main",
+            ),
+            (
+                ("git", "status", "--porcelain=v1", "--untracked-files=all"),
+                "?? untracked.txt",
+                "requires a clean worktree",
+            ),
+            (
+                ("git", "rev-parse", "--path-format=absolute", "--git-dir"),
+                "/repo/.git",
+                "requires an isolated linked worktree",
+            ),
+        )
+        for key, value, expected_error in mutations:
+            with self.subTest(expected_error=expected_error):
+                commands = dict(base_commands)
+                commands[key] = value
+
+                def fake_run(command: list[str]) -> subprocess.CompletedProcess[str]:
+                    return subprocess.CompletedProcess(
+                        command,
+                        0,
+                        stdout=commands[tuple(command)] + "\n",
+                        stderr="",
+                    )
+
+                with mock.patch.object(
+                    RELEASE_READINESS,
+                    "run",
+                    side_effect=fake_run,
+                ):
+                    errors: list[str] = []
+                    RELEASE_READINESS.release_hygiene_errors(expected, errors)
+                self.assertTrue(any(expected_error in error for error in errors))
+
+    def test_release_hygiene_is_valid_only_for_static_release_prep(self) -> None:
+        repo = self.copy_repo("release-hygiene-mode")
+        result = self.run_readiness(
+            repo,
+            "--allow-existing-tag",
+            "--release-hygiene-base",
+            "a" * 40,
+        )
+        self.assert_failed_without_traceback(
+            result,
+            "release hygiene base is valid only with --pre-tag-static",
+        )
+
     def test_release_warning_gate_allows_only_known_optional_omissions(self) -> None:
         report = FULL_VALIDATION.Report()
         section, name, detail = next(iter(FULL_VALIDATION.ALLOWED_RELEASE_WARNINGS))
         report.warn(section, name, detail)
         FULL_VALIDATION.enforce_release_warning_allowlist(report)
         self.assertEqual(report.failures(), [])
+        waivers = report.by_section()["Release Warning Waivers"]
+        self.assertEqual(len(waivers), 1)
+        self.assertIn("_", waivers[0].detail.split(":", 1)[0])
+        self.assertNotEqual(waivers[0].detail.split(":", 1)[-1].strip(), "")
+
+    def test_all_optional_warning_waivers_are_explicit_and_visible(self) -> None:
+        self.assertEqual(len(FULL_VALIDATION.OPTIONAL_WARNING_WAIVERS), 11)
+        report = FULL_VALIDATION.Report()
+        for section, name, detail in FULL_VALIDATION.OPTIONAL_WARNING_WAIVERS:
+            report.warn(section, name, detail)
+
+        FULL_VALIDATION.enforce_release_warning_allowlist(report)
+
+        waivers = report.by_section()["Release Warning Waivers"]
+        self.assertEqual(len(waivers), 11)
+        self.assertEqual(report.failures(), [])
+        for check in waivers:
+            reason_code, rationale = check.detail.split(":", 1)
+            self.assertRegex(reason_code, r"^[A-Z][A-Z0-9_]+$")
+            self.assertGreaterEqual(len(rationale.strip()), 40)
 
     def test_release_warning_gate_rejects_new_warning(self) -> None:
         report = FULL_VALIDATION.Report()
@@ -713,6 +937,70 @@ class ReleaseReadinessTests(unittest.TestCase):
                     result,
                     "does not match prospective immutable release tag 'v0.3.0'",
                 )
+
+    def test_unreleased_candidate_marketplace_is_not_installable(self) -> None:
+        repo = self.copy_repo("marketplace-policy-installable")
+        marketplace = repo / ".agents" / "plugins" / "marketplace.json"
+        data = json.loads(marketplace.read_text(encoding="utf-8"))
+        data["plugins"][0]["policy"]["installation"] = "AVAILABLE"
+        marketplace.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+        result = self.run_readiness(repo, "--pre-tag-static")
+        self.assert_failed_without_traceback(
+            result,
+            "unreleased static candidate marketplace policy.installation must "
+            "be 'NOT_AVAILABLE'",
+        )
+
+    def test_release_manifests_cannot_self_report_stable_release(self) -> None:
+        repo = self.copy_repo("release-manifest-stable")
+        manifest = repo / "releases/long-horizon-engineering/latest.json"
+        data = json.loads(manifest.read_text(encoding="utf-8"))
+        data["channel"] = "stable"
+        data["released"] = True
+        manifest.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+        result = self.run_readiness(repo, "--pre-tag-static")
+        self.assert_failed_without_traceback(
+            result,
+            "must describe the unreleased candidate channel",
+        )
+
+    def test_unreleased_candidate_risk_cannot_self_report_low(self) -> None:
+        for skill_name in (
+            "long-horizon-engineering",
+            "ai-video-production",
+        ):
+            with self.subTest(skill=skill_name):
+                repo = self.copy_repo(f"release-risk-{skill_name}")
+                manifest = repo / "releases" / skill_name / "latest.json"
+                data = json.loads(manifest.read_text(encoding="utf-8"))
+                self.assertEqual(data["risk"], "not-assessed")
+                data["risk"] = "low"
+                manifest.write_text(
+                    json.dumps(data, indent=2) + "\n",
+                    encoding="utf-8",
+                )
+                result = self.run_readiness(repo, "--pre-tag-static")
+                self.assert_failed_without_traceback(
+                    result,
+                    "risk must be 'not-assessed'",
+                )
+
+    def test_skill_cannot_self_report_stable_update_channel(self) -> None:
+        repo = self.copy_repo("skill-stable-channel")
+        skill = repo / ".agents/skills/long-horizon-engineering/SKILL.md"
+        skill.write_text(
+            skill.read_text(encoding="utf-8").replace(
+                "update_channel: candidate",
+                "update_channel: stable",
+                1,
+            ),
+            encoding="utf-8",
+        )
+        result = self.run_readiness(repo, "--pre-tag-static")
+        self.assert_failed_without_traceback(
+            result,
+            "must declare update_channel: candidate until release",
+        )
 
     def test_skill_version_must_match_release_version(self) -> None:
         repo = self.copy_repo("skill-version-mismatch")

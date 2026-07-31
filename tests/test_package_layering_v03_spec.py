@@ -55,8 +55,12 @@ class PackageLayeringV03SpecificationTests(unittest.TestCase):
 
     def test_existing_profiles_keep_disjoint_layer_meanings(self) -> None:
         manifest = self.load_json(MANIFEST)
+        profiles = manifest["profiles"]
         self.assertEqual(
-            manifest["profiles"],
+            {
+                name: profiles[name]
+                for name in ("legacy-full", "core-only", "lhe-bundled")
+            },
             {
                 "legacy-full": {
                     "components": ["core", "bundled-optional"],
@@ -70,6 +74,19 @@ class PackageLayeringV03SpecificationTests(unittest.TestCase):
                     "components": ["core", "bundled-optional"],
                     "separate_skills": [],
                 },
+            },
+        )
+        self.assertEqual(
+            profiles["local-governance-core"],
+            profiles["core-only"],
+        )
+        self.assertEqual(
+            set(profiles),
+            {
+                "legacy-full",
+                "core-only",
+                "local-governance-core",
+                "lhe-bundled",
             },
         )
 

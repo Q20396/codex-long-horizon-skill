@@ -38,7 +38,10 @@ PACKAGE_ONLY_PATHS = [
     "docs/evals/live-routing.md",
     "docs/first-contribution.md",
     "docs/maintainers/release-checklist.md",
+    "docs/maintainers/local-first-feasibility-review-plan.md",
     "docs/plugin-install.md",
+    "docs/customer-guided-workflow.md",
+    "docs/high-stakes-customer-workflows.md",
     "docs/releases/v0.1.0.md",
     "examples/bug-investigation/expected-output.md",
     "examples/bug-investigation/prompt.md",
@@ -52,11 +55,16 @@ PACKAGE_ONLY_PATHS = [
     "examples/resume-work/expected-output.md",
     "examples/resume-work/prompt.md",
     "examples/resume-work/workflow.md",
+    "examples/customer-guided-decision/expected-output.md",
+    "examples/customer-guided-decision/prompt.md",
+    "examples/customer-guided-decision/workflow.md",
+    "examples/high-stakes-customer-workflows.md",
     "prompts/bug-investigation.md",
     "prompts/large-refactor.md",
     "prompts/pr-review.md",
     "prompts/repository-migration.md",
     "prompts/resume-work.md",
+    "prompts/customer-guided-decision.md",
     "templates/findings-report.md",
     "templates/migration-report.md",
     "templates/project-plan.md",
@@ -69,9 +77,12 @@ PACKAGE_ONLY_PATHS = [
     "tests/expected-triggers.json",
     "tests/skill-eval-cases.json",
 ]
+CAPABILITY_CATALOG_PATH = SKILL_DIR / "catalog" / "local-capability-catalog.json"
+PACKAGE_MANIFEST_PATH = SKILL_DIR / "package-manifest.json"
 
 INSTALLED_REQUIRED_PATHS = [
     ".agents/skills/long-horizon-engineering/SKILL.md",
+    ".agents/skills/long-horizon-engineering/catalog/local-capability-catalog.json",
     ".agents/skills/long-horizon-engineering/references/approved-tool-contract-card.md",
     ".agents/skills/long-horizon-engineering/references/local-voice-tool-sandbox.md",
     ".agents/skills/long-horizon-engineering/references/three-d-asset-provider-sandbox.md",
@@ -252,6 +263,197 @@ def check_trigger_fixture() -> list[str]:
     return errors
 
 
+def load_object(path: Path, label: str) -> tuple[dict, list[str]]:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        return {}, [f"{label} could not be read: {error}"]
+    if not isinstance(value, dict):
+        return {}, [f"{label} must contain a JSON object."]
+    return value, []
+
+
+def capability_health_report(
+    requested_profile: str | None,
+) -> tuple[dict, list[str]]:
+    """Report only static declarations; never inspect host config or accounts."""
+    errors: list[str] = []
+    manifest, manifest_errors = load_object(
+        PACKAGE_MANIFEST_PATH,
+        "Package manifest",
+    )
+    catalog, catalog_errors = load_object(
+        CAPABILITY_CATALOG_PATH,
+        "Local capability catalog",
+    )
+    errors.extend(manifest_errors)
+    errors.extend(catalog_errors)
+
+    profiles = manifest.get("profiles", {})
+    if not isinstance(profiles, dict):
+        profiles = {}
+        errors.append("Package manifest profiles must be an object.")
+    selected_profile = requested_profile or manifest.get("default_profile")
+    if not isinstance(selected_profile, str) or selected_profile not in profiles:
+        errors.append(
+            "Capability report profile must name a declared package profile."
+        )
+
+    authority = catalog.get("authority", {})
+    if not isinstance(authority, dict):
+        authority = {}
+        errors.append("Local capability catalog authority must be an object.")
+    expected_false = {
+        "keyword_match_grants_authority",
+        "auto_load_uninstalled_code",
+        "auto_install",
+        "auto_execute",
+        "network_access",
+        "account_access",
+        "persistence",
+        "customer_sensitive_data_upload",
+        "model_memory",
+        "telemetry",
+    }
+    for field in sorted(expected_false):
+        if authority.get(field) is not False:
+            errors.append(
+                f"Local capability catalog authority must keep {field}=false."
+            )
+
+    provider_records = catalog.get("providers", [])
+    if not isinstance(provider_records, list):
+        provider_records = []
+        errors.append("Local capability catalog providers must be a list.")
+    safe_providers: list[dict] = []
+    provider_ids: set[str] = set()
+    for index, provider_record in enumerate(provider_records):
+        if not isinstance(provider_record, dict):
+            errors.append(f"Provider declaration {index} must be an object.")
+            continue
+        provider_id = provider_record.get("provider_id")
+        if not isinstance(provider_id, str) or not provider_id:
+            errors.append(f"Provider declaration {index} must have a provider_id.")
+            continue
+        if provider_id in provider_ids:
+            errors.append(f"Provider declaration is duplicated: {provider_id}")
+            continue
+        provider_ids.add(provider_id)
+        fixed_provider_fields = {
+            "status": "declared-disabled",
+            "interface_only": True,
+            "runtime_present": False,
+            "connector_implementations_present": False,
+            "synthetic_pilot_status": "fixture-only",
+            "network_access": False,
+            "account_access": False,
+            "credential_access": False,
+            "persistence_authority": False,
+            "customer_sensitive_data_upload": False,
+            "model_memory": False,
+            "telemetry": False,
+            "expires_at": None,
+        }
+        for field, expected in fixed_provider_fields.items():
+            if (
+                type(provider_record.get(field)) is not type(expected)
+                or provider_record.get(field) != expected
+            ):
+                errors.append(
+                    f"Provider {provider_id} must keep {field}={expected!r}."
+                )
+        safe_providers.append(
+            {
+                "provider_id": provider_id,
+                **{
+                    field: provider_record.get(field)
+                    for field in fixed_provider_fields
+                },
+            }
+        )
+
+    cards = catalog.get("capabilities", [])
+    if not isinstance(cards, list):
+        cards = []
+        errors.append("Local capability catalog capabilities must be a list.")
+    safe_cards: list[dict] = []
+    for index, card in enumerate(cards):
+        if not isinstance(card, dict):
+            errors.append(f"Capability card {index} must be an object.")
+            continue
+        if (
+            card.get("availability") != "descriptor-only"
+            or card.get("installed") is not False
+            or card.get("callable") is not False
+            or card.get("executable") is not False
+        ):
+            errors.append(
+                f"Capability card must remain descriptor-only: "
+                f"{card.get('capability_id', index)}"
+            )
+        provider = card.get("required_provider")
+        if provider is not None and not isinstance(provider, str):
+            errors.append(
+                "Capability card required_provider must be a string or null: "
+                f"{card.get('capability_id', index)}"
+            )
+        elif isinstance(provider, str) and provider not in provider_ids:
+            errors.append(
+                f"Capability card references an undeclared provider: {provider}"
+            )
+        safe_cards.append(
+            {
+                "capability_id": card.get("capability_id"),
+                "status": card.get("availability"),
+                "activation": card.get("activation"),
+                "installed": card.get("installed"),
+                "callable": card.get("callable"),
+                "executable": card.get("executable"),
+                "required_provider": provider,
+                "allowed_effects": card.get("allowed_effects"),
+                "forbidden_effects": card.get("forbidden_effects"),
+            }
+        )
+
+    report = {
+        "mode": "static-read-only",
+        "active_profile": selected_profile,
+        "profile_activation_verified": False,
+        "available_profiles": sorted(profiles),
+        "capability_catalog": {
+            "catalog_id": catalog.get("catalog_id"),
+            "discovery_mode": catalog.get("discovery_mode"),
+            "host_routing_verified": False,
+            "cards": safe_cards,
+        },
+        "declared_providers": sorted(
+            safe_providers,
+            key=lambda provider: provider["provider_id"],
+        ),
+        "permission_effects": {
+            "network": False,
+            "account_access": False,
+            "upload": False,
+            "persistence": False,
+            "installation": False,
+            "execution": False,
+            "external_action": False,
+        },
+        "data_locality": {
+            "customer_sensitive_data_upload": False,
+            "model_memory": False,
+            "telemetry": False,
+            "local_provider_storage_verified": False,
+        },
+        "limitations": [
+            "The report reads package declarations only.",
+            "It does not inspect user config, installed providers, accounts, credentials, project materials, logs, connector state, or runtime permissions.",
+            "A descriptor is not an installed or callable capability.",
+        ],
+    }
+    return report, errors
+
+
 def run_checks() -> tuple[list[str], list[str]]:
     errors = []
     warnings = []
@@ -302,14 +504,33 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Print machine-readable check results.",
     )
+    parser.add_argument(
+        "--profile",
+        help=(
+            "Report a declared package profile. This does not inspect or change "
+            "the host's active configuration."
+        ),
+    )
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
     errors, warnings = run_checks()
+    capability_report, capability_errors = capability_health_report(args.profile)
+    errors.extend(capability_errors)
     if args.json:
-        print(json.dumps({"ok": not errors, "errors": errors, "warnings": warnings}, indent=2))
+        print(
+            json.dumps(
+                {
+                    "ok": not errors,
+                    "errors": errors,
+                    "warnings": warnings,
+                    "capability_report": capability_report,
+                },
+                indent=2,
+            )
+        )
     elif errors:
         for warning in warnings:
             print(f"WARNING: {warning}")
@@ -319,6 +540,16 @@ def main() -> None:
         for warning in warnings:
             print(f"WARNING: {warning}")
         print("Doctor check passed.")
+        print(
+            "Capability profile: "
+            f"{capability_report['active_profile']} "
+            "(static declaration; host activation not verified)."
+        )
+        print(
+            "Declared domain capabilities: "
+            f"{len(capability_report['capability_catalog']['cards'])}; "
+            "all descriptor-only and non-executable."
+        )
 
     if errors:
         raise SystemExit(1)

@@ -24,8 +24,9 @@ Prefer searching for public facts, public docs, package docs, public GitHub
 repositories, release notes, CVEs, standards, and vendor docs.
 
 For private repository work, search public docs for libraries, frameworks,
-tools, errors, standards, or APIs. Do not paste private code snippets into
-external search unless the user explicitly approves the exact content.
+tools, errors, standards, or APIs. Never paste customer-sensitive content,
+private code, private prompts, identifiers, or derived confidential summaries
+into external search. Customer approval does not create an exception.
 
 ## Search Planning
 
