@@ -223,12 +223,13 @@ Inspect relevant files before editing. Look for:
 - repository-specific instructions such as `AGENTS.md`
 
 For large unfamiliar repositories, optionally consult
-`references/repomix-codebase-context.md`; generated context is a map, not a
-replacement for reading files you will edit.
+`references/repomix-codebase-context.md` <!-- profile-optional-reference -->;
+generated context is a map, not a replacement for reading files you will edit.
 
 For an approval-gated structural map assembled from explicitly allowed paths,
-consult `references/safe-project-context-map.md`. It is not a repository-wide
-scan, graph database, background index, or permission to read sensitive files.
+consult `references/safe-project-context-map.md` <!-- profile-optional-reference -->.
+It is not a repository-wide scan, graph
+database, background index, or permission to read sensitive files.
 
 ### 3. Plan
 
@@ -247,18 +248,19 @@ rollback path. A plan is a proposal, not permission to edit, run high-impact
 commands, or promote a result.
 
 When the user explicitly requests a single resumable goal-delivery record, use
-the bundled-optional
-`templates/GOAL_DRIVEN_DELIVERY_CONTRACT.md`. It is an explicit-only thin layer
-over the existing Planner/Builder/Evaluator, implementation-plan,
-working-state, and verification-evidence contracts. Do not create or persist an
-instance without approval for its exact file path, and do not treat it as
-execution, promotion, or next-stage authority.
+the bundled-optional `templates/GOAL_DRIVEN_DELIVERY_CONTRACT.md` <!-- profile-optional-reference -->.
+It is an explicit-only thin layer over the
+existing Planner/Builder/Evaluator, implementation-plan, working-state, and
+verification-evidence contracts. Do not create or persist an instance without
+approval for its exact file path, and do not treat it as execution, promotion,
+or next-stage authority.
 
 For complex implementation plans, use `templates/implementation-plan.md` when a
 written plan would reduce risk.
 
 For long-running work with many possible next steps, use
-`references/decision-map-and-frontier.md` to create an optional planning-only
+`references/decision-map-and-frontier.md` <!-- profile-optional-reference -->
+to create an optional planning-only
 Decision Map. The computed Frontier can recommend the next executable work, but
 it is not execution permission, approval, or a replacement for checkpoints.
 
@@ -337,21 +339,29 @@ Load only the references that match the task:
 - `references/code-review-response-protocol.md` for reviewer or CI feedback
 - `references/security-review-protocol.md` for defensive security review
 - `references/ship-readiness-protocol.md` for merge/release readiness
-- `references/decision-map-and-frontier.md` when the user asks what to do next,
-  how to sequence a long-running task, or how to identify the next safe PR
-- `references/external-search-protocol.md` when current public technical facts
-  are necessary
-- `references/safe-project-context-map.md` for a bounded map of an unfamiliar
-  repository before broad engineering work
+- `references/decision-map-and-frontier.md` <!-- profile-optional-reference -->
+  when the user asks what to do next, how to sequence a long-running task, or
+  how to identify the next safe PR
+- `references/external-search-protocol.md` <!-- profile-optional-reference -->
+  when current public technical facts are necessary
+- `references/safe-project-context-map.md` <!-- profile-optional-reference -->
+  for a bounded map of an unfamiliar repository before broad engineering work
 - `references/approved-tool-contract-card.md` before a selected external tool
   is proposed for a permissioned action
-- `references/local-voice-tool-sandbox.md` before proposing a local voice,
-  speech, voice-cloning, or voice-enabled MCP tool
-- `references/three-d-asset-provider-sandbox.md` before proposing an external
-  3D asset provider, hosted 3D-generation service, or 3D asset MCP tool
-- `references/ui-design-skill-adapter.md` when coordinating Hallmark or a
-  similar downstream UI or design skill; it defines authority, file-write,
-  external-source, design-token, and validation boundaries
+- `references/local-voice-tool-sandbox.md` <!-- profile-optional-reference -->
+  before proposing a local voice, speech, voice-cloning, or voice-enabled MCP
+  tool
+- `references/three-d-asset-provider-sandbox.md` <!-- profile-optional-reference -->
+  before proposing an external 3D asset provider, hosted 3D-generation
+  service, or 3D asset MCP tool
+- `references/ui-design-skill-adapter.md` <!-- profile-optional-reference -->
+  when coordinating Hallmark or a similar downstream UI or design skill; it
+  defines authority, file-write, external-source, design-token, and validation
+  boundaries
+
+The `profile-optional-reference` marker means the named resource may be
+described by the core entrypoint but is loadable only when the selected profile
+contains it. Inspect `package-manifest.json` before relying on such a resource.
 
 When this skill coordinates a downstream design or UI specialist, LHE safety,
 privacy, authority, file-scope, validation, and delivery rules take precedence.
@@ -368,15 +378,16 @@ not broaden implicit activation. Use them only when the user explicitly invokes
 this skill or explicitly requests that workflow. Do not select this skill
 implicitly for those domains merely because a reference exists.
 
-See `references/explicit-only-extensions.md` for the index covering writing,
-research, notebook, presentation, financial, jurisdiction, disaster monitoring,
-external skill discovery, skill lifecycle, SkillOpt-style optimization, local
-compute capability intake, and other optional workflows.
+See `references/explicit-only-extensions.md` <!-- profile-optional-reference -->
+for the index covering writing, research, notebook, presentation, financial,
+jurisdiction, disaster monitoring, external skill discovery, skill lifecycle,
+SkillOpt-style optimization, local compute capability intake, and other
+optional workflows.
 
 For explicitly authorized work with an Obsidian vault, Markdown note, JSON
-Canvas, or Obsidian Base, use `references/obsidian-knowledge-workflow.md`.
-Default to a proposal and exact-path approval; do not scan, index, sync, or
-write to a vault automatically.
+Canvas, or Obsidian Base, use `references/obsidian-knowledge-workflow.md` <!-- profile-optional-reference -->.
+Default to a proposal and exact-path
+approval; do not scan, index, sync, or write to a vault automatically.
 
 AI video briefs, storyboards, shot lists, visual prompts, asset manifests, and
 render handoffs belong to the `ai-video-production` skill unless the task is

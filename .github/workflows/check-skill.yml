@@ -51,6 +51,7 @@ jobs:
           python3 scripts/validate_plugin_package.py --help
           python3 scripts/test_fresh_install.py --help
           python3 scripts/check_release_readiness.py --help
+          python3 scripts/assemble_skill_profile.py --help
           python3 scripts/skill_update_selfcheck.py --help
 
       - name: Run productized package checks
@@ -69,6 +70,7 @@ jobs:
           python3 scripts/test_fresh_install.py --skip-codex-cli
           python3 scripts/check_release_readiness.py --version 0.3.0 --pre-tag-static
           python3 scripts/test_skill_update_selfcheck.py
+          python3 scripts/test_assemble_skill_profile.py
 
       - name: Compile Python helper scripts
         run: |
@@ -85,8 +87,10 @@ jobs:
           scripts/validate_plugin_package.py
           scripts/test_fresh_install.py
           scripts/check_release_readiness.py
+          scripts/assemble_skill_profile.py
           scripts/skill_update_selfcheck.py
           scripts/test_skill_update_selfcheck.py
+          scripts/test_assemble_skill_profile.py
           tests/test_release_tooling.py
           "
           if [ -f .agents/skills/long-horizon-engineering/scripts/audit_skill_optimization_readiness.py ]; then

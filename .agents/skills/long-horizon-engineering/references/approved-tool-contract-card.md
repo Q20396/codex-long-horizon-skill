@@ -4,9 +4,10 @@ Use this optional, documentation-only protocol after a tool or provider has
 been selected for a task. It turns a vague request such as "use this CLI" or
 "connect this provider" into a bounded proposal that a person can review.
 
-Use `external-tool-provider-protocol.md` and
-`templates/tool-provider-capability-map.md` first when comparing candidates.
-Use the contract card only for the selected candidate.
+Use `external-tool-provider-protocol.md` <!-- profile-optional-reference --> and
+`templates/tool-provider-capability-map.md` <!-- profile-optional-reference -->
+first when comparing candidates. Use the contract card only for the selected
+candidate.
 
 ## Scope
 
