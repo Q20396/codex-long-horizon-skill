@@ -76,8 +76,10 @@ REQUIRED_CORE_FILES = [
     Path("scripts/validate_plugin_package.py"),
     Path("scripts/test_fresh_install.py"),
     Path("scripts/check_release_readiness.py"),
+    Path("scripts/assemble_skill_profile.py"),
     Path("scripts/skill_update_selfcheck.py"),
     Path("scripts/test_skill_update_selfcheck.py"),
+    Path("scripts/test_assemble_skill_profile.py"),
     Path("releases/latest.json"),
     Path("releases/long-horizon-engineering/latest.json"),
     Path("releases/ai-video-production/latest.json"),
@@ -154,6 +156,7 @@ CORE_COMMANDS = [
     [PYTHON, "scripts/test_fresh_install.py", "--skip-codex-cli"],
     [PYTHON, "scripts/check_release_readiness.py", "--version", "0.3.0", "--pre-tag-static"],
     [PYTHON, "scripts/test_skill_update_selfcheck.py"],
+    [PYTHON, "scripts/test_assemble_skill_profile.py"],
     ["git", "diff", "--check"],
 ]
 
@@ -173,6 +176,7 @@ CI_EXPECTED = [
     ),
     ("skill_update_selfcheck.py --help", ["skill_update_selfcheck.py", "--help"]),
     ("test_skill_update_selfcheck.py", ["test_skill_update_selfcheck.py"]),
+    ("test_assemble_skill_profile.py", ["test_assemble_skill_profile.py"]),
     ("Python compile check", ["py_compile"]),
     ("git diff --check", ["git", "diff", "--check"]),
     ("update dry-run smoke test", ["update_installed_skill.py", "--target-root"]),
