@@ -1,0 +1,72 @@
+{
+  "schema_version": "1.0.0",
+  "synthetic_only": true,
+  "customer_sensitive_data_present": false,
+  "pilot_id": "SYN-PILOT-001",
+  "mode": "fixture-only",
+  "adapter_id": "synthetic-local-read-only-adapter",
+  "provider_status": "declared-disabled",
+  "runtime_connector_present": false,
+  "network_access": false,
+  "account_access": false,
+  "credentials_present": false,
+  "encrypted_store_present": false,
+  "os_credential_integration_present": false,
+  "checkpoints": [
+    {
+      "checkpoint_id": "SYN-CHECKPOINT-001",
+      "checkpoint_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "previous_checkpoint_sha256": null,
+      "cursor_status": "current",
+      "source_locator": "synthetic://mailbox/legal-folder",
+      "source_version": "synthetic-v1",
+      "item_hashes": [
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      ],
+      "delta_item_hashes": [
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      ]
+    },
+    {
+      "checkpoint_id": "SYN-CHECKPOINT-002",
+      "checkpoint_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+      "previous_checkpoint_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "cursor_status": "current",
+      "source_locator": "synthetic://mailbox/legal-folder",
+      "source_version": "synthetic-v2",
+      "item_hashes": [
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      ],
+      "delta_item_hashes": [
+        "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      ]
+    }
+  ],
+  "customer_outcome": {
+    "FACT": [
+      "The second synthetic checkpoint adds one new hash while preserving two prior hashes."
+    ],
+    "INFERENCE": [
+      "A future local provider could use a verified cursor and content hashes to avoid reprocessing unchanged items."
+    ],
+    "UNKNOWN": [
+      "No connector, encryption, credential-store, deletion, legal-hold, or runtime behavior has been implemented or verified."
+    ],
+    "status": "MORE_EVIDENCE_NEEDED",
+    "next_safe_action": "Approve an independent read-only review of the fixture-only provider contract before any runtime design work.",
+    "decision_authority": "customer"
+  },
+  "intentionally_unimplemented": [
+    "connector-runtime",
+    "account-authentication",
+    "network-access",
+    "encrypted-local-store",
+    "os-credential-integration",
+    "background-sync",
+    "customer-data-processing"
+  ]
+}

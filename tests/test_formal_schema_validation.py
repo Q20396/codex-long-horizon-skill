@@ -171,6 +171,26 @@ class FormalSchemaStaticTests(unittest.TestCase):
             ],
         )
 
+    def test_authority_schemas_have_positive_and_negative_formal_fixtures(self) -> None:
+        expected = {
+            "decision-record.schema.json",
+            "gate-result.schema.json",
+            "promotion.schema.json",
+        }
+        positives, negatives = VALIDATOR.materialized_fixture_cases()
+        positive_schemas = {schema for schema, _, _ in positives}
+        negative_schemas = {schema for schema, _, _, _ in negatives}
+
+        self.assertTrue(expected <= VALIDATOR.FIXTURE_VALIDATED_SCHEMAS)
+        self.assertTrue(expected <= positive_schemas)
+        self.assertTrue(expected <= negative_schemas)
+        self.assertEqual([], VALIDATOR.validate_fixture_coverage(positives, negatives))
+        for schema in expected:
+            self.assertGreaterEqual(
+                sum(1 for item in negatives if item[0] == schema),
+                3,
+            )
+
     def test_schema_inventory_rejects_missing_local_fragment(self) -> None:
         original = VALIDATOR.load_json
 
@@ -843,6 +863,30 @@ class FormalSchemaStaticTests(unittest.TestCase):
         )[1]
         self.assertNotIn("--verify-acquisition", formal_step)
 
+    def test_workflow_pins_third_party_actions_to_reviewed_commits(self) -> None:
+        text = WORKFLOW.read_text(encoding="utf-8")
+        action_lines = [
+            line.strip()
+            for line in text.splitlines()
+            if line.strip().startswith("uses: actions/")
+        ]
+        self.assertEqual(4, len(action_lines))
+        for line in action_lines:
+            reference = line.rsplit("@", 1)[-1]
+            self.assertRegex(reference, r"^[0-9a-f]{40}$")
+        self.assertEqual(
+            2,
+            action_lines.count(
+                "uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262"
+            ),
+        )
+        self.assertEqual(
+            2,
+            action_lines.count(
+                "uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065"
+            ),
+        )
+
     def test_workflow_rejects_missing_or_step_local_candidate_base(self) -> None:
         text = WORKFLOW.read_text(encoding="utf-8")
         job_level = (
@@ -966,8 +1010,8 @@ class FormalSchemaEngineTests(unittest.TestCase):
         self.assertEqual(len(VALIDATOR.SCHEMA_INVENTORY), result["schema_count"])
         self.assertGreater(result["positive_fixture_count"], 0)
         self.assertGreater(result["negative_fixture_count"], 0)
-        self.assertEqual(4, result["fixture_validated_schema_count"])
-        self.assertEqual(17, result["syntax_only_schema_count"])
+        self.assertEqual(7, result["fixture_validated_schema_count"])
+        self.assertEqual(16, result["syntax_only_schema_count"])
 
 
 if __name__ == "__main__":

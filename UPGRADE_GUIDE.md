@@ -28,9 +28,10 @@ isolated CLI workflow to remove the prior registration and add:
 codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.3.0
 ```
 
-The `v0.3.0` ref is prospective during Phase A. Remote tag resolution, real CLI
-rebind behavior, plugin installation, and installed Skill updates remain
-unverified and separately approval-gated.
+The `v0.3.0` ref is prospective and its marketplace policy is
+`NOT_AVAILABLE`. Remote tag resolution, the candidate-bound formal release
+gate, real CLI rebind behavior, plugin installation, and installed Skill
+updates remain unverified and separately approval-gated.
 
 ### Direct Skill Upgrade
 

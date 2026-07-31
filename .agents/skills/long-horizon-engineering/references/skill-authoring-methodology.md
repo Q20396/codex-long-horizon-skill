@@ -76,5 +76,5 @@ overwriting project-specific instructions without approval.
 ### Search External Sources With Private Data
 
 If the user asks to search external sources involving private data, separate the
-public question from private context, search public docs where possible, and ask
-before sending any sensitive details to external providers.
+public question from private context and search public docs without sending the
+private context. Never send customer-sensitive details to an external provider.

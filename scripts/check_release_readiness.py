@@ -179,6 +179,13 @@ def parse_args() -> argparse.Namespace:
         "--formal-schema-candidate-base",
         help="Full immutable base commit for the current descendant candidate.",
     )
+    parser.add_argument(
+        "--release-hygiene-base",
+        help=(
+            "Full immutable local origin/main commit for an isolated, clean "
+            "release-preparation worktree. Valid only with --pre-tag-static."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -309,6 +316,15 @@ def package_errors(version: str, release_date: str | None, errors: list[str]) ->
             source = plugins[0].get("source")
             if isinstance(source, dict):
                 ref = source.get("ref")
+            policy = plugins[0].get("policy")
+            installation = (
+                policy.get("installation") if isinstance(policy, dict) else None
+            )
+            if installation != "NOT_AVAILABLE":
+                errors.append(
+                    "unreleased static candidate marketplace policy.installation "
+                    "must be 'NOT_AVAILABLE'"
+                )
         expected_ref = f"v{version}"
         if ref != expected_ref:
             errors.append(
@@ -322,6 +338,12 @@ def package_errors(version: str, release_date: str | None, errors: list[str]) ->
         if actual is not None and actual != version:
             errors.append(
                 f"{skill_name}/SKILL.md version {actual!r} does not match {version!r}"
+            )
+        text = path.read_text(encoding="utf-8") if path.is_file() else ""
+        if not re.search(r"^update_channel:\s*candidate\s*$", text, re.MULTILINE):
+            errors.append(
+                f"{skill_name}/SKILL.md must declare update_channel: candidate "
+                "until release"
             )
 
     release_manifests = [
@@ -340,8 +362,21 @@ def package_errors(version: str, release_date: str | None, errors: list[str]) ->
                 f"{relative} release_date {data.get('release_date')!r} "
                 f"does not match {release_date!r}"
             )
+        if data.get("channel") != "candidate" or data.get("released") is not False:
+            errors.append(
+                f"{relative} must describe the unreleased candidate channel"
+            )
+        if data.get("risk") != "not-assessed":
+            errors.append(
+                f"{relative} risk must be 'not-assessed' until an independently "
+                "reviewed release assessment exists"
+            )
 
     latest = load_json(ROOT / "releases" / "latest.json")
+    if latest.get("channel") != "candidate" or latest.get("released") is not False:
+        errors.append(
+            "releases/latest.json must describe the unreleased candidate channel"
+        )
     if release_date is not None and latest.get("updated_at") != release_date:
         errors.append(
             f"releases/latest.json updated_at {latest.get('updated_at')!r} "
@@ -390,6 +425,54 @@ def formal_worktree_errors(errors: list[str]) -> None:
             "formal gate requires a clean candidate worktree; "
             "staged, unstaged, and untracked paths are forbidden"
         )
+
+
+def release_hygiene_errors(expected_base: str | None, errors: list[str]) -> None:
+    if expected_base is None:
+        return
+    if not re.fullmatch(r"[0-9a-f]{40}", expected_base):
+        errors.append("release hygiene base must be a full commit SHA")
+        return
+
+    commands = {
+        "base": ["git", "rev-parse", f"{expected_base}^{{commit}}"],
+        "origin_main": [
+            "git",
+            "rev-parse",
+            "refs/remotes/origin/main^{commit}",
+        ],
+        "merge_base": ["git", "merge-base", expected_base, "HEAD"],
+        "status": ["git", "status", "--porcelain=v1", "--untracked-files=all"],
+        "git_dir": [
+            "git",
+            "rev-parse",
+            "--path-format=absolute",
+            "--git-dir",
+        ],
+        "common_dir": [
+            "git",
+            "rev-parse",
+            "--path-format=absolute",
+            "--git-common-dir",
+        ],
+    }
+    results = {name: run(command) for name, command in commands.items()}
+    if any(result.returncode != 0 for result in results.values()):
+        errors.append("release hygiene could not verify repository identity")
+        return
+    if results["base"].stdout.strip() != expected_base:
+        errors.append("release hygiene base does not resolve to the expected commit")
+    if results["origin_main"].stdout.strip() != expected_base:
+        errors.append("release hygiene base does not match local origin/main")
+    if results["merge_base"].stdout.strip() != expected_base:
+        errors.append("release candidate is not based on the recorded origin/main commit")
+    if results["status"].stdout.strip():
+        errors.append(
+            "release hygiene requires a clean worktree; staged, unstaged, "
+            "and untracked paths are forbidden"
+        )
+    if results["git_dir"].stdout.strip() == results["common_dir"].stdout.strip():
+        errors.append("release hygiene requires an isolated linked worktree")
 
 
 def formal_schema_errors(args: argparse.Namespace, errors: list[str]) -> None:
@@ -691,6 +774,10 @@ def validate(args: argparse.Namespace) -> list[str]:
     package_errors(version, release_date, errors)
     changelog_errors(version, release_date, errors)
     tag_errors(version, args.pre_tag, errors)
+    if args.release_hygiene_base is not None and not args.pre_tag_static:
+        errors.append("release hygiene base is valid only with --pre-tag-static")
+    else:
+        release_hygiene_errors(args.release_hygiene_base, errors)
     formal_schema_errors(args, errors)
     return errors
 

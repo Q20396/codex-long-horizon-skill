@@ -1,7 +1,7 @@
 {
   "name": "codex-long-horizon-skill",
   "version": "0.3.0",
-  "description": "Production-oriented Codex skills for long-running engineering work and AI video planning.",
+  "description": "Local-first governance and evidence workflows for long-running engineering work, with static high-stakes capability discovery.",
   "author": {
     "name": "Q20396"
   },
@@ -10,19 +10,23 @@
   "keywords": [
     "codex",
     "skills",
+    "governance",
+    "evidence",
+    "local-first",
     "engineering",
-    "validation",
+    "capability-discovery",
     "video"
   ],
   "skills": "./.agents/skills/",
   "interface": {
     "displayName": "Codex Long Horizon Skills",
-    "shortDescription": "Long-horizon engineering and AI video planning skills.",
-    "longDescription": "Reusable Codex skills for evidence-backed engineering workflows, safe resumption, validation, PR handoff, and AI video planning artifacts.",
+    "shortDescription": "Local-first governance, evidence, and bounded capability discovery.",
+    "longDescription": "Reusable local-first governance and evidence workflows for long-running engineering, safe resumption, validation, and static suggestion of descriptor-only high-stakes capability cards. No customer-data upload, account connection, domain execution, runtime authority, or automatic installation.",
     "developerName": "Q20396",
     "category": "Productivity",
     "defaultPrompt": [
-      "Use the long-horizon-engineering skill. Explore the repository, plan the change, validate it, and open a draft PR.",
+      "Use the long-horizon-engineering skill in guided customer mode. Start with intake, keep customer-sensitive material local, classify FACT, INFERENCE, and UNKNOWN, and propose exactly one next safe action for my decision.",
+      "Use the long-horizon-engineering skill. Explore the repository, plan the change, validate it, and stop before any unapproved external action.",
       "Use the ai-video-production skill. Create a video brief, storyboard, shot list, asset manifest, and render handoff using placeholder assets."
     ]
   }

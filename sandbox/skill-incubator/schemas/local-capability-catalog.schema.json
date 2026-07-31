@@ -1,0 +1,200 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:codex-long-horizon-skill:schema:local-capability-catalog:1.0.0",
+  "title": "Local Capability Discovery Catalog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schema_version",
+    "catalog_id",
+    "package_disposition",
+    "activation",
+    "profile_id",
+    "discovery_mode",
+    "runtime_executable",
+    "host_enforced",
+    "authority",
+    "providers",
+    "capabilities",
+    "reason_codes"
+  ],
+  "properties": {
+    "$schema": {"type": "string"},
+    "schema_version": {"const": "1.0.0"},
+    "catalog_id": {"const": "lhe-local-capability-catalog"},
+    "package_disposition": {"const": "sandbox-only"},
+    "activation": {"const": "explicit-only"},
+    "profile_id": {"const": "local-governance-core"},
+    "discovery_mode": {"const": "descriptor-only"},
+    "runtime_executable": {"const": false},
+    "host_enforced": {"const": false},
+    "authority": {"$ref": "#/$defs/authority"},
+    "providers": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/provider"}
+    },
+    "capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/capability"}
+    },
+    "reason_codes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Z][A-Z0-9_]+$"
+      }
+    }
+  },
+  "$defs": {
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "keyword_match_grants_authority",
+        "auto_load_uninstalled_code",
+        "auto_install",
+        "auto_execute",
+        "network_access",
+        "account_access",
+        "persistence",
+        "customer_sensitive_data_upload",
+        "model_memory",
+        "telemetry"
+      ],
+      "properties": {
+        "keyword_match_grants_authority": {"const": false},
+        "auto_load_uninstalled_code": {"const": false},
+        "auto_install": {"const": false},
+        "auto_execute": {"const": false},
+        "network_access": {"const": false},
+        "account_access": {"const": false},
+        "persistence": {"const": false},
+        "customer_sensitive_data_upload": {"const": false},
+        "model_memory": {"const": false},
+        "telemetry": {"const": false}
+      }
+    },
+    "provider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provider_id",
+        "status",
+        "interface_only",
+        "runtime_present",
+        "connector_implementations_present",
+        "synthetic_pilot_status",
+        "network_access",
+        "account_access",
+        "credential_access",
+        "persistence_authority",
+        "customer_sensitive_data_upload",
+        "model_memory",
+        "telemetry",
+        "expires_at"
+      ],
+      "properties": {
+        "provider_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]+$"
+        },
+        "status": {"const": "declared-disabled"},
+        "interface_only": {"const": true},
+        "runtime_present": {"const": false},
+        "connector_implementations_present": {"const": false},
+        "synthetic_pilot_status": {"const": "fixture-only"},
+        "network_access": {"const": false},
+        "account_access": {"const": false},
+        "credential_access": {"const": false},
+        "persistence_authority": {"const": false},
+        "customer_sensitive_data_upload": {"const": false},
+        "model_memory": {"const": false},
+        "telemetry": {"const": false},
+        "expires_at": {"const": null}
+      }
+    },
+    "capability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "capability_id",
+        "display_name",
+        "domain",
+        "keywords",
+        "description",
+        "descriptor_path",
+        "required_provider",
+        "availability",
+        "activation",
+        "installed",
+        "callable",
+        "executable",
+        "allowed_effects",
+        "forbidden_effects",
+        "next_safe_action"
+      ],
+      "properties": {
+        "capability_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]+$"
+        },
+        "display_name": {"type": "string", "minLength": 1},
+        "domain": {
+          "enum": [
+            "legal-evidence-organization",
+            "document-governance",
+            "investment-research"
+          ]
+        },
+        "keywords": {
+          "type": "array",
+          "minItems": 2,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 3}
+        },
+        "description": {"type": "string", "minLength": 1},
+        "descriptor_path": {
+          "type": "string",
+          "pattern": "^sandbox/skill-incubator/domain-packs/[a-z0-9-]+/pack\\.json$"
+        },
+        "required_provider": {
+          "type": ["string", "null"]
+        },
+        "availability": {"const": "descriptor-only"},
+        "activation": {"const": "explicit-only"},
+        "installed": {"const": false},
+        "callable": {"const": false},
+        "executable": {"const": false},
+        "allowed_effects": {
+          "const": [
+            "discover",
+            "recommend",
+            "request-explicit-approval"
+          ]
+        },
+        "forbidden_effects": {
+          "const": [
+            "read-customer-data",
+            "write",
+            "network",
+            "account-access",
+            "upload",
+            "persist",
+            "install",
+            "execute",
+            "publish",
+            "external-action"
+          ]
+        },
+        "next_safe_action": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}

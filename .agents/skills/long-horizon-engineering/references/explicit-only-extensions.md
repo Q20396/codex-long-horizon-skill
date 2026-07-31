@@ -3,6 +3,11 @@
 These references preserve optional workflows without broadening implicit
 activation for `long-horizon-engineering`.
 
+The packaged local capability catalog may recognize exact high-stakes domain
+keywords, but recognition produces a descriptor-only suggestion. It does not
+load this reference, select a domain workflow, install code, connect a provider,
+or grant any effect.
+
 Use them only when:
 
 - the user explicitly invokes `long-horizon-engineering`, or

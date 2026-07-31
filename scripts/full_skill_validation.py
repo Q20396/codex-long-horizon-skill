@@ -27,6 +27,7 @@ LHE_SCRIPTS = LHE / "scripts"
 
 REQUIRED_CORE_FILES = [
     LHE / "SKILL.md",
+    LHE / "catalog/local-capability-catalog.json",
     AI_VIDEO / "SKILL.md",
     LHE_SCRIPTS / "check_skill_package.py",
     LHE_SCRIPTS / "doctor.py",
@@ -53,6 +54,8 @@ REQUIRED_CORE_FILES = [
     Path("docs/first-contribution.md"),
     Path("docs/maintainers/release-checklist.md"),
     Path("docs/plugin-install.md"),
+    Path("docs/customer-guided-workflow.md"),
+    Path("docs/high-stakes-customer-workflows.md"),
     Path("docs/releases/v0.1.0.md"),
     Path("docs/releases/v0.2.0.md"),
     Path("docs/releases/v0.2.1.md"),
@@ -72,6 +75,15 @@ REQUIRED_CORE_FILES = [
     Path("examples/resume-work/expected-output.md"),
     Path("examples/resume-work/prompt.md"),
     Path("examples/resume-work/workflow.md"),
+    Path("examples/customer-guided-decision/expected-output.md"),
+    Path("examples/customer-guided-decision/prompt.md"),
+    Path("examples/customer-guided-decision/workflow.md"),
+    Path("examples/high-stakes-customer-workflows.md"),
+    Path("sandbox/skill-incubator/architecture/local-capability-catalog.md"),
+    Path("sandbox/skill-incubator/architecture/local-case-evidence-provider.json"),
+    Path("sandbox/skill-incubator/architecture/local-case-evidence-provider.md"),
+    Path("sandbox/skill-incubator/schemas/local-capability-catalog.schema.json"),
+    Path("sandbox/skill-incubator/schemas/local-case-evidence-provider.schema.json"),
     Path("scripts/generate_skill_catalog.py"),
     Path("scripts/validate_plugin_package.py"),
     Path("scripts/test_fresh_install.py"),
@@ -89,6 +101,7 @@ REQUIRED_CORE_FILES = [
     Path("prompts/pr-review.md"),
     Path("prompts/repository-migration.md"),
     Path("prompts/resume-work.md"),
+    Path("prompts/customer-guided-decision.md"),
     Path("templates/findings-report.md"),
     Path("templates/migration-report.md"),
     Path("templates/project-plan.md"),
@@ -178,19 +191,98 @@ CI_EXPECTED = [
     ("update dry-run smoke test", ["update_installed_skill.py", "--target-root"]),
 ]
 
-ALLOWED_RELEASE_WARNINGS = {
-    ("Optional Integration Checks", ".agents/skills/long-horizon-engineering/scripts/audit_skill_optimization_readiness.py", "optional related file missing"),
-    ("Optional Integration Checks", ".agents/skills/long-horizon-engineering/references/disaster-monitoring-protocol.md", "optional related file missing"),
-    ("Optional Integration Checks", ".agents/skills/long-horizon-engineering/scripts/enable_disaster_monitoring.py", "optional related file missing"),
-    ("Optional Integration Checks", ".agents/skills/long-horizon-engineering/templates/situation-report.md", "optional related file missing"),
-    ("Optional Integration Checks", ".agents/skills/long-horizon-engineering/templates/source-reliability-table.md", "optional related file missing"),
-    ("Optional Integration Checks", ".agents/skills/long-horizon-engineering/templates/incident-timeline.md", "optional related file missing"),
-    ("Optional Integration Checks", ".agents/skills/long-horizon-engineering/templates/affected-area-summary.md", "optional related file missing"),
-    ("Optional Integration Checks", ".agents/skills/long-horizon-engineering/templates/public-safety-communication-checklist.md", "optional related file missing"),
-    ("Optional Integration Checks", ".agents/skills/long-horizon-engineering/templates/public-alert-draft.md", "optional related file missing"),
-    ("Optional Disaster Monitoring Scaffold", "scaffold", "not present; skipped"),
-    ("Optional SkillOpt Readiness", "readiness script", "not present; skipped"),
+OPTIONAL_WARNING_WAIVERS = {
+    (
+        "Optional Integration Checks",
+        ".agents/skills/long-horizon-engineering/scripts/audit_skill_optimization_readiness.py",
+        "optional related file missing",
+    ): (
+        "SKILLOPT_RUNNER_NOT_BUNDLED: the retained SkillOpt material is "
+        "documentation-only; adding an executable optimizer runner requires a "
+        "separate implementation and dependency review."
+    ),
+    (
+        "Optional Integration Checks",
+        ".agents/skills/long-horizon-engineering/references/disaster-monitoring-protocol.md",
+        "optional related file missing",
+    ): (
+        "DISASTER_MONITORING_INCOMPLETE: enablement guidance is retained for "
+        "reference, but no complete monitoring capability is bundled or claimed."
+    ),
+    (
+        "Optional Integration Checks",
+        ".agents/skills/long-horizon-engineering/scripts/enable_disaster_monitoring.py",
+        "optional related file missing",
+    ): (
+        "DISASTER_AUTOMATION_NOT_BUNDLED: no installer or state-writing "
+        "monitoring automation is included."
+    ),
+    (
+        "Optional Integration Checks",
+        ".agents/skills/long-horizon-engineering/templates/situation-report.md",
+        "optional related file missing",
+    ): (
+        "DISASTER_TEMPLATE_NOT_BUNDLED: the optional monitoring scaffold is "
+        "intentionally incomplete and non-callable."
+    ),
+    (
+        "Optional Integration Checks",
+        ".agents/skills/long-horizon-engineering/templates/source-reliability-table.md",
+        "optional related file missing",
+    ): (
+        "DISASTER_TEMPLATE_NOT_BUNDLED: the optional monitoring scaffold is "
+        "intentionally incomplete and non-callable."
+    ),
+    (
+        "Optional Integration Checks",
+        ".agents/skills/long-horizon-engineering/templates/incident-timeline.md",
+        "optional related file missing",
+    ): (
+        "DISASTER_TEMPLATE_NOT_BUNDLED: the optional monitoring scaffold is "
+        "intentionally incomplete and non-callable."
+    ),
+    (
+        "Optional Integration Checks",
+        ".agents/skills/long-horizon-engineering/templates/affected-area-summary.md",
+        "optional related file missing",
+    ): (
+        "DISASTER_TEMPLATE_NOT_BUNDLED: the optional monitoring scaffold is "
+        "intentionally incomplete and non-callable."
+    ),
+    (
+        "Optional Integration Checks",
+        ".agents/skills/long-horizon-engineering/templates/public-safety-communication-checklist.md",
+        "optional related file missing",
+    ): (
+        "DISASTER_TEMPLATE_NOT_BUNDLED: the optional monitoring scaffold is "
+        "intentionally incomplete and non-callable."
+    ),
+    (
+        "Optional Integration Checks",
+        ".agents/skills/long-horizon-engineering/templates/public-alert-draft.md",
+        "optional related file missing",
+    ): (
+        "DISASTER_TEMPLATE_NOT_BUNDLED: the optional monitoring scaffold is "
+        "intentionally incomplete and non-callable."
+    ),
+    (
+        "Optional Disaster Monitoring Scaffold",
+        "scaffold",
+        "not present; skipped",
+    ): (
+        "DISASTER_AUTOMATION_NOT_BUNDLED: the missing enablement script keeps "
+        "the optional monitoring workflow non-executable."
+    ),
+    (
+        "Optional SkillOpt Readiness",
+        "readiness script",
+        "not present; skipped",
+    ): (
+        "SKILLOPT_RUNNER_NOT_BUNDLED: readiness execution is unavailable until "
+        "a separately reviewed runner exists."
+    ),
 }
+ALLOWED_RELEASE_WARNINGS = set(OPTIONAL_WARNING_WAIVERS)
 
 BIDI_CONTROLS = {
     chr(value)
@@ -598,12 +690,16 @@ def check_ci_coverage(report: Report) -> None:
 
 def enforce_release_warning_allowlist(report: Report) -> None:
     for check in list(report.warnings()):
-        if (check.section, check.name, check.detail) not in ALLOWED_RELEASE_WARNINGS:
+        key = (check.section, check.name, check.detail)
+        waiver = OPTIONAL_WARNING_WAIVERS.get(key)
+        if waiver is None:
             report.fail(
                 "Release Warning Gate",
                 check.name,
                 f"unapproved warning from {check.section}: {check.detail}",
             )
+        else:
+            report.pass_("Release Warning Waivers", check.name, waiver)
 
 
 def print_report(report: Report) -> None:
@@ -620,6 +716,7 @@ def print_report(report: Report) -> None:
         "Python Compile",
         "Static Checks",
         "CI Coverage",
+        "Release Warning Waivers",
     ]
     sections = report.by_section()
     for section in ordered_sections:

@@ -25,9 +25,11 @@ Require evidence before capability expansion. GitHub Stars, popularity, and
 novelty are not evidence of safety, quality, compatibility, or justified
 capability expansion.
 
-Use privacy by default. Sensitive or private data should not be read, copied,
-logged, summarized, committed, uploaded, or used for evaluation unless the user
-explicitly approves the specific scope.
+Use privacy by default. Sensitive or private data may be processed locally only
+through an independently reviewed local mechanism and the minimum approved
+scope. It must not be logged, committed, uploaded, pasted into a remote model,
+sent to telemetry, or used for reusable evaluation. Customer approval does not
+create an external-transfer exception.
 
 Plan compatibility and rollback before promoting a skill change. A reviewer
 should be able to reject, revert, freeze, or narrow the change without damaging

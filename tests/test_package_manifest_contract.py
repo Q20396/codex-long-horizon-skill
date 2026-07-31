@@ -30,6 +30,14 @@ class PackageManifestContractTests(unittest.TestCase):
         self.assertEqual(manifest["profiles"]["core-only"]["components"], ["core"])
         self.assertEqual(manifest["profiles"]["core-only"]["separate_skills"], [])
         self.assertEqual(
+            manifest["profiles"]["local-governance-core"]["components"],
+            ["core"],
+        )
+        self.assertEqual(
+            manifest["profiles"]["local-governance-core"]["separate_skills"],
+            [],
+        )
+        self.assertEqual(
             manifest["profiles"]["lhe-bundled"]["components"],
             ["core", "bundled-optional"],
         )
@@ -135,6 +143,22 @@ class PackageManifestContractTests(unittest.TestCase):
         self.assertEqual(errors, [])
         self.assertTrue(contract.loaded_from_manifest)
         self.assertEqual(contract.selected_profile, "core-only")
+        self.assertEqual(
+            set(contract.lhe_required_files),
+            set(manifest["components"]["core"]["paths"]),
+        )
+        self.assertEqual(contract.ai_video_required_files, ())
+
+    def test_checker_selects_local_governance_core_alias(self) -> None:
+        spec = importlib.util.spec_from_file_location("check_skill_package", CHECKER)
+        module = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
+        spec.loader.exec_module(module)
+        manifest = self.load_json(MANIFEST)
+        contract, errors = module.load_package_contract("local-governance-core")
+        self.assertEqual(errors, [])
+        self.assertTrue(contract.loaded_from_manifest)
+        self.assertEqual(contract.selected_profile, "local-governance-core")
         self.assertEqual(
             set(contract.lhe_required_files),
             set(manifest["components"]["core"]["paths"]),

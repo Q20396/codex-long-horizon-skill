@@ -1,5 +1,10 @@
 # Missing Capability Skill Discovery
 
+For packaged local discovery, read
+`../catalog/local-capability-catalog.json`. Keyword matches are suggestions only.
+The catalog cannot authorize, install, load, route to, or execute uninstalled
+code. Sandbox descriptors without a host-visible `SKILL.md` are not callable.
+
 Use this protocol when a task appears to need a skill, workflow, or domain
 methodology that is not available locally, or when repeated task evidence shows
 the current skill has a capability gap.

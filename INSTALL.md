@@ -9,17 +9,17 @@ This repository contains reusable Codex skills:
 
 Plugin installation is the preferred reusable distribution path.
 
-The Phase A candidate uses the prospective immutable `v0.3.0` marketplace
-reference:
+The unreleased candidate records the prospective immutable `v0.3.0`
+marketplace reference with `policy.installation: NOT_AVAILABLE`:
 
 ```bash
 codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.3.0
 ```
 
-Do not run this command until the tag and isolated marketplace resolution are
-independently verified. Phase A performs static checks only and is not
-release-ready. Use `--ref main` only when you intentionally accept mutable,
-unreleased repository state:
+Do not run this command while the policy is `NOT_AVAILABLE`. A tag,
+candidate-bound formal gate, isolated marketplace resolution, release decision,
+and installation guidance must first be independently verified. `main` is
+mutable, unreleased repository state and is not a stable installation channel:
 
 ```bash
 codex plugin marketplace add Q20396/codex-long-horizon-skill --ref main

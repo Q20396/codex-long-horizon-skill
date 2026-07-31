@@ -1,0 +1,77 @@
+{
+  "schema_version": "1.0",
+  "synthetic_only": true,
+  "customer_sensitive_data_present": false,
+  "cases": [
+    {
+      "case_id": "CASE-HIGH-STAKES-LEGAL-001",
+      "capability_id": "australian-legal-evidence",
+      "status": "MORE_EVIDENCE_NEEDED",
+      "FACT": [
+        "The synthetic matter inventory declares two source classes."
+      ],
+      "INFERENCE": [
+        "A local indexed chronology could reduce repeated full rescans."
+      ],
+      "UNKNOWN": [
+        "Connector evidence, content hashes, and counsel-directed preservation rules are unavailable."
+      ],
+      "next_safe_action": "Approve proposal-only review of the disabled local provider contract using synthetic fixtures.",
+      "decision_authority": "customer",
+      "forbidden_effects": [
+        "upload",
+        "account_access",
+        "legal_advice",
+        "filing",
+        "external_contact"
+      ]
+    },
+    {
+      "case_id": "CASE-HIGH-STAKES-FAMILY-001",
+      "capability_id": "family-office-document-governance",
+      "status": "READY_FOR_CUSTOMER_DECISION",
+      "FACT": [
+        "The synthetic metadata inventory assigns an owner and retention label to every sample record."
+      ],
+      "INFERENCE": [
+        "A local metadata-only pilot could reveal duplicate and missing records."
+      ],
+      "UNKNOWN": [
+        "Production ownership and retention rules have not been tested."
+      ],
+      "next_safe_action": "Approve one local metadata-only pilot against a separately named synthetic directory.",
+      "decision_authority": "customer",
+      "forbidden_effects": [
+        "upload",
+        "content_read",
+        "delete",
+        "publish",
+        "external_contact"
+      ]
+    },
+    {
+      "case_id": "CASE-HIGH-STAKES-EQUITY-001",
+      "capability_id": "public-equity-research",
+      "status": "BLOCKED",
+      "FACT": [
+        "The synthetic request includes a brokerage-account connection and trade action."
+      ],
+      "INFERENCE": [
+        "Public-source research may support a separate customer allocation decision."
+      ],
+      "UNKNOWN": [
+        "No public-source scope or as-of time was supplied."
+      ],
+      "next_safe_action": "Replace the account and trade request with a public-source research-only question and approved as-of date.",
+      "decision_authority": "customer",
+      "forbidden_effects": [
+        "upload",
+        "account_access",
+        "credential_access",
+        "order",
+        "trade",
+        "rebalance"
+      ]
+    }
+  ]
+}

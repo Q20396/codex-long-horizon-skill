@@ -1,6 +1,7 @@
 {
   "repo": "https://github.com/Q20396/codex-long-horizon-skill",
-  "channel": "stable",
+  "channel": "candidate",
+  "released": false,
   "updated_at": "2026-07-27",
   "skills": {
     "long-horizon-engineering": {

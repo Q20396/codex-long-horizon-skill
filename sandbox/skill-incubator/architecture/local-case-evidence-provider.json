@@ -1,0 +1,101 @@
+{
+  "contract_id": "local-case-evidence-provider",
+  "schema_version": "1.0.0",
+  "package_disposition": "sandbox-only",
+  "activation": "explicit-only",
+  "provider_status": "declared-disabled",
+  "runtime_executable": false,
+  "host_enforced": false,
+  "connector_implementations_present": false,
+  "synthetic_pilot": {
+    "status": "fixture-only",
+    "adapter_id": "synthetic-local-read-only-adapter",
+    "runtime_connector_present": false,
+    "network_access": false,
+    "account_access": false,
+    "credentials_present": false,
+    "encrypted_store_present": false,
+    "os_credential_integration_present": false
+  },
+  "supported_future_connectors": [
+    "dropbox",
+    "gmail",
+    "outlook",
+    "google-drive"
+  ],
+  "invariants": {
+    "customer_sensitive_data_upload": false,
+    "raw_content_to_model": false,
+    "model_memory": false,
+    "telemetry": false,
+    "background_sync": false,
+    "automatic_reconnect": false,
+    "account_write": false,
+    "external_contact": false,
+    "repository_storage": false
+  },
+  "approval": {
+    "per_connector": true,
+    "per_run": true,
+    "read_only": true,
+    "exact_source_scope_required": true,
+    "expiry_required": true,
+    "maximum_items_required": true,
+    "stop_conditions_required": true
+  },
+  "local_storage": {
+    "encrypted_case_index_required": true,
+    "per_case_key_required": true,
+    "os_credential_wrapping_required": true,
+    "raw_snapshot_default": "do-not-retain",
+    "temporary_material_encrypted": true
+  },
+  "ledger_fields": [
+    "connector_type",
+    "provider_object_id",
+    "provider_version",
+    "source_locator",
+    "content_sha256",
+    "source_time",
+    "retrieved_at",
+    "extraction_method",
+    "extraction_version",
+    "claim_ids"
+  ],
+  "claim_classes": [
+    "FACT",
+    "INFERENCE",
+    "UNKNOWN"
+  ],
+  "states": [
+    "DISCONNECTED",
+    "APPROVAL_PENDING",
+    "CONNECTED_ONE_RUN",
+    "ENUMERATING",
+    "FETCHING_APPROVED",
+    "LOCAL_VERIFYING",
+    "INDEXED",
+    "CHECKPOINTED",
+    "BLOCKED",
+    "QUARANTINED"
+  ],
+  "stable_reason_codes": [
+    "FIELD_TYPE_INVALID",
+    "CUSTOMER_DATA_UPLOAD_FORBIDDEN",
+    "RAW_CONTENT_TO_MODEL_FORBIDDEN",
+    "PROVIDER_RUNTIME_UNIMPLEMENTED",
+    "CONNECTOR_SCOPE_FORBIDDEN",
+    "AUTOMATIC_RECONNECT_FORBIDDEN",
+    "ACTIVE_CONTENT_QUARANTINE_REQUIRED",
+    "PROMPT_INJECTION_QUARANTINE_REQUIRED",
+    "STALE_CURSOR_BLOCK_REQUIRED",
+    "RAW_SNAPSHOT_APPROVAL_REQUIRED",
+    "LEGAL_HOLD_DELETE_FORBIDDEN",
+    "EXPORT_APPROVAL_REQUIRED",
+    "CREDENTIAL_FIELD_FORBIDDEN",
+    "SYNTHETIC_PILOT_RUNTIME_FORBIDDEN",
+    "CONNECTOR_NETWORK_FORBIDDEN",
+    "CONNECTOR_ACCOUNT_ACCESS_FORBIDDEN",
+    "UNKNOWN_FIELD"
+  ]
+}

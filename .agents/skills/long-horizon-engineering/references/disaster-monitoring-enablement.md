@@ -14,11 +14,12 @@ integration with disaster APIs by itself.
 - GPS or current location must be optional and user-initiated only.
 - If current location is used, prefer approximate place or region plus a radius,
   not precise coordinates.
-- Do not store precise coordinates unless the customer explicitly requests
-  precise monitoring.
+- Do not store precise coordinates in LHE artifacts.
 - Do not continuously track location.
-- Do not send location to external providers unless the customer explicitly
-  configures a source or notifier that requires it.
+- Do not send precise, household, family, office, travel, or customer-associated
+  location to an external provider. Customer approval does not create an
+  exception. A separately approved public-region query must use only a
+  demonstrably non-sensitive region.
 - Explain that location is used only to configure alert rules.
 - Provide a manual alternative for every GPS-based flow.
 
@@ -40,7 +41,9 @@ Start with manual setup:
 
 ## Optional Current Location Flow
 
-Use current location only when the customer asks for it or approves it.
+LHE Core does not access current device location. A future local provider would
+require separate review and must reduce any result to a customer-managed,
+non-sensitive region before LHE can use it.
 
 Before using current location, explain:
 

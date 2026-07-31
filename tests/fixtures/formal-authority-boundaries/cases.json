@@ -1,0 +1,168 @@
+{
+  "schemas": [
+    {
+      "schema": "decision-record.schema.json",
+      "positive_case_id": "decision-record-static-not-approved",
+      "base_record": {
+        "step_id": "STEP-SYNTHETIC-001",
+        "experiment_id": null,
+        "proposed_action": "record a static recommendation",
+        "risk_level": "low",
+        "customer_decision": "not_approved",
+        "authorization_source": "none",
+        "customer_authorization_text": null,
+        "decision_time": "2026-07-30T00:00:00+00:00",
+        "executed_at": null,
+        "result": null,
+        "rollback_status": "not_run",
+        "audit_id": "AUDIT-SYNTHETIC-001"
+      },
+      "negative_cases": [
+        {
+          "case_id": "decision-record-invalid-decision",
+          "mutations": [
+            {
+              "op": "set",
+              "path": "/customer_decision",
+              "value": "auto_approved"
+            }
+          ],
+          "expected_path": "customer_decision"
+        },
+        {
+          "case_id": "decision-record-invalid-authority",
+          "mutations": [
+            {
+              "op": "set",
+              "path": "/authorization_source",
+              "value": "evaluator"
+            }
+          ],
+          "expected_path": "authorization_source"
+        },
+        {
+          "case_id": "decision-record-external-action-field",
+          "mutations": [
+            {
+              "op": "set",
+              "path": "/next_stage_authorized",
+              "value": true
+            }
+          ],
+          "expected_path": "<root>"
+        }
+      ]
+    },
+    {
+      "schema": "promotion.schema.json",
+      "positive_case_id": "promotion-static-locked",
+      "base_record": {
+        "experiment_id": "EXP-SYNTHETIC-001",
+        "source_commits": [
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        ],
+        "status": "locked",
+        "recommended_status": "locked",
+        "approved_status": "locked",
+        "automatic_transition": false,
+        "customer_decision": "not_approved",
+        "authorization_source": "none",
+        "license_compatible": false,
+        "human_approval_required": true,
+        "implementation_exists": false,
+        "execution_authorized": false,
+        "scores": {},
+        "gate_results": [],
+        "regressions": [],
+        "unverified_claims": [
+          "synthetic fixture only"
+        ],
+        "recommended_layer": "sandbox-only",
+        "rollback_status": "not_tested"
+      },
+      "negative_cases": [
+        {
+          "case_id": "promotion-automatic-transition",
+          "mutations": [
+            {
+              "op": "set",
+              "path": "/automatic_transition",
+              "value": true
+            }
+          ],
+          "expected_path": "automatic_transition"
+        },
+        {
+          "case_id": "promotion-approved-status",
+          "mutations": [
+            {
+              "op": "set",
+              "path": "/approved_status",
+              "value": "promoted"
+            }
+          ],
+          "expected_path": "approved_status"
+        },
+        {
+          "case_id": "promotion-execution-authorized",
+          "mutations": [
+            {
+              "op": "set",
+              "path": "/execution_authorized",
+              "value": true
+            }
+          ],
+          "expected_path": "execution_authorized"
+        }
+      ]
+    },
+    {
+      "schema": "gate-result.schema.json",
+      "positive_case_id": "gate-result-static-blocked",
+      "base_record": {
+        "experiment_id": "EXP-SYNTHETIC-001",
+        "gate_id": "GATE-HUMAN-CONTROL",
+        "status": "blocked",
+        "evidence": [
+          "synthetic evidence reference"
+        ],
+        "audit_id": "AUDIT-SYNTHETIC-002"
+      },
+      "negative_cases": [
+        {
+          "case_id": "gate-result-invalid-gate",
+          "mutations": [
+            {
+              "op": "set",
+              "path": "/gate_id",
+              "value": "GATE-AUTO-APPROVAL"
+            }
+          ],
+          "expected_path": "gate_id"
+        },
+        {
+          "case_id": "gate-result-invalid-status",
+          "mutations": [
+            {
+              "op": "set",
+              "path": "/status",
+              "value": "approved"
+            }
+          ],
+          "expected_path": "status"
+        },
+        {
+          "case_id": "gate-result-next-stage-field",
+          "mutations": [
+            {
+              "op": "set",
+              "path": "/next_stage_authorized",
+              "value": true
+            }
+          ],
+          "expected_path": "<root>"
+        }
+      ]
+    }
+  ]
+}

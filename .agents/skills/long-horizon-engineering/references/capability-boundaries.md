@@ -124,8 +124,9 @@ For a reusable public skill, default to:
 - No production execution without explicit confirmation
 - No offensive security automation
 - No hidden background monitoring
-- No uploading, publishing, or sharing client data unless the user explicitly
-  approves the exact reviewed subset
+- No uploading, pasting, syncing, transmitting, publishing, or sharing
+  customer-sensitive information. Customer approval does not override this
+  product boundary.
 
 These defaults make the skill safer to share across unknown repositories and
 teams.

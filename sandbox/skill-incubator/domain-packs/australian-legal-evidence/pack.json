@@ -1,0 +1,20 @@
+{
+  "pack_id": "australian-legal-evidence",
+  "status": "sandbox-only",
+  "activation": "explicit-only",
+  "descriptor_only": true,
+  "installed": false,
+  "callable": false,
+  "executable": false,
+  "purpose": "Organize Australian legal-evidence provenance, chronology, gaps, and uncertainty.",
+  "boundaries": [
+    "not-legal-advice",
+    "no-customer-data-upload",
+    "no-automatic-connector-access",
+    "no-external-contact",
+    "no-filing-or-submission",
+    "legal-hold-requires-counsel-direction"
+  ],
+  "required_provider": "local-case-evidence-provider",
+  "next_safe_action": "Approve a separate implementation or one-run envelope after legal and privacy review."
+}

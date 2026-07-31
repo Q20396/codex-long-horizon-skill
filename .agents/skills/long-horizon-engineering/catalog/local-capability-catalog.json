@@ -1,0 +1,169 @@
+{
+  "$schema": "../../../../sandbox/skill-incubator/schemas/local-capability-catalog.schema.json",
+  "schema_version": "1.0.0",
+  "catalog_id": "lhe-local-capability-catalog",
+  "package_disposition": "sandbox-only",
+  "activation": "explicit-only",
+  "profile_id": "local-governance-core",
+  "discovery_mode": "descriptor-only",
+  "runtime_executable": false,
+  "host_enforced": false,
+  "authority": {
+    "keyword_match_grants_authority": false,
+    "auto_load_uninstalled_code": false,
+    "auto_install": false,
+    "auto_execute": false,
+    "network_access": false,
+    "account_access": false,
+    "persistence": false,
+    "customer_sensitive_data_upload": false,
+    "model_memory": false,
+    "telemetry": false
+  },
+  "providers": [
+    {
+      "provider_id": "local-case-evidence-provider",
+      "status": "declared-disabled",
+      "interface_only": true,
+      "runtime_present": false,
+      "connector_implementations_present": false,
+      "synthetic_pilot_status": "fixture-only",
+      "network_access": false,
+      "account_access": false,
+      "credential_access": false,
+      "persistence_authority": false,
+      "customer_sensitive_data_upload": false,
+      "model_memory": false,
+      "telemetry": false,
+      "expires_at": null
+    }
+  ],
+  "capabilities": [
+    {
+      "capability_id": "australian-legal-evidence",
+      "display_name": "Australian Legal-Evidence Organization",
+      "domain": "legal-evidence-organization",
+      "keywords": [
+        "australian legal evidence",
+        "case chronology",
+        "evidence bundle",
+        "lawyer email"
+      ],
+      "description": "Organize source-bound chronology, provenance, gaps, and FACT/INFERENCE/UNKNOWN without providing legal advice.",
+      "descriptor_path": "sandbox/skill-incubator/domain-packs/australian-legal-evidence/pack.json",
+      "required_provider": "local-case-evidence-provider",
+      "availability": "descriptor-only",
+      "activation": "explicit-only",
+      "installed": false,
+      "callable": false,
+      "executable": false,
+      "allowed_effects": [
+        "discover",
+        "recommend",
+        "request-explicit-approval"
+      ],
+      "forbidden_effects": [
+        "read-customer-data",
+        "write",
+        "network",
+        "account-access",
+        "upload",
+        "persist",
+        "install",
+        "execute",
+        "publish",
+        "external-action"
+      ],
+      "next_safe_action": "Review the descriptor and separately approve any local provider implementation or one-run source access."
+    },
+    {
+      "capability_id": "family-office-document-governance",
+      "display_name": "Family And Office Document Governance",
+      "domain": "document-governance",
+      "keywords": [
+        "family office documents",
+        "office records",
+        "document governance",
+        "records inventory"
+      ],
+      "description": "Classify document provenance, retention decisions, missing evidence, and review status without holding private records.",
+      "descriptor_path": "sandbox/skill-incubator/domain-packs/family-office-document-governance/pack.json",
+      "required_provider": "local-case-evidence-provider",
+      "availability": "descriptor-only",
+      "activation": "explicit-only",
+      "installed": false,
+      "callable": false,
+      "executable": false,
+      "allowed_effects": [
+        "discover",
+        "recommend",
+        "request-explicit-approval"
+      ],
+      "forbidden_effects": [
+        "read-customer-data",
+        "write",
+        "network",
+        "account-access",
+        "upload",
+        "persist",
+        "install",
+        "execute",
+        "publish",
+        "external-action"
+      ],
+      "next_safe_action": "Review the descriptor and approve only a bounded local metadata or synthetic-evidence workflow."
+    },
+    {
+      "capability_id": "public-equity-research",
+      "display_name": "Australian And US Public-Equity Research",
+      "domain": "investment-research",
+      "keywords": [
+        "asx research",
+        "us equity research",
+        "investment evidence",
+        "company research"
+      ],
+      "description": "Structure public-source research, thesis evidence, risks, valuation assumptions, and uncertainty without advice or trading.",
+      "descriptor_path": "sandbox/skill-incubator/domain-packs/public-equity-research/pack.json",
+      "required_provider": null,
+      "availability": "descriptor-only",
+      "activation": "explicit-only",
+      "installed": false,
+      "callable": false,
+      "executable": false,
+      "allowed_effects": [
+        "discover",
+        "recommend",
+        "request-explicit-approval"
+      ],
+      "forbidden_effects": [
+        "read-customer-data",
+        "write",
+        "network",
+        "account-access",
+        "upload",
+        "persist",
+        "install",
+        "execute",
+        "publish",
+        "external-action"
+      ],
+      "next_safe_action": "Review the descriptor and approve a separate public-source research envelope with no brokerage or account access."
+    }
+  ],
+  "reason_codes": [
+    "CAPABILITY_NOT_DECLARED",
+    "CAPABILITY_AMBIGUOUS",
+    "CAPABILITY_DESCRIPTOR_ONLY",
+    "CAPABILITY_NOT_INSTALLED",
+    "CAPABILITY_NOT_CALLABLE",
+    "FIELD_TYPE_INVALID",
+    "KEYWORD_AUTHORITY_FORBIDDEN",
+    "UNINSTALLED_AUTOLOAD_FORBIDDEN",
+    "CUSTOMER_DATA_UPLOAD_FORBIDDEN",
+    "PROVIDER_REFERENCE_UNRESOLVED",
+    "PROVIDER_RUNTIME_UNIMPLEMENTED",
+    "PROVIDER_EFFECT_FORBIDDEN",
+    "SYNTHETIC_PILOT_RUNTIME_FORBIDDEN"
+  ]
+}

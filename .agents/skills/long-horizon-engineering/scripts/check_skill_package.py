@@ -85,6 +85,7 @@ PACKAGE_ONLY_FILES = [
 
 INSTALLED_REQUIRED_FILES = [
     ".agents/skills/long-horizon-engineering/SKILL.md",
+    ".agents/skills/long-horizon-engineering/catalog/local-capability-catalog.json",
     ".agents/skills/long-horizon-engineering/package-manifest.json",
     ".agents/skills/long-horizon-engineering/references/protocol.md",
     ".agents/skills/long-horizon-engineering/references/adversarial-review-protocol.md",
@@ -637,7 +638,7 @@ def check_skill_front_matter(skill_dir: Path, expected_name: str) -> list[str]:
         "version": "0.3.0",
         "repo": "https://github.com/Q20396/codex-long-horizon-skill",
         "skill_id": expected_name,
-        "update_channel": "stable",
+        "update_channel": "candidate",
     }
     for key, expected_value in required_metadata.items():
         if f"{key}: {expected_value}" not in front_matter:

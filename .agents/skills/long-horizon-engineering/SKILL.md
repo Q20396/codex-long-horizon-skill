@@ -1,18 +1,19 @@
 ---
 name: long-horizon-engineering
-description: Use for long-running software engineering work: repository exploration, multi-file changes, debugging, migrations, refactors, CI/build failures, staged validation, PR review response, or safe resumption. Do not use for simple edits, unrelated research, writing, media, or legal/financial tasks.
+description: Use for long-running software engineering and local static capability discovery. It may suggest descriptor-only legal-evidence, document-governance, or public-equity packs; keywords never authorize, install, load, or execute them. Do not use for simple edits, legal or financial advice, media, or automatic external actions.
 version: 0.3.0
 repo: https://github.com/Q20396/codex-long-horizon-skill
 skill_id: long-horizon-engineering
-update_channel: stable
+update_channel: candidate
 ---
 
 # Long-Horizon Engineering
 
-Use this skill for non-trivial software engineering work that benefits from
-careful exploration, staged implementation, validation, and resumable handoff.
-The skill should make engineering decisions more evidence-backed, not broaden
-into unrelated research or media workflows.
+Use this skill as a local governance and evidence kernel for non-trivial
+software engineering and bounded capability discovery. It makes scope,
+permissions, evidence, uncertainty, and the customer's next safe decision
+visible. It does not provide legal or financial advice, hold customer records,
+connect accounts, install domain packs, or execute external actions.
 
 ## Example Prompts
 
@@ -24,6 +25,144 @@ into unrelated research or media workflows.
 - Use the long-horizon-engineering skill. Resume the interrupted refactor by
   reading prior state, checking current code, and reporting the next safest
   step before changing files.
+- Use the long-horizon-engineering skill in guided customer mode. Help me turn
+  a plain-language engineering outcome into an evidence-backed recommendation.
+  Start with intake only, make permissions and limits visible, and end with one
+  next safe action for my decision.
+
+## Guided Customer Workflow
+
+Use this prompt-native workflow when a customer needs a clear outcome but does
+not want to manage engineering process details. It is a thin presentation layer
+over the existing Understand, Explore, Plan, Validate, and Human Gate workflow;
+it does not create a new lifecycle, runtime, router, or approval authority.
+
+Start with a short intake. Ask only for information needed to establish:
+
+- the desired outcome and the decision the customer needs to make;
+- who will use the result and any deadline or as-of time;
+- exact files, repositories, or supplied materials that may be read;
+- whether any writes, network access, installation, or external action are
+  allowed;
+- sensitive-data constraints, success criteria, and stop conditions.
+
+Accept material in one of three explicit forms: a pasted non-sensitive excerpt,
+an attached synthetic artifact, or an exact approved repository path. The
+customer may also state `not provided`; keep the resulting gap `UNKNOWN`.
+Before reading, echo each material locator, submission form, sensitivity,
+permitted use, and whether it is available. Do not require an upload when an
+exact local path or a synthetic substitute is sufficient.
+
+Offer this compact intake form:
+
+```text
+Desired outcome:
+Decision I need to make:
+Audience and timing:
+Success criteria:
+Materials: [pasted non-sensitive text | attached synthetic artifact |
+            exact approved path | not provided]
+Allowed effects:
+Forbidden effects:
+Sensitive-data limits:
+Stop conditions:
+```
+
+Do not inspect additional material while intake is incomplete. Default to
+read-only analysis, no persistence, no network, no installation, and no
+external action. If the request contains credentials, account data, private
+communications, regulated evidence, or other sensitive material, stop. Never
+upload, paste, sync, transmit, summarize, or place that material in model
+memory. Ask for a non-sensitive substitute or propose a separately installed,
+default-disabled local provider that keeps raw material encrypted and local.
+
+Classify each material conclusion as `FACT`, `INFERENCE`, or `UNKNOWN`, with a
+locatable evidence reference or an explicit evidence gap. Then return three
+layers as one Customer Outcome Brief, in this order. The first layer must stand
+alone for a non-engineering customer; do not require the customer to understand
+schemas, receipts, CI, commits, hashes, or validator internals.
+
+### Layer 1: Customer outcome
+
+1. **Request understood** - the outcome and decision in plain language.
+2. **What we found** - at least one concise `FACT`, `INFERENCE`, and `UNKNOWN`.
+3. **Status** - exactly one of `READY_FOR_CUSTOMER_DECISION`,
+   `MORE_EVIDENCE_NEEDED`, or `BLOCKED`.
+4. **Recommendation** - advisory reasoning, not a decision on the customer's
+   behalf.
+5. **Next safe action** - exactly one bounded action, including the one approval
+   or input it requires. It is a proposal, not execution permission.
+6. **Decision needed from you** - a direct question the customer can answer.
+
+### Layer 2: Operator boundary
+
+Record the approved read scope, allowed and forbidden effects, sensitive-data
+handling, stop conditions, work not performed, and the fixed approval boundary:
+
+```text
+customer_approval_required: true
+human_disposition: PENDING
+next_stage_authorized: false
+```
+
+### Layer 3: Engineering evidence
+
+List claim identifiers, source locators or explicit gaps, verification status,
+validation performed, validation not performed, and known limitations. This
+layer supports audit and review; it must not introduce a second recommendation,
+another next action, or any approval claim.
+
+Use `READY_FOR_CUSTOMER_DECISION` only when the stated evidence and limitations
+are sufficient for the customer to choose. Use `MORE_EVIDENCE_NEEDED` when one
+specific additional input or read scope can close the material gap. Use
+`BLOCKED` when safety, authority, unavailable evidence, or contradictory scope
+prevents a responsible recommendation. Never translate any status into a write,
+execution, merge, release, publication, purchase, or other external action.
+
+For example, a customer may ask whether a local report can replace manual CSV
+work while forbidding production data, writes, and network access. If only
+documentation and a synthetic fixture are approved, report the verified manual
+steps as `FACT`, implementation complexity as `UNKNOWN`, return
+`MORE_EVIDENCE_NEEDED`, and propose one next safe action: approval to inspect
+the exact parser and test paths read-only. Ask the customer that one decision
+in Layer 1, record the unchanged approval boundary in Layer 2, and keep test
+and source detail in Layer 3.
+
+When repository documentation is available,
+`docs/customer-guided-workflow.md` provides a longer walkthrough. It is
+explanatory, not a required installed dependency; the instructions above are
+the installed Skill contract.
+
+## Local Capability Discovery
+
+Use the packaged `catalog/local-capability-catalog.json` only to recognize
+customer language and present a capability suggestion. A keyword match:
+
+- does not select or execute a domain pack;
+- does not prove that a pack or provider is installed, callable, or safe;
+- does not grant read, write, network, account, upload, persistence,
+  installation, execution, publication, or external-action effects;
+- must report descriptor-only or unavailable status; and
+- must end with one explicit next safe action for the customer.
+
+The catalog includes descriptor-only cards for Australian legal-evidence
+organization, family and office document governance, and Australian/US
+public-equity research. Their implementation descriptors live in the repository
+sandbox and contain no host-visible `SKILL.md`. They remain `sandbox-only`,
+`explicit-only`, `installed: false`, `callable: false`, and `executable: false`.
+
+If more than one card matches, ask for clarification. If no card matches, say
+the capability is not declared. Never fetch or auto-load uninstalled code.
+Only a separately installed, locally accessible skill can become callable, and
+installation, provider access, and each high-impact effect require separate
+approval.
+
+The declared Local Case Evidence Provider and its synthetic pilot are
+non-callable interface evidence. The pilot is `fixture-only`: it cannot connect
+an account, use credentials, access the network, persist data, provide
+encryption, or verify runtime feasibility. Never describe passing synthetic
+tests as connector, encryption, credential-isolation, or host-enforcement
+evidence.
 
 ## When To Use
 
@@ -38,12 +177,16 @@ Use this skill when the task involves one or more of:
 - code review response or merge-readiness checks
 - interrupted work that needs safe resumption
 - validation-heavy engineering handoff
+- local static discovery of a declared high-stakes capability card, where the
+  output is a suggestion and no customer material is read
 
 Do not use this skill implicitly for simple typos, one-line edits,
-conversational answers, generic writing, video/storyboard planning, stock or
-legal research, disaster monitoring, or unrelated data analysis. If the user
-explicitly invokes this skill for a safe unusual workflow, follow the explicit
-request while preserving the safety boundaries below.
+conversational answers, generic writing, video/storyboard planning, legal or
+financial advice, disaster monitoring, or unrelated data analysis. A precise
+catalog keyword may invoke discovery mode only; it must not invoke the domain
+workflow. If the user explicitly invokes this skill for a safe unusual
+workflow, follow the explicit request while preserving the safety boundaries
+below.
 
 ## Failure Recovery
 
