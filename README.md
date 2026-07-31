@@ -78,20 +78,20 @@ activate a profile, install a domain pack, or grant permissions.
 
 ## Installation Status
 
-The repository currently describes an unreleased v0.3 static candidate. The
-prospective immutable marketplace reference is recorded as `v0.3.0`, while its
-installation policy is `NOT_AVAILABLE` until a tag, candidate-bound formal gate,
-isolated marketplace resolution, release decision, and installation guidance
-are independently approved and verified.
+The release-state contract targets the immutable stable ref `v0.3.1` with
+marketplace policy `AVAILABLE`. Before using it, independently verify the
+remote annotated tag, its peeled commit and tree, the published GitHub Release,
+and an isolated Codex marketplace resolution. Repository metadata alone is not
+proof that those external stages completed.
 
 ```bash
-codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.3.0
+codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.3.1
 ```
 
-The command above is documentary only and must not be run while the marketplace
-entry is `NOT_AVAILABLE`. Static metadata does not prove that the tag or an
-installable marketplace exists. A `main` reference is mutable, unreleased
-source and is not a stable installation channel:
+Run the command only in a separately approved isolated workflow after the
+tag/Release checks above. It is not permission to modify real Codex
+configuration or an installed Skill. A `main` reference is mutable repository
+state and is not a stable installation channel:
 
 ```bash
 codex plugin marketplace add Q20396/codex-long-horizon-skill --ref main

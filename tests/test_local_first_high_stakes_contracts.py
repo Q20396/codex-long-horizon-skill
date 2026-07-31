@@ -926,8 +926,22 @@ class LocalFirstHighStakesContractTests(unittest.TestCase):
         )
         self.assertIsNotNone(base_match)
         base = base_match.group(1)
+        commit_match = re.search(
+            r"^Candidate commit: `([0-9a-f]{40})`\.$",
+            manifest,
+            flags=re.MULTILINE,
+        )
+        self.assertIsNotNone(commit_match)
+        candidate_commit = commit_match.group(1)
         subprocess.run(
-            ["git", "merge-base", "--is-ancestor", base, "HEAD"],
+            ["git", "merge-base", "--is-ancestor", base, candidate_commit],
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        subprocess.run(
+            ["git", "merge-base", "--is-ancestor", candidate_commit, "HEAD"],
             cwd=ROOT,
             check=True,
             capture_output=True,
@@ -941,20 +955,13 @@ class LocalFirstHighStakesContractTests(unittest.TestCase):
         )
         manifest_paths = [path for _, path, _ in rows]
         tracked = subprocess.run(
-            ["git", "diff", "--name-only", base],
+            ["git", "diff", "--name-only", f"{base}..{candidate_commit}"],
             cwd=ROOT,
             check=True,
             capture_output=True,
             text=True,
         ).stdout.splitlines()
-        untracked = subprocess.run(
-            ["git", "ls-files", "--others", "--exclude-standard"],
-            cwd=ROOT,
-            check=True,
-            capture_output=True,
-            text=True,
-        ).stdout.splitlines()
-        candidate_paths = sorted(set(tracked + untracked))
+        candidate_paths = sorted(set(tracked))
 
         self.assertEqual(len(rows), 74)
         self.assertEqual(len(set(manifest_paths)), 74)
@@ -977,7 +984,13 @@ class LocalFirstHighStakesContractTests(unittest.TestCase):
                 slices,
                 relative_path,
             )
-            target_text = (ROOT / relative_path).read_text(encoding="utf-8")
+            target_text = subprocess.run(
+                ["git", "show", f"{candidate_commit}:{relative_path}"],
+                cwd=ROOT,
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout
             for slice_id, selector in selectors:
                 self.assertEqual(
                     target_text.count(selector),

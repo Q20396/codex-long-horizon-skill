@@ -39,9 +39,18 @@ stages. Completing Phase A does not establish release readiness.
       dependency-free synthetic contracts but remain syntax-only in the formal
       gate.
 - [ ] An unreleased candidate keeps marketplace
-      `policy.installation: NOT_AVAILABLE`; making it available requires a
-      separately reviewed release-state change after tag and isolated
-      marketplace-resolution evidence.
+      `policy.installation: NOT_AVAILABLE` and is never rewritten beneath an
+      existing tag. A stable state uses a new version and a separately reviewed
+      release-state change after the applicable immutable-candidate and
+      isolated marketplace-resolution evidence.
+- [ ] A final release-state change uses one exact coherent contract:
+      marketplace `AVAILABLE`, both Skill channels `stable`, release manifests
+      `channel: stable`, `released: true`, and `risk: reviewed`.
+- [ ] `--pre-tag-static` rejects the final release state. Static final-state
+      consistency may be checked with `--allow-existing-tag --release-state
+      final`, but that result alone is explicitly not release-ready.
+- [ ] The content-frozen final release-state candidate reruns the controlled
+      formal gate with `--release-state final` before its tag is created.
 - [ ] The formal result binds the exact candidate commit, tree, base,
       merge-base, parents, changed paths, diff, schema inventory, and six
       installed wheel filenames/hashes.
@@ -52,8 +61,10 @@ stages. Completing Phase A does not establish release readiness.
 - [ ] Full validation reports every optional omission and its scoped waiver
       rationale; the current registry contains exactly 11 known omissions and
       any new or changed warning fails the release warning gate.
-- [ ] Routine post-release CI uses `check_release_readiness.py --allow-existing-tag`.
-- [ ] Final Phase B pre-tag gate uses `check_release_readiness.py --pre-tag`.
+- [ ] Routine post-release CI uses `check_release_readiness.py
+      --allow-existing-tag --release-state final`.
+- [ ] Final Phase B pre-tag gate uses `check_release_readiness.py --pre-tag
+      --release-state final`.
 - [ ] Remote tag absence is checked separately.
 - [ ] GitHub Release absence is checked separately.
 - [ ] Strict plugin-install result is recorded.
@@ -74,6 +85,8 @@ python3 -m unittest discover -s tests -p "test_*.py"
 python3 scripts/test_fresh_install.py --skip-codex-cli --verbose
 python3 scripts/check_release_readiness.py --version <version> --pre-tag-static \
   --release-hygiene-base <full-origin-main-commit>
+python3 scripts/check_release_readiness.py --version <version> \
+  --release-state final --allow-existing-tag
 python3 scripts/full_skill_validation.py
 ```
 
@@ -88,6 +101,7 @@ python3 scripts/validate_formal_schemas.py --verify-acquisition \
   --result "$RUNNER_TEMP/formal-schema-evidence/acquisition-receipt.json"
 "$RUNNER_TEMP/lhe-formal-schema-venv/bin/python" \
   scripts/check_release_readiness.py --version <version> --pre-tag \
+  --release-state final \
   --formal-schema-candidate-base <full-base-commit> \
   --formal-schema-pip-report "$RUNNER_TEMP/formal-schema-pip-report.json" \
   --formal-schema-acquisition-result "$RUNNER_TEMP/formal-schema-evidence/acquisition-receipt.json" \
