@@ -1,14 +1,14 @@
 {
   "skill_id": "long-horizon-engineering",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "repo": "https://github.com/Q20396/codex-long-horizon-skill",
   "path": ".agents/skills/long-horizon-engineering",
-  "channel": "candidate",
-  "released": false,
-  "release_date": "2026-07-27",
-  "risk": "not-assessed",
+  "channel": "stable",
+  "released": true,
+  "release_date": "2026-07-31",
+  "risk": "reviewed",
   "summary": [
-    "Prepared the main-line governance and catalog contracts as a static v0.3.0 candidate.",
+    "Finalized the reviewed governance and catalog package as the stable v0.3.1 release state.",
     "Kept sandbox-only, bundled-optional, and explicit-only capabilities distinct from runtime enforcement.",
     "Retained explicit customer authorization before installation, external effects, or promotion."
   ],

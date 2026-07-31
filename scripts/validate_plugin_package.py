@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / ".codex-plugin" / "plugin.json"
 MARKETPLACE = ROOT / ".agents" / "plugins" / "marketplace.json"
 EXPECTED_NAME = "codex-long-horizon-skill"
-EXPECTED_VERSION = "0.3.0"
+EXPECTED_VERSION = "0.3.1"
 EXPECTED_REPOSITORY = "https://github.com/Q20396/codex-long-horizon-skill"
 EXPECTED_LICENSE = "MIT"
 SEMVER = re.compile(r"^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$")
@@ -203,7 +203,7 @@ def validate_marketplace(errors: list[str], manifest: dict) -> dict:
             expected_ref = f"v{EXPECTED_VERSION}"
             if source.get("ref") != expected_ref:
                 errors.append(
-                    "marketplace source.ref must match prospective immutable "
+                    "marketplace source.ref must match immutable "
                     f"release tag {expected_ref!r}"
                 )
         else:

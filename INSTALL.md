@@ -9,26 +9,26 @@ This repository contains reusable Codex skills:
 
 Plugin installation is the preferred reusable distribution path.
 
-The unreleased candidate records the prospective immutable `v0.3.0`
-marketplace reference with `policy.installation: NOT_AVAILABLE`:
+The stable release-state contract records the immutable `v0.3.1` marketplace
+reference with `policy.installation: AVAILABLE`:
 
 ```bash
-codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.3.0
+codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.3.1
 ```
 
-Do not run this command while the policy is `NOT_AVAILABLE`. A tag,
-candidate-bound formal gate, isolated marketplace resolution, release decision,
-and installation guidance must first be independently verified. `main` is
-mutable, unreleased repository state and is not a stable installation channel:
+Before running it, independently verify the remote annotated tag, peeled
+commit/tree, published GitHub Release, and isolated marketplace resolution for
+`v0.3.1`. Repository metadata alone does not prove those external stages.
+`main` is mutable repository state and is not a stable installation channel:
 
 ```bash
 codex plugin marketplace add Q20396/codex-long-horizon-skill --ref main
 ```
 
 Do not assume `marketplace upgrade` advances a marketplace pinned to another
-tag. A future verified upgrade must explicitly remove the prior registration
-and add the reviewed tag again; actual CLI rebind behavior remains unverified
-until a separately approved isolated CLI check.
+tag. A verified upgrade must explicitly remove the prior registration and add
+the reviewed tag again; actual CLI rebind behavior requires a separately
+approved isolated CLI check.
 
 Refresh a mutable marketplace only when that behavior is intentional:
 

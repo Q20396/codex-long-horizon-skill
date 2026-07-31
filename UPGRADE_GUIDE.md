@@ -20,18 +20,19 @@ For plugin-based installs, see [docs/plugin-install.md](docs/plugin-install.md).
 ### Plugin Upgrade
 
 Pinned marketplace registrations must not be assumed to advance to a new tag
-through `marketplace upgrade`. For a future verified v0.3.0 upgrade, first
+through `marketplace upgrade`. For a verified v0.3.1 upgrade, first
 review the immutable tag and exact commit, then use a separately approved,
 isolated CLI workflow to remove the prior registration and add:
 
 ```bash
-codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.3.0
+codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.3.1
 ```
 
-The `v0.3.0` ref is prospective and its marketplace policy is
-`NOT_AVAILABLE`. Remote tag resolution, the candidate-bound formal release
-gate, real CLI rebind behavior, plugin installation, and installed Skill
-updates remain unverified and separately approval-gated.
+The release-state contract marks `v0.3.1` stable and `AVAILABLE`. Before any
+real rebind or installation, verify the remote tag/commit/tree, published
+GitHub Release, candidate-bound formal result, and isolated CLI resolution.
+Real configuration changes, plugin installation, and installed Skill updates
+remain separately approval-gated.
 
 ### Direct Skill Upgrade
 

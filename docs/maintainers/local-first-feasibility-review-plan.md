@@ -61,6 +61,7 @@ slice IDs mean the path contains explicitly named shared hunks. Reviewers must
 compare this list with the frozen candidate inventory before staging anything.
 
 Candidate base: `5afdb1e350a564478990a9b304c0eeb9b689c49e`.
+Candidate commit: `c58b5fbf68404fbacbd38e5bfd3e5c2189775ce1`.
 
 - [S6] `.agents/plugins/marketplace.json` - candidate availability and prospective ref.
 - [S6] `.github/workflows/check-skill.yml` - CI-wide bytecode isolation and immutable action/credential guards.

@@ -17,6 +17,22 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+$")
 RELEASE_DATE_RE = re.compile(r"^Release date:\s*(\d{4}-\d{2}-\d{2})\s*$", re.MULTILINE)
+RELEASE_STATE_CONTRACTS = {
+    "candidate": {
+        "marketplace_installation": "NOT_AVAILABLE",
+        "update_channel": "candidate",
+        "channel": "candidate",
+        "released": False,
+        "risk": "not-assessed",
+    },
+    "final": {
+        "marketplace_installation": "AVAILABLE",
+        "update_channel": "stable",
+        "channel": "stable",
+        "released": True,
+        "risk": "reviewed",
+    },
+}
 
 STALE_RELEASE_MARKERS = [
     "prepared, not released",
@@ -127,6 +143,16 @@ def parse_args() -> argparse.Namespace:
         )
     )
     parser.add_argument("--version", required=True, help="Release version, for example 0.1.0.")
+    parser.add_argument(
+        "--release-state",
+        choices=sorted(RELEASE_STATE_CONTRACTS),
+        default="candidate",
+        help=(
+            "Expected release metadata state. 'candidate' is required for "
+            "--pre-tag-static; 'final' is checked only as static consistency "
+            "unless controlled formal inputs are also supplied."
+        ),
+    )
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument(
         "--pre-tag-static",
@@ -189,7 +215,11 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def release_notes_errors(version: str, errors: list[str]) -> str | None:
+def release_notes_errors(
+    version: str,
+    release_state: str,
+    errors: list[str],
+) -> str | None:
     release_notes = ROOT / "docs" / "releases" / f"v{version}.md"
     if not release_notes.is_file():
         errors.append(f"release notes missing: docs/releases/v{version}.md")
@@ -217,6 +247,19 @@ def release_notes_errors(version: str, errors: list[str]) -> str | None:
     for marker in STALE_RELEASE_MARKERS:
         if marker in lowered:
             errors.append(f"release notes contain stale preparation marker: {marker}")
+
+    state_match = re.search(
+        r"^Release state:\s*(candidate|final)\s*$",
+        text,
+        re.MULTILINE,
+    )
+    if not state_match:
+        errors.append("release notes missing Release state: candidate|final")
+    elif state_match.group(1) != release_state:
+        errors.append(
+            f"release notes state {state_match.group(1)!r} does not match "
+            f"{release_state!r}"
+        )
 
     match = RELEASE_DATE_RE.search(text)
     if not match:
@@ -296,7 +339,13 @@ def skill_version(path: Path, errors: list[str]) -> str | None:
     return match.group(1)
 
 
-def package_errors(version: str, release_date: str | None, errors: list[str]) -> None:
+def package_errors(
+    version: str,
+    release_date: str | None,
+    release_state: str,
+    errors: list[str],
+) -> None:
+    expected_state = RELEASE_STATE_CONTRACTS[release_state]
     manifest_path = ROOT / ".codex-plugin" / "plugin.json"
     if not manifest_path.is_file():
         errors.append(".codex-plugin/plugin.json missing")
@@ -320,15 +369,17 @@ def package_errors(version: str, release_date: str | None, errors: list[str]) ->
             installation = (
                 policy.get("installation") if isinstance(policy, dict) else None
             )
-            if installation != "NOT_AVAILABLE":
+            expected_installation = expected_state["marketplace_installation"]
+            if installation != expected_installation:
                 errors.append(
-                    "unreleased static candidate marketplace policy.installation "
-                    "must be 'NOT_AVAILABLE'"
+                    "marketplace policy.installation "
+                    f"must be {expected_installation!r} for release state "
+                    f"{release_state!r}"
                 )
         expected_ref = f"v{version}"
         if ref != expected_ref:
             errors.append(
-                f"marketplace source ref {ref!r} does not match prospective "
+                f"marketplace source ref {ref!r} does not match "
                 f"immutable release tag {expected_ref!r}"
             )
 
@@ -340,10 +391,15 @@ def package_errors(version: str, release_date: str | None, errors: list[str]) ->
                 f"{skill_name}/SKILL.md version {actual!r} does not match {version!r}"
             )
         text = path.read_text(encoding="utf-8") if path.is_file() else ""
-        if not re.search(r"^update_channel:\s*candidate\s*$", text, re.MULTILINE):
+        expected_channel = expected_state["update_channel"]
+        if not re.search(
+            rf"^update_channel:\s*{re.escape(str(expected_channel))}\s*$",
+            text,
+            re.MULTILINE,
+        ):
             errors.append(
-                f"{skill_name}/SKILL.md must declare update_channel: candidate "
-                "until release"
+                f"{skill_name}/SKILL.md must declare update_channel: "
+                f"{expected_channel} for release state {release_state!r}"
             )
 
     release_manifests = [
@@ -362,20 +418,30 @@ def package_errors(version: str, release_date: str | None, errors: list[str]) ->
                 f"{relative} release_date {data.get('release_date')!r} "
                 f"does not match {release_date!r}"
             )
-        if data.get("channel") != "candidate" or data.get("released") is not False:
+        if (
+            data.get("channel") != expected_state["channel"]
+            or data.get("released") is not expected_state["released"]
+        ):
             errors.append(
-                f"{relative} must describe the unreleased candidate channel"
+                f"{relative} must describe release state {release_state!r} "
+                f"with channel {expected_state['channel']!r} and released "
+                f"{expected_state['released']!r}"
             )
-        if data.get("risk") != "not-assessed":
+        if data.get("risk") != expected_state["risk"]:
             errors.append(
-                f"{relative} risk must be 'not-assessed' until an independently "
-                "reviewed release assessment exists"
+                f"{relative} risk must be {expected_state['risk']!r} for "
+                f"release state {release_state!r}"
             )
 
     latest = load_json(ROOT / "releases" / "latest.json")
-    if latest.get("channel") != "candidate" or latest.get("released") is not False:
+    if (
+        latest.get("channel") != expected_state["channel"]
+        or latest.get("released") is not expected_state["released"]
+    ):
         errors.append(
-            "releases/latest.json must describe the unreleased candidate channel"
+            "releases/latest.json must describe release state "
+            f"{release_state!r} with channel {expected_state['channel']!r} "
+            f"and released {expected_state['released']!r}"
         )
     if release_date is not None and latest.get("updated_at") != release_date:
         errors.append(
@@ -770,10 +836,15 @@ def validate(args: argparse.Namespace) -> list[str]:
         errors.append("version must be plain semantic version syntax")
         return errors
 
-    release_date = release_notes_errors(version, errors)
-    package_errors(version, release_date, errors)
+    release_date = release_notes_errors(version, args.release_state, errors)
+    package_errors(version, release_date, args.release_state, errors)
     changelog_errors(version, release_date, errors)
     tag_errors(version, args.pre_tag, errors)
+    if args.release_state == "final" and args.pre_tag_static:
+        errors.append(
+            "final release state is forbidden with --pre-tag-static; "
+            "controlled formal or post-tag-safe validation is required"
+        )
     if args.release_hygiene_base is not None and not args.pre_tag_static:
         errors.append("release hygiene base is valid only with --pre-tag-static")
     else:
@@ -807,8 +878,24 @@ def main() -> int:
             "formal Draft 2020-12 schema validation is UNVERIFIED and "
             "this result is not release-ready."
         )
+    elif (
+        args.release_state == "final"
+        and not args.formal_schema_result
+        and not args.formal_schema_pip_report
+        and not args.formal_schema_acquisition_result
+        and not args.formal_schema_evidence_dir
+        and not args.formal_schema_candidate_base
+    ):
+        print(
+            f"Final release-state consistency passed for v{args.version} ({mode}); "
+            "formal and post-tag evidence remain required and this result alone "
+            "is not release-ready."
+        )
     else:
-        print(f"Release readiness check passed for v{args.version} ({mode}).")
+        print(
+            f"Release readiness check passed for v{args.version} ({mode}, "
+            f"release-state={args.release_state})."
+        )
     return 0
 
 

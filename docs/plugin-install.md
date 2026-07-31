@@ -7,17 +7,17 @@ This repository can be used in two ways:
 
 ## Plugin Installation
 
-The unreleased candidate names the prospective immutable `v0.3.0` marketplace
-reference and sets `policy.installation: NOT_AVAILABLE`:
+The stable release-state contract names the immutable `v0.3.1` marketplace
+reference and sets `policy.installation: AVAILABLE`:
 
 ```bash
-codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.3.0
+codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.3.1
 ```
 
-Do not run this command while the policy is `NOT_AVAILABLE`. The remote tag,
-candidate-bound formal gate, isolated marketplace resolution, release decision,
-and installation guidance must first be verified. Use `--ref main` only for
-intentionally mutable, unreleased repository state:
+Before running it, verify the remote annotated tag and peeled commit/tree, the
+candidate-bound formal result, published GitHub Release, and isolated
+marketplace resolution. Repository metadata alone is not that evidence. Use
+`--ref main` only for intentionally mutable repository state:
 
 ```bash
 codex plugin marketplace add Q20396/codex-long-horizon-skill --ref main
@@ -26,7 +26,7 @@ codex plugin marketplace add Q20396/codex-long-horizon-skill --ref main
 Do not assume `marketplace upgrade` changes a pinned ref. A stable upgrade must
 explicitly rebind registration to the newly reviewed immutable tag in a
 separately approved isolated CLI workflow. Actual CLI rebind behavior is
-unverified during Phase A.
+not inferred from static metadata.
 
 Refresh only an intentionally mutable marketplace after updates:
 

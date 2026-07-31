@@ -4,8 +4,9 @@
 
 | Line | Status | Security policy |
 | --- | --- | --- |
-| `main` / v0.3 candidate | Supported development line | Fixes land on `main`; candidate evidence is not a released or installed capability. |
-| `release/0.2.x` / v0.2.5 | Security-maintenance only | Eligible for narrowly backported security fixes until v0.3.0 is published and its replacement install path is independently verified. No feature backports. |
+| `main` / v0.3.1 release line | Supported development line | Fixes land on `main`; tag, GitHub Release, Marketplace resolution, and installed update remain separate evidence stages. |
+| v0.3.0 tag | Historical candidate | Immutable candidate evidence only; it is not the supported stable installation ref. |
+| `release/0.2.x` / v0.2.5 | Security-maintenance only | Eligible for narrowly backported security fixes until v0.3.1 is published and its replacement install path is independently verified. No feature backports. |
 | v0.2.4 and earlier | Unsupported | Upgrade guidance or a separately approved exceptional fix is required. |
 
 Every maintenance backport requires an independent change, review, validation,

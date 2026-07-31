@@ -6,6 +6,25 @@ All notable changes to this project are summarized here.
 
 No unreleased changes.
 
+## 0.3.1 - 2026-07-31
+
+- Finalized the reviewed v0.3 governance and catalog package as a coherent
+  stable release state without changing provider, connector, customer-data,
+  runtime, or host-enforcement boundaries.
+- Advanced plugin and Skill metadata to `0.3.1`, stable release manifests, and
+  the immutable marketplace ref `v0.3.1`.
+- Added explicit candidate-versus-final release-state validation so local
+  static preparation cannot self-promote an installable release.
+- Included profile-assembly validation from PR #92. The assembly helper is
+  read-only by default; explicit `--apply` only writes a selected profile to
+  an empty caller-selected directory outside the source repository and does
+  not install, activate, or grant runtime authority.
+- Preserved v0.3.0 as an immutable historical candidate tag and retained
+  separate formal, tag, post-tag marketplace, GitHub Release, and installed
+  update gates.
+- Aligned `ai-video-production` metadata only; no AI Video functional payload
+  was introduced.
+
 ## 0.3.0 - 2026-07-27
 
 - Prepared a main-line governance and catalog candidate containing package
