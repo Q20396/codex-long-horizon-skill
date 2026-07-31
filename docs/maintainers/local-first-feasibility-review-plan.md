@@ -6,7 +6,7 @@ Status: static candidate evidence. No implementation or release authority.
 
 | Area | Verdict | Evidence boundary |
 | --- | --- | --- |
-| Independent read-only review | READY_TO_REPEAT | The candidate is isolated and unstaged. A reviewer must rebind the exact 73-path inventory below, rerun necessary checks, and independently evaluate the remediation. |
+| Independent read-only review | READY_TO_REPEAT | The candidate is isolated and unstaged. A reviewer must rebind the exact 74-path inventory below, rerun necessary checks, and independently evaluate the remediation. |
 | Logical local-commit decomposition | FEASIBLE_WITH_EXACT_HUNK_REVIEW | The manifest below assigns every candidate path to one or more of six slices. Shared files still require the named hunk selectors and per-slice validation. |
 | External Local Case Evidence Provider | CONTRACT_FEASIBLE | Static interface, threat model, recursively closed fixtures, and type-first fail-closed checks are present. Runtime, encryption, credentials, connectors, and storage remain unimplemented. |
 | One synthetic connector pilot | READY_FIXTURE_ONLY | Two recursively closed synthetic checkpoints exercise delta/hash and customer-outcome contracts without network, accounts, credentials, persistence, or customer data. |
@@ -63,6 +63,7 @@ compare this list with the frozen candidate inventory before staging anything.
 Candidate base: `5afdb1e350a564478990a9b304c0eeb9b689c49e`.
 
 - [S6] `.agents/plugins/marketplace.json` - candidate availability and prospective ref.
+- [S6] `.github/workflows/check-skill.yml` - CI-wide bytecode isolation and immutable action/credential guards.
 - [S6] `.agents/skills/ai-video-production/SKILL.md` - candidate metadata only.
 - [S1/S2/S3/S5/S6] `.agents/skills/long-horizon-engineering/SKILL.md` - selectors: S1=`Sensitive-data limits:`; S2=`## Local Capability Discovery`; S3=`## Local Capability Discovery`; S5=`## Guided Customer Workflow`; S6=`update_channel: candidate`.
 - [S2] `.agents/skills/long-horizon-engineering/package-manifest.json` - local-governance profile and catalog component.
@@ -136,7 +137,7 @@ Candidate base: `5afdb1e350a564478990a9b304c0eeb9b689c49e`.
 - [S5] `tests/test_high_stakes_customer_workflows.py` - domain golden-case validation.
 - [S1/S2/S3/S4/S6] `tests/test_local_first_high_stakes_contracts.py` - selectors: S1=`def test_no_customer_sensitive_upload_exception_remains(`; S2=`def test_catalog_schema_and_fixed_authority_are_fail_closed(`; S3=`def test_trigger_fixture_rejects_non_objects_and_discovery_escalation(`; S4=`def test_fixture_only_pilot_rejects_unknown_runtime_aliases_recursively(`; S6=`def test_product_language_never_claims_connector_or_provider_runtime(`.
 
-Mechanical review must confirm 73 unique paths, no path outside this list, and
+Mechanical review must confirm 74 unique paths, no path outside this list, and
 at least one path for every slice. Shared paths may be staged only after the
 named hunk scopes are independently reviewed; otherwise combine the affected
 slices.

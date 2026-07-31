@@ -913,8 +913,8 @@ class LocalFirstHighStakesContractTests(unittest.TestCase):
 
     def test_candidate_slice_manifest_is_exact_and_selectors_resolve(self) -> None:
         text = FEASIBILITY_REVIEW_PLAN.read_text(encoding="utf-8")
-        self.assertIn("exact 73-path inventory", text)
-        self.assertNotIn("exact 74-path inventory", text)
+        self.assertIn("exact 74-path inventory", text)
+        self.assertNotIn("exact 73-path inventory", text)
         manifest = text.split(
             "## Exact Candidate Slice Manifest",
             1,
@@ -956,8 +956,8 @@ class LocalFirstHighStakesContractTests(unittest.TestCase):
         ).stdout.splitlines()
         candidate_paths = sorted(set(tracked + untracked))
 
-        self.assertEqual(len(rows), 73)
-        self.assertEqual(len(set(manifest_paths)), 73)
+        self.assertEqual(len(rows), 74)
+        self.assertEqual(len(set(manifest_paths)), 74)
         self.assertEqual(sorted(manifest_paths), candidate_paths)
 
         expected_slices = {f"S{index}" for index in range(1, 7)}

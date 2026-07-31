@@ -792,6 +792,84 @@ class FormalSchemaStaticTests(unittest.TestCase):
             ),
         )
 
+    def assert_python_steps_inherit_bytecode_guard(
+        self, text: str, job_name: str
+    ) -> None:
+        lines = text.splitlines()
+        job_start = lines.index(f"  {job_name}:")
+        job_end = next(
+            (
+                index
+                for index in range(job_start + 1, len(lines))
+                if lines[index].startswith("  ")
+                and not lines[index].startswith("    ")
+                and lines[index].endswith(":")
+            ),
+            len(lines),
+        )
+        job_lines = lines[job_start:job_end]
+        env_index = job_lines.index("    env:")
+        steps_index = job_lines.index("    steps:")
+        self.assertLess(env_index, steps_index)
+        self.assertEqual(
+            1,
+            job_lines[env_index + 1 : steps_index].count(
+                '      PYTHONDONTWRITEBYTECODE: "1"'
+            ),
+        )
+
+        step_starts = [
+            index
+            for index, line in enumerate(job_lines)
+            if line.startswith("      - name:")
+        ]
+        python_steps = []
+        for offset, step_start in enumerate(step_starts):
+            step_end = (
+                step_starts[offset + 1]
+                if offset + 1 < len(step_starts)
+                else len(job_lines)
+            )
+            step_lines = job_lines[step_start:step_end]
+            if any("python3" in line or "/python\"" in line for line in step_lines):
+                python_steps.append(step_lines[0].strip())
+                self.assertFalse(
+                    any("PYTHONDONTWRITEBYTECODE:" in line for line in step_lines),
+                    step_lines[0],
+                )
+        self.assertTrue(python_steps)
+
+    def test_check_skill_python_steps_inherit_job_bytecode_guard(self) -> None:
+        text = WORKFLOW.read_text(encoding="utf-8")
+        self.assert_python_steps_inherit_bytecode_guard(text, "check-skill")
+
+        job_guard = (
+            '    env:\n'
+            '      PYTHONDONTWRITEBYTECODE: "1"\n'
+            '    steps:\n'
+        )
+        step_local_guard = (
+            '    steps:\n'
+            '      - name: Check out repository\n'
+            '        env:\n'
+            '          PYTHONDONTWRITEBYTECODE: "1"\n'
+        )
+        mutated = text.replace(job_guard, step_local_guard, 1)
+        with self.assertRaises((AssertionError, ValueError)):
+            self.assert_python_steps_inherit_bytecode_guard(mutated, "check-skill")
+
+        disabled_in_one_step = text.replace(
+            "      - name: Run productized package checks\n",
+            "      - name: Run productized package checks\n"
+            "        env:\n"
+            '          PYTHONDONTWRITEBYTECODE: "0"\n',
+            1,
+        )
+        with self.assertRaises(AssertionError):
+            self.assert_python_steps_inherit_bytecode_guard(
+                disabled_in_one_step, "check-skill"
+            )
+
     def test_workflow_has_read_only_isolated_formal_job(self) -> None:
         text = WORKFLOW.read_text(encoding="utf-8")
         self.assert_formal_workflow_structure(text)
@@ -921,7 +999,8 @@ class FormalSchemaStaticTests(unittest.TestCase):
 
     def test_workflow_rejects_step_local_bytecode_guard(self) -> None:
         text = WORKFLOW.read_text(encoding="utf-8")
-        mutated = text.replace(
+        prefix, formal = text.split("  formal-schema-gate:", 1)
+        mutated_formal = formal.replace(
             '      PYTHONDONTWRITEBYTECODE: "1"\n',
             "",
             1,
@@ -932,6 +1011,7 @@ class FormalSchemaStaticTests(unittest.TestCase):
             '          PYTHONDONTWRITEBYTECODE: "1"\n',
             1,
         )
+        mutated = prefix + "  formal-schema-gate:" + mutated_formal
         with self.assertRaises(AssertionError):
             self.assert_formal_workflow_structure(mutated)
 
