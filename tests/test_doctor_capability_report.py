@@ -25,6 +25,14 @@ def load_doctor_module():
 
 
 class DoctorCapabilityReportTests(unittest.TestCase):
+    def test_lhe_required_inventory_is_derived_from_legacy_full_manifest(self) -> None:
+        module = load_doctor_module()
+        manifest = json.loads(module.PACKAGE_MANIFEST_PATH.read_text(encoding="utf-8"))
+        expected = []
+        for component in manifest["profiles"]["legacy-full"]["components"]:
+            expected.extend(manifest["components"][component]["paths"])
+        self.assertEqual(expected, module.LHE_INSTALLED_REQUIRED_PATHS)
+
     def test_local_governance_profile_is_static_and_fail_closed(self) -> None:
         module = load_doctor_module()
         report, errors = module.capability_health_report(

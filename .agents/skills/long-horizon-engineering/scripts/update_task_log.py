@@ -9,6 +9,7 @@ from pathlib import Path
 
 
 CONFIRM_TOKEN = "WRITE_TASK_LOG"
+SYSTEM_PATH_ALIASES = {Path("/var"), Path("/tmp")}
 HEADER = """# Task Log
 
 This file records completed engineering tasks in a concise, resumable format.
@@ -108,6 +109,18 @@ def reject_symlink(path: Path, label: str) -> None:
         raise ValueError(f"{label} must not be a symlink")
 
 
+def reject_existing_symlink_components(path: Path, label: str) -> None:
+    """Reject a path if any lexical existing component is a symlink."""
+    absolute = path.expanduser().absolute()
+    current = Path(absolute.anchor)
+    for component in absolute.parts[1:]:
+        current /= component
+        if current.exists() or current.is_symlink():
+            if current in SYSTEM_PATH_ALIASES:
+                continue
+            reject_symlink(current, label)
+
+
 def resolve_target(project_root: Path, target_file: Path) -> Path:
     if target_file.is_absolute() or ".." in target_file.parts:
         raise ValueError("--target-file must be a relative path without '..'")
@@ -117,6 +130,7 @@ def resolve_target(project_root: Path, target_file: Path) -> Path:
         raise ValueError("--target-file must not target repository control or skill paths")
 
     root = project_root.expanduser().absolute()
+    reject_existing_symlink_components(root, "--project-root path component")
     if not root.is_dir():
         raise ValueError("--project-root must be an existing directory")
     reject_symlink(root, "--project-root")

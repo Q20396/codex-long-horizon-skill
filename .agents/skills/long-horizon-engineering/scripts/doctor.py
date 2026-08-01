@@ -80,7 +80,7 @@ PACKAGE_ONLY_PATHS = [
 CAPABILITY_CATALOG_PATH = SKILL_DIR / "catalog" / "local-capability-catalog.json"
 PACKAGE_MANIFEST_PATH = SKILL_DIR / "package-manifest.json"
 
-INSTALLED_REQUIRED_PATHS = [
+_LEGACY_STATIC_INSTALLED_REQUIRED_PATHS = [
     ".agents/skills/long-horizon-engineering/SKILL.md",
     ".agents/skills/long-horizon-engineering/catalog/local-capability-catalog.json",
     ".agents/skills/long-horizon-engineering/references/approved-tool-contract-card.md",
@@ -181,6 +181,28 @@ INSTALLED_REQUIRED_PATHS = [
     ".agents/skills/ai-video-production/templates/visual-style-tokens.md",
     ".agents/skills/ai-video-production/templates/brand-system-for-video.md",
 ]
+
+
+def load_legacy_full_manifest_paths() -> list[str]:
+    """Return the installed LHE inventory from its package manifest."""
+    manifest = json.loads(PACKAGE_MANIFEST_PATH.read_text(encoding="utf-8"))
+    profile = manifest["profiles"]["legacy-full"]
+    return [
+        path
+        for component_name in profile["components"]
+        for path in manifest["components"][component_name]["paths"]
+    ]
+
+
+LHE_INSTALLED_REQUIRED_PATHS = load_legacy_full_manifest_paths()
+AI_VIDEO_INSTALLED_REQUIRED_PATHS = [
+    path
+    for path in _LEGACY_STATIC_INSTALLED_REQUIRED_PATHS
+    if path.startswith(".agents/skills/ai-video-production/")
+]
+INSTALLED_REQUIRED_PATHS = (
+    LHE_INSTALLED_REQUIRED_PATHS + AI_VIDEO_INSTALLED_REQUIRED_PATHS
+)
 
 
 def read_text(relative_path: str) -> str:
