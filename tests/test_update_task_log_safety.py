@@ -120,6 +120,27 @@ class UpdateTaskLogSafetyTests(unittest.TestCase):
             self.assertNotEqual(0, result.returncode)
             self.assertFalse((outside / "TASK_LOG.md").exists())
 
+    def test_rejects_project_root_below_a_symlinked_ancestor(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_name:
+            temp = Path(temp_name)
+            real_parent = temp / "real-parent"
+            project = real_parent / "project"
+            alias_parent = temp / "alias-parent"
+            real_parent.mkdir()
+            project.mkdir()
+            alias_parent.symlink_to(real_parent, target_is_directory=True)
+
+            result = self.invoke(
+                alias_parent / "project",
+                "--apply",
+                "--confirm",
+                "WRITE_TASK_LOG",
+            )
+
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("symlink", result.stderr)
+            self.assertFalse((project / "docs" / "TASK_LOG.md").exists())
+
 
 if __name__ == "__main__":
     unittest.main()
