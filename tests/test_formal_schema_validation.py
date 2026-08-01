@@ -876,8 +876,8 @@ class FormalSchemaStaticTests(unittest.TestCase):
         formal = text.split("  formal-schema-gate:", 1)[1]
         required = (
             "runs-on: ubuntu-24.04",
-            "uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
-            "uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065",
+            "uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+            "uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97",
             "permissions:\n      contents: read",
             'python-version: "3.11"',
             'architecture: "x64"',
@@ -955,13 +955,13 @@ class FormalSchemaStaticTests(unittest.TestCase):
         self.assertEqual(
             2,
             action_lines.count(
-                "uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262"
+                "uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1"
             ),
         )
         self.assertEqual(
             2,
             action_lines.count(
-                "uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065"
+                "uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97"
             ),
         )
 
@@ -986,13 +986,13 @@ class FormalSchemaStaticTests(unittest.TestCase):
         self.assertEqual(
             2,
             text.count(
-                "uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262"
+                "uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1"
             ),
         )
         self.assertEqual(
             2,
             text.count(
-                "uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065"
+                "uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97"
             ),
         )
         self.assertEqual(2, text.count("persist-credentials: false"))
