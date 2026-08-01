@@ -175,7 +175,7 @@ CORE_COMMANDS = [
         PYTHON,
         "scripts/check_release_readiness.py",
         "--version",
-        "0.3.2",
+        "0.3.3",
         "--release-state",
         "final",
         "--allow-existing-tag",
@@ -202,7 +202,7 @@ CI_EXPECTED = [
         [
             "check_release_readiness.py",
             "--version",
-            "0.3.2",
+            "0.3.3",
             "--release-state",
             "final",
             "--allow-existing-tag",

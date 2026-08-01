@@ -266,7 +266,7 @@ def write_fake_codex(bin_dir: Path) -> Path:
                         "pluginId": f"{plugin_name}@{marketplace_name}",
                         "name": plugin_name,
                         "marketplaceName": marketplace_name,
-                        "version": "0.3.2",
+                        "version": "0.3.3",
                         "installedPath": str(installed),
                     }))
                 else:
@@ -277,16 +277,16 @@ def write_fake_codex(bin_dir: Path) -> Path:
                 installed = codex_home / "plugins" / plugin_name
                 if "--json" in argv:
                     if scenario == "plugin_list_available_only":
-                        print(json.dumps({"installed": [], "available": [{"name": plugin_name, "marketplaceName": marketplace_name, "version": "0.3.2"}]}))
+                        print(json.dumps({"installed": [], "available": [{"name": plugin_name, "marketplaceName": marketplace_name, "version": "0.3.3"}]}))
                         raise SystemExit(0)
                     if scenario == "plugin_list_wrong_version":
                         print(json.dumps({"installed": [{"name": plugin_name, "marketplaceName": marketplace_name, "version": "9.9.9", "installed": installed.exists()}]}))
                         raise SystemExit(0)
-                    print(json.dumps({"installed": [{"name": plugin_name, "marketplaceName": marketplace_name, "version": "0.3.2", "installed": installed.exists()}]}))
+                    print(json.dumps({"installed": [{"name": plugin_name, "marketplaceName": marketplace_name, "version": "0.3.3", "installed": installed.exists()}]}))
                 elif scenario == "plugin_list_text_substring":
                     print(f"{plugin_name}-old {marketplace_name} 0.2.1 installed")
                 else:
-                    print(f"{plugin_name} {marketplace_name} 0.3.2 installed")
+                    print(f"{plugin_name} {marketplace_name} 0.3.3 installed")
                 raise SystemExit(0)
 
             print(f"unhandled fake codex command: {argv}", file=sys.stderr)

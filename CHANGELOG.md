@@ -6,6 +6,17 @@ All notable changes to this project are summarized here.
 
 No unreleased changes.
 
+## 0.3.3 - 2026-08-01
+
+- Hardened `append_project_memory.py`: preview-only is now the default; a
+  write requires an explicit project root and target plus `--apply` and
+  `--confirm`.
+- Rejected path traversal, existing symlink escapes, and high-confidence
+  secret, account, and personal-contact patterns before any memory write.
+- Added contract tests proving that omitted write authority creates no files or
+  directories. No provider, connector, customer-data, or runtime capability
+  was introduced.
+
 ## 0.3.2 - 2026-08-01
 
 - Corrected Codex user-level installation guidance to use

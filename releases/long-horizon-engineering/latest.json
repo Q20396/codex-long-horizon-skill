@@ -1,6 +1,6 @@
 {
   "skill_id": "long-horizon-engineering",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "repo": "https://github.com/Q20396/codex-long-horizon-skill",
   "path": ".agents/skills/long-horizon-engineering",
   "channel": "stable",
@@ -8,8 +8,8 @@
   "release_date": "2026-08-01",
   "risk": "reviewed",
   "summary": [
-    "Corrected stable installation and upgrade guidance for the v0.3.2 patch release.",
-    "Made full validation timeout handling deterministic while retaining all required gates.",
+    "Hardened project-memory writes to default preview-only behavior with explicit confirmation.",
+    "Rejected sensitive facts and targets outside the resolved project root before writing.",
     "Kept local-first, descriptor-only, provider, runtime, and customer-authority boundaries unchanged."
   ],
   "requires_manual_approval": true,
