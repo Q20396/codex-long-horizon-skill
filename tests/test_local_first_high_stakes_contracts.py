@@ -926,22 +926,22 @@ class LocalFirstHighStakesContractTests(unittest.TestCase):
         )
         self.assertIsNotNone(base_match)
         base = base_match.group(1)
-        commit_match = re.search(
+        candidate_match = re.search(
             r"^Candidate commit: `([0-9a-f]{40})`\.$",
             manifest,
             flags=re.MULTILINE,
         )
-        self.assertIsNotNone(commit_match)
-        candidate_commit = commit_match.group(1)
+        self.assertIsNotNone(candidate_match)
+        candidate = candidate_match.group(1)
         subprocess.run(
-            ["git", "merge-base", "--is-ancestor", base, candidate_commit],
+            ["git", "merge-base", "--is-ancestor", base, candidate],
             cwd=ROOT,
             check=True,
             capture_output=True,
             text=True,
         )
         subprocess.run(
-            ["git", "merge-base", "--is-ancestor", candidate_commit, "HEAD"],
+            ["git", "merge-base", "--is-ancestor", candidate, "HEAD"],
             cwd=ROOT,
             check=True,
             capture_output=True,
@@ -955,7 +955,14 @@ class LocalFirstHighStakesContractTests(unittest.TestCase):
         )
         manifest_paths = [path for _, path, _ in rows]
         tracked = subprocess.run(
-            ["git", "diff", "--name-only", f"{base}..{candidate_commit}"],
+            ["git", "diff", "--name-only", base, candidate],
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.splitlines()
+        untracked = subprocess.run(
+            ["git", "ls-files", "--others", "--exclude-standard"],
             cwd=ROOT,
             check=True,
             capture_output=True,
@@ -985,7 +992,7 @@ class LocalFirstHighStakesContractTests(unittest.TestCase):
                 relative_path,
             )
             target_text = subprocess.run(
-                ["git", "show", f"{candidate_commit}:{relative_path}"],
+                ["git", "show", f"{candidate}:{relative_path}"],
                 cwd=ROOT,
                 check=True,
                 capture_output=True,
