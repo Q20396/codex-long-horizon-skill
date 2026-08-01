@@ -6,7 +6,6 @@ from __future__ import annotations
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
 
 import skill_update_selfcheck as checker
 
@@ -31,8 +30,6 @@ class SkillUpdateSelfcheckTests(unittest.TestCase):
             possible_breaking_changes=[],
             risk_level="HIGH",
             upgrade_recommendation="Manual review recommended before upgrading.",
-            backup_plan="Create backup.",
-            rollback_plan="Restore backup.",
         )
 
     def test_front_matter_metadata_parsing(self) -> None:
@@ -184,51 +181,19 @@ update_channel: stable
             with self.assertRaises(ValueError):
                 checker.assert_direct_child(root / "installed", root / "outside" / "skill", "test path")
 
-    def test_local_target_symlink_is_rejected_before_apply(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            installed = root / "installed"
-            remote_repo = root / "repo"
-            backup_root = installed / ".backups" / "20260620-000000"
-            skill_id = "long-horizon-engineering"
-            outside = root / "outside"
-            outside.mkdir(parents=True)
-            installed.mkdir(parents=True)
-            (installed / skill_id).symlink_to(outside, target_is_directory=True)
-            write(remote_repo / ".agents" / "skills" / skill_id / "SKILL.md", "remote")
-            report = self.make_report(
-                skill_id,
-                installed / skill_id,
-                remote_repo / ".agents" / "skills" / skill_id,
-            )
-            with self.assertRaises(ValueError):
-                checker.apply_skill_update(report, remote_repo, backup_root)
-
-    def test_remote_skill_symlink_is_rejected_before_apply(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            installed = root / "installed"
-            remote_repo = root / "repo"
-            backup_root = installed / ".backups" / "20260620-000000"
-            skill_id = "ai-video-production"
-            write(installed / skill_id / "SKILL.md", "local")
-            outside = root / "outside-remote"
-            outside.mkdir(parents=True)
-            remote_skills = remote_repo / ".agents" / "skills"
-            remote_skills.mkdir(parents=True)
-            (remote_skills / skill_id).symlink_to(outside, target_is_directory=True)
-            report = self.make_report(skill_id, installed / skill_id, remote_skills / skill_id)
-            with self.assertRaises(ValueError):
-                checker.apply_skill_update(report, remote_repo, backup_root)
-
-    def test_update_all_only_uses_selected_approved_skills(self) -> None:
-        report = self.make_report(
-            "long-horizon-engineering",
-            Path("/tmp/skills/long-horizon-engineering"),
-            Path("/tmp/repo/.agents/skills/long-horizon-engineering"),
+    def test_module_contains_no_mutation_or_interactive_apply_surface(self) -> None:
+        source = (Path(checker.__file__).read_text(encoding="utf-8"))
+        forbidden = (
+            "--apply",
+            "input(",
+            "shutil.rmtree",
+            "shutil.copytree",
+            ".write_text(",
+            ".write_bytes(",
         )
-        with patch("builtins.input", return_value="UPDATE ALL"):
-            self.assertEqual(checker.choose_skills_for_apply([report]), ["long-horizon-engineering"])
+        for token in forbidden:
+            with self.subTest(token=token):
+                self.assertNotIn(token, source)
 
 
 if __name__ == "__main__":

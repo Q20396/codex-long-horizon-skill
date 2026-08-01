@@ -460,15 +460,15 @@ Summarize:
 6. important instruction changes
 7. risk level
 8. upgrade recommendation
-9. backup path that would be used
-10. rollback plan
+9. comparison-only statement: no backup or replacement was created
+10. the separate `update_installed_skill.py` path required for an approved
+    replacement plan
 
-Ask for explicit second approval before applying any update. If applying an
-update, create a timestamped backup first, replace only the selected approved
-skill folder, validate that `SKILL.md` exists, validate that the folder is not
-empty, validate there is no duplicated nested path such as
-`.agents/skills/.agents/skills`, report exact files changed, and print the
-rollback command. If anything fails, restore from backup where possible.
+Ask for explicit second approval before applying any update. The comparison
+script cannot apply an update. Use `update_installed_skill.py` for the
+separately approved backup-first replacement flow; it must replace only the
+selected approved skill folder, validate `SKILL.md`, reject duplicated nested
+paths, report exact files changed, and provide rollback instructions.
 
 Never silently update. Never update all skills unless the user explicitly
 approves all skills. Prefer check-only mode unless the user clearly asks to
