@@ -122,7 +122,7 @@ class UiDesignSkillAdapterContractTests(unittest.TestCase):
         optional = manifest["components"]["bundled-optional"]["paths"]
         self.assertIn(adapter_path, optional)
         self.assertNotIn(adapter_path, manifest["components"]["core"]["paths"])
-        self.assertEqual(len(manifest["components"]["core"]["paths"]), 43)
+        self.assertEqual(len(manifest["components"]["core"]["paths"]), 44)
         self.assertEqual(len(optional), 101)
         self.assertEqual(
             sum(len(item["paths"]) for item in manifest["separate_skills"]),
@@ -139,8 +139,8 @@ class UiDesignSkillAdapterContractTests(unittest.TestCase):
             classification["source_manifest_sha256"],
             hashlib.sha256(MANIFEST.read_bytes()).hexdigest(),
         )
-        self.assertEqual(classification["summary"]["manifest_paths_reviewed"], 172)
-        self.assertEqual(classification["summary"]["core_retained"], 43)
+        self.assertEqual(classification["summary"]["manifest_paths_reviewed"], 173)
+        self.assertEqual(classification["summary"]["core_retained"], 44)
         self.assertEqual(classification["summary"]["bundled_optional_retained"], 86)
         self.assertEqual(
             classification["summary"]["candidate_separate_skill_extractions"],

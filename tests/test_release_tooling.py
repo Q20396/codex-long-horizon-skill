@@ -663,21 +663,20 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.assertIn(expected, output)
         self.assertNotIn("Traceback", output)
 
-    def test_publishable_final_release_notes_pass(self) -> None:
+    def test_candidate_release_notes_pass_static_consistency(self) -> None:
         repo = self.copy_repo("publishable")
         result = self.run_readiness(repo, "--allow-existing-tag")
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn("allow-existing-tag", result.stdout)
-        self.assertIn("formal and post-tag evidence remain required", result.stdout)
-        self.assertIn("not release-ready", result.stdout)
+        self.assertIn("release-state=candidate", result.stdout)
 
     def test_release_notes_state_must_match_requested_state(self) -> None:
         repo = self.copy_repo("release-notes-state-mismatch")
         release_notes = self.release_notes(repo)
         release_notes.write_text(
             release_notes.read_text(encoding="utf-8").replace(
-                "Release state: final",
                 "Release state: candidate",
+                "Release state: final",
                 1,
             ),
             encoding="utf-8",
@@ -685,7 +684,7 @@ class ReleaseReadinessTests(unittest.TestCase):
         result = self.run_readiness(repo, "--allow-existing-tag")
         self.assert_failed_without_traceback(
             result,
-            "release notes state 'candidate' does not match 'final'",
+            "release notes state 'final' does not match 'candidate'",
         )
 
     def test_prepared_not_released_marker_fails(self) -> None:
@@ -1244,7 +1243,9 @@ class ReleaseReadinessTests(unittest.TestCase):
 
     def test_pre_tag_static_rejects_final_release_state(self) -> None:
         repo = self.copy_repo("pre-tag-static-final")
-        result = self.run_readiness(repo, "--pre-tag-static")
+        result = self.run_readiness(
+            repo, "--pre-tag-static", release_state="final"
+        )
         self.assert_failed_without_traceback(
             result,
             "final release state is forbidden with --pre-tag-static",
@@ -1285,7 +1286,9 @@ class ReleaseReadinessTests(unittest.TestCase):
                     json.dumps(data, indent=2) + "\n",
                     encoding="utf-8",
                 )
-                result = self.run_readiness(repo, "--allow-existing-tag")
+                result = self.run_readiness(
+                    repo, "--allow-existing-tag", release_state="final"
+                )
                 self.assert_failed_without_traceback(result, expected)
 
     def test_final_release_state_requires_stable_skill_channels(self) -> None:
@@ -1299,7 +1302,9 @@ class ReleaseReadinessTests(unittest.TestCase):
             ),
             encoding="utf-8",
         )
-        result = self.run_readiness(repo, "--allow-existing-tag")
+        result = self.run_readiness(
+            repo, "--allow-existing-tag", release_state="final"
+        )
         self.assert_failed_without_traceback(
             result,
             "must declare update_channel: stable for release state 'final'",
@@ -1329,6 +1334,7 @@ class ReleaseReadinessTests(unittest.TestCase):
             str(self.temp / "formal-evidence"),
             "--formal-schema-candidate-base",
             "a" * 40,
+            release_state="final",
         )
         self.assert_failed_without_traceback(
             result,
