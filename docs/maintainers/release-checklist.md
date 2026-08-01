@@ -70,6 +70,13 @@ stages. Completing Phase A does not establish release readiness.
 - [ ] Strict plugin-install result is recorded.
 - [ ] Fresh `origin/main` commit is recorded.
 - [ ] Annotated tag targets the exact validated commit.
+- [ ] Starting with the next release after `v0.4.1`, the annotated tag is
+      cryptographically signed by a trusted maintainer key. Do not rewrite an
+      existing immutable tag merely to add a signature.
+- [ ] The trusted signing-key fingerprint and its public-key distribution
+      location are recorded in the release evidence before signing. A local
+      `git verify-tag <tag>` result is recorded independently of GitHub's tag
+      display; a signed tag is provenance evidence, not release authority.
 - [ ] Annotated tag is pushed before GitHub Release creation.
 - [ ] `gh release create --verify-tag` is used.
 - [ ] Published Release is not draft.
