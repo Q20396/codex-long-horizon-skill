@@ -2,6 +2,10 @@
 
 Status: static candidate evidence. No implementation or release authority.
 
+This is an archival review record for its named candidate commit. It is **not
+a current-HEAD assertion** and later release history must not rebind its path
+inventory or evidence.
+
 ## Feasibility Verdicts
 
 | Area | Verdict | Evidence boundary |

@@ -162,6 +162,7 @@ INSTALLED_REQUIRED_FILES = [
     ".agents/skills/long-horizon-engineering/templates/DECISION_MAP_TEMPLATE.md",
     ".agents/skills/long-horizon-engineering/templates/GOAL_DRIVEN_DELIVERY_CONTRACT.md",
     ".agents/skills/long-horizon-engineering/templates/LOCAL_VOICE_TOOL_APPROVAL_CARD.md",
+    ".agents/skills/long-horizon-engineering/templates/LOCAL_GOVERNANCE_WORK_PACKET.md",
     ".agents/skills/long-horizon-engineering/templates/THREE_D_ASSET_DELIVERY_APPROVAL_CARD.md",
     ".agents/skills/long-horizon-engineering/templates/IMPROVEMENT_SCAN_TEMPLATE.md",
     ".agents/skills/long-horizon-engineering/templates/implementation-plan.md",
@@ -560,12 +561,12 @@ def load_package_contract(
 
     expected_migration = {
         "physical_layout_changed": False,
-        "default_install_changed": False,
+        "default_install_changed": True,
         "legacy_checker_fallback": True,
     }
     if migration != expected_migration:
         errors.append(
-            "Package manifest migration flags must preserve the v0.2 legacy-full layout."
+            "Package manifest migration flags must declare the v0.4 minimal-default transition."
         )
 
     if default_profile in profile_components_by_id:
@@ -580,14 +581,25 @@ def load_package_contract(
             if skill_id == "ai-video-production"
             for path in separate_paths_by_id.get(skill_id, [])
         ]
-        if set(default_lhe_paths) != set(INSTALLED_REQUIRED_FILES):
+        legacy_lhe_paths = [
+            path
+            for component_id in profile_components_by_id.get("legacy-full", [])
+            for path in component_paths_by_id.get(component_id, [])
+        ]
+        legacy_ai_video_paths = [
+            path
+            for skill_id in profile_separate_by_id.get("legacy-full", [])
+            if skill_id == "ai-video-production"
+            for path in separate_paths_by_id.get(skill_id, [])
+        ]
+        if set(legacy_lhe_paths) != set(INSTALLED_REQUIRED_FILES):
             errors.append(
-                "Package manifest default profile LHE paths differ from the "
+                "Package manifest legacy-full LHE paths differ from the "
                 "legacy required-file contract."
             )
-        if set(default_ai_video_paths) != set(AI_VIDEO_REQUIRED_FILES):
+        if set(legacy_ai_video_paths) != set(AI_VIDEO_REQUIRED_FILES):
             errors.append(
-                "Package manifest default profile AI Video paths differ from the "
+                "Package manifest legacy-full AI Video paths differ from the "
                 "legacy required-file contract."
             )
 
@@ -641,12 +653,22 @@ def check_skill_front_matter(skill_dir: Path, expected_name: str) -> list[str]:
     if "description:" not in front_matter:
         errors.append(f"{display_path} front matter must include description.")
     required_metadata = {
-        "version": "0.3.3",
+        "version": "0.4.0",
         "repo": "https://github.com/Q20396/codex-long-horizon-skill",
         "skill_id": expected_name,
-        "update_channel": "stable",
+        "update_channel": None,
     }
     for key, expected_value in required_metadata.items():
+        if expected_value is None:
+            if not any(
+                f"{key}: {value}" in front_matter
+                for value in ("candidate", "stable")
+            ):
+                errors.append(
+                    f"{display_path} front matter must include a supported "
+                    f"{key}: candidate|stable value"
+                )
+            continue
         if f"{key}: {expected_value}" not in front_matter:
             errors.append(
                 f"{display_path} front matter must include {key}: {expected_value}"

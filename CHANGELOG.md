@@ -2,9 +2,17 @@
 
 All notable changes to this project are summarized here.
 
-## Unreleased
+## 0.4.0 - 2026-08-01
 
-No unreleased changes.
+- Changed the default source-package profile to `local-governance-core` while
+  retaining `legacy-full` as an explicit compatibility profile.
+- Added the Local Governance Work Packet: a copy-paste, local-first intake
+  workflow that separates FACT, INFERENCE, and UNKNOWN and ends with one next
+  safe action under fixed human authority.
+- Kept customer-sensitive transfer, provider activation, account connection,
+  persistence, execution, and publication outside the package default.
+- Corrected historical v0.3 design records so their fixed candidate evidence is
+  never rebound to a later repository HEAD.
 
 ## 0.3.3 - 2026-08-01
 

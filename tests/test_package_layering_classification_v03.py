@@ -37,7 +37,7 @@ class PackageLayeringClassificationV03Tests(unittest.TestCase):
         self.assertEqual(proposal["source_manifest_sha256"], digest)
         self.assertEqual(proposal["baseline_commit"], "1fd15b8e2123f0a7cd85ff39ac778d265cedfb1b")
 
-    def test_proposal_is_non_executable_and_does_not_change_defaults(self) -> None:
+    def test_proposal_is_historical_and_non_executable(self) -> None:
         proposal = self.load_json(PROPOSAL)
         self.assertEqual(proposal["status"], "proposed")
         self.assertFalse(proposal["execution_authorized"])
@@ -47,9 +47,9 @@ class PackageLayeringClassificationV03Tests(unittest.TestCase):
         self.assertEqual(proposal["default_action"], "retain-current-layer")
 
         manifest = self.load_json(MANIFEST)
-        self.assertEqual(manifest["default_profile"], "legacy-full")
+        self.assertEqual(manifest["default_profile"], "local-governance-core")
         self.assertFalse(manifest["migration"]["physical_layout_changed"])
-        self.assertFalse(manifest["migration"]["default_install_changed"])
+        self.assertTrue(manifest["migration"]["default_install_changed"])
 
     def test_every_override_is_unique_existing_optional_content(self) -> None:
         proposal = self.load_json(PROPOSAL)
@@ -125,6 +125,7 @@ class PackageLayeringClassificationV03Tests(unittest.TestCase):
         text = REPORT.read_text(encoding="utf-8")
         for value in (
             "Status: Proposed",
+            "Supersession",
             "does not move files",
             "groups 15 paths into six candidate boundaries",
             "not approval to create a skill",

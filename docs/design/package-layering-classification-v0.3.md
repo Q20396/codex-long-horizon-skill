@@ -2,6 +2,11 @@
 
 Status: Proposed
 
+> **Supersession.** This is a v0.3 historical design record. The approved v0.4
+> Local Governance Upgrade changes the default profile to
+> `local-governance-core`; it does not authorize any further path move or
+> change this proposal's candidate-extraction decisions.
+
 This review applies the
 [v0.3 package layering specification](package-layering-v0.3.md) to every path
 in the version 1.0 package manifest. It does not move files, edit the manifest,
@@ -15,7 +20,7 @@ remains the only authoritative path inventory.
 
 | Result | Paths | Decision |
 | --- | ---: | --- |
-| Retain in `core` | 43 | All current core paths remain necessary for the safe engineering, recovery, validation, capability-discovery, or package-management contract. |
+| Retain in `core` | 44 | All current core paths remain necessary for the safe engineering, recovery, validation, capability-discovery, or package-management contract. |
 | `bundled-optional` inventory | 101 | This inventory contains 86 retained paths and 15 candidate extraction paths. |
 | Retain in `bundled-optional` | 86 | These paths remain useful engineering extensions or safety boundary documents. |
 | Candidate separate-skill extraction | 15 | These paths are a subset of the 101-path `bundled-optional` inventory; domain workflows should be reviewed as independently routed skills before any physical change. |
@@ -23,13 +28,13 @@ remains the only authoritative path inventory.
 
 The 15 candidate extraction paths are a subset of the 101-path
 `bundled-optional` inventory (`86 + 15 = 101`). The complete manifest inventory
-remains `43 + 101 + 28 = 172`. All 172 manifest paths receive a deterministic
+remains `44 + 101 + 28 = 173`. All 173 manifest paths receive a deterministic
 result: an exact override in the proposal or `retain-current-layer` through the
 declared default action.
 
 ## Core Review
 
-No core demotion is proposed. The 43 core paths cover:
+No core demotion is proposed. The 44 core paths cover:
 
 - entry point and package manifest;
 - approval, privacy, safety, capability, and stop boundaries;

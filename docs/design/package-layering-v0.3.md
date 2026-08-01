@@ -2,6 +2,12 @@
 
 Status: Proposed
 
+> **Supersession.** This is a v0.3 historical design specification. The
+> approved v0.4 Local Governance Upgrade changes the default profile to
+> `local-governance-core` while retaining `legacy-full` as an explicit
+> compatibility profile. It does not authorize a path move, runtime, or
+> provider. At v0.3, this record did not change `legacy-full` as the default.
+
 This specification defines how Long-Horizon Engineering (LHE) evolves from a
 single full bundle into three explicit package layers. It is a design contract,
 not authorization to move files, change an installation default, publish a
@@ -20,7 +26,7 @@ LHE uses three package layers:
 The exact path inventory is owned exclusively by
 `.agents/skills/long-horizon-engineering/package-manifest.json`. Documentation
 MUST NOT maintain a second path list. At the time this specification was
-written, that manifest classifies 43 `core` paths, 101 `bundled-optional` paths,
+written, that manifest classifies 44 `core` paths, 101 `bundled-optional` paths,
 and 28 `ai-video-production` paths as one `separate-skill`.
 
 ## Layer Rules
@@ -80,7 +86,7 @@ The following current profiles retain their meanings during migration:
 
 | Profile | Components | Separate skills | Compatibility role |
 | --- | --- | --- | --- |
-| `legacy-full` | `core`, `bundled-optional` | `ai-video-production` | Current default and compatibility baseline. |
+| `legacy-full` | `core`, `bundled-optional` | `ai-video-production` | Explicit compatibility profile. |
 | `lhe-bundled` | `core`, `bundled-optional` | none | Full LHE without independent skills. |
 | `core-only` | `core` | none | Minimal LHE installation. |
 | `local-governance-core` | `core` | none | Compatibility alias for the minimal local-only governance/evidence kernel. Recommended for high-sensitivity workflows; it does not install domain packs or providers. |
@@ -96,11 +102,13 @@ negative tests, compatibility analysis, and rollback plan.
 
 ## Compatibility Strategy
 
-The specification phase preserves all current behavior:
+The v0.3 specification phase preserved all current behavior. The approved v0.4
+default change is documented separately; it preserves physical layout and the
+legacy fallback:
 
-- `default_profile` remains `legacy-full`;
+- `default_profile` is `local-governance-core`;
 - `migration.physical_layout_changed` remains `false`;
-- `migration.default_install_changed` remains `false`;
+- `migration.default_install_changed` is `true`;
 - `migration.legacy_checker_fallback` remains `true`;
 - current profile names and component meanings remain stable;
 - current repository paths remain in place;
@@ -129,7 +137,7 @@ Migration proceeds through reviewable PRs:
 2. **Classification review:** propose individual path moves with evidence that
    core remains complete. No physical moves.
 3. **Assembly support:** teach packaging tools to materialize selected profiles
-   in temporary directories. Keep `legacy-full` as default.
+   in temporary directories. Keep `legacy-full` available as compatibility.
 4. **Clean-room install validation:** verify each profile in an isolated
    temporary home and verify upgrades from the current stable release.
 5. **Default decision:** separately decide whether to retain or change the
@@ -152,7 +160,7 @@ Before any migration is promoted:
 | Core completeness | A clean `core-only` install passes package and doctor checks without optional or separate content. |
 | Optional isolation | A clean `lhe-bundled` install passes without `ai-video-production`. |
 | Separate lifecycle | Separate skills validate and update independently. |
-| Backward compatibility | `legacy-full` remains equivalent to the prior default until a separately approved change. |
+| Backward compatibility | `legacy-full` remains available as the prior full profile after the separately approved v0.4 default change. |
 | Upgrade safety | Stable-to-candidate dry-run, backup, apply, validation, and rollback are exercised in temporary directories. |
 | Routing | Removing an unselected layer does not broaden or silently redirect triggers. |
 
@@ -177,7 +185,7 @@ For later migration PRs:
 This specification does not:
 
 - move, delete, or duplicate package files;
-- change `legacy-full` as the default;
+- change the historical `legacy-full` compatibility profile;
 - change updater or installer behavior;
 - install or remove `ai-video-production`;
 - add a provider, runtime, dependency, network call, or telemetry;

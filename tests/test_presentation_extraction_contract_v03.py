@@ -72,7 +72,7 @@ class PresentationExtractionContractV03Tests(unittest.TestCase):
                 hashlib.sha256(path.read_bytes()).hexdigest(),
             )
 
-    def test_current_manifest_and_profiles_remain_unchanged(self) -> None:
+    def test_current_manifest_preserves_paths_after_v04_default_change(self) -> None:
         contract = self.load_json(CONTRACT)
         manifest = self.load_json(MANIFEST)
         optional_paths = set(
@@ -80,9 +80,9 @@ class PresentationExtractionContractV03Tests(unittest.TestCase):
         )
         for item in contract["source_paths"]:
             self.assertIn(item["path"], optional_paths)
-        self.assertEqual(manifest["default_profile"], "legacy-full")
+        self.assertEqual(manifest["default_profile"], "local-governance-core")
         self.assertFalse(manifest["migration"]["physical_layout_changed"])
-        self.assertFalse(manifest["migration"]["default_install_changed"])
+        self.assertTrue(manifest["migration"]["default_install_changed"])
 
     def test_ownership_is_unresolved_and_avoids_duplicate_runtime(self) -> None:
         decision = self.load_json(CONTRACT)["ownership_decision"]
@@ -141,6 +141,7 @@ class PresentationExtractionContractV03Tests(unittest.TestCase):
         text = " ".join(REPORT.read_text(encoding="utf-8").split())
         for phrase in (
             "Status: Candidate only",
+            "Supersession",
             "does not create or register a skill",
             "owner is unresolved",
             "installed platform presentation capability",

@@ -1,16 +1,16 @@
 {
   "repo": "https://github.com/Q20396/codex-long-horizon-skill",
-  "channel": "stable",
-  "released": true,
+  "channel": "candidate",
+  "released": false,
   "updated_at": "2026-08-01",
   "skills": {
     "long-horizon-engineering": {
-      "version": "0.3.3",
+      "version": "0.4.0",
       "path": ".agents/skills/long-horizon-engineering",
       "manifest": "releases/long-horizon-engineering/latest.json"
     },
     "ai-video-production": {
-      "version": "0.3.3",
+      "version": "0.4.0",
       "path": ".agents/skills/ai-video-production",
       "manifest": "releases/ai-video-production/latest.json"
     }

@@ -2,7 +2,7 @@
   "$schema": "./schemas/package-manifest.schema.json",
   "schema_version": "1.0",
   "skill_id": "long-horizon-engineering",
-  "default_profile": "legacy-full",
+  "default_profile": "local-governance-core",
   "profiles": {
     "legacy-full": {
       "components": [
@@ -71,6 +71,7 @@
         ".agents/skills/long-horizon-engineering/scripts/update_installed_skill.py",
         ".agents/skills/long-horizon-engineering/templates/APPROVED_TOOL_CONTRACT_CARD.md",
         ".agents/skills/long-horizon-engineering/templates/HANDOFF_REPORT_TEMPLATE.md",
+        ".agents/skills/long-horizon-engineering/templates/LOCAL_GOVERNANCE_WORK_PACKET.md",
         ".agents/skills/long-horizon-engineering/templates/TASK_LOG_TEMPLATE.md",
         ".agents/skills/long-horizon-engineering/templates/WORKING_STATE_TEMPLATE.md",
         ".agents/skills/long-horizon-engineering/templates/debugging-runbook.md",
@@ -230,7 +231,7 @@
   ],
   "migration": {
     "physical_layout_changed": false,
-    "default_install_changed": false,
+    "default_install_changed": true,
     "legacy_checker_fallback": true
   }
 }

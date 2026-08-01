@@ -266,7 +266,7 @@ def write_fake_codex(bin_dir: Path) -> Path:
                         "pluginId": f"{plugin_name}@{marketplace_name}",
                         "name": plugin_name,
                         "marketplaceName": marketplace_name,
-                        "version": "0.3.3",
+                        "version": "0.4.0",
                         "installedPath": str(installed),
                     }))
                 else:
@@ -277,16 +277,16 @@ def write_fake_codex(bin_dir: Path) -> Path:
                 installed = codex_home / "plugins" / plugin_name
                 if "--json" in argv:
                     if scenario == "plugin_list_available_only":
-                        print(json.dumps({"installed": [], "available": [{"name": plugin_name, "marketplaceName": marketplace_name, "version": "0.3.3"}]}))
+                        print(json.dumps({"installed": [], "available": [{"name": plugin_name, "marketplaceName": marketplace_name, "version": "0.4.0"}]}))
                         raise SystemExit(0)
                     if scenario == "plugin_list_wrong_version":
                         print(json.dumps({"installed": [{"name": plugin_name, "marketplaceName": marketplace_name, "version": "9.9.9", "installed": installed.exists()}]}))
                         raise SystemExit(0)
-                    print(json.dumps({"installed": [{"name": plugin_name, "marketplaceName": marketplace_name, "version": "0.3.3", "installed": installed.exists()}]}))
+                    print(json.dumps({"installed": [{"name": plugin_name, "marketplaceName": marketplace_name, "version": "0.4.0", "installed": installed.exists()}]}))
                 elif scenario == "plugin_list_text_substring":
                     print(f"{plugin_name}-old {marketplace_name} 0.2.1 installed")
                 else:
-                    print(f"{plugin_name} {marketplace_name} 0.3.3 installed")
+                    print(f"{plugin_name} {marketplace_name} 0.4.0 installed")
                 raise SystemExit(0)
 
             print(f"unhandled fake codex command: {argv}", file=sys.stderr)
@@ -430,7 +430,7 @@ class FrontMatterParserTests(unittest.TestCase):
         output = result.stdout + result.stderr
         self.assertNotEqual(result.returncode, 0)
         self.assertIn(
-            "marketplace source.ref must match immutable release tag 'v0.3.3'",
+            "marketplace source.ref must match immutable release tag 'v0.4.0'",
             output,
         )
 
@@ -453,7 +453,7 @@ class FrontMatterParserTests(unittest.TestCase):
                         repo,
                         marketplace_name="codex-long-horizon-skills",
                         plugin_name="codex-long-horizon-skill",
-                        version="0.3.3",
+                        version="0.4.0",
                         boundary=self.temp,
                     )
                 )
@@ -466,7 +466,7 @@ class FrontMatterParserTests(unittest.TestCase):
                 repo,
                 marketplace_name="codex-long-horizon-skills",
                 plugin_name="codex-long-horizon-skill",
-                version="0.3.3",
+                version="0.4.0",
                 boundary=self.temp,
             ),
             str(repo.resolve()),
@@ -490,7 +490,7 @@ class ReleaseReadinessTests(unittest.TestCase):
         repo: Path,
         *args: str,
         env: dict[str, str] | None = None,
-        release_state: str = "final",
+        release_state: str = "candidate",
     ) -> subprocess.CompletedProcess[str]:
         run_env = os.environ.copy()
         if env:
@@ -500,7 +500,7 @@ class ReleaseReadinessTests(unittest.TestCase):
                 sys.executable,
                 "scripts/check_release_readiness.py",
                 "--version",
-                "0.3.3",
+                "0.4.0",
                 "--release-state",
                 release_state,
                 *args,
@@ -560,7 +560,7 @@ class ReleaseReadinessTests(unittest.TestCase):
         )
 
     def release_notes(self, repo: Path) -> Path:
-        return repo / "docs" / "releases" / "v0.3.3.md"
+        return repo / "docs" / "releases" / "v0.4.0.md"
 
     def changelog(self, repo: Path) -> Path:
         return repo / "CHANGELOG.md"
@@ -574,7 +574,7 @@ class ReleaseReadinessTests(unittest.TestCase):
             capture_output=True,
             text=True,
         )
-        subprocess.run(["git", "tag", "v0.3.3"], cwd=repo, check=True, capture_output=True, text=True)
+        subprocess.run(["git", "tag", "v0.4.0"], cwd=repo, check=True, capture_output=True, text=True)
 
     def init_committed_repo(self, repo: Path) -> tuple[str, str]:
         subprocess.run(
@@ -663,21 +663,20 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.assertIn(expected, output)
         self.assertNotIn("Traceback", output)
 
-    def test_publishable_final_release_notes_pass(self) -> None:
+    def test_candidate_release_notes_pass_static_consistency(self) -> None:
         repo = self.copy_repo("publishable")
         result = self.run_readiness(repo, "--allow-existing-tag")
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn("allow-existing-tag", result.stdout)
-        self.assertIn("formal and post-tag evidence remain required", result.stdout)
-        self.assertIn("not release-ready", result.stdout)
+        self.assertIn("release-state=candidate", result.stdout)
 
     def test_release_notes_state_must_match_requested_state(self) -> None:
         repo = self.copy_repo("release-notes-state-mismatch")
         release_notes = self.release_notes(repo)
         release_notes.write_text(
             release_notes.read_text(encoding="utf-8").replace(
-                "Release state: final",
                 "Release state: candidate",
+                "Release state: final",
                 1,
             ),
             encoding="utf-8",
@@ -685,7 +684,7 @@ class ReleaseReadinessTests(unittest.TestCase):
         result = self.run_readiness(repo, "--allow-existing-tag")
         self.assert_failed_without_traceback(
             result,
-            "release notes state 'candidate' does not match 'final'",
+            "release notes state 'final' does not match 'candidate'",
         )
 
     def test_prepared_not_released_marker_fails(self) -> None:
@@ -727,7 +726,7 @@ class ReleaseReadinessTests(unittest.TestCase):
     def test_missing_dated_changelog_heading_fails(self) -> None:
         repo = self.copy_repo("missing-changelog-heading")
         self.changelog(repo).write_text(
-            self.changelog(repo).read_text(encoding="utf-8").replace("## 0.3.3 - 2026-08-01", "## 0.3.3"),
+            self.changelog(repo).read_text(encoding="utf-8").replace("## 0.4.0 - 2026-08-01", "## 0.4.0"),
             encoding="utf-8",
         )
         result = self.run_readiness(repo, "--allow-existing-tag")
@@ -738,7 +737,7 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.changelog(repo).write_text(
             "# Changelog\n\nAll notable changes to this project are summarized here.\n\n"
             "## Unreleased\n\nNo unreleased changes.\n\n"
-            "## 0.3.3 - 2026-08-01\n\n"
+            "## 0.4.0 - 2026-08-01\n\n"
             "## 2026-06-15\n\n- Older work.\n",
             encoding="utf-8",
         )
@@ -781,7 +780,7 @@ class ReleaseReadinessTests(unittest.TestCase):
         ):
             with self.subTest(path=relative_path):
                 text = (ROOT / relative_path).read_text(encoding="utf-8")
-                self.assertIn("--ref v0.3.3", text)
+                self.assertIn("--ref v0.4.0", text)
                 self.assertNotIn("--ref v0.3.0", text)
                 self.assertIn("AVAILABLE", text)
 
@@ -1081,7 +1080,7 @@ class ReleaseReadinessTests(unittest.TestCase):
         data["version"] = "9.9.9"
         manifest.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
         result = self.run_readiness(repo, "--allow-existing-tag")
-        self.assert_failed_without_traceback(result, "plugin version '9.9.9' does not match '0.3.3'")
+        self.assert_failed_without_traceback(result, "plugin version '9.9.9' does not match '0.4.0'")
 
     def test_marketplace_ref_must_match_release_version(self) -> None:
         for index, bad_ref in enumerate(
@@ -1102,7 +1101,7 @@ class ReleaseReadinessTests(unittest.TestCase):
                 result = self.run_readiness(repo, "--allow-existing-tag")
                 self.assert_failed_without_traceback(
                     result,
-                    "does not match immutable release tag 'v0.3.3'",
+                    "does not match immutable release tag 'v0.4.0'",
                 )
 
     def test_unreleased_candidate_marketplace_is_not_installable(self) -> None:
@@ -1194,7 +1193,7 @@ class ReleaseReadinessTests(unittest.TestCase):
         skill = repo / ".agents" / "skills" / "ai-video-production" / "SKILL.md"
         skill.write_text(
             skill.read_text(encoding="utf-8").replace(
-                "version: 0.3.3",
+                "version: 0.4.0",
                 "version: 9.9.9",
                 1,
             ),
@@ -1203,7 +1202,7 @@ class ReleaseReadinessTests(unittest.TestCase):
         result = self.run_readiness(repo, "--allow-existing-tag")
         self.assert_failed_without_traceback(
             result,
-            "ai-video-production/SKILL.md version '9.9.9' does not match '0.3.3'",
+            "ai-video-production/SKILL.md version '9.9.9' does not match '0.4.0'",
         )
 
     def test_release_manifest_date_must_match_release_notes(self) -> None:
@@ -1222,8 +1221,8 @@ class ReleaseReadinessTests(unittest.TestCase):
         repo = self.copy_repo("mismatched-release-date")
         self.changelog(repo).write_text(
             self.changelog(repo).read_text(encoding="utf-8").replace(
-                "## 0.3.3 - 2026-08-01",
-                "## 0.3.3 - 2026-07-23",
+                "## 0.4.0 - 2026-08-01",
+                "## 0.4.0 - 2026-07-23",
             ),
             encoding="utf-8",
         )
@@ -1244,7 +1243,9 @@ class ReleaseReadinessTests(unittest.TestCase):
 
     def test_pre_tag_static_rejects_final_release_state(self) -> None:
         repo = self.copy_repo("pre-tag-static-final")
-        result = self.run_readiness(repo, "--pre-tag-static")
+        result = self.run_readiness(
+            repo, "--pre-tag-static", release_state="final"
+        )
         self.assert_failed_without_traceback(
             result,
             "final release state is forbidden with --pre-tag-static",
@@ -1285,7 +1286,9 @@ class ReleaseReadinessTests(unittest.TestCase):
                     json.dumps(data, indent=2) + "\n",
                     encoding="utf-8",
                 )
-                result = self.run_readiness(repo, "--allow-existing-tag")
+                result = self.run_readiness(
+                    repo, "--allow-existing-tag", release_state="final"
+                )
                 self.assert_failed_without_traceback(result, expected)
 
     def test_final_release_state_requires_stable_skill_channels(self) -> None:
@@ -1299,7 +1302,9 @@ class ReleaseReadinessTests(unittest.TestCase):
             ),
             encoding="utf-8",
         )
-        result = self.run_readiness(repo, "--allow-existing-tag")
+        result = self.run_readiness(
+            repo, "--allow-existing-tag", release_state="final"
+        )
         self.assert_failed_without_traceback(
             result,
             "must declare update_channel: stable for release state 'final'",
@@ -1329,6 +1334,7 @@ class ReleaseReadinessTests(unittest.TestCase):
             str(self.temp / "formal-evidence"),
             "--formal-schema-candidate-base",
             "a" * 40,
+            release_state="candidate",
         )
         self.assert_failed_without_traceback(
             result,
@@ -1494,13 +1500,18 @@ class ReleaseReadinessTests(unittest.TestCase):
         repo = self.copy_repo("duplicated-changelog")
         text = self.changelog(repo).read_text(encoding="utf-8")
         duplicated = (
-            "- Hardened `append_project_memory.py`: preview-only is now the default; a\n"
-            "  write requires an explicit project root and target plus `--apply` and\n"
-            "  `--confirm`.\n"
+            "- Changed the default source-package profile to `local-governance-core` while\n"
+            "  retaining `legacy-full` as an explicit compatibility profile.\n"
         )
         unreleased_heading = "## Unreleased\n"
-        self.assertIn(unreleased_heading, text)
-        text = text.replace(unreleased_heading, unreleased_heading + "\n" + duplicated, 1)
+        if unreleased_heading in text:
+            text = text.replace(unreleased_heading, unreleased_heading + "\n" + duplicated, 1)
+        else:
+            text = text.replace(
+                "# Changelog\n",
+                "# Changelog\n\n" + unreleased_heading + "\n" + duplicated,
+                1,
+            )
         self.changelog(repo).write_text(text, encoding="utf-8")
         result = self.run_readiness(repo, "--allow-existing-tag")
         self.assert_failed_without_traceback(result, "CHANGELOG duplicates release content under Unreleased")
