@@ -3,10 +3,10 @@
   "version": "0.4.0",
   "repo": "https://github.com/Q20396/codex-long-horizon-skill",
   "path": ".agents/skills/ai-video-production",
-  "channel": "candidate",
-  "released": false,
+  "channel": "stable",
+  "released": true,
   "release_date": "2026-08-01",
-  "risk": "not-assessed",
+  "risk": "reviewed",
   "summary": [
     "Aligned package metadata with the stable v0.4.0 patch release state.",
     "Introduced no AI Video functional payload in this patch release.",
