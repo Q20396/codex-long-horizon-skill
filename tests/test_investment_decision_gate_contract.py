@@ -16,6 +16,22 @@ GATE_SCHEMA = INCUBATOR / "schemas" / "investment-decision-gate.schema.json"
 EVIDENCE_SCHEMA = INCUBATOR / "schemas" / "evidence-ledger.schema.json"
 MONITORING_SCHEMA = INCUBATOR / "schemas" / "monitoring-review.schema.json"
 CASES = ROOT / "tests" / "fixtures" / "investment-decision-gate" / "cases.json"
+AGENT_PROTOCOL = (
+    ROOT
+    / ".agents"
+    / "skills"
+    / "long-horizon-engineering"
+    / "references"
+    / "investment-research-agent-protocol.md"
+)
+AGREEMENT_TEMPLATE = (
+    ROOT
+    / ".agents"
+    / "skills"
+    / "long-horizon-engineering"
+    / "templates"
+    / "INVESTMENT_RESEARCH_AGENT_AGREEMENT.md"
+)
 
 
 class InvestmentDecisionGateContractTests(unittest.TestCase):
@@ -46,6 +62,40 @@ class InvestmentDecisionGateContractTests(unittest.TestCase):
         )
         for field in denied:
             self.assertIs(contract[field], False, field)
+
+        self.assertTrue(contract["agent_research_assistance_authorized"])
+        self.assertTrue(contract["strategy_opinion_authorized"])
+        self.assertTrue(contract["simulation_or_backtest_plan_authorized"])
+        for field in (
+            "agent_decision_authority",
+            "customer_data_upload_authorized",
+            "outbound_customer_notification_authorized",
+            "background_strategy_execution_authorized",
+        ):
+            self.assertIs(contract[field], False, field)
+        for field in (
+            "network_data_retrieval_requires_customer_approval",
+            "strategy_activation_requires_customer_approval",
+            "strategy_activation_requires_expiry",
+            "strategy_activation_requires_revocation_path",
+        ):
+            self.assertIs(contract[field], True, field)
+
+    def test_agent_agreement_preserves_research_and_customer_authority(self) -> None:
+        for path in (AGENT_PROTOCOL, AGREEMENT_TEMPLATE):
+            self.assertTrue(path.is_file(), path)
+        protocol = AGENT_PROTOCOL.read_text(encoding="utf-8")
+        agreement = AGREEMENT_TEMPLATE.read_text(encoding="utf-8")
+        normalized = (" ".join(protocol.split()).lower(), " ".join(agreement.split()).lower())
+        for text in normalized:
+            self.assertIn("research assistance", text)
+            self.assertIn("customer approval", text)
+            self.assertIn("no order", text)
+            self.assertIn("revocation", text)
+            self.assertIn("upload customer data", text)
+        self.assertIn("never upload customer data", normalized[0])
+        self.assertIn("one-run network approval", normalized[0])
+        self.assertIn("expiry", normalized[1])
 
     def test_schemas_are_closed_draft_2020_12_contracts(self) -> None:
         for path in (GATE_SCHEMA, EVIDENCE_SCHEMA, MONITORING_SCHEMA):
