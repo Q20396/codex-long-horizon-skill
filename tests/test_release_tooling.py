@@ -490,7 +490,7 @@ class ReleaseReadinessTests(unittest.TestCase):
         repo: Path,
         *args: str,
         env: dict[str, str] | None = None,
-        release_state: str = "candidate",
+        release_state: str = "final",
     ) -> subprocess.CompletedProcess[str]:
         run_env = os.environ.copy()
         if env:
@@ -665,7 +665,9 @@ class ReleaseReadinessTests(unittest.TestCase):
 
     def test_candidate_release_notes_pass_static_consistency(self) -> None:
         repo = self.copy_repo("publishable")
-        result = self.run_readiness(repo, "--allow-existing-tag")
+        result = self.run_readiness(
+            repo, "--allow-existing-tag", release_state="candidate"
+        )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn("allow-existing-tag", result.stdout)
         self.assertIn("release-state=candidate", result.stdout)
