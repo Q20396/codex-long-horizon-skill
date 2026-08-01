@@ -30,6 +30,26 @@ Status: `DRAFT_FOR_HUMAN_REVIEW`
 - Reframe or effect proposal:
 - EDL file or handoff location:
 
+## Visual Direction Card
+
+- Intended viewer and viewing context:
+- Visual variance: Restrained / Balanced / Expressive
+- Motion intensity: Still-led / Purposeful / Energetic
+- Information density: Light / Focused / Dense
+- Palette, typography, framing, and visual-metaphor direction:
+- Per-scene narrative job and movement rationale:
+- Rights status of any visual reference: Approved / Synthetic / Not supplied
+- Excluded treatments, brand cues, or effects:
+
+## Anti-Generic Review
+
+- Does every scene add visual evidence beyond its caption?
+- Is movement purposeful rather than decorative or random?
+- Is the information density readable at the target platform and duration?
+- Does the draft avoid generic effects or copied visual identities used instead of a concrete idea?
+- Do accessibility, source accuracy, privacy, rights, and brand requirements still pass?
+- Reviewer disposition: `DRAFT_FOR_HUMAN_REVIEW`
+
 ## Caption And Translation Drafts
 
 - Caption track ID and format:
