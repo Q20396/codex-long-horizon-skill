@@ -6,6 +6,22 @@ All notable changes to this project are summarized here.
 
 No unreleased changes.
 
+## 0.3.2 - 2026-08-01
+
+- Corrected Codex user-level installation guidance to use
+  `~/.codex/skills/` and updated stable upgrade examples to the immutable
+  `v0.3.2` ref.
+- Made full validation report deterministic timeout failures instead of an
+  uncaught traceback and gave full unittest discovery a bounded 300-second
+  budget.
+- Retired the v0.2.5 maintenance line after the independently verified v0.3.1
+  replacement path and documented current repository security-observability
+  gaps without claiming that disabled controls prove source safety.
+- Preserved all local-first, no-customer-data-upload, static capability,
+  provider, connector, runtime, and customer-authority boundaries.
+- Aligned `ai-video-production` metadata only; no AI Video functional payload
+  was introduced.
+
 ## 0.3.1 - 2026-07-31
 
 - Finalized the reviewed v0.3 governance and catalog package as a coherent
