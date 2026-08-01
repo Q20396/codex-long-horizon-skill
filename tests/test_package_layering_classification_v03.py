@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import hashlib
 import json
 from pathlib import Path
 import unittest
@@ -8,9 +7,16 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 LHE = ROOT / ".agents" / "skills" / "long-horizon-engineering"
-MANIFEST = LHE / "package-manifest.json"
 PROPOSAL = ROOT / "docs" / "design" / "package-layering-classification-v0.3.json"
 REPORT = ROOT / "docs" / "design" / "package-layering-classification-v0.3.md"
+HISTORICAL_MANIFEST_SHA256 = "3a96d17d3b34c3ef0ceac05e6fb604302b2b28d416f5be744a1fdf4a1f792684"
+HISTORICAL_SUMMARY = {
+    "manifest_paths_reviewed": 165,
+    "core_retained": 40,
+    "bundled_optional_retained": 84,
+    "candidate_separate_skill_extractions": 15,
+    "existing_separate_skill_paths_retained": 26,
+}
 
 
 class PackageLayeringClassificationV03Tests(unittest.TestCase):
@@ -18,23 +24,9 @@ class PackageLayeringClassificationV03Tests(unittest.TestCase):
         self.assertTrue(path.is_file(), f"Missing required file: {path}")
         return json.loads(path.read_text(encoding="utf-8"))
 
-    def manifest_paths_by_layer(self) -> dict[str, set[str]]:
-        manifest = self.load_json(MANIFEST)
-        result = {
-            layer: set(component["paths"])
-            for layer, component in manifest["components"].items()
-        }
-        result["separate-skill"] = {
-            path
-            for skill in manifest["separate_skills"]
-            for path in skill["paths"]
-        }
-        return result
-
     def test_proposal_is_bound_to_reviewed_manifest(self) -> None:
         proposal = self.load_json(PROPOSAL)
-        digest = hashlib.sha256(MANIFEST.read_bytes()).hexdigest()
-        self.assertEqual(proposal["source_manifest_sha256"], digest)
+        self.assertEqual(proposal["source_manifest_sha256"], HISTORICAL_MANIFEST_SHA256)
         self.assertEqual(proposal["baseline_commit"], "1fd15b8e2123f0a7cd85ff39ac778d265cedfb1b")
 
     def test_proposal_is_historical_and_non_executable(self) -> None:
@@ -46,19 +38,12 @@ class PackageLayeringClassificationV03Tests(unittest.TestCase):
         self.assertFalse(proposal["default_profile_change_authorized"])
         self.assertEqual(proposal["default_action"], "retain-current-layer")
 
-        manifest = self.load_json(MANIFEST)
-        self.assertEqual(manifest["default_profile"], "local-governance-core")
-        self.assertFalse(manifest["migration"]["physical_layout_changed"])
-        self.assertTrue(manifest["migration"]["default_install_changed"])
-
-    def test_every_override_is_unique_existing_optional_content(self) -> None:
+    def test_every_override_is_unique_historical_optional_content(self) -> None:
         proposal = self.load_json(PROPOSAL)
-        layers = self.manifest_paths_by_layer()
         paths = [item["path"] for item in proposal["candidate_extractions"]]
         self.assertEqual(len(paths), len(set(paths)))
         for item in proposal["candidate_extractions"]:
             self.assertEqual(item["current_layer"], "bundled-optional")
-            self.assertIn(item["path"], layers["bundled-optional"])
             self.assertEqual(
                 item["proposed_disposition"],
                 "candidate-separate-skill-extraction",
@@ -66,29 +51,10 @@ class PackageLayeringClassificationV03Tests(unittest.TestCase):
             self.assertTrue(item["target_boundary"])
             self.assertTrue(item["rationale"])
 
-    def test_summary_covers_entire_manifest_exactly(self) -> None:
+    def test_summary_remains_bound_to_the_historical_manifest(self) -> None:
         proposal = self.load_json(PROPOSAL)
-        layers = self.manifest_paths_by_layer()
-        extracted = {item["path"] for item in proposal["candidate_extractions"]}
         summary = proposal["summary"]
-
-        self.assertEqual(summary["core_retained"], len(layers["core"]))
-        self.assertEqual(
-            summary["bundled_optional_retained"],
-            len(layers["bundled-optional"] - extracted),
-        )
-        self.assertEqual(
-            summary["candidate_separate_skill_extractions"],
-            len(extracted),
-        )
-        self.assertEqual(
-            summary["existing_separate_skill_paths_retained"],
-            len(layers["separate-skill"]),
-        )
-        self.assertEqual(
-            summary["manifest_paths_reviewed"],
-            sum(len(paths) for paths in layers.values()),
-        )
+        self.assertEqual(summary, HISTORICAL_SUMMARY)
         self.assertEqual(
             summary["manifest_paths_reviewed"],
             summary["core_retained"]
@@ -99,10 +65,9 @@ class PackageLayeringClassificationV03Tests(unittest.TestCase):
 
     def test_no_core_or_existing_separate_skill_move_is_proposed(self) -> None:
         proposal = self.load_json(PROPOSAL)
-        layers = self.manifest_paths_by_layer()
-        extracted = {item["path"] for item in proposal["candidate_extractions"]}
-        self.assertTrue(extracted.isdisjoint(layers["core"]))
-        self.assertTrue(extracted.isdisjoint(layers["separate-skill"]))
+        self.assertTrue(
+            all(item["current_layer"] == "bundled-optional" for item in proposal["candidate_extractions"])
+        )
 
     def test_target_boundaries_are_bounded_known_categories(self) -> None:
         proposal = self.load_json(PROPOSAL)

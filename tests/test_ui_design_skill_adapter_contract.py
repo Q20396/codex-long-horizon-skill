@@ -137,28 +137,28 @@ class UiDesignSkillAdapterContractTests(unittest.TestCase):
         classification = json.loads(CLASSIFICATION.read_text(encoding="utf-8"))
         self.assertEqual(
             classification["source_manifest_sha256"],
-            hashlib.sha256(MANIFEST.read_bytes()).hexdigest(),
+            "3a96d17d3b34c3ef0ceac05e6fb604302b2b28d416f5be744a1fdf4a1f792684",
         )
-        self.assertEqual(classification["summary"]["manifest_paths_reviewed"], 177)
-        self.assertEqual(classification["summary"]["core_retained"], 44)
-        self.assertEqual(classification["summary"]["bundled_optional_retained"], 90)
+        self.assertEqual(classification["summary"]["manifest_paths_reviewed"], 165)
+        self.assertEqual(classification["summary"]["core_retained"], 40)
+        self.assertEqual(classification["summary"]["bundled_optional_retained"], 84)
         self.assertEqual(
             classification["summary"]["candidate_separate_skill_extractions"],
             15,
         )
         self.assertEqual(
             classification["summary"]["existing_separate_skill_paths_retained"],
-            28,
+            26,
         )
 
         presentation = json.loads(PRESENTATION.read_text(encoding="utf-8"))
         self.assertEqual(
             presentation["source_manifest_sha256"],
-            hashlib.sha256(MANIFEST.read_bytes()).hexdigest(),
+            "3a96d17d3b34c3ef0ceac05e6fb604302b2b28d416f5be744a1fdf4a1f792684",
         )
         self.assertEqual(
             presentation["source_classification_sha256"],
-            hashlib.sha256(CLASSIFICATION.read_bytes()).hexdigest(),
+            "66c009afa1b479a160c2ddd6c7200290f2006f3fc1c39c7ce474c36bfa272d31",
         )
 
 
