@@ -13,7 +13,8 @@ ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / ".codex-plugin" / "plugin.json"
 MARKETPLACE = ROOT / ".agents" / "plugins" / "marketplace.json"
 EXPECTED_NAME = "codex-long-horizon-skill"
-EXPECTED_VERSION = "0.5.0"
+EXPECTED_VERSION = "0.6.0-dev"
+STABLE_RELEASE_VERSION = "0.5.0"
 EXPECTED_REPOSITORY = "https://github.com/Q20396/codex-long-horizon-skill"
 EXPECTED_LICENSE = "MIT"
 SEMVER = re.compile(r"^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$")
@@ -200,7 +201,7 @@ def validate_marketplace(errors: list[str], manifest: dict) -> dict:
         if source_type == "url":
             if source.get("url") != EXPECTED_REPOSITORY + ".git":
                 errors.append(f"marketplace source.url must be {EXPECTED_REPOSITORY}.git")
-            expected_ref = f"v{EXPECTED_VERSION}"
+            expected_ref = f"v{STABLE_RELEASE_VERSION}"
             if source.get("ref") != expected_ref:
                 errors.append(
                     "marketplace source.ref must match immutable "
@@ -223,8 +224,8 @@ def validate_marketplace(errors: list[str], manifest: dict) -> dict:
 
 
 def validate_release_sync(errors: list[str]) -> None:
-    release_notes = ROOT / "docs" / "releases" / f"v{EXPECTED_VERSION}.md"
-    if release_notes.exists() and f"v{EXPECTED_VERSION}" not in release_notes.read_text(encoding="utf-8"):
+    release_notes = ROOT / "docs" / "releases" / f"v{STABLE_RELEASE_VERSION}.md"
+    if release_notes.exists() and f"v{STABLE_RELEASE_VERSION}" not in release_notes.read_text(encoding="utf-8"):
         errors.append("release notes do not mention the expected version")
 
 

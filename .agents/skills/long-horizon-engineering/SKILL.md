@@ -1,10 +1,10 @@
 ---
 name: long-horizon-engineering
 description: Use for long-running software engineering and local static capability discovery. It may suggest descriptor-only legal-evidence, document-governance, or public-equity packs; keywords never authorize, install, load, or execute them. Do not use for simple edits, legal or financial advice, media, or automatic external actions.
-version: 0.5.0
+version: 0.6.0-dev
 repo: https://github.com/Q20396/codex-long-horizon-skill
 skill_id: long-horizon-engineering
-update_channel: stable
+update_channel: candidate
 ---
 
 # Long-Horizon Engineering

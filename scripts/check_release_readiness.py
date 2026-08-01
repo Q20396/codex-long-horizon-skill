@@ -15,7 +15,8 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+$")
+SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$")
+STABLE_RELEASE_VERSION = "0.5.0"
 RELEASE_DATE_RE = re.compile(r"^Release date:\s*(\d{4}-\d{2}-\d{2})\s*$", re.MULTILINE)
 RELEASE_STATE_CONTRACTS = {
     "candidate": {
@@ -346,6 +347,12 @@ def package_errors(
     errors: list[str],
 ) -> None:
     expected_state = RELEASE_STATE_CONTRACTS[release_state]
+    selector_version = STABLE_RELEASE_VERSION if release_state == "candidate" else version
+    selector_state = (
+        RELEASE_STATE_CONTRACTS["final"]
+        if release_state == "candidate"
+        else expected_state
+    )
     manifest_path = ROOT / ".codex-plugin" / "plugin.json"
     if not manifest_path.is_file():
         errors.append(".codex-plugin/plugin.json missing")
@@ -369,14 +376,14 @@ def package_errors(
             installation = (
                 policy.get("installation") if isinstance(policy, dict) else None
             )
-            expected_installation = expected_state["marketplace_installation"]
+            expected_installation = selector_state["marketplace_installation"]
             if installation != expected_installation:
                 errors.append(
                     "marketplace policy.installation "
                     f"must be {expected_installation!r} for release state "
                     f"{release_state!r}"
                 )
-        expected_ref = f"v{version}"
+        expected_ref = f"v{selector_version}"
         if ref != expected_ref:
             errors.append(
                 f"marketplace source ref {ref!r} does not match "
@@ -409,41 +416,41 @@ def package_errors(
     for path in release_manifests:
         data = load_json(path)
         relative = path.relative_to(ROOT)
-        if data.get("version") != version:
+        if data.get("version") != selector_version:
             errors.append(
-                f"{relative} version {data.get('version')!r} does not match {version!r}"
+                f"{relative} version {data.get('version')!r} does not match {selector_version!r}"
             )
-        if release_date is not None and data.get("release_date") != release_date:
+        if release_state == "final" and release_date is not None and data.get("release_date") != release_date:
             errors.append(
                 f"{relative} release_date {data.get('release_date')!r} "
                 f"does not match {release_date!r}"
             )
         if (
-            data.get("channel") != expected_state["channel"]
-            or data.get("released") is not expected_state["released"]
+            data.get("channel") != selector_state["channel"]
+            or data.get("released") is not selector_state["released"]
         ):
             errors.append(
                 f"{relative} must describe release state {release_state!r} "
-                f"with channel {expected_state['channel']!r} and released "
-                f"{expected_state['released']!r}"
+                f"with channel {selector_state['channel']!r} and released "
+                f"{selector_state['released']!r}"
             )
-        if data.get("risk") != expected_state["risk"]:
+        if data.get("risk") != selector_state["risk"]:
             errors.append(
-                f"{relative} risk must be {expected_state['risk']!r} for "
+                f"{relative} risk must be {selector_state['risk']!r} for "
                 f"release state {release_state!r}"
             )
 
     latest = load_json(ROOT / "releases" / "latest.json")
     if (
-        latest.get("channel") != expected_state["channel"]
-        or latest.get("released") is not expected_state["released"]
+        latest.get("channel") != selector_state["channel"]
+        or latest.get("released") is not selector_state["released"]
     ):
         errors.append(
             "releases/latest.json must describe release state "
-            f"{release_state!r} with channel {expected_state['channel']!r} "
-            f"and released {expected_state['released']!r}"
+            f"{release_state!r} with channel {selector_state['channel']!r} "
+            f"and released {selector_state['released']!r}"
         )
-    if release_date is not None and latest.get("updated_at") != release_date:
+    if release_state == "final" and release_date is not None and latest.get("updated_at") != release_date:
         errors.append(
             f"releases/latest.json updated_at {latest.get('updated_at')!r} "
             f"does not match {release_date!r}"
@@ -455,10 +462,10 @@ def package_errors(
         for skill_name in ["long-horizon-engineering", "ai-video-production"]:
             entry = skills.get(skill_name)
             actual = entry.get("version") if isinstance(entry, dict) else None
-            if actual != version:
+            if actual != selector_version:
                 errors.append(
                     f"releases/latest.json {skill_name} version {actual!r} "
-                    f"does not match {version!r}"
+                    f"does not match {selector_version!r}"
                 )
 
     for path in REQUIRED_RELEASE_FILES:
