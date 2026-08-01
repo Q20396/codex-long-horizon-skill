@@ -933,6 +933,19 @@ class LocalFirstHighStakesContractTests(unittest.TestCase):
         )
         self.assertIsNotNone(candidate_match)
         candidate = candidate_match.group(1)
+        for revision in (base, candidate):
+            available = subprocess.run(
+                ["git", "cat-file", "-e", f"{revision}^{{commit}}"],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if available.returncode != 0:
+                self.skipTest(
+                    "HISTORY_UNAVAILABLE: archival candidate commit is absent; "
+                    "use a complete clone for release-grade historical validation."
+                )
         subprocess.run(
             ["git", "merge-base", "--is-ancestor", base, candidate],
             cwd=ROOT,
@@ -988,6 +1001,18 @@ class LocalFirstHighStakesContractTests(unittest.TestCase):
                 slices,
                 relative_path,
             )
+            available = subprocess.run(
+                ["git", "cat-file", "-e", f"{candidate}:{relative_path}"],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if available.returncode != 0:
+                self.skipTest(
+                    "HISTORY_UNAVAILABLE: archival candidate blob is absent; "
+                    "use a complete clone for release-grade historical validation."
+                )
             target_text = subprocess.run(
                 ["git", "show", f"{candidate}:{relative_path}"],
                 cwd=ROOT,
