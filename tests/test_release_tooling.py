@@ -1136,7 +1136,7 @@ class ReleaseReadinessTests(unittest.TestCase):
         result = self.run_readiness(
             repo,
             "--pre-tag-static",
-            release_state="final",
+            release_state="candidate",
         )
         self.assert_failed_without_traceback(
             result,
