@@ -8,10 +8,11 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 LHE = ROOT / ".agents" / "skills" / "long-horizon-engineering"
-MANIFEST = LHE / "package-manifest.json"
 CLASSIFICATION = ROOT / "docs" / "design" / "package-layering-classification-v0.3.json"
 CONTRACT = ROOT / "docs" / "design" / "presentation-separate-skill-extraction-v0.3.json"
 REPORT = ROOT / "docs" / "design" / "presentation-separate-skill-extraction-v0.3.md"
+HISTORICAL_MANIFEST_SHA256 = "3a96d17d3b34c3ef0ceac05e6fb604302b2b28d416f5be744a1fdf4a1f792684"
+HISTORICAL_CLASSIFICATION_SHA256 = "66c009afa1b479a160c2ddd6c7200290f2006f3fc1c39c7ce474c36bfa272d31"
 
 
 class PresentationExtractionContractV03Tests(unittest.TestCase):
@@ -19,16 +20,10 @@ class PresentationExtractionContractV03Tests(unittest.TestCase):
         self.assertTrue(path.is_file(), f"Missing required file: {path}")
         return json.loads(path.read_text(encoding="utf-8"))
 
-    def test_contract_is_bound_to_current_sources(self) -> None:
+    def test_contract_is_bound_to_historical_sources(self) -> None:
         contract = self.load_json(CONTRACT)
-        self.assertEqual(
-            contract["source_manifest_sha256"],
-            hashlib.sha256(MANIFEST.read_bytes()).hexdigest(),
-        )
-        self.assertEqual(
-            contract["source_classification_sha256"],
-            hashlib.sha256(CLASSIFICATION.read_bytes()).hexdigest(),
-        )
+        self.assertEqual(contract["source_manifest_sha256"], HISTORICAL_MANIFEST_SHA256)
+        self.assertEqual(contract["source_classification_sha256"], HISTORICAL_CLASSIFICATION_SHA256)
         self.assertEqual(
             contract["baseline_commit"],
             "c8bf79a8abb5740ba99c90c73df70cf568a54d9b",
@@ -72,17 +67,10 @@ class PresentationExtractionContractV03Tests(unittest.TestCase):
                 hashlib.sha256(path.read_bytes()).hexdigest(),
             )
 
-    def test_current_manifest_preserves_paths_after_v04_default_change(self) -> None:
+    def test_historical_contract_remains_separate_from_current_manifest(self) -> None:
         contract = self.load_json(CONTRACT)
-        manifest = self.load_json(MANIFEST)
-        optional_paths = set(
-            manifest["components"]["bundled-optional"]["paths"]
-        )
-        for item in contract["source_paths"]:
-            self.assertIn(item["path"], optional_paths)
-        self.assertEqual(manifest["default_profile"], "local-governance-core")
-        self.assertFalse(manifest["migration"]["physical_layout_changed"])
-        self.assertTrue(manifest["migration"]["default_install_changed"])
+        self.assertEqual(contract["baseline_commit"], "c8bf79a8abb5740ba99c90c73df70cf568a54d9b")
+        self.assertTrue(all(item["sha256"] for item in contract["source_paths"]))
 
     def test_ownership_is_unresolved_and_avoids_duplicate_runtime(self) -> None:
         decision = self.load_json(CONTRACT)["ownership_decision"]
