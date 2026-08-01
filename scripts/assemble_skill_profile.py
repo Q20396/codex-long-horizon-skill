@@ -14,6 +14,7 @@ import json
 import os
 import re
 import shutil
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -192,8 +193,37 @@ def validate_git_identity(value: str | None, label: str) -> str:
     return value
 
 
+def git_output(args: list[str], label: str) -> str:
+    result = subprocess.run(
+        ["git", *args], cwd=ROOT, text=True, capture_output=True, check=False
+    )
+    if result.returncode != 0:
+        raise ProfileError(f"could not verify {label} from the local git repository")
+    return result.stdout.strip()
+
+
+def verified_source_identity(source_commit: str, source_tree: str) -> tuple[str, str]:
+    """Bind a release-grade receipt to this clean checkout's actual identity."""
+    head = git_output(["rev-parse", "HEAD^{commit}"], "source commit")
+    tree = git_output(["show", "-s", "--format=%T", "HEAD"], "source tree")
+    status = git_output(["status", "--porcelain=v1", "--untracked-files=all"], "clean worktree")
+    if status:
+        raise ProfileError("release-grade receipt requires a clean source worktree")
+    if source_commit != head:
+        raise ProfileError("source commit does not match the current git HEAD")
+    if source_tree != tree:
+        raise ProfileError("source tree does not match the current git HEAD")
+    return head, tree
+
+
 def artifact_receipt(
-    stage: Path, paths: list[str], profile: str, source_commit: str, source_tree: str
+    stage: Path,
+    paths: list[str],
+    profile: str,
+    source_commit: str,
+    source_tree: str,
+    *,
+    source_identity_verified: bool = False,
 ) -> dict[str, object]:
     """Return stable artifact evidence using only normalized relative data."""
     files: list[dict[str, object]] = []
@@ -218,11 +248,10 @@ def artifact_receipt(
         tree.update(content_sha256.encode("ascii"))
         tree.update(b"\n")
     manifest_sha256 = hashlib.sha256(MANIFEST_PATH.read_bytes()).hexdigest()
-    return {
+    receipt: dict[str, object] = {
         "schema_version": "1",
         "profile": profile,
-        "source_commit": source_commit,
-        "source_tree": source_tree,
+        "source_identity_verified": source_identity_verified,
         "package_manifest_sha256": manifest_sha256,
         "files": files,
         "artifact_tree_sha256": tree.hexdigest(),
@@ -230,6 +259,16 @@ def artifact_receipt(
             "Receipt is artifact evidence only; it does not authorize installation or plugin distribution."
         ],
     }
+    if source_identity_verified:
+        receipt["source_commit"] = source_commit
+        receipt["source_tree"] = source_tree
+    else:
+        receipt["declared_source_commit"] = source_commit
+        receipt["declared_source_tree"] = source_tree
+        receipt["limitations"].append(
+            "Declared source identity was not verified against a local clean git checkout."
+        )
+    return receipt
 
 
 def render_markdown(text: str, selected: set[str], profile: str) -> str:
@@ -270,6 +309,7 @@ def assemble(
     source_commit: str | None = None,
     source_tree: str | None = None,
     receipt_file: Path | None = None,
+    verify_source_identity: bool = False,
 ) -> dict[str, object] | None:
     output = validate_output_root(output_root)
     receipt = (
@@ -280,6 +320,12 @@ def assemble(
     if receipt is not None:
         source_commit = validate_git_identity(source_commit, "source commit")
         source_tree = validate_git_identity(source_tree, "source tree")
+        if verify_source_identity:
+            source_commit, source_tree = verified_source_identity(
+                source_commit, source_tree
+            )
+    elif verify_source_identity:
+        raise ProfileError("--verify-source-identity requires --receipt-file")
     selected = lhe_selected_relative_paths(paths)
     output.parent.mkdir(parents=True, exist_ok=True)
     stage = Path(tempfile.mkdtemp(prefix=".profile-assembly-", dir=output.parent))
@@ -305,7 +351,12 @@ def assemble(
         receipt_data = None
         if receipt is not None:
             receipt_data = artifact_receipt(
-                stage, paths, profile, source_commit, source_tree
+                stage,
+                paths,
+                profile,
+                source_commit,
+                source_tree,
+                source_identity_verified=verify_source_identity,
             )
             descriptor, receipt_name = tempfile.mkstemp(
                 prefix=".profile-receipt-", dir=receipt.parent
@@ -316,16 +367,18 @@ def assemble(
                 handle.write("\n")
         if output.exists():
             output.rmdir()
+        stage.replace(output)
         if receipt is not None and receipt_stage is not None:
             receipt_stage.replace(receipt)
             receipt_published = True
-        stage.replace(output)
         return receipt_data
     except Exception:
         if receipt_stage is not None and receipt_stage.exists():
             receipt_stage.unlink()
         if receipt_published and receipt is not None and receipt.exists():
             receipt.unlink()
+        if output.exists():
+            shutil.rmtree(output, ignore_errors=True)
         shutil.rmtree(stage, ignore_errors=True)
         raise
 
@@ -337,6 +390,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--receipt-file", type=Path)
     parser.add_argument("--source-commit")
     parser.add_argument("--source-tree")
+    parser.add_argument("--verify-source-identity", action="store_true")
     parser.add_argument("--apply", action="store_true")
     return parser.parse_args(argv)
 
@@ -356,6 +410,9 @@ def main(argv: list[str] | None = None) -> int:
         args.source_commit is None or args.source_tree is None
     ):
         print("ERROR: --receipt-file requires --source-commit and --source-tree", file=sys.stderr)
+        return 2
+    if args.verify_source_identity and args.receipt_file is None:
+        print("ERROR: --verify-source-identity requires --receipt-file", file=sys.stderr)
         return 2
     try:
         paths = selected_paths(load_manifest(), args.profile)
@@ -378,6 +435,7 @@ def main(argv: list[str] | None = None) -> int:
                 source_commit=args.source_commit,
                 source_tree=args.source_tree,
                 receipt_file=args.receipt_file,
+                verify_source_identity=args.verify_source_identity,
             )
             result["applied"] = True
             result["output_root"] = str(args.output_root.expanduser().resolve())
