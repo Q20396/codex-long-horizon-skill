@@ -84,6 +84,42 @@ class UpdateTaskLogSafetyTests(unittest.TestCase):
                 rejected = subprocess.run(command, text=True, capture_output=True, check=False)
                 self.assertNotEqual(0, rejected.returncode, target)
 
+    def test_rejects_symlinked_docs_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_name:
+            temp = Path(temp_name)
+            project = temp / "project"
+            outside = temp / "outside-docs"
+            project.mkdir()
+            outside.mkdir()
+            (project / "docs").symlink_to(outside, target_is_directory=True)
+
+            result = self.invoke(project, "--apply", "--confirm", "WRITE_TASK_LOG")
+            self.assertNotEqual(0, result.returncode)
+            self.assertFalse((outside / "TASK_LOG.md").exists())
+
+    def test_rejects_symlinked_docs_subdirectory(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_name:
+            temp = Path(temp_name)
+            project = temp / "project"
+            outside = temp / "outside-subdir"
+            docs = project / "docs"
+            project.mkdir()
+            docs.mkdir()
+            outside.mkdir()
+            (docs / "subdir").symlink_to(outside, target_is_directory=True)
+            command = [
+                sys.executable,
+                str(SCRIPT),
+                "--title", "Synthetic task",
+                "--summary", "Synthetic summary",
+                "--project-root", str(project),
+                "--target-file", "docs/subdir/TASK_LOG.md",
+                "--apply", "--confirm", "WRITE_TASK_LOG",
+            ]
+            result = subprocess.run(command, text=True, capture_output=True, check=False)
+            self.assertNotEqual(0, result.returncode)
+            self.assertFalse((outside / "TASK_LOG.md").exists())
+
 
 if __name__ == "__main__":
     unittest.main()
