@@ -647,6 +647,42 @@ class FormalSchemaStaticTests(unittest.TestCase):
                     session.get_json("https://pypi.org/another")
                 self.assertEqual(1, call.call_count)
 
+    def test_online_session_uses_memory_only_token_for_github_api_only(self) -> None:
+        class Response:
+            status = 200
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return False
+
+            def geturl(self):
+                return "https://api.github.com/example"
+
+            def read(self):
+                return b'{"ok":true}'
+
+        token = "unit-test-token-not-a-secret"
+        with tempfile.TemporaryDirectory(prefix="formal-online-session-") as temp:
+            evidence = Path(temp) / "evidence"
+            with mock.patch.object(VALIDATOR, "urlopen", return_value=Response()) as call:
+                session = VALIDATOR.OnlineEvidenceSession(evidence, github_token=token)
+                self.assertEqual(
+                    {"ok": True}, session.get_json("https://api.github.com/example")
+                )
+                request = call.call_args.args[0]
+                self.assertEqual(f"Bearer {token}", request.get_header("Authorization"))
+                manifest_path, _ = session.write_manifest()
+                self.assertNotIn(token, manifest_path.read_text(encoding="utf-8"))
+
+        with tempfile.TemporaryDirectory(prefix="formal-online-session-") as temp:
+            evidence = Path(temp) / "evidence"
+            with mock.patch.object(VALIDATOR, "urlopen", return_value=Response()) as call:
+                session = VALIDATOR.OnlineEvidenceSession(evidence, github_token=token)
+                self.assertEqual({"ok": True}, session.get_json("https://pypi.org/example"))
+                self.assertIsNone(call.call_args.args[0].get_header("Authorization"))
+
         with tempfile.TemporaryDirectory(prefix="formal-online-session-") as temp:
             evidence = Path(temp) / "evidence"
             failure = HTTPError(
