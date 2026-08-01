@@ -22,7 +22,6 @@ from pathlib import Path
 DEFAULT_REPO = "https://github.com/Q20396/codex-long-horizon-skill"
 APPROVED_SKILLS = ("long-horizon-engineering", "ai-video-production")
 DEFAULT_SKILLS = list(APPROVED_SKILLS)
-DEFAULT_INSTALLED_ROOT = Path("~/.agents/skills").expanduser()
 SAFE_SKILL_ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 
 IGNORE_NAMES = {".DS_Store", "__pycache__", ".git"}
@@ -487,11 +486,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--repo", default=DEFAULT_REPO)
     parser.add_argument("--skills", default=",".join(DEFAULT_SKILLS))
-    parser.add_argument("--installed-root", default=str(DEFAULT_INSTALLED_ROOT))
+    parser.add_argument(
+        "--installed-root",
+        required=True,
+        help="Explicit installed-skills root for read-only comparison.",
+    )
     parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON.")
     parser.add_argument("--ref", help="Optional git ref, branch, tag, or commit to compare.")
     parser.add_argument("--keep-temp", action="store_true", help="Keep temporary clone for debugging.")
-    parser.add_argument("--apply", action="store_true", help="Apply update after typed confirmation.")
     args = parser.parse_args(argv)
     args.skills = parse_skill_list(args.skills)
     return args
@@ -535,18 +537,7 @@ def main(argv: list[str] | None = None) -> int:
             report.added_files or report.removed_files or report.modified_files or report.local_missing
             for report in reports
         )
-        if not args.apply:
-            return 2 if has_differences else 0
-
-        selected = set(choose_skills_for_apply(reports))
-        for report in reports:
-            if report.skill_id not in selected:
-                continue
-            apply_skill_update(report, repo_root, backup_root)
-            print(f"Updated {report.skill_id}.")
-            print(f"Backup: {backup_root / report.skill_id}")
-            print(f"Rollback: {report.rollback_plan}")
-        return 0
+        return 2 if has_differences else 0
     except subprocess.CalledProcessError as exc:
         print(f"git command failed: {exc}", file=sys.stderr)
         return 1

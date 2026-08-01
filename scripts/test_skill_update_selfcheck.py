@@ -128,12 +128,23 @@ update_channel: stable
             self.assertEqual((installed / skill_id / "SKILL.md").read_text(), "local")
             self.assertIn("SKILL.md", report.modified_files)
 
+    def test_cli_requires_explicit_installed_root(self) -> None:
+        with self.assertRaises(SystemExit):
+            checker.parse_args([])
+
     def test_cli_default_skills_are_a_list(self) -> None:
-        args = checker.parse_args([])
+        args = checker.parse_args(["--installed-root", "/tmp/installed"])
         self.assertEqual(args.skills, ["long-horizon-engineering", "ai-video-production"])
 
+    def test_cli_rejects_legacy_apply_flag(self) -> None:
+        with self.assertRaises(SystemExit):
+            checker.parse_args(["--installed-root", "/tmp/installed", "--apply"])
+
     def test_cli_custom_skills_are_restricted_to_approved_list(self) -> None:
-        args = checker.parse_args(["--skills", "ai-video-production,long-horizon-engineering"])
+        args = checker.parse_args([
+            "--installed-root", "/tmp/installed",
+            "--skills", "ai-video-production,long-horizon-engineering",
+        ])
         self.assertEqual(args.skills, ["ai-video-production", "long-horizon-engineering"])
 
     def test_validate_skill_id_rejects_traversal(self) -> None:

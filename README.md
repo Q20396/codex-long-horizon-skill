@@ -469,20 +469,10 @@ python3 scripts/skill_update_selfcheck.py \
 comparison, prefer an immutable tag or exact commit with `--ref`.
 
 For replacement, use the manifest-verified `update_installed_skill.py`
-`--target-skill-dir` flow below. The legacy self-check retains `--apply` for
-backward compatibility, but it is not the recommended Codex user-level update
-path. If it is deliberately used, it requires one of these exact typed
-confirmations:
-
-```text
-UPDATE long-horizon-engineering
-UPDATE ai-video-production
-UPDATE ALL
-```
-
-Apply mode refuses traversal paths, unsupported skill ids, symlinked skill
-targets, symlinked remote skill folders, and unsafe symlinks before replacing
-anything.
+`--target-skill-dir` flow below. The legacy self-check is comparison-only and
+always requires an explicit `--installed-root`; it cannot replace or modify an
+installed skill. This keeps all real replacement behind the explicit target,
+backup, validation, and rollback flow.
 
 For the legacy/project-style self-check flow, backups are created under:
 
