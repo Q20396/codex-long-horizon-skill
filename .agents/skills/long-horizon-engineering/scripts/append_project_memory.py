@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Append non-sensitive durable facts to docs/PROJECT_MEMORY.md."""
+"""Preview or explicitly append non-sensitive durable project facts."""
 
 from __future__ import annotations
 
 import argparse
 from datetime import datetime, timezone
 from pathlib import Path
+import re
 
 
-MEMORY_PATH = Path("docs/PROJECT_MEMORY.md")
 HEADER = """# Project Memory
 
 This file stores durable, non-sensitive project facts for future Codex runs.
@@ -19,10 +19,19 @@ API keys, tokens, credentials, or other sensitive personal data here.
 ## Durable Facts
 """
 
+SENSITIVE_PATTERNS = (
+    re.compile(r"\b(?:api[_ -]?key|secret|password|access[_ -]?token)\s*[:=]", re.IGNORECASE),
+    re.compile(r"\bBearer\s+[A-Za-z0-9._~+/=-]+", re.IGNORECASE),
+    re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
+    re.compile(r"\b(?:account(?:\s+number)?|bsb|tax file number|date of birth)\s*[:#=]", re.IGNORECASE),
+    re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGNORECASE),
+    re.compile(r"\+?\d{1,3}[ -]?\d{3,4}[ -]?\d{3,4}[ -]?\d{0,4}\b"),
+)
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Append durable, non-sensitive project facts to docs/PROJECT_MEMORY.md."
+        description="Preview durable, non-sensitive project facts; writing is explicit and guarded."
     )
     parser.add_argument(
         "facts",
@@ -32,9 +41,38 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Print the entry that would be appended without writing files.",
+        help="Explicitly request preview-only mode (the default).",
     )
-    return parser.parse_args()
+    parser.add_argument(
+        "--apply",
+        action="store_true",
+        help="Allow a write after all other guards and --confirm succeed.",
+    )
+    parser.add_argument(
+        "--confirm",
+        action="store_true",
+        help="Confirm the displayed preview for a non-interactive write.",
+    )
+    parser.add_argument(
+        "--project-root",
+        required=True,
+        type=Path,
+        help="Existing project root that must contain --target-file.",
+    )
+    parser.add_argument(
+        "--target-file",
+        required=True,
+        type=Path,
+        help="Explicit project-relative target file for the memory entry.",
+    )
+    args = parser.parse_args()
+    if args.dry_run and args.apply:
+        parser.error("--dry-run and --apply cannot be used together")
+    if args.apply and not args.confirm:
+        parser.error("--apply requires --confirm after reviewing the preview")
+    if args.confirm and not args.apply:
+        parser.error("--confirm requires --apply")
+    return args
 
 
 def ensure_memory_file(path: Path) -> None:
@@ -59,15 +97,45 @@ def build_fact_entry(facts: list[str]) -> str:
     return "".join(lines)
 
 
+def resolve_target(project_root: Path, target_file: Path) -> Path:
+    root = project_root.resolve()
+    if not root.is_dir():
+        raise ValueError("--project-root must be an existing directory")
+
+    candidate = target_file if target_file.is_absolute() else root / target_file
+    resolved = candidate.resolve(strict=False)
+    try:
+        resolved.relative_to(root)
+    except ValueError as error:
+        raise ValueError("--target-file must resolve inside --project-root") from error
+    return resolved
+
+
+def contains_sensitive_content(facts: list[str]) -> bool:
+    return any(pattern.search(fact) for fact in facts for pattern in SENSITIVE_PATTERNS)
+
+
 def main() -> None:
     args = parse_args()
-    if args.dry_run:
-        print(build_fact_entry(args.facts), end="")
+    if contains_sensitive_content(args.facts):
+        raise SystemExit("Refusing potentially sensitive facts; do not store them in project memory.")
+
+    try:
+        target = resolve_target(args.project_root, args.target_file)
+    except ValueError as error:
+        raise SystemExit(str(error)) from error
+
+    entry = build_fact_entry(args.facts)
+    if not args.apply:
+        print("Preview only; nothing was written.")
+        print(entry, end="")
         return
 
-    ensure_memory_file(MEMORY_PATH)
-    append_facts(MEMORY_PATH, args.facts)
-    print(f"Appended {len(args.facts)} fact(s) to {MEMORY_PATH}")
+    print("Preview confirmed; writing the following entry:")
+    print(entry, end="")
+    ensure_memory_file(target)
+    append_facts(target, args.facts)
+    print(f"Appended {len(args.facts)} fact(s) to {target}")
 
 
 if __name__ == "__main__":

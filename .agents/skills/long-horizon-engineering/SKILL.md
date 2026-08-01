@@ -313,6 +313,12 @@ read existing memory/log/state files if present, then re-check the current
 repository before editing. Compare the recorded branch, commit, working diff,
 and last verification result with current state before relying on old notes.
 
+`append_project_memory.py` is preview-only by default. It never chooses a
+target implicitly: a write requires an explicit project root, an explicit
+target below that root, `--apply`, and `--confirm`. Do not use it for client,
+legal, family, financial, identity, account, or other sensitive material. Its
+pattern checks are a fail-closed guardrail, not proof that content is safe.
+
 Use:
 
 - `references/resume-protocol.md` for interrupted-work recovery
