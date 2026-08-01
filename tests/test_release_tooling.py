@@ -785,8 +785,12 @@ class ReleaseReadinessTests(unittest.TestCase):
                 self.assertNotIn("--ref v0.3.0", text)
                 self.assertIn("AVAILABLE", text)
 
-    def test_v033_release_truth_includes_profile_assembly_boundary(self) -> None:
-        notes = " ".join(self.release_notes(ROOT).read_text(encoding="utf-8").split())
+    def test_v031_release_truth_includes_profile_assembly_boundary(self) -> None:
+        notes = " ".join(
+            (ROOT / "docs" / "releases" / "v0.3.1.md").read_text(
+                encoding="utf-8"
+            ).split()
+        )
         changelog = " ".join(
             self.changelog(ROOT).read_text(encoding="utf-8").split()
         )
@@ -1490,9 +1494,9 @@ class ReleaseReadinessTests(unittest.TestCase):
         repo = self.copy_repo("duplicated-changelog")
         text = self.changelog(repo).read_text(encoding="utf-8")
         duplicated = (
-            "- Made full validation report deterministic timeout failures instead of an\n"
-            "  uncaught traceback and gave full unittest discovery a bounded 300-second\n"
-            "  budget.\n"
+            "- Hardened `append_project_memory.py`: preview-only is now the default; a\n"
+            "  write requires an explicit project root and target plus `--apply` and\n"
+            "  `--confirm`.\n"
         )
         unreleased_heading = "## Unreleased\n"
         self.assertIn(unreleased_heading, text)
