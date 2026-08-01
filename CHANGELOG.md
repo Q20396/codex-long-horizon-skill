@@ -2,6 +2,12 @@
 
 All notable changes to this project are summarized here.
 
+## 0.6.0-dev - 2026-08-02
+
+- Main is a candidate line after the immutable `v0.5.0` release. Marketplace
+  installation continues to resolve the reviewed `v0.5.0` tag; this source tree
+  is not a stable release or installation target.
+
 ## 0.5.0 - 2026-08-01
 
 - Added the bundled-optional Investment Research Agent Protocol and customer
