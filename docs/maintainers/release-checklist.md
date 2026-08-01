@@ -75,6 +75,12 @@ stages. Completing Phase A does not establish release readiness.
 - [ ] Published Release is not draft.
 - [ ] Published Release is not prerelease.
 - [ ] Published Release body contains no stale preparation wording.
+- [ ] Create one immutable `releases/vX.Y.Z/release-receipt.json` from the
+      template and validate it with `scripts/verify_release_receipt.py`.
+- [ ] Receipt state advances only in order: `SOURCE_VALIDATED` →
+      `TAG_VERIFIED` → `RELEASE_VERIFIED` → `MARKETPLACE_VERIFIED` →
+      `INSTALL_VERIFIED`. A later stage includes every earlier evidence link;
+      `released: true` alone is never a substitute.
 - [ ] Remote peeled tag target equals the validated release commit.
 - [ ] Real user Codex binary, config, marketplaces, plugins, and auth state remain unchanged.
 

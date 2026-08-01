@@ -52,6 +52,7 @@ jobs:
           python3 scripts/test_fresh_install.py --help
           python3 scripts/check_release_readiness.py --help
           python3 scripts/assemble_skill_profile.py --help
+          python3 scripts/verify_release_receipt.py --help
           python3 scripts/skill_update_selfcheck.py --help
 
       - name: Run productized package checks
@@ -91,6 +92,7 @@ jobs:
           scripts/test_fresh_install.py
           scripts/check_release_readiness.py
           scripts/assemble_skill_profile.py
+          scripts/verify_release_receipt.py
           scripts/skill_update_selfcheck.py
           scripts/test_skill_update_selfcheck.py
           scripts/test_assemble_skill_profile.py

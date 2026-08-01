@@ -93,6 +93,7 @@ REQUIRED_CORE_FILES = [
     Path("scripts/test_fresh_install.py"),
     Path("scripts/check_release_readiness.py"),
     Path("scripts/assemble_skill_profile.py"),
+    Path("scripts/verify_release_receipt.py"),
     Path("scripts/skill_update_selfcheck.py"),
     Path("scripts/test_skill_update_selfcheck.py"),
     Path("scripts/test_assemble_skill_profile.py"),
@@ -182,6 +183,7 @@ CORE_COMMANDS = [
     ],
     [PYTHON, "scripts/test_skill_update_selfcheck.py"],
     [PYTHON, "scripts/test_assemble_skill_profile.py"],
+    [PYTHON, "-m", "unittest", "tests.test_release_receipt_contract"],
     ["git", "diff", "--check"],
 ]
 
@@ -211,6 +213,7 @@ CI_EXPECTED = [
     ("skill_update_selfcheck.py --help", ["skill_update_selfcheck.py", "--help"]),
     ("test_skill_update_selfcheck.py", ["test_skill_update_selfcheck.py"]),
     ("test_assemble_skill_profile.py", ["test_assemble_skill_profile.py"]),
+    ("release receipt contract", ["test_release_receipt_contract.py"]),
     ("Python compile check", ["py_compile"]),
     ("git diff --check", ["git", "diff", "--check"]),
     ("update dry-run smoke test", ["update_installed_skill.py", "--target-root"]),
