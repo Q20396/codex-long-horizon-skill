@@ -876,25 +876,26 @@ class ReleaseReadinessTests(unittest.TestCase):
         normalized_release_notes = " ".join(release_notes.split())
         normalized_security = " ".join(security.split())
 
-        self.assertIn("11d5960a326750d5838078e36cf38b85af677262", checklist)
-        self.assertIn("a26af69be951a213d495a4c3e4e4022e16d87065", checklist)
-        self.assertIn("20be877a16bf41e3817c8d173aa58053adc02cdc", checklist)
-        self.assertIn("Official-source verification completed", normalized_checklist)
-        self.assertIn("v4.4.0", checklist)
-        self.assertIn("v5.6.0", checklist)
+        self.assertIn("3d3c42e5aac5ba805825da76410c181273ba90b1", checklist)
+        self.assertIn("5fda3b95a4ea91299a34e894583c3862153e4b97", checklist)
+        self.assertIn("Official-source verification was refreshed", normalized_checklist)
+        self.assertIn("v7.0.1", checklist)
+        self.assertIn("v7.0.0", checklist)
         self.assertIn(
             "https://github.com/actions/checkout/commit/"
-            "11d5960a326750d5838078e36cf38b85af677262",
+            "3d3c42e5aac5ba805825da76410c181273ba90b1",
             checklist,
         )
         self.assertIn(
             "https://github.com/actions/setup-python/commit/"
-            "a26af69be951a213d495a4c3e4e4022e16d87065",
+            "5fda3b95a4ea91299a34e894583c3862153e4b97",
             checklist,
         )
+        self.assertIn("5b0524f730db83f9513c18ab31a6c086c7239076", checklist)
+        self.assertIn("df6c8235b476652b6402d31d92a2a89cdea74bb9", checklist)
         self.assertIn("GitHub security-advisories API returned an empty list", normalized_checklist)
         self.assertIn("not proof that the Actions are vulnerability-free", normalized_checklist)
-        self.assertIn("rechecked on 2026-08-01 without identity drift", normalized_checklist)
+        self.assertIn("Node 20 Action runtime pins with Node 24 releases", checklist)
         self.assertIn("ubuntu:24.04", normalized_release_notes)
         self.assertIn("CPython 3.11.15", normalized_release_notes)
         self.assertIn("all 36 positive and 13 negative fixture cases passed", normalized_release_notes)

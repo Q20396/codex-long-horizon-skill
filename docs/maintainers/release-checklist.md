@@ -150,33 +150,26 @@ release, Marketplace resolution, installation, or runtime effects.
 
 Release workflows pin third-party Actions to immutable full commit SHAs:
 
-- `actions/checkout`: `11d5960a326750d5838078e36cf38b85af677262`
-- `actions/setup-python`: `a26af69be951a213d495a4c3e4e4022e16d87065`
+- `actions/checkout`: `3d3c42e5aac5ba805825da76410c181273ba90b1`
+- `actions/setup-python`: `5fda3b95a4ea91299a34e894583c3862153e4b97`
 
-The current pins are recoverable from local reviewed repository commit
-`20be877a16bf41e3817c8d173aa58053adc02cdc`, whose parent is the current
-candidate base `dfa529d705c34ea61b88a607073cc49ce5241735`. Official-source
-verification completed on 2026-07-30 and was rechecked on 2026-08-01 without
-identity drift. The checks recorded these immutable identities:
+Official-source verification was refreshed on 2026-08-01 to replace the
+Node 20 Action runtime pins with Node 24 releases. The checks recorded these
+immutable identities:
 
-- [`actions/checkout@11d5960...`](https://github.com/actions/checkout/commit/11d5960a326750d5838078e36cf38b85af677262)
-  is the GitHub-verified commit for
-  [release `v4.4.0`](https://github.com/actions/checkout/releases/tag/v4.4.0);
-  its fixed-commit `action.yml` blob is
-  `24e73e5a12126edc2adb9e5cd1bf245ce85bde56`, and its MIT `LICENSE` blob is
+- [`actions/checkout@3d3c42e...`](https://github.com/actions/checkout/commit/3d3c42e5aac5ba805825da76410c181273ba90b1)
+  is the official `v7.0.1` tag target; its fixed-commit `action.yml` blob is
+  `5b0524f730db83f9513c18ab31a6c086c7239076`, and its MIT `LICENSE` blob is
   `a67dca8b4f65d6bd351f6b1e333ce2cd84d843a5`.
-- [`actions/setup-python@a26af69...`](https://github.com/actions/setup-python/commit/a26af69be951a213d495a4c3e4e4022e16d87065)
-  is the GitHub-verified commit for
-  [release `v5.6.0`](https://github.com/actions/setup-python/releases/tag/v5.6.0);
-  its fixed-commit `action.yml` blob is
-  `efa8de904209196588db1453bdb44079b3c393d7`, and its MIT `LICENSE` blob is
+- [`actions/setup-python@5fda3b9...`](https://github.com/actions/setup-python/commit/5fda3b95a4ea91299a34e894583c3862153e4b97)
+  is the official `v7.0.0` tag target; its fixed-commit `action.yml` blob is
+  `df6c8235b476652b6402d31d92a2a89cdea74bb9`, and its MIT `LICENSE` blob is
   `a426ef259d6c5d705e9c1405075c3b318093c65e`.
 
-At the 2026-08-01 recheck, each official repository's GitHub
-security-advisories API returned an empty list, and the tag/commit plus
-`action.yml`/`LICENSE` blob identities above were unchanged. That is a dated
-observation, not proof that the Actions are vulnerability-free or that their
-transitive runtime artifacts are reproducible.
+At the 2026-08-01 check, each official repository's GitHub
+security-advisories API returned an empty list. That is a dated observation,
+not proof that the Actions are vulnerability-free or that their transitive
+runtime artifacts are reproducible.
 
 An update requires a dedicated review that resolves the intended upstream
 release from the official Action repository, records the exact replacement
