@@ -443,10 +443,11 @@ Project-level installations use `.agents/skills/<skill_id>` below the approved
 project root. Codex user-level installations use
 `~/.codex/skills/<skill_id>`. The legacy self-check script below is for the
 legacy/project-style `.agents/skills` layout; use the direct
-`--target-skill-dir` updater flow for a Codex user-level installation. Every
-check is read-only by default: Codex asks before online checking, asks again
-before updating, creates backups before replacement, prints rollback commands,
-and does not auto-update.
+`--target-skill-dir` updater flow for a Codex user-level installation. The
+self-check is comparison-only: it creates no backup, prints no executable
+rollback command, and never replaces an installed skill. A separately approved
+replacement uses `update_installed_skill.py`, which has its own backup and
+rollback contract.
 
 Customer prompt:
 
@@ -458,7 +459,7 @@ https://github.com/Q20396/codex-long-horizon-skill
 
 Check long-horizon-engineering and ai-video-production.
 Do not install or replace automatically.
-Summarize differences, risks, upgrade recommendation, and rollback plan.
+Summarize differences, risks, and upgrade recommendation.
 Ask me before making changes.
 ```
 
