@@ -5,6 +5,7 @@ from __future__ import annotations
 from copy import deepcopy
 import importlib.util
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -942,6 +943,11 @@ class LocalFirstHighStakesContractTests(unittest.TestCase):
                 check=False,
             )
             if available.returncode != 0:
+                if os.environ.get("LHE_HISTORY_VALIDATION_MODE") == "release":
+                    self.fail(
+                        "HISTORY_UNAVAILABLE: release-grade historical validation "
+                        "requires the archival candidate commit"
+                    )
                 self.skipTest(
                     "HISTORY_UNAVAILABLE: archival candidate commit is absent; "
                     "use a complete clone for release-grade historical validation."
@@ -1009,6 +1015,11 @@ class LocalFirstHighStakesContractTests(unittest.TestCase):
                 check=False,
             )
             if available.returncode != 0:
+                if os.environ.get("LHE_HISTORY_VALIDATION_MODE") == "release":
+                    self.fail(
+                        "HISTORY_UNAVAILABLE: release-grade historical validation "
+                        "requires the archival candidate blob"
+                    )
                 self.skipTest(
                     "HISTORY_UNAVAILABLE: archival candidate blob is absent; "
                     "use a complete clone for release-grade historical validation."

@@ -500,6 +500,33 @@ def formal_worktree_errors(errors: list[str]) -> None:
         )
 
 
+def release_history_errors(errors: list[str]) -> None:
+    """Require archival evidence objects for a formal release-grade gate."""
+    environment = os.environ.copy()
+    environment["LHE_HISTORY_VALIDATION_MODE"] = "release"
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "unittest",
+            "tests.test_local_first_high_stakes_contracts."
+            "LocalFirstHighStakesContractTests."
+            "test_candidate_slice_manifest_is_exact_and_selectors_resolve",
+        ],
+        cwd=ROOT,
+        env=environment,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        output = (result.stdout + result.stderr).strip()
+        errors.append(
+            "release-grade historical validation failed: "
+            + (output or "HISTORY_UNAVAILABLE")
+        )
+
+
 def release_hygiene_errors(expected_base: str | None, errors: list[str]) -> None:
     if expected_base is None:
         return
@@ -574,6 +601,9 @@ def formal_schema_errors(args: argparse.Namespace, errors: list[str]) -> None:
         errors.append("formal schema candidate base must be a full commit SHA")
         return
     formal_worktree_errors(errors)
+    if errors:
+        return
+    release_history_errors(errors)
     if errors:
         return
     path = args.formal_schema_result.resolve()
