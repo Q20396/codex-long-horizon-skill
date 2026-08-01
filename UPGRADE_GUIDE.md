@@ -20,15 +20,15 @@ For plugin-based installs, see [docs/plugin-install.md](docs/plugin-install.md).
 ### Plugin Upgrade
 
 Pinned marketplace registrations must not be assumed to advance to a new tag
-through `marketplace upgrade`. For a verified v0.4.0 upgrade, first
+through `marketplace upgrade`. For a verified v0.4.1 upgrade, first
 review the immutable tag and exact commit, then use a separately approved,
 isolated CLI workflow to remove the prior registration and add:
 
 ```bash
-codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.4.0
+codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.4.1
 ```
 
-The release-state contract marks `v0.4.0` stable and `AVAILABLE`. Before any
+The release-state contract marks `v0.4.1` stable and `AVAILABLE`. Before any
 real rebind or installation, verify the remote tag/commit/tree, published
 GitHub Release, candidate-bound formal result, and isolated CLI resolution.
 Real configuration changes, plugin installation, and installed Skill updates
@@ -152,7 +152,7 @@ Reference identity:
 - Repository:
   https://github.com/Q20396/codex-long-horizon-skill
 - Requested tag:
-  v0.4.0
+  v0.4.1
 - Expected exact commit SHA:
   RESOLVE_THE_ANNOTATED_TAG_AND_RECORD_ITS_40_CHARACTER_PEELED_COMMIT
 
@@ -167,7 +167,7 @@ Do not access any other repository, service, account, or data source.
 
 Before comparing:
 
-1. Resolve v0.4.0 to an exact peeled commit SHA.
+1. Resolve v0.4.1 to an exact peeled commit SHA.
 2. Record the 40-character SHA before reading release content.
 3. Verify the annotated tag, peeled commit, tree, and GitHub Release agree.
 4. If a previously recorded SHA differs, stop and report possible tag movement.

@@ -7,11 +7,11 @@ This repository can be used in two ways:
 
 ## Plugin Installation
 
-The stable release-state contract names the immutable `v0.4.0` marketplace
+The stable release-state contract names the immutable `v0.4.1` marketplace
 reference and sets `policy.installation: AVAILABLE`:
 
 ```bash
-codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.4.0
+codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.4.1
 ```
 
 Before running it, verify the remote annotated tag and peeled commit/tree, the

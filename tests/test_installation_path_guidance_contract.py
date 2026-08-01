@@ -30,11 +30,11 @@ class InstallationPathGuidanceContractTests(unittest.TestCase):
         self.assertIn("legacy/project-style `.agents/skills` layout", README)
         self.assertIn("`--target-skill-dir` updater flow", README)
         self.assertIn("--installed-root ~/.codex/skills", README)
-        self.assertIn("--ref v0.4.0", README)
+        self.assertIn("--ref v0.4.1", README)
 
     def test_upgrade_example_binds_current_immutable_release(self):
         for document in (README, UPGRADE):
-            self.assertIn("v0.4.0", document)
+            self.assertIn("v0.4.1", document)
         self.assertIn(
             "RESOLVE_THE_ANNOTATED_TAG_AND_RECORD_ITS_40_CHARACTER_PEELED_COMMIT",
             UPGRADE,
