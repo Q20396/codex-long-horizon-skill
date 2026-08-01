@@ -180,7 +180,24 @@ def load_json(path: Path) -> dict:
 def plugin_metadata(copy_root: Path) -> tuple[str, str, str]:
     manifest = load_json(copy_root / ".codex-plugin" / "plugin.json")
     marketplace = load_json(copy_root / ".agents" / "plugins" / "marketplace.json")
-    return manifest["name"], manifest["version"], marketplace["name"]
+    plugins = marketplace.get("plugins")
+    if not isinstance(plugins, list):
+        raise AssertionError("marketplace plugins must be a list")
+    entry = next(
+        (
+            candidate
+            for candidate in plugins
+            if isinstance(candidate, dict) and candidate.get("name") == manifest.get("name")
+        ),
+        None,
+    )
+    source = entry.get("source") if isinstance(entry, dict) else None
+    ref = source.get("ref") if isinstance(source, dict) else None
+    if not isinstance(ref, str) or not re.fullmatch(r"v(\d+\.\d+\.\d+)", ref):
+        raise AssertionError("marketplace source.ref must be an immutable release tag")
+    # The source tree may be a development candidate. CLI smoke checks must
+    # verify the immutable marketplace payload selected by its ref instead.
+    return manifest["name"], ref[1:], marketplace["name"]
 
 
 def isolated_env(temp_home: Path) -> dict[str, str]:
