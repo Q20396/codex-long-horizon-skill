@@ -123,7 +123,7 @@ class UiDesignSkillAdapterContractTests(unittest.TestCase):
         self.assertIn(adapter_path, optional)
         self.assertNotIn(adapter_path, manifest["components"]["core"]["paths"])
         self.assertEqual(len(manifest["components"]["core"]["paths"]), 44)
-        self.assertEqual(len(optional), 105)
+        self.assertEqual(len(optional), 106)
         self.assertEqual(
             sum(len(item["paths"]) for item in manifest["separate_skills"]),
             28,
