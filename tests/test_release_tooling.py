@@ -1503,8 +1503,8 @@ class ReleaseReadinessTests(unittest.TestCase):
         repo = self.copy_repo("duplicated-changelog")
         text = self.changelog(repo).read_text(encoding="utf-8")
         duplicated = (
-            "- Changed the default source-package profile to `local-governance-core` while\n"
-            "  retaining `legacy-full` as an explicit compatibility profile.\n"
+            "- Made task-log writes preview-only by default and required an explicit project\n"
+            "  root, target, apply flag, and confirmation for an approved write.\n"
         )
         unreleased_heading = "## Unreleased\n"
         if unreleased_heading in text:
