@@ -1334,7 +1334,7 @@ class ReleaseReadinessTests(unittest.TestCase):
             str(self.temp / "formal-evidence"),
             "--formal-schema-candidate-base",
             "a" * 40,
-            release_state="final",
+            release_state="candidate",
         )
         self.assert_failed_without_traceback(
             result,

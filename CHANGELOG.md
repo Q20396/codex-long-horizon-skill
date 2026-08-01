@@ -14,7 +14,7 @@ All notable changes to this project are summarized here.
 - Corrected historical v0.3 design records so their fixed candidate evidence is
   never rebound to a later repository HEAD.
 
-## 0.4.0 - 2026-08-01
+## 0.3.3 - 2026-08-01
 
 - Hardened `append_project_memory.py`: preview-only is now the default; a
   write requires an explicit project root and target plus `--apply` and
