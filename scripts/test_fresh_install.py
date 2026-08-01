@@ -102,7 +102,7 @@ def run_package_checks(copy_root: Path) -> None:
             )
 
 
-def install_direct_skills(copy_root: Path, target_root: Path) -> None:
+def install_project_scoped_skills(copy_root: Path, target_root: Path) -> None:
     update_script = ".agents/skills/long-horizon-engineering/scripts/update_installed_skill.py"
     for skill in SKILLS:
         result = run(
@@ -133,6 +133,44 @@ def verify_installed_project(target_root: Path) -> None:
         raise AssertionError(
             f"installed project check failed\nSTDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}"
         )
+
+
+def install_user_scoped_skills(copy_root: Path, temp_home: Path) -> None:
+    """Exercise the explicit Codex user-level update layout only."""
+    update_script = ".agents/skills/long-horizon-engineering/scripts/update_installed_skill.py"
+    for skill in SKILLS:
+        target = temp_home / ".codex" / "skills" / skill
+        source = copy_root / ".agents" / "skills" / skill
+        shutil.copytree(source, target)
+        skill_md = target / "SKILL.md"
+        skill_md.write_text(skill_md.read_text(encoding="utf-8") + "\n<!-- stale fixture -->\n", encoding="utf-8")
+        result = run(
+            [
+                PYTHON,
+                update_script,
+                "--target-skill-dir",
+                str(target),
+                "--skill",
+                skill,
+                "--apply",
+            ],
+            cwd=copy_root,
+        )
+        if result.returncode != 0:
+            raise AssertionError(
+                f"user-scoped update failed for {skill}\nSTDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}"
+            )
+        if not (target / "SKILL.md").is_file():
+            raise AssertionError(f"installed user skill missing: {target / 'SKILL.md'}")
+        if skill == "long-horizon-engineering":
+            checker = target / "scripts" / "check_skill_package.py"
+            result = run([PYTHON, str(checker), "--installed"], cwd=temp_home)
+            if result.returncode != 0:
+                raise AssertionError(
+                    f"installed user check failed\nSTDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}"
+                )
+    if (temp_home / ".agents" / "skills").exists():
+        raise AssertionError("user-scoped update must not create ~/.agents/skills")
 
 
 def load_json(path: Path) -> dict:
@@ -889,12 +927,11 @@ def main() -> None:
 
         run_package_checks(copy_root)
         stages.append(StageResult("Deterministic plugin package validation", PASSED))
-        install_direct_skills(copy_root, project_root)
+        install_project_scoped_skills(copy_root, project_root)
         verify_installed_project(project_root)
         stages.append(StageResult("Project-scoped direct skill installation", PASSED))
-        install_direct_skills(copy_root, user_root)
-        verify_installed_project(user_root)
-        stages.append(StageResult("User-scoped direct skill installation", PASSED))
+        install_user_scoped_skills(copy_root, user_root)
+        stages.append(StageResult("User-scoped explicit skill update", PASSED))
         assert_no_absolute_source_paths(copy_root, ROOT)
         assert_no_absolute_source_paths(project_root, ROOT)
         assert_no_absolute_source_paths(user_root, ROOT)
