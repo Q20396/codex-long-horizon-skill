@@ -10,6 +10,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 
@@ -124,7 +125,7 @@ class ProfileAssemblyTests(unittest.TestCase):
                 any("ai-video-production" in path for path in actual)
             )
 
-    def test_receipt_is_deterministic_binds_explicit_identity_and_omits_absolute_paths(self) -> None:
+    def test_declared_receipt_is_deterministic_and_omits_absolute_paths(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             outputs = (root / "first", root / "second")
@@ -142,14 +143,38 @@ class ProfileAssemblyTests(unittest.TestCase):
                 self.assertEqual(0, result.returncode, result.stderr)
                 payloads.append(json.loads(receipt.read_text(encoding="utf-8")))
             self.assertEqual(payloads[0], payloads[1])
-            self.assertEqual(COMMIT, payloads[0]["source_commit"])
-            self.assertEqual(TREE, payloads[0]["source_tree"])
+            self.assertFalse(payloads[0]["source_identity_verified"])
+            self.assertEqual(COMMIT, payloads[0]["declared_source_commit"])
+            self.assertEqual(TREE, payloads[0]["declared_source_tree"])
+            self.assertNotIn("source_commit", payloads[0])
             self.assertNotIn(str(root), json.dumps(payloads[0]))
             paths = [entry["path"] for entry in payloads[0]["files"]]
             self.assertEqual(sorted(paths), paths)
             self.assertFalse(any(path.startswith("/") for path in paths))
             self.assertFalse(any("ai-video-production" in path for path in paths))
             self.assertFalse(any(path.startswith("sandbox/") for path in paths))
+
+    def test_release_grade_identity_rejects_sha_shaped_mismatch(self) -> None:
+        with mock.patch.object(
+            ASSEMBLER,
+            "git_output",
+            side_effect=["c" * 40, "d" * 40, ""],
+        ):
+            with self.assertRaisesRegex(
+                ASSEMBLER.ProfileError, "does not match the current git HEAD"
+            ):
+                ASSEMBLER.verified_source_identity(COMMIT, TREE)
+
+    def test_release_grade_identity_requires_clean_worktree(self) -> None:
+        with mock.patch.object(
+            ASSEMBLER,
+            "git_output",
+            side_effect=[COMMIT, TREE, " M scripts/assemble_skill_profile.py"],
+        ):
+            with self.assertRaisesRegex(
+                ASSEMBLER.ProfileError, "requires a clean source worktree"
+            ):
+                ASSEMBLER.verified_source_identity(COMMIT, TREE)
 
     def test_equivalent_core_profiles_share_artifact_digest_but_keep_profile_identity(self) -> None:
         manifest = ASSEMBLER.load_manifest()
@@ -187,6 +212,33 @@ class ProfileAssemblyTests(unittest.TestCase):
                 ], cwd=ROOT, text=True, capture_output=True, check=False,
             )
             self.assertEqual(2, result.returncode)
+            self.assertFalse(output.exists())
+            self.assertFalse(receipt.exists())
+
+    def test_artifact_publish_failure_never_leaves_a_receipt(self) -> None:
+        manifest = ASSEMBLER.load_manifest()
+        paths = ASSEMBLER.selected_paths(manifest, "core-only")
+        original_replace = Path.replace
+
+        def fail_stage_publish(path: Path, target: Path) -> Path:
+            if path.name.startswith(".profile-assembly-"):
+                raise OSError("simulated artifact publish failure")
+            return original_replace(path, target)
+
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            output = root / "profile"
+            receipt = root / "receipt.json"
+            with mock.patch.object(Path, "replace", new=fail_stage_publish):
+                with self.assertRaisesRegex(OSError, "simulated artifact publish failure"):
+                    ASSEMBLER.assemble(
+                        paths,
+                        output,
+                        "core-only",
+                        source_commit=COMMIT,
+                        source_tree=TREE,
+                        receipt_file=receipt,
+                    )
             self.assertFalse(output.exists())
             self.assertFalse(receipt.exists())
 
