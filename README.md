@@ -481,18 +481,9 @@ always requires an explicit `--installed-root`; it cannot replace or modify an
 installed skill. This keeps all real replacement behind the explicit target,
 backup, validation, and rollback flow.
 
-For the legacy/project-style self-check flow, backups are created under:
-
-```text
-~/.agents/skills/.backups/YYYYMMDD-HHMMSS/<skill_id>
-```
-
-For the same legacy/project-style flow, rollback can be done by copying the
-backup folder back to:
-
-```text
-~/.agents/skills/<skill_id>
-```
+The comparison-only self-check never creates a backup or rollback material.
+For an approved replacement, follow the backup and rollback result reported by
+`update_installed_skill.py` for its exact, explicit target.
 
 ## Install, Verify, Update
 

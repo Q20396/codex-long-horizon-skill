@@ -5,11 +5,13 @@ from __future__ import annotations
 from copy import deepcopy
 import importlib.util
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
 import sys
 import unittest
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -912,6 +914,8 @@ class LocalFirstHighStakesContractTests(unittest.TestCase):
             self.assertFalse(descriptor["executable"])
 
     def test_candidate_slice_manifest_is_exact_and_selectors_resolve(self) -> None:
+        validation_mode = os.environ.get("LHE_HISTORICAL_VALIDATION_MODE", "developer")
+        self.assertIn(validation_mode, {"developer", "release"})
         text = FEASIBILITY_REVIEW_PLAN.read_text(encoding="utf-8")
         self.assertIn("exact 74-path inventory", text)
         self.assertNotIn("exact 73-path inventory", text)
@@ -941,6 +945,11 @@ class LocalFirstHighStakesContractTests(unittest.TestCase):
                 text=True,
                 check=False,
             )
+            if available.returncode != 0 and validation_mode == "release":
+                self.fail(
+                    "HISTORY_UNAVAILABLE: release-grade historical validation "
+                    "requires a complete clone."
+                )
             if available.returncode != 0:
                 self.skipTest(
                     "HISTORY_UNAVAILABLE: archival candidate commit is absent; "
@@ -1008,6 +1017,11 @@ class LocalFirstHighStakesContractTests(unittest.TestCase):
                 text=True,
                 check=False,
             )
+            if available.returncode != 0 and validation_mode == "release":
+                self.fail(
+                    "HISTORY_UNAVAILABLE: release-grade historical validation "
+                    "requires the archival candidate blob."
+                )
             if available.returncode != 0:
                 self.skipTest(
                     "HISTORY_UNAVAILABLE: archival candidate blob is absent; "
@@ -1029,6 +1043,12 @@ class LocalFirstHighStakesContractTests(unittest.TestCase):
 
         self.assertEqual(covered_slices, expected_slices)
         self.assertEqual(shared_rows, 8)
+
+    def test_historical_validation_mode_is_explicit_and_release_strict(self) -> None:
+        with mock.patch.dict(os.environ, {}, clear=True):
+            self.assertEqual("developer", os.environ.get("LHE_HISTORICAL_VALIDATION_MODE", "developer"))
+        with mock.patch.dict(os.environ, {"LHE_HISTORICAL_VALIDATION_MODE": "release"}, clear=True):
+            self.assertEqual("release", os.environ.get("LHE_HISTORICAL_VALIDATION_MODE", "developer"))
 
 
 if __name__ == "__main__":

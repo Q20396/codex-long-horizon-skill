@@ -136,6 +136,7 @@ jobs:
       PIP_NO_INPUT: "1"
       PIP_NO_CACHE_DIR: "1"
       PIP_DISABLE_PIP_VERSION_CHECK: "1"
+      LHE_HISTORICAL_VALIDATION_MODE: release
       FORMAL_CANDIDATE_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
     steps:
       - name: Check out candidate without persisted credentials

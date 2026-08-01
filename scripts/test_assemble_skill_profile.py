@@ -10,13 +10,20 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "assemble_skill_profile.py"
-COMMIT = "a" * 40
-TREE = "b" * 40
+COMMIT = subprocess.run(
+    ["git", "rev-parse", "HEAD^{commit}"], cwd=ROOT, check=True,
+    capture_output=True, text=True,
+).stdout.strip()
+TREE = subprocess.run(
+    ["git", "show", "-s", "--format=%T", "HEAD"], cwd=ROOT, check=True,
+    capture_output=True, text=True,
+).stdout.strip()
 
 
 def load_module():
@@ -142,8 +149,9 @@ class ProfileAssemblyTests(unittest.TestCase):
                 self.assertEqual(0, result.returncode, result.stderr)
                 payloads.append(json.loads(receipt.read_text(encoding="utf-8")))
             self.assertEqual(payloads[0], payloads[1])
-            self.assertEqual(COMMIT, payloads[0]["source_commit"])
-            self.assertEqual(TREE, payloads[0]["source_tree"])
+            self.assertEqual(COMMIT, payloads[0]["declared_source_commit"])
+            self.assertEqual(TREE, payloads[0]["declared_source_tree"])
+            self.assertFalse(payloads[0]["source_identity_verified"])
             self.assertNotIn(str(root), json.dumps(payloads[0]))
             paths = [entry["path"] for entry in payloads[0]["files"]]
             self.assertEqual(sorted(paths), paths)
@@ -187,6 +195,41 @@ class ProfileAssemblyTests(unittest.TestCase):
                 ], cwd=ROOT, text=True, capture_output=True, check=False,
             )
             self.assertEqual(2, result.returncode)
+            self.assertFalse(output.exists())
+            self.assertFalse(receipt.exists())
+
+    def test_release_grade_rejects_a_well_formed_but_wrong_source_identity(self) -> None:
+        completed = [
+            subprocess.CompletedProcess([], 0, stdout=COMMIT + "\n", stderr=""),
+            subprocess.CompletedProcess([], 0, stdout=TREE + "\n", stderr=""),
+            subprocess.CompletedProcess([], 0, stdout="", stderr=""),
+        ]
+        with mock.patch.object(ASSEMBLER.subprocess, "run", side_effect=completed):
+            with self.assertRaisesRegex(ASSEMBLER.ProfileError, "source commit must match"):
+                ASSEMBLER.verified_source_identity("a" * 40, TREE)
+
+    def test_receipt_is_published_only_after_the_artifact(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            output = root / "profile"
+            receipt = root / "receipt.json"
+            original_replace = Path.replace
+
+            def fail_receipt_publish(path: Path, target: Path):
+                if path.name.startswith(".profile-receipt-"):
+                    raise OSError("simulated receipt publish failure")
+                return original_replace(path, target)
+
+            with mock.patch.object(Path, "replace", fail_receipt_publish):
+                with self.assertRaisesRegex(OSError, "simulated receipt"):
+                    ASSEMBLER.assemble(
+                        ASSEMBLER.selected_paths(ASSEMBLER.load_manifest(), "core-only"),
+                        output,
+                        "core-only",
+                        source_commit=COMMIT,
+                        source_tree=TREE,
+                        receipt_file=receipt,
+                    )
             self.assertFalse(output.exists())
             self.assertFalse(receipt.exists())
 

@@ -14,6 +14,7 @@ import json
 import os
 import re
 import shutil
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -192,8 +193,53 @@ def validate_git_identity(value: str | None, label: str) -> str:
     return value
 
 
+def verified_source_identity(
+    source_commit: str | None, source_tree: str | None
+) -> tuple[str, str]:
+    """Bind a release-grade receipt to this clean checkout's actual HEAD."""
+    declared_commit = validate_git_identity(source_commit, "source commit")
+    declared_tree = validate_git_identity(source_tree, "source tree")
+    try:
+        head = subprocess.run(
+            ["git", "rev-parse", "HEAD^{commit}"],
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        tree = subprocess.run(
+            ["git", "show", "-s", "--format=%T", "HEAD"],
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        status = subprocess.run(
+            ["git", "status", "--porcelain=v1", "--untracked-files=all"],
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout
+    except (OSError, subprocess.CalledProcessError) as error:
+        raise ProfileError("release-grade receipt requires readable Git identity") from error
+    if status:
+        raise ProfileError("release-grade receipt requires a clean source checkout")
+    if declared_commit != head:
+        raise ProfileError("source commit must match the current checked-out HEAD")
+    if declared_tree != tree:
+        raise ProfileError("source tree must match the current checked-out HEAD tree")
+    return head, tree
+
+
 def artifact_receipt(
-    stage: Path, paths: list[str], profile: str, source_commit: str, source_tree: str
+    stage: Path,
+    paths: list[str],
+    profile: str,
+    source_commit: str,
+    source_tree: str,
+    *,
+    source_identity_verified: bool = True,
 ) -> dict[str, object]:
     """Return stable artifact evidence using only normalized relative data."""
     files: list[dict[str, object]] = []
@@ -218,18 +264,28 @@ def artifact_receipt(
         tree.update(content_sha256.encode("ascii"))
         tree.update(b"\n")
     manifest_sha256 = hashlib.sha256(MANIFEST_PATH.read_bytes()).hexdigest()
-    return {
+    result: dict[str, object] = {
         "schema_version": "1",
         "profile": profile,
-        "source_commit": source_commit,
-        "source_tree": source_tree,
+        "artifact_root": ".",
         "package_manifest_sha256": manifest_sha256,
         "files": files,
         "artifact_tree_sha256": tree.hexdigest(),
+        "source_identity_verified": source_identity_verified,
         "limitations": [
             "Receipt is artifact evidence only; it does not authorize installation or plugin distribution."
         ],
     }
+    if source_identity_verified:
+        result["source_commit"] = source_commit
+        result["source_tree"] = source_tree
+    else:
+        result["declared_source_commit"] = source_commit
+        result["declared_source_tree"] = source_tree
+        result["limitations"].append(
+            "Declared source identity was not release-grade verified."
+        )
+    return result
 
 
 def render_markdown(text: str, selected: set[str], profile: str) -> str:
@@ -270,6 +326,7 @@ def assemble(
     source_commit: str | None = None,
     source_tree: str | None = None,
     receipt_file: Path | None = None,
+    release_grade: bool = False,
 ) -> dict[str, object] | None:
     output = validate_output_root(output_root)
     receipt = (
@@ -280,6 +337,10 @@ def assemble(
     if receipt is not None:
         source_commit = validate_git_identity(source_commit, "source commit")
         source_tree = validate_git_identity(source_tree, "source tree")
+        if release_grade:
+            source_commit, source_tree = verified_source_identity(
+                source_commit, source_tree
+            )
     selected = lhe_selected_relative_paths(paths)
     output.parent.mkdir(parents=True, exist_ok=True)
     stage = Path(tempfile.mkdtemp(prefix=".profile-assembly-", dir=output.parent))
@@ -306,6 +367,7 @@ def assemble(
         if receipt is not None:
             receipt_data = artifact_receipt(
                 stage, paths, profile, source_commit, source_tree
+                , source_identity_verified=release_grade
             )
             descriptor, receipt_name = tempfile.mkstemp(
                 prefix=".profile-receipt-", dir=receipt.parent
@@ -316,16 +378,18 @@ def assemble(
                 handle.write("\n")
         if output.exists():
             output.rmdir()
+        stage.replace(output)
         if receipt is not None and receipt_stage is not None:
             receipt_stage.replace(receipt)
             receipt_published = True
-        stage.replace(output)
         return receipt_data
     except Exception:
         if receipt_stage is not None and receipt_stage.exists():
             receipt_stage.unlink()
         if receipt_published and receipt is not None and receipt.exists():
             receipt.unlink()
+        if output.exists():
+            shutil.rmtree(output, ignore_errors=True)
         shutil.rmtree(stage, ignore_errors=True)
         raise
 
@@ -337,6 +401,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--receipt-file", type=Path)
     parser.add_argument("--source-commit")
     parser.add_argument("--source-tree")
+    parser.add_argument("--release-grade", action="store_true")
     parser.add_argument("--apply", action="store_true")
     return parser.parse_args(argv)
 
@@ -356,6 +421,9 @@ def main(argv: list[str] | None = None) -> int:
         args.source_commit is None or args.source_tree is None
     ):
         print("ERROR: --receipt-file requires --source-commit and --source-tree", file=sys.stderr)
+        return 2
+    if args.release_grade and args.receipt_file is None:
+        print("ERROR: --release-grade requires --receipt-file", file=sys.stderr)
         return 2
     try:
         paths = selected_paths(load_manifest(), args.profile)
@@ -378,6 +446,7 @@ def main(argv: list[str] | None = None) -> int:
                 source_commit=args.source_commit,
                 source_tree=args.source_tree,
                 receipt_file=args.receipt_file,
+                release_grade=args.release_grade,
             )
             result["applied"] = True
             result["output_root"] = str(args.output_root.expanduser().resolve())
