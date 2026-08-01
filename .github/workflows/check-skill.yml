@@ -179,6 +179,8 @@ jobs:
             -r requirements-release.txt
 
       - name: Acquire official evidence once
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           python3 scripts/validate_formal_schemas.py \
             --verify-acquisition \

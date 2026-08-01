@@ -480,7 +480,7 @@ def decode_statement(attestation: dict[str, Any]) -> dict[str, Any]:
 
 
 class OnlineEvidenceSession:
-    def __init__(self, evidence_dir: Path):
+    def __init__(self, evidence_dir: Path, github_token: str | None = None):
         self.evidence_dir = evidence_dir.resolve()
         if self.evidence_dir.exists():
             raise ValueError("acquisition evidence directory must not already exist")
@@ -489,6 +489,9 @@ class OnlineEvidenceSession:
         self.entries: list[dict[str, Any]] = []
         self.request_keys: set[tuple[str, str, str]] = set()
         self.failed = False
+        # This token is deliberately memory-only. Request headers are not
+        # persisted in the raw-evidence manifest or acquisition receipt.
+        self.github_token = github_token
 
     def request_json(
         self,
@@ -507,18 +510,21 @@ class OnlineEvidenceSession:
             raise RuntimeError(f"duplicate live metadata request forbidden: {method} {url}")
         self.request_keys.add(key)
         try:
-            validate_metadata_url(url)
+            source_host, _ = validate_metadata_url(url)
         except ValueError:
             self.failed = True
             raise
+        headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "User-Agent": "lhe-release-gate/0.3",
+        }
+        if source_host == "api.github.com" and self.github_token:
+            headers["Authorization"] = f"Bearer {self.github_token}"
         request = Request(
             url,
             data=request_bytes if method == "POST" else None,
-            headers={
-                "Accept": "application/json",
-                "Content-Type": "application/json",
-                "User-Agent": "lhe-release-gate/0.3",
-            },
+            headers=headers,
             method=method,
         )
         try:
@@ -1192,7 +1198,9 @@ def acquire_evidence(
         return errors, {"status": "FAIL", "gate": "formal-acquisition"}
 
     started = utc_now()
-    session = OnlineEvidenceSession(evidence_dir)
+    session = OnlineEvidenceSession(
+        evidence_dir, github_token=os.environ.get("GITHUB_TOKEN")
+    )
     acquisition_errors, evidence = verify_acquisition(session)
     errors.extend(acquisition_errors)
     manifest_path, manifest_sha256 = session.write_manifest()
