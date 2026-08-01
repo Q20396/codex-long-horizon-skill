@@ -356,7 +356,9 @@ Load only the references that match the task:
   is proposed for a permissioned action
 - `references/local-voice-tool-sandbox.md` <!-- profile-optional-reference -->
   before proposing a local voice, speech, voice-cloning, or voice-enabled MCP
-  tool
+  tool, including a voice-companion workflow. It is a default-disabled design
+  contract; naming a companion does not authorize microphone access, network
+  access, memory, voice cloning, voice imitation, or a runtime.
 - `references/three-d-asset-provider-sandbox.md` <!-- profile-optional-reference -->
   before proposing an external 3D asset provider, hosted 3D-generation
   service, or 3D asset MCP tool

@@ -105,6 +105,72 @@ approves generation.
 8. Render handoff
 9. Human approval gate
 
+## Capability Stack For Long-Form To Short-Form Work
+
+Use this stack when the source is an approved, non-sensitive video or a
+synthetic stand-in. It is an orchestration and review contract, not a runtime,
+installer, media scanner, or publishing system. Each capability produces a
+small, inspectable draft for the next capability; none grants authority to
+read a folder, install a tool, render, upload, or publish.
+
+1. **`video-understand`**: produce a timestamped topic, speaker, scene, and
+   risk map. Treat it as editing evidence, not a copyright, identity, or
+   factual determination.
+2. **`video-clip-pipeline`**: propose context-preserving clip groups. Each
+   candidate includes an in-point, out-point, pre-roll and post-roll context,
+   narrative reason, and a human review status. Do not optimise for isolated
+   quotes alone.
+3. **`video-edit`**: turn selected candidates into an edit decision list
+   (EDL), sequence plan, trim rationale, aspect-ratio plan, and export draft.
+   Effects, reframing, and removal of material remain reviewable choices.
+4. **`video-caption-generator`**: prepare timestamped caption drafts with
+   confidence flags for names, terms, numbers, and uncertain speech. Require
+   a human spot-check before captions become an approved deliverable.
+5. **`video-translate`**: create parallel subtitle-track drafts that preserve
+   timing and record a glossary, tone, untranslated terms, and review gaps.
+   Never treat literal translation as approved brand or legal wording.
+6. **`short-form-pipeline`**: package the approved story, EDL, caption tracks,
+   platform specification, asset manifest, and approval checklist. Its output
+   is a publication *plan*, never an automatic post.
+
+Optional planning-only additions are `storyboard-and-prompt-plan` for
+Seedance-style shot prompts and `motion-render-plan` for HyperFrames- or
+Remotion-style compositions. Consult
+`references/video-skill-integration-catalog.md` before naming an external
+candidate or requesting a runtime. It records which candidates are only
+patterns, which need a separate review, and which are not approved for use.
+
+## Visual Direction And Anti-Generic Review Gate
+
+Before a storyboard is approved for a preview handoff, create a small visual
+direction card and review it with the production packet. This is a planning
+and human-review aid only: it does not install, invoke, or copy an external
+skill, generate media, select a renderer, or authorize an upload or post.
+
+For the whole piece, deliberately choose a level for each dial:
+
+- **visual variance** — how much the scenes should vary in composition,
+  metaphor, palette, and framing while still belonging to one story;
+- **motion intensity** — restrained, purposeful motion rather than movement
+  added merely to make a scene look busy; and
+- **information density** — how much a viewer can read, infer, and retain in
+  one shot at the chosen platform and viewing speed.
+
+For each scene, record its narrative job, a visual reason for its chosen
+composition or movement, legibility requirements, and excluded treatments.
+Reject a draft when captions carry the entire meaning while the picture adds
+no evidence, motion has no narrative purpose, a generic visual effect replaces
+a concrete metaphor, or the density prevents the intended viewer from
+understanding the claim. Do not copy another creator's protected visual
+identity, brand system, or footage. Brand rules, accessibility, factual
+accuracy, rights, privacy, and the source boundary always override this
+review gate.
+
+Use the visual-direction and anti-generic checklist in
+`templates/SHORT_FORM_PRODUCTION_PACKET_TEMPLATE.md`. The catalog records the
+external inspiration boundary and the fact that no external code or template
+is embedded here.
+
 ## Required Gate
 
 Before final render, upload, publication, or external sharing, require explicit human approval. The handoff should show what will be rendered, what source assets are used, where outputs will be stored, and what command or tool action the human may run.

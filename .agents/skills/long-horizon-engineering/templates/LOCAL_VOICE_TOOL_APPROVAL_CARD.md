@@ -24,6 +24,25 @@ correspondence, or confidential source content.
 - Automatic endpoint connection: NO
 - Automatic audio-path, capture, or transcript-history access: NO
 
+## Voice Companion Permission Matrix
+
+Use this section when the stated purpose is a voice companion, voice assistant,
+or conversational character. A `PENDING` item remains denied until the
+customer approves the exact scope; this card itself never starts a runtime.
+
+| Effect | Default | Customer decision | Exact approved scope |
+| --- | --- | --- | --- |
+| Network or provider access | DENY | PENDING |  |
+| Microphone listening or capture | DENY | PENDING |  |
+| Conversation memory or transcript retention | DENY | PENDING |  |
+| Voice cloning or voice imitation | DENY | PENDING |  |
+| Named-person personality imitation | DENY | PENDING |  |
+
+- Safe pilot interaction: `PUSH_TO_TALK_ONLY`
+- Background listener or wake word: NO
+- Built-in preset voice only until voice-identity consent is documented: YES
+- Tool calls, account access, and publication: NO
+
 ## Candidate Identity
 
 - Tool or provider:
@@ -59,6 +78,8 @@ correspondence, or confidential source content.
 - Voice type: built-in preset / cloned voice / unknown
 - Speaker consent for a cloned or reference voice: not applicable / PENDING /
   documented separately
+- Speaker consent for voice imitation: not applicable / PENDING / documented
+  separately
 - Personality rewrite: NO
 - Microphone, system-audio, browser-audio, or screen capture: NO
 
@@ -83,6 +104,7 @@ correspondence, or confidential source content.
 | Voice identity or clone use | yes / no | PENDING |  |
 | Output save, playback, sharing, or deletion | yes / no | PENDING |  |
 | Cloud, account, or external transfer | yes / no | PENDING |  |
+| Voice-companion network, listening, memory, cloning, imitation, or named-person persona | yes / no | PENDING | Each effect requires its own decision. |
 
 ## Safety Review
 
