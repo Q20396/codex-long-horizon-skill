@@ -603,15 +603,15 @@ def formal_schema_errors(args: argparse.Namespace, errors: list[str]) -> None:
     formal_worktree_errors(errors)
     if errors:
         return
-    release_history_errors(errors)
-    if errors:
-        return
     path = args.formal_schema_result.resolve()
     if path.exists():
         errors.append(
             "formal schema result output already exists; prewritten PASS receipts "
             "are not accepted"
         )
+        return
+    release_history_errors(errors)
+    if errors:
         return
     command = [
         sys.executable,
