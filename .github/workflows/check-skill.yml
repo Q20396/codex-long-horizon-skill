@@ -69,7 +69,7 @@ jobs:
           python3 scripts/validate_plugin_package.py
           python3 scripts/test_fresh_install.py --skip-codex-cli
           python3 scripts/check_release_readiness.py \
-            --version 0.4.0 \
+            --version 0.5.0 \
             --release-state final \
             --allow-existing-tag
           python3 scripts/test_skill_update_selfcheck.py
@@ -197,7 +197,7 @@ jobs:
             -m unittest tests.test_formal_schema_validation -v
           "$RUNNER_TEMP/lhe-formal-schema-venv/bin/python" \
             scripts/check_release_readiness.py \
-            --version 0.4.0 \
+            --version 0.5.0 \
             --release-state final \
             --allow-existing-tag \
             --formal-schema-pip-report "$RUNNER_TEMP/formal-schema-pip-report.json" \

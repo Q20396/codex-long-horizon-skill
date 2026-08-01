@@ -89,14 +89,14 @@ copy-paste intake and review format, not a connector, database, or runtime.
 
 ## Installation Status
 
-The release-state contract targets the immutable stable ref `v0.4.0` with
+The release-state contract targets the immutable stable ref `v0.5.0` with
 marketplace policy `AVAILABLE`. Before using it, independently verify the
 remote annotated tag, its peeled commit and tree, the published GitHub Release,
 and an isolated Codex marketplace resolution. Repository metadata alone is not
 proof that those external stages completed.
 
 ```bash
-codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.4.0
+codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.5.0
 ```
 
 Run the command only in a separately approved isolated workflow after the
@@ -434,7 +434,7 @@ Treat the result as advice only. Applying an update remains a separate
 backup-first action with `update_installed_skill.py`.
 
 For a customer-facing copy-paste prompt that compares installed skills with the
-published `v0.4.0` release, see [UPGRADE_GUIDE.md](UPGRADE_GUIDE.md).
+published `v0.5.0` release, see [UPGRADE_GUIDE.md](UPGRADE_GUIDE.md).
 
 ## Safe skill update self-check
 
@@ -468,7 +468,7 @@ Check the current Codex user-level installation against the immutable release:
 ```bash
 python3 scripts/skill_update_selfcheck.py \
   --installed-root ~/.codex/skills \
-  --ref v0.4.0
+  --ref v0.5.0
 ```
 
 `--skills` is restricted to the bundled supported skills:
@@ -481,18 +481,9 @@ always requires an explicit `--installed-root`; it cannot replace or modify an
 installed skill. This keeps all real replacement behind the explicit target,
 backup, validation, and rollback flow.
 
-For the legacy/project-style self-check flow, backups are created under:
-
-```text
-~/.agents/skills/.backups/YYYYMMDD-HHMMSS/<skill_id>
-```
-
-For the same legacy/project-style flow, rollback can be done by copying the
-backup folder back to:
-
-```text
-~/.agents/skills/<skill_id>
-```
+The comparison-only self-check has no backup or rollback operation. For an
+approved replacement, use the updater's documented target, backup, validation,
+and rollback plan instead.
 
 ## Install, Verify, Update
 
