@@ -9,13 +9,10 @@ import hashlib
 import json
 import os
 import re
-import shlex
-import shutil
 import subprocess
 import sys
 import tempfile
 from dataclasses import dataclass, asdict
-from datetime import datetime
 from pathlib import Path
 
 
@@ -53,8 +50,6 @@ class SkillReport:
     possible_breaking_changes: list[str]
     risk_level: str
     upgrade_recommendation: str
-    backup_plan: str
-    rollback_plan: str
 
 
 def parse_front_matter(path: Path) -> dict[str, str]:
@@ -150,58 +145,6 @@ def remote_skills_root(remote_repo_root: Path) -> Path:
     root = (repo_root / ".agents" / "skills").resolve(strict=False)
     assert_path_under(repo_root, root, "remote skills root")
     return root
-
-
-def safe_update_staging_path(installed_root: Path, skill_id: str) -> Path:
-    skill_id = validate_skill_id(skill_id)
-    root = resolve_installed_root(installed_root)
-    staging = root / f".{skill_id}.update-staging"
-    assert_direct_child(root, staging, "update staging path")
-    return staging
-
-
-def validate_apply_paths(
-    installed_root: Path,
-    backup_root: Path,
-    remote_root: Path,
-    skill_id: str,
-) -> tuple[Path, Path, Path]:
-    skill_id = validate_skill_id(skill_id)
-    installed = resolve_installed_root(installed_root)
-    target = safe_child_path(installed, skill_id)
-    assert_direct_child(installed, target, "target skill path")
-    if target.name != skill_id:
-        raise ValueError(f"Target skill path name mismatch: {target}")
-
-    backups_parent = (installed / ".backups").resolve(strict=False)
-    backup_root_resolved = backup_root.expanduser().resolve(strict=False)
-    assert_direct_child(backups_parent, backup_root_resolved, "backup root")
-    backup = safe_child_path(backup_root_resolved, skill_id)
-    assert_direct_child(backup_root_resolved, backup, "backup skill path")
-
-    remote_root_resolved = remote_root.expanduser().resolve(strict=False)
-    remote = safe_child_path(remote_root_resolved, skill_id)
-    assert_direct_child(remote_root_resolved, remote, "remote skill path")
-    if remote.name != skill_id:
-        raise ValueError(f"Remote skill path name mismatch: {remote}")
-    return target, backup, remote
-
-
-def assert_no_unsafe_symlinks(root: Path, label: str) -> None:
-    root_resolved = root.expanduser().resolve(strict=False)
-    if root.is_symlink():
-        raise ValueError(f"{label} must not be a symlink: {root}")
-    if not root.exists():
-        return
-    for current, dirs, names in os.walk(root, followlinks=False):
-        current_path = Path(current)
-        for name in list(dirs) + list(names):
-            path = current_path / name
-            if not path.is_symlink():
-                continue
-            target = path.resolve(strict=False)
-            if target != root_resolved and root_resolved not in target.parents:
-                raise ValueError(f"{label} contains unsafe symlink: {path} -> {os.readlink(path)}")
 
 
 def file_digest(path: Path) -> str:
@@ -317,20 +260,10 @@ def recommendation(local_version: str | None, remote_version: str | None, diff: 
     return "Review recommended because meaningful files changed."
 
 
-def rollback_command(installed_root: Path, backup_path: Path, skill_id: str, local_missing: bool) -> str:
-    skill_id = validate_skill_id(skill_id)
-    target = safe_child_path(resolve_installed_root(installed_root), skill_id)
-    backup = backup_path.expanduser().resolve(strict=False)
-    if local_missing:
-        return f"rm -rf {shlex.quote(str(target))}"
-    return f"rm -rf {shlex.quote(str(target))} && cp -R {shlex.quote(str(backup))} {shlex.quote(str(target))}"
-
-
 def build_skill_report(
     skill_id: str,
     installed_root: Path,
     remote_repo_root: Path,
-    backup_root: Path | None = None,
 ) -> SkillReport:
     skill_id = validate_skill_id(skill_id)
     installed = resolve_installed_root(installed_root)
@@ -341,10 +274,6 @@ def build_skill_report(
     local_meta = parse_front_matter(local_path / "SKILL.md")
     remote_meta = parse_front_matter(remote_path / "SKILL.md")
     risk = classify_risk(diff)
-    backup_path = (
-        (backup_root or installed / ".backups" / "YYYYMMDD-HHMMSS").expanduser().resolve(strict=False)
-        / skill_id
-    )
     local_missing = not local_path.exists()
     return SkillReport(
         skill_id=skill_id,
@@ -361,8 +290,6 @@ def build_skill_report(
         upgrade_recommendation=recommendation(
             local_meta.get("version"), remote_meta.get("version"), diff, risk
         ),
-        backup_plan=f"Create backup at {backup_path} before replacing {local_path}.",
-        rollback_plan=rollback_command(installed_root, backup_path, skill_id, local_missing),
     )
 
 
@@ -372,80 +299,6 @@ def clone_repo(repo: str, ref: str | None, temp_root: Path) -> Path:
     if ref:
         subprocess.run(["git", "-C", str(target), "checkout", ref], check=True)
     return target
-
-
-def validate_skill_directory(path: Path) -> None:
-    if not path.is_dir():
-        raise ValueError(f"Skill directory is missing: {path}")
-    if not any(path.iterdir()):
-        raise ValueError(f"Skill directory is empty: {path}")
-    if not (path / "SKILL.md").is_file():
-        raise ValueError(f"SKILL.md is missing from {path}")
-    nested = path / ".agents" / "skills"
-    if nested.exists():
-        raise ValueError(f"Nested duplicated .agents/skills path found: {nested}")
-
-
-def restore_from_backup(target: Path, backup: Path, local_missing: bool) -> None:
-    if target.exists() or target.is_symlink():
-        if target.is_symlink() or target.is_file():
-            target.unlink()
-        else:
-            shutil.rmtree(target)
-    if local_missing:
-        return
-    shutil.copytree(backup, target, symlinks=True)
-
-
-def apply_skill_update(report: SkillReport, remote_repo_root: Path, backup_root: Path) -> None:
-    skill_id = validate_skill_id(report.skill_id)
-    installed_root = resolve_installed_root(Path(report.local_path).expanduser().parent)
-    remote_root = remote_skills_root(remote_repo_root)
-    target, backup, remote = validate_apply_paths(installed_root, backup_root, remote_root, skill_id)
-    if Path(report.local_path).expanduser().resolve(strict=False) != target:
-        raise ValueError(f"Report local path does not match validated target path: {report.local_path}")
-    if target.is_symlink():
-        raise ValueError(f"Refusing to replace symlinked skill directory: {target}")
-    if remote.is_symlink():
-        raise ValueError(f"Refusing to use symlinked remote skill directory: {remote}")
-    if not remote.is_dir():
-        raise ValueError(f"Remote skill directory is missing: {remote}")
-    if target.exists():
-        assert_no_unsafe_symlinks(target, "local skill directory")
-    assert_no_unsafe_symlinks(remote, "remote skill directory")
-
-    backup.parent.mkdir(parents=True, exist_ok=True)
-    if target.exists():
-        shutil.copytree(target, backup, symlinks=True)
-    else:
-        backup.mkdir(parents=True, exist_ok=True)
-        (backup / "MISSING_LOCAL_SKILL.txt").write_text(
-            "The local skill did not exist before update.\n", encoding="utf-8"
-        )
-
-    staging = safe_update_staging_path(installed_root, skill_id)
-    if staging.is_symlink():
-        raise ValueError(f"Refusing to remove symlinked staging path: {staging}")
-    if staging.exists():
-        shutil.rmtree(staging)
-    shutil.copytree(remote, staging, symlinks=True)
-    validate_skill_directory(staging)
-    assert_no_unsafe_symlinks(staging, "staged skill directory")
-
-    local_missing = report.local_missing
-    try:
-        target, backup, remote = validate_apply_paths(installed_root, backup_root, remote_root, skill_id)
-        if target.is_symlink():
-            raise ValueError(f"Refusing to replace symlinked skill directory: {target}")
-        if target.exists():
-            shutil.rmtree(target)
-        shutil.move(str(staging), str(target))
-        validate_skill_directory(target)
-    except Exception:
-        if staging.exists():
-            shutil.rmtree(staging)
-        restore_from_backup(target, backup, local_missing)
-        raise
 
 
 def print_report(report: SkillReport) -> None:
@@ -472,8 +325,8 @@ def print_report(report: SkillReport) -> None:
             print(f"  - {change}")
     else:
         print("  - None detected by static path checks.")
-    print(f"Backup plan: {report.backup_plan}")
-    print(f"Rollback plan: {report.rollback_plan}")
+    print("Replacement plan: comparison only; no backup or replacement was created.")
+    print("Approved update path: use update_installed_skill.py with an explicit target.")
 
 
 def parse_skills(value: str) -> list[str]:
@@ -493,63 +346,40 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON.")
     parser.add_argument("--ref", help="Optional git ref, branch, tag, or commit to compare.")
-    parser.add_argument("--keep-temp", action="store_true", help="Keep temporary clone for debugging.")
     args = parser.parse_args(argv)
     args.skills = parse_skill_list(args.skills)
     return args
 
 
-def choose_skills_for_apply(reports: list[SkillReport]) -> list[str]:
-    report_skill_ids = [validate_skill_id(report.skill_id) for report in reports]
-    allowed = {f"UPDATE {skill_id}": [skill_id] for skill_id in report_skill_ids}
-    allowed["UPDATE ALL"] = list(report_skill_ids)
-    print("\nTo apply, type exactly one of:")
-    for phrase in allowed:
-        print(f"  {phrase}")
-    answer = input("> ").strip()
-    if answer not in allowed:
-        raise ValueError("Confirmation phrase did not match an approved update action.")
-    return allowed[answer]
-
-
 def main(argv: list[str] | None = None) -> int:
-    temp_dir: Path | None = None
     try:
         args = parse_args(argv)
         installed_root = resolve_installed_root(Path(args.installed_root))
-        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-        backup_root = installed_root / ".backups" / timestamp
-        temp_dir = Path(tempfile.mkdtemp(prefix="codex-skill-update-"))
-        repo_root = clone_repo(args.repo, args.ref, temp_dir)
-        reports = [
-            build_skill_report(skill_id, installed_root, repo_root, backup_root)
-            for skill_id in args.skills
-        ]
-        if args.json:
-            print(json.dumps([asdict(report) for report in reports], indent=2, sort_keys=True))
-        else:
-            print("Safe skill update self-check")
-            print("Default mode is check-only. No installed skill has been modified.")
-            for report in reports:
-                print_report(report)
+        with tempfile.TemporaryDirectory(prefix="codex-skill-selfcheck-") as temp:
+            repo_root = clone_repo(args.repo, args.ref, Path(temp))
+            reports = [
+                build_skill_report(skill_id, installed_root, repo_root)
+                for skill_id in args.skills
+            ]
+            if args.json:
+                print(json.dumps([asdict(report) for report in reports], indent=2, sort_keys=True))
+            else:
+                print("Safe skill update self-check")
+                print("Comparison only. No installed skill has been modified.")
+                for report in reports:
+                    print_report(report)
 
-        has_differences = any(
-            report.added_files or report.removed_files or report.modified_files or report.local_missing
-            for report in reports
-        )
-        return 2 if has_differences else 0
+            has_differences = any(
+                report.added_files or report.removed_files or report.modified_files or report.local_missing
+                for report in reports
+            )
+            return 2 if has_differences else 0
     except subprocess.CalledProcessError as exc:
         print(f"git command failed: {exc}", file=sys.stderr)
         return 1
     except Exception as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
-    finally:
-        if temp_dir is not None:
-            if args.keep_temp:
-                print(f"Temporary clone kept at: {temp_dir}")
-            else:
-                shutil.rmtree(temp_dir, ignore_errors=True)
 
 
 if __name__ == "__main__":
