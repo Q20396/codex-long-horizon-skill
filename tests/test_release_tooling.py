@@ -840,6 +840,7 @@ class ReleaseReadinessTests(unittest.TestCase):
         security = (ROOT / "SECURITY.md").read_text(encoding="utf-8")
         normalized_checklist = " ".join(checklist.split())
         normalized_release_notes = " ".join(release_notes.split())
+        normalized_security = " ".join(security.split())
 
         self.assertIn("11d5960a326750d5838078e36cf38b85af677262", checklist)
         self.assertIn("a26af69be951a213d495a4c3e4e4022e16d87065", checklist)
@@ -859,6 +860,7 @@ class ReleaseReadinessTests(unittest.TestCase):
         )
         self.assertIn("GitHub security-advisories API returned an empty list", normalized_checklist)
         self.assertIn("not proof that the Actions are vulnerability-free", normalized_checklist)
+        self.assertIn("rechecked on 2026-08-01 without identity drift", normalized_checklist)
         self.assertIn("ubuntu:24.04", normalized_release_notes)
         self.assertIn("CPython 3.11.15", normalized_release_notes)
         self.assertIn("all 36 positive and 13 negative fixture cases passed", normalized_release_notes)
@@ -867,10 +869,59 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.assertIn("remains PENDING", normalized_release_notes)
         self.assertIn("still not release-ready", normalized_release_notes)
         self.assertIn("release/0.2.x", security)
-        self.assertIn("Security-maintenance only", security)
-        self.assertIn("No feature backports", security)
-        self.assertIn("v0.3.1 is published", security)
-        self.assertIn("replacement install path is independently verified", security)
+        self.assertIn("Retired maintenance line", security)
+        self.assertIn("maintenance window ended on 2026-07-31", security)
+        self.assertIn("No routine security or feature backports", security)
+        self.assertNotIn("Security-maintenance only", security)
+        for control in (
+            "private vulnerability reporting",
+            "Code Scanning",
+            "Dependabot",
+            "Secret Scanning",
+            "push protection",
+        ):
+            self.assertIn(control.lower(), normalized_security.lower())
+            self.assertIn(control.lower(), normalized_checklist.lower())
+
+    def test_full_validation_reports_timeout_without_traceback(self) -> None:
+        timeout = subprocess.TimeoutExpired(
+            ["python3", "slow.py"],
+            7,
+            output="partial output\n",
+            stderr="partial error\n",
+        )
+        with mock.patch.object(FULL_VALIDATION.subprocess, "run", side_effect=timeout):
+            result = FULL_VALIDATION.run_command(["python3", "slow.py"], timeout=7)
+
+        self.assertEqual(124, result.returncode)
+        self.assertIn("partial output", result.stdout)
+        self.assertIn("partial error", result.stderr)
+        self.assertIn("command timed out after 7 seconds", result.stderr)
+
+    def test_full_validation_gives_unittest_discovery_extended_budget(self) -> None:
+        calls: list[tuple[list[str], int]] = []
+
+        def fake_run(
+            command: list[str],
+            *,
+            timeout: int,
+        ) -> subprocess.CompletedProcess[str]:
+            calls.append((command, timeout))
+            return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
+
+        report = FULL_VALIDATION.Report()
+        with mock.patch.object(FULL_VALIDATION, "run_command", side_effect=fake_run):
+            FULL_VALIDATION.run_core_commands(report)
+
+        timeout_by_command = {tuple(command): timeout for command, timeout in calls}
+        self.assertEqual(
+            FULL_VALIDATION.FULL_UNITTEST_TIMEOUT_SECONDS,
+            timeout_by_command[tuple(FULL_VALIDATION.FULL_UNITTEST_COMMAND)],
+        )
+        self.assertGreater(
+            FULL_VALIDATION.FULL_UNITTEST_TIMEOUT_SECONDS,
+            FULL_VALIDATION.DEFAULT_COMMAND_TIMEOUT_SECONDS,
+        )
 
     def test_release_hygiene_binds_origin_main_clean_linked_worktree(self) -> None:
         expected = "a" * 40

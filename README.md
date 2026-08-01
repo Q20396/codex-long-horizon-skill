@@ -423,7 +423,7 @@ Treat the result as advice only. Applying an update remains a separate
 backup-first action with `update_installed_skill.py`.
 
 For a customer-facing copy-paste prompt that compares installed skills with the
-published `v0.1.0` release, see [UPGRADE_GUIDE.md](UPGRADE_GUIDE.md).
+published `v0.3.1` release, see [UPGRADE_GUIDE.md](UPGRADE_GUIDE.md).
 
 ## Safe skill update self-check
 
@@ -451,24 +451,23 @@ Summarize differences, risks, upgrade recommendation, and rollback plan.
 Ask me before making changes.
 ```
 
-Check only:
+Check the current Codex user-level installation against the immutable release:
 
 ```bash
-python3 scripts/skill_update_selfcheck.py
+python3 scripts/skill_update_selfcheck.py \
+  --installed-root ~/.codex/skills \
+  --ref v0.3.1
 ```
 
 `--skills` is restricted to the bundled supported skills:
 `long-horizon-engineering` and `ai-video-production`. For release-grade
 comparison, prefer an immutable tag or exact commit with `--ref`.
 
-Apply after explicit typed confirmation:
-
-```bash
-python3 scripts/skill_update_selfcheck.py --apply
-```
-
-`--apply` still does not silently update. It prints a summary and requires the
-user to type exactly one of:
+For replacement, use the manifest-verified `update_installed_skill.py`
+`--target-skill-dir` flow below. The legacy self-check retains `--apply` for
+backward compatibility, but it is not the recommended Codex user-level update
+path. If it is deliberately used, it requires one of these exact typed
+confirmations:
 
 ```text
 UPDATE long-horizon-engineering
