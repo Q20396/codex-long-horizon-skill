@@ -69,6 +69,10 @@ Candidate commit: `c58b5fbf68404fbacbd38e5bfd3e5c2189775ce1`.
 
 The inventory is bound to this base-to-candidate diff. Later repository commits
 must not change the historical candidate inventory or make this record fail.
+In a partial clone that lacks an archival candidate object or blob, the
+dependency-free contract test reports `HISTORY_UNAVAILABLE` and skips rather
+than implicitly fetching history. Release-grade historical validation requires
+a complete clone.
 
 - [S6] `.agents/plugins/marketplace.json` - candidate availability and prospective ref.
 - [S6] `.github/workflows/check-skill.yml` - CI-wide bytecode isolation and immutable action/credential guards.
