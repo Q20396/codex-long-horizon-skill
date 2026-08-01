@@ -23,6 +23,39 @@ authenticate, invoke, or remove a voice tool. It does not read microphones,
 system audio, audio files, voice profiles, capture history, or cloud accounts.
 It does not create an MCP configuration or grant a tool access to Codex.
 
+## Voice Companion Profile
+
+An AI voice companion is a product pattern, not a new model or permission
+class: VAD detects a turn, ASR makes a transcript, an LLM drafts a response,
+and TTS plays it. The default companion profile is `DESCRIPTOR_ONLY` and
+`PUSH_TO_TALK_ONLY`. It may describe this sequence but cannot start a listener,
+record audio, retain a transcript, call a network service, use a voice identity,
+or create a runtime.
+
+The lowest-risk eventual pilot is deliberately narrow: one visible,
+user-initiated press-to-talk turn; a built-in preset voice; no personality
+imitation; no tool calls; no background service; no account; no cloud; and no
+retained recording, transcript, or conversation memory. It must end when the
+turn ends. This is a conversational interface, not an "AI girlfriend",
+professional adviser, or a substitute for human relationships or urgent human
+support.
+
+Treat each of these effects as separately `PENDING` until the customer gives
+explicit, bounded approval for that exact effect and scope:
+
+| Effect | Default | Minimum approval record |
+| --- | --- | --- |
+| Network or provider access | `DENY` | exact destination, data classes, account/credential use, and one-run purpose |
+| Microphone listening or capture | `DENY` | input device, push-to-talk versus a bounded listening interval, and retention choice |
+| Conversation memory | `DENY` | exact fields, storage location, retention, deletion/export method, and who can read it |
+| Voice cloning or voice imitation | `DENY` | named speaker's documented consent, source sample scope, permitted output, retention, and anti-impersonation boundary |
+| Named-person personality imitation | `DENY` | customer approval and a review showing that no deceptive identity claim is made |
+
+Approval for a preset voice is not consent to clone or imitate a person. A
+keyword, an installed package, a chosen persona, or a prior voice session is
+not consent for a later session. Do not use emotional pressure, dependency,
+exclusivity claims, or hidden persuasion as a substitute for a user decision.
+
 These defaults remain in force even when a user asks for a broad capability
 such as "local voice", "MCP", or "automatic workflow". A proposal, source
 review, or installed package is not approval to perform a later action.
@@ -70,6 +103,10 @@ One approval never covers another. Ask for the smallest applicable action:
 8. **Output handling**: play, save, retain, share, or delete generated audio.
 9. **Cloud or account use**: sign in, sync, back up, upload, or contact a
    provider.
+
+10. **Voice companion effects**: separately approve network use, listening,
+    memory, cloned or imitated voice identity, and any named-person personality
+    imitation. None is implied by a voice-companion request.
 
 A changed product, version, endpoint, command, input scope, voice identity,
 or output destination invalidates prior approval.
