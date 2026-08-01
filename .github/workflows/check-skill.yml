@@ -209,6 +209,18 @@ jobs:
             --formal-schema-candidate-base "$FORMAL_CANDIDATE_BASE" \
             --formal-schema-result "$RUNNER_TEMP/formal-schema-result.json"
 
+      - name: Preserve formal release evidence
+        if: success()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lhe-formal-schema-evidence-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/formal-schema-result.json
+            ${{ runner.temp }}/formal-schema-pip-report.json
+            ${{ runner.temp }}/formal-schema-evidence
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Report checkout status paths after formal gate failure
         if: failure()
         run: |

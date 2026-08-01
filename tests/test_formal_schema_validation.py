@@ -902,6 +902,9 @@ class FormalSchemaStaticTests(unittest.TestCase):
             "--formal-schema-candidate-base \"$FORMAL_CANDIDATE_BASE\"",
             "--evidence-dir",
             "--allow-existing-tag",
+            "uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+            "Preserve formal release evidence",
+            "lhe-formal-schema-evidence-${{ github.sha }}",
             "if: failure()",
             "Report checkout status paths after formal gate failure",
             "git status --porcelain=v1 --untracked-files=all",
@@ -948,7 +951,7 @@ class FormalSchemaStaticTests(unittest.TestCase):
             for line in text.splitlines()
             if line.strip().startswith("uses: actions/")
         ]
-        self.assertEqual(4, len(action_lines))
+        self.assertEqual(5, len(action_lines))
         for line in action_lines:
             reference = line.rsplit("@", 1)[-1]
             self.assertRegex(reference, r"^[0-9a-f]{40}$")
@@ -956,6 +959,12 @@ class FormalSchemaStaticTests(unittest.TestCase):
             2,
             action_lines.count(
                 "uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262"
+            ),
+        )
+        self.assertEqual(
+            1,
+            action_lines.count(
+                "uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
             ),
         )
         self.assertEqual(
