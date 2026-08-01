@@ -2,6 +2,21 @@
 
 All notable changes to this project are summarized here.
 
+## 0.5.0 - 2026-08-01
+
+- Added the bundled-optional Investment Research Agent Protocol and customer
+  agreement as a governed research-assistance surface. It is descriptor-only
+  and offline by default; any public-data retrieval requires one-run customer
+  approval and never authorizes a customer-data upload, account connection,
+  brokerage integration, trading instruction, or execution.
+- Documented the resulting hard boundary: research may produce a traceable
+  hypothesis, evidence gaps, and a simulated review plan, but customer approval
+  remains the only decision authority.
+- Updated stable package, marketplace, installer, and validation references to
+  the immutable `v0.5.0` release contract.
+- Removed obsolete self-check backup and rollback language. The self-check is
+  comparison-only; approved replacement remains the updater's separate flow.
+
 ## 0.4.0 - 2026-08-01
 
 - Changed the default source-package profile to `local-governance-core` while

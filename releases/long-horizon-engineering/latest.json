@@ -1,6 +1,6 @@
 {
   "skill_id": "long-horizon-engineering",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "repo": "https://github.com/Q20396/codex-long-horizon-skill",
   "path": ".agents/skills/long-horizon-engineering",
   "channel": "stable",
@@ -10,7 +10,7 @@
   "summary": [
     "Hardened project-memory writes to default preview-only behavior with explicit confirmation.",
     "Rejected sensitive facts and targets outside the resolved project root before writing.",
-    "Kept local-first, descriptor-only, provider, runtime, and customer-authority boundaries unchanged."
+    "Added the bundled-optional investment-research protocol as offline, descriptor-only research assistance with customer-gated public-data retrieval and no account or trade authority."
   ],
   "requires_manual_approval": true,
   "auto_update": false
