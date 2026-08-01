@@ -21,11 +21,11 @@ class PackageManifestContractTests(unittest.TestCase):
         self.assertTrue(path.is_file(), f"Missing required file: {path}")
         return json.loads(path.read_text(encoding="utf-8"))
 
-    def test_manifest_declares_legacy_full_without_layout_change(self) -> None:
+    def test_manifest_declares_local_governance_default_without_layout_move(self) -> None:
         manifest = self.load_json(MANIFEST)
         self.assertEqual(manifest["schema_version"], "1.0")
         self.assertEqual(manifest["skill_id"], "long-horizon-engineering")
-        self.assertEqual(manifest["default_profile"], "legacy-full")
+        self.assertEqual(manifest["default_profile"], "local-governance-core")
         self.assertEqual(manifest["profiles"]["legacy-full"]["components"], ["core", "bundled-optional"])
         self.assertEqual(manifest["profiles"]["core-only"]["components"], ["core"])
         self.assertEqual(manifest["profiles"]["core-only"]["separate_skills"], [])
@@ -43,7 +43,7 @@ class PackageManifestContractTests(unittest.TestCase):
         )
         self.assertEqual(manifest["profiles"]["lhe-bundled"]["separate_skills"], [])
         self.assertFalse(manifest["migration"]["physical_layout_changed"])
-        self.assertFalse(manifest["migration"]["default_install_changed"])
+        self.assertTrue(manifest["migration"]["default_install_changed"])
         self.assertTrue(manifest["migration"]["legacy_checker_fallback"])
 
     def test_layers_are_disjoint_exact_repo_paths(self) -> None:
@@ -124,14 +124,11 @@ class PackageManifestContractTests(unittest.TestCase):
         self.assertEqual(errors, [])
         self.assertEqual(
             set(contract.lhe_required_files),
-            set(module.INSTALLED_REQUIRED_FILES),
+            set(self.load_json(MANIFEST)["components"]["core"]["paths"]),
         )
-        self.assertEqual(
-            set(contract.ai_video_required_files),
-            set(module.AI_VIDEO_REQUIRED_FILES),
-        )
+        self.assertEqual(contract.ai_video_required_files, ())
         self.assertTrue(contract.loaded_from_manifest)
-        self.assertEqual(contract.selected_profile, "legacy-full")
+        self.assertEqual(contract.selected_profile, "local-governance-core")
 
     def test_checker_selects_core_only_profile(self) -> None:
         spec = importlib.util.spec_from_file_location("check_skill_package", CHECKER)

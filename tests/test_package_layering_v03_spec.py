@@ -46,11 +46,13 @@ class PackageLayeringV03SpecificationTests(unittest.TestCase):
             text,
         )
 
-    def test_spec_phase_preserves_legacy_defaults(self) -> None:
+    def test_spec_records_v04_default_supersession(self) -> None:
         manifest = self.load_json(MANIFEST)
-        self.assertEqual(manifest["default_profile"], "legacy-full")
+        text = SPEC.read_text(encoding="utf-8")
+        self.assertIn("Supersession", text)
+        self.assertEqual(manifest["default_profile"], "local-governance-core")
         self.assertFalse(manifest["migration"]["physical_layout_changed"])
-        self.assertFalse(manifest["migration"]["default_install_changed"])
+        self.assertTrue(manifest["migration"]["default_install_changed"])
         self.assertTrue(manifest["migration"]["legacy_checker_fallback"])
 
     def test_existing_profiles_keep_disjoint_layer_meanings(self) -> None:

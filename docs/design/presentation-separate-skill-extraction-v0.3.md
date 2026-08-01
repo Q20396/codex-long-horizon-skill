@@ -2,6 +2,11 @@
 
 Status: Candidate only
 
+> **Supersession.** This is a v0.3 historical candidate record. The approved
+> v0.4 Local Governance Upgrade changes the package default to
+> `local-governance-core`; it does not create, register, or authorize this
+> presentation capability.
+
 This contract evaluates the presentation boundary identified by the v0.3
 package path classification. It does not create or register a skill, move
 files, edit the package manifest, change an installation profile, add a

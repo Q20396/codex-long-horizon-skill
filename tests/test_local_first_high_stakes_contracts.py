@@ -940,13 +940,10 @@ class LocalFirstHighStakesContractTests(unittest.TestCase):
             capture_output=True,
             text=True,
         )
-        subprocess.run(
-            ["git", "merge-base", "--is-ancestor", candidate, "HEAD"],
-            cwd=ROOT,
-            check=True,
-            capture_output=True,
-            text=True,
-        )
+        # This is an archival candidate manifest. Later release commits may be
+        # rebased or have unrelated history, so it must never be rebound to the
+        # current HEAD merely to keep this historical review test passing.
+        self.assertIn("not a current-HEAD assertion", " ".join(text.split()))
 
         rows = re.findall(
             r"^- \[([^]]+)\] `([^`]+)` - (.+)$",

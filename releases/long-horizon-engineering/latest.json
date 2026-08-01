@@ -1,12 +1,12 @@
 {
   "skill_id": "long-horizon-engineering",
-  "version": "0.3.3",
+  "version": "0.4.0",
   "repo": "https://github.com/Q20396/codex-long-horizon-skill",
   "path": ".agents/skills/long-horizon-engineering",
-  "channel": "stable",
-  "released": true,
+  "channel": "candidate",
+  "released": false,
   "release_date": "2026-08-01",
-  "risk": "reviewed",
+  "risk": "not-assessed",
   "summary": [
     "Hardened project-memory writes to default preview-only behavior with explicit confirmation.",
     "Rejected sensitive facts and targets outside the resolved project root before writing.",
