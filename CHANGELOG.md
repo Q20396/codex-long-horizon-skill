@@ -13,6 +13,9 @@ All notable changes to this project are summarized here.
   persistence, execution, and publication outside the package default.
 - Corrected historical v0.3 design records so their fixed candidate evidence is
   never rebound to a later repository HEAD.
+- Finalized the v0.4.0 release-state contract before tag creation: marketplace
+  availability, stable Skill channels, and reviewed release manifests now move
+  together without changing product capabilities or authority boundaries.
 
 ## 0.3.3 - 2026-08-01
 

@@ -4,7 +4,7 @@ description: Use for AI-assisted video or animation planning: video briefs, scri
 version: 0.4.0
 repo: https://github.com/Q20396/codex-long-horizon-skill
 skill_id: ai-video-production
-update_channel: candidate
+update_channel: stable
 ---
 
 # AI Video Production

@@ -490,7 +490,7 @@ class ReleaseReadinessTests(unittest.TestCase):
         repo: Path,
         *args: str,
         env: dict[str, str] | None = None,
-        release_state: str = "candidate",
+        release_state: str = "final",
     ) -> subprocess.CompletedProcess[str]:
         run_env = os.environ.copy()
         if env:
@@ -665,7 +665,10 @@ class ReleaseReadinessTests(unittest.TestCase):
 
     def test_candidate_release_notes_pass_static_consistency(self) -> None:
         repo = self.copy_repo("publishable")
-        result = self.run_readiness(repo, "--allow-existing-tag")
+        self.set_candidate_state(repo)
+        result = self.run_readiness(
+            repo, "--allow-existing-tag", release_state="candidate"
+        )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn("allow-existing-tag", result.stdout)
         self.assertIn("release-state=candidate", result.stdout)
@@ -675,8 +678,8 @@ class ReleaseReadinessTests(unittest.TestCase):
         release_notes = self.release_notes(repo)
         release_notes.write_text(
             release_notes.read_text(encoding="utf-8").replace(
-                "Release state: candidate",
                 "Release state: final",
+                "Release state: candidate",
                 1,
             ),
             encoding="utf-8",
@@ -684,7 +687,7 @@ class ReleaseReadinessTests(unittest.TestCase):
         result = self.run_readiness(repo, "--allow-existing-tag")
         self.assert_failed_without_traceback(
             result,
-            "release notes state 'final' does not match 'candidate'",
+            "release notes state 'candidate' does not match 'final'",
         )
 
     def test_prepared_not_released_marker_fails(self) -> None:
@@ -1334,7 +1337,7 @@ class ReleaseReadinessTests(unittest.TestCase):
             str(self.temp / "formal-evidence"),
             "--formal-schema-candidate-base",
             "a" * 40,
-            release_state="candidate",
+            release_state="final",
         )
         self.assert_failed_without_traceback(
             result,
