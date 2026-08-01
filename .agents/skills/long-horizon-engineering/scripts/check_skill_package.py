@@ -641,7 +641,7 @@ def check_skill_front_matter(skill_dir: Path, expected_name: str) -> list[str]:
     if "description:" not in front_matter:
         errors.append(f"{display_path} front matter must include description.")
     required_metadata = {
-        "version": "0.3.2",
+        "version": "0.3.3",
         "repo": "https://github.com/Q20396/codex-long-horizon-skill",
         "skill_id": expected_name,
         "update_channel": "stable",
