@@ -223,6 +223,11 @@ def write_fake_codex(bin_dir: Path) -> Path:
                     installed_root = codex_home / "invalid-marketplace"
                 if scenario != "no_evidence":
                     install_marketplace_snapshot(Path(source), installed_root, version)
+                    if scenario == "json_invalid_registered_root":
+                        marketplace_path = installed_root / ".agents" / "plugins" / "marketplace.json"
+                        marketplace = json.loads(marketplace_path.read_text(encoding="utf-8"))
+                        marketplace["plugins"][0]["source"]["ref"] = "v9.9.9"
+                        marketplace_path.write_text(json.dumps(marketplace), encoding="utf-8")
                     save_state({"name": marketplace_name, "source": source, "installedRoot": str(installed_root), "version": version})
                 if "--json" in argv:
                     data = {"marketplaceName": marketplace_name, "installedRoot": str(installed_root)}
