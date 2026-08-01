@@ -1,6 +1,6 @@
 {
   "skill_id": "long-horizon-engineering",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "repo": "https://github.com/Q20396/codex-long-horizon-skill",
   "path": ".agents/skills/long-horizon-engineering",
   "channel": "stable",
@@ -8,9 +8,9 @@
   "release_date": "2026-08-01",
   "risk": "reviewed",
   "summary": [
-    "Hardened project-memory writes to default preview-only behavior with explicit confirmation.",
-    "Rejected sensitive facts and targets outside the resolved project root before writing.",
-    "Kept local-first, descriptor-only, provider, runtime, and customer-authority boundaries unchanged."
+    "Made task-log writes preview-only unless the approved target, apply flag, and confirmation are explicit.",
+    "Separated Codex user-level installation checks from project-level installation checks.",
+    "Added deterministic profile and staged release-evidence receipts without changing provider, account, or trading boundaries."
   ],
   "requires_manual_approval": true,
   "auto_update": false

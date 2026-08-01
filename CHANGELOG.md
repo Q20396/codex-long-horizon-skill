@@ -2,6 +2,19 @@
 
 All notable changes to this project are summarized here.
 
+## 0.4.1 - 2026-08-01
+
+- Made task-log writes preview-only by default and required an explicit project
+  root, target, apply flag, and confirmation for an approved write.
+- Split project-level and Codex user-level installation verification; retired
+  mutation, backup, rollback, and interactive code from the legacy self-check.
+- Added deterministic profile receipts, release-evidence receipt validation,
+  release-grade historical validation, and a machine-readable helper effect
+  manifest.
+- Preserved the v0.4.x maintenance boundary: no investment research agreement,
+  account connection, market-data retrieval, trading, provider, or runtime
+  capability is included.
+
 ## 0.4.0 - 2026-08-01
 
 - Changed the default source-package profile to `local-governance-core` while
