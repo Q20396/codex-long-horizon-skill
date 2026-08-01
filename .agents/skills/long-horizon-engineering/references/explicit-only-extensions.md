@@ -50,6 +50,9 @@ because the files exist.
 - `presentation-delivery-protocol.md` for deck planning and slide QA.
 - `financial-research-report-protocol.md` for source-backed market or stock
   research that is not investment advice.
+- `multi-perspective-financial-research.md` for a static, evidence-led
+  fundamentals / valuation / counter-case / backtest review packet; it does
+  not create a financial-agent runtime or authorize data retrieval or trading.
 
 ## Local Knowledge Artifacts
 

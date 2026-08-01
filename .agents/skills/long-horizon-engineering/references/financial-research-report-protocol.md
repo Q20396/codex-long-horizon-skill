@@ -7,6 +7,10 @@ This protocol supports evidence-backed analysis only. It must not be used to
 place trades, execute orders, provide personalized portfolio advice, or present
 buy/sell conclusions as certainty.
 
+For a structured fundamentals, valuation, counter-case, and backtest review
+packet, use `multi-perspective-financial-research.md`. It is a static
+research workflow, not a multi-agent runtime or a data-access authorization.
+
 ## Safe Scope
 
 Before starting, identify:

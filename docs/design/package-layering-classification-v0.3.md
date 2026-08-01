@@ -21,14 +21,14 @@ remains the only authoritative path inventory.
 | Result | Paths | Decision |
 | --- | ---: | --- |
 | Retain in `core` | 44 | All current core paths remain necessary for the safe engineering, recovery, validation, capability-discovery, or package-management contract. |
-| `bundled-optional` inventory | 103 | This inventory contains 88 retained paths and 15 candidate extraction paths. |
-| Retain in `bundled-optional` | 88 | These paths remain useful engineering extensions or safety boundary documents. |
-| Candidate separate-skill extraction | 15 | These paths are a subset of the 103-path `bundled-optional` inventory; domain workflows should be reviewed as independently routed skills before any physical change. |
+| `bundled-optional` inventory | 105 | This inventory contains 90 retained paths and 15 candidate extraction paths. |
+| Retain in `bundled-optional` | 90 | These paths remain useful engineering extensions or safety boundary documents. |
+| Candidate separate-skill extraction | 15 | These paths are a subset of the 105-path `bundled-optional` inventory; domain workflows should be reviewed as independently routed skills before any physical change. |
 | Retain existing `separate-skill` | 28 | `ai-video-production` remains independently routed and governed. |
 
-The 15 candidate extraction paths are a subset of the 103-path
-`bundled-optional` inventory (`88 + 15 = 103`). The complete manifest inventory
-remains `44 + 103 + 28 = 175`. All 175 manifest paths receive a deterministic
+The 15 candidate extraction paths are a subset of the 105-path
+`bundled-optional` inventory (`90 + 15 = 105`). The complete manifest inventory
+remains `44 + 105 + 28 = 177`. All 177 manifest paths receive a deterministic
 result: an exact override in the proposal or `retain-current-layer` through the
 declared default action.
 
