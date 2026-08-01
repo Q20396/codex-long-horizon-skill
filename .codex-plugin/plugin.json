@@ -1,6 +1,6 @@
 {
   "name": "codex-long-horizon-skill",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Local-first governance and evidence workflows for long-running engineering work, with static high-stakes capability discovery.",
   "author": {
     "name": "Q20396"

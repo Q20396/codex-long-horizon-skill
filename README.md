@@ -78,14 +78,14 @@ activate a profile, install a domain pack, or grant permissions.
 
 ## Installation Status
 
-The release-state contract targets the immutable stable ref `v0.3.1` with
+The release-state contract targets the immutable stable ref `v0.3.2` with
 marketplace policy `AVAILABLE`. Before using it, independently verify the
 remote annotated tag, its peeled commit and tree, the published GitHub Release,
 and an isolated Codex marketplace resolution. Repository metadata alone is not
 proof that those external stages completed.
 
 ```bash
-codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.3.1
+codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.3.2
 ```
 
 Run the command only in a separately approved isolated workflow after the
@@ -423,7 +423,7 @@ Treat the result as advice only. Applying an update remains a separate
 backup-first action with `update_installed_skill.py`.
 
 For a customer-facing copy-paste prompt that compares installed skills with the
-published `v0.3.1` release, see [UPGRADE_GUIDE.md](UPGRADE_GUIDE.md).
+published `v0.3.2` release, see [UPGRADE_GUIDE.md](UPGRADE_GUIDE.md).
 
 ## Safe skill update self-check
 
@@ -456,7 +456,7 @@ Check the current Codex user-level installation against the immutable release:
 ```bash
 python3 scripts/skill_update_selfcheck.py \
   --installed-root ~/.codex/skills \
-  --ref v0.3.1
+  --ref v0.3.2
 ```
 
 `--skills` is restricted to the bundled supported skills:

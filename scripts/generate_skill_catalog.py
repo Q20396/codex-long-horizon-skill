@@ -58,6 +58,7 @@ REQUIRED_OPEN_SOURCE_FILES = [
     "docs/releases/v0.2.4.md",
     "docs/releases/v0.3.0.md",
     "docs/releases/v0.3.1.md",
+    "docs/releases/v0.3.2.md",
     ".codex-plugin/plugin.json",
     ".agents/plugins/marketplace.json",
 ]

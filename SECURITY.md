@@ -4,7 +4,7 @@
 
 | Line | Status | Security policy |
 | --- | --- | --- |
-| `main` / v0.3.1 release line | Supported stable and development line | Fixes land on `main`; tag, GitHub Release, Marketplace resolution, and installed update remain separate evidence stages. |
+| `main` / v0.3.2 release line | Supported stable and development line | Fixes land on `main`; tag, GitHub Release, Marketplace resolution, and installed update remain separate evidence stages. |
 | v0.3.0 tag | Historical candidate | Immutable candidate evidence only; it is not the supported stable installation ref. |
 | `release/0.2.x` / v0.2.5 | Retired maintenance line | The maintenance window ended on 2026-07-31 after v0.3.1 publication and independent replacement-install verification. No routine security or feature backports. |
 | v0.2.4 and earlier | Unsupported | Upgrade guidance or a separately approved exceptional fix is required. |

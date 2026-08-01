@@ -1,16 +1,16 @@
 {
   "skill_id": "long-horizon-engineering",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "repo": "https://github.com/Q20396/codex-long-horizon-skill",
   "path": ".agents/skills/long-horizon-engineering",
   "channel": "stable",
   "released": true,
-  "release_date": "2026-07-31",
+  "release_date": "2026-08-01",
   "risk": "reviewed",
   "summary": [
-    "Finalized the reviewed governance and catalog package as the stable v0.3.1 release state.",
-    "Kept sandbox-only, bundled-optional, and explicit-only capabilities distinct from runtime enforcement.",
-    "Retained explicit customer authorization before installation, external effects, or promotion."
+    "Corrected stable installation and upgrade guidance for the v0.3.2 patch release.",
+    "Made full validation timeout handling deterministic while retaining all required gates.",
+    "Kept local-first, descriptor-only, provider, runtime, and customer-authority boundaries unchanged."
   ],
   "requires_manual_approval": true,
   "auto_update": false
