@@ -178,6 +178,51 @@ class AIVideoProductionContractTests(unittest.TestCase):
             ],
         )
 
+    def test_capability_stack_is_context_preserving_and_default_disabled(self) -> None:
+        skill = self.read("SKILL.md")
+        catalog = self.read("references/video-skill-integration-catalog.md")
+        packet = self.read("templates/SHORT_FORM_PRODUCTION_PACKET_TEMPLATE.md")
+        self.assert_contains_all(
+            skill,
+            [
+                "video-understand",
+                "video-clip-pipeline",
+                "video-edit",
+                "video-caption-generator",
+                "video-translate",
+                "short-form-pipeline",
+                "pre-roll and post-roll context",
+                "publication *plan*, never an automatic post",
+            ],
+        )
+        self.assert_contains_all(
+            catalog,
+            [
+                "HyperFrames",
+                "Remotion",
+                "Video Use",
+                "VideoCut",
+                "Seedance 2 skill",
+                "Gen Media",
+                "ADAPT_PATTERN_ONLY",
+                "NEEDS_MANUAL_SECURITY_REVIEW",
+                "UNVERIFIED_NAME",
+                "no background watch, sync, memory, telemetry, or automatic update",
+                "no automatic rendering, upload, or publication",
+            ],
+        )
+        self.assert_contains_all(
+            packet,
+            [
+                "Status: `DRAFT_FOR_HUMAN_REVIEW`",
+                "Pre-roll",
+                "Post-roll",
+                "Low-confidence names / terminology / numbers",
+                "Publication authority: `HUMAN_ONLY`",
+                "Exactly one next safe action",
+            ],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
