@@ -28,6 +28,35 @@ The gate is a shared contract layer, not a lead research skill:
 The gate never approves its own output. `decision_candidate` means only that
 the required research fields are present and internally reviewable.
 
+## Research-Agent Agreement
+
+An agent may assist with a research packet: it may organize public evidence,
+explain a strategy hypothesis, produce counter-cases, and propose a
+reproducible simulation or backtest *plan*. It has no investment-decision,
+execution, account, or customer-notification authority.
+
+Use the packaged optional
+`INVESTMENT_RESEARCH_AGENT_AGREEMENT.md` before enabling an investment-research
+agent for a customer. The agreement must name the customer decision, research
+scope, allowed public-data sources, data as-of requirement, and the strategy's
+validity window. It must also state a revocation path.
+
+Network retrieval is never implicit. Before an agent obtains public market or
+macro data from the network, show the customer a one-run approval notice with
+the exact source, read-only purpose, data categories, retention plan, and
+expiry. A network approval permits retrieval of public data only. It does not
+permit uploading, pasting, synchronizing, or transferring customer materials,
+portfolio data, account information, credentials, or private research.
+
+An agent's strategy opinion is advisory. It may describe scenarios,
+assumptions, validation steps, or a proposed monitoring rule, but it must not
+be represented as a customer instruction or as an automatically reached
+investment conclusion. A strategy cannot become active merely because the
+agent produced it: the customer must separately approve its scope and expiry.
+The customer may revoke the agreement at any time; revocation ends future
+research-agent use and any permitted network retrieval. No entry sends a
+notification automatically.
+
 ## Gate States
 
 - `research_only`: early observations or hypotheses that need more work.
