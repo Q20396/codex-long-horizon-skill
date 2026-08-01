@@ -1,0 +1,14 @@
+{
+  "schema_version": "1",
+  "keys": [
+    {
+      "fingerprint": "1039EC488BE088997C1740D9ED0002B3562F2F59",
+      "algorithm": "ed25519",
+      "public_key": "release-signing-keys/Q20396-LHE-Release-Signing.asc",
+      "purpose": "annotated LHE release tags",
+      "status": "active",
+      "valid_from": "2026-08-01",
+      "expires": "2027-08-01"
+    }
+  ]
+}
