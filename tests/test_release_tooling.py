@@ -87,9 +87,22 @@ def write_fake_codex(bin_dir: Path) -> Path:
 
             def source_version(source):
                 try:
-                    return json.loads((Path(source) / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8"))["version"]
-                except (OSError, KeyError, TypeError, json.JSONDecodeError):
+                    marketplace = json.loads((Path(source) / ".agents" / "plugins" / "marketplace.json").read_text(encoding="utf-8"))
+                    ref = marketplace["plugins"][0]["source"]["ref"]
+                    if isinstance(ref, str) and ref.startswith("v"):
+                        return ref[1:]
+                    raise ValueError("marketplace ref is missing")
+                except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError):
                     return "0.5.0"
+
+            def install_marketplace_snapshot(source, destination, version):
+                if destination.exists():
+                    shutil.rmtree(destination)
+                shutil.copytree(source, destination, ignore=shutil.ignore_patterns(".git", "__pycache__"))
+                manifest_path = destination / ".codex-plugin" / "plugin.json"
+                manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+                manifest["version"] = version
+                manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
 
             def supports_list():
                 return scenario in {
@@ -209,12 +222,7 @@ def write_fake_codex(bin_dir: Path) -> Path:
                 if scenario == "json_invalid_registered_root":
                     installed_root = codex_home / "invalid-marketplace"
                 if scenario != "no_evidence":
-                    if scenario in {"snapshot_source_only", "snapshot_plus_install"}:
-                        if installed_root.exists():
-                            shutil.rmtree(installed_root)
-                        shutil.copytree(source, installed_root, ignore=shutil.ignore_patterns(".git", "__pycache__"))
-                    else:
-                        installed_root.mkdir(parents=True, exist_ok=True)
+                    install_marketplace_snapshot(Path(source), installed_root, version)
                     save_state({"name": marketplace_name, "source": source, "installedRoot": str(installed_root), "version": version})
                 if "--json" in argv:
                     data = {"marketplaceName": marketplace_name, "installedRoot": str(installed_root)}
@@ -228,7 +236,7 @@ def write_fake_codex(bin_dir: Path) -> Path:
                     print("fake marketplace list failed", file=sys.stderr)
                     raise SystemExit(8)
                 state = load_state()
-                root = state.get("source", "")
+                root = state.get("installedRoot", "")
                 if scenario == "json_wrong_root":
                     wrong = codex_home / "wrong-marketplace"
                     wrong.mkdir(parents=True, exist_ok=True)
@@ -252,7 +260,7 @@ def write_fake_codex(bin_dir: Path) -> Path:
                     print("fake plugin add failed", file=sys.stderr)
                     raise SystemExit(9)
                 state = load_state()
-                source = Path(state["source"])
+                source = Path(state.get("installedRoot") or state["source"])
                 version = state.get("version", "0.5.0")
                 installed = codex_home / "plugins" / plugin_name
                 if scenario in {"plugin_source_only", "snapshot_source_only"}:
