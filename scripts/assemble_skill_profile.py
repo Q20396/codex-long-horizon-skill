@@ -9,7 +9,9 @@ required before copying into an empty, caller-specified output directory.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import os
 import re
 import shutil
 import sys
@@ -24,6 +26,7 @@ REFERENCE_RE = re.compile(
     r"(?:references|templates|prompt-styles)/[A-Za-z0-9_.-]+\.md"
 )
 OPTIONAL_REFERENCE_MARKER = "<!-- profile-optional-reference -->"
+GIT_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 
 
 class ProfileError(ValueError):
@@ -167,6 +170,68 @@ def validate_output_root(output_root: Path) -> Path:
     return output
 
 
+def validate_receipt_file(receipt_file: Path, output_root: Path) -> Path:
+    """Accept one explicit, new receipt path outside source and artifact trees."""
+    receipt = receipt_file.expanduser().resolve(strict=False)
+    source = ROOT.resolve(strict=True)
+    output = output_root.expanduser().resolve(strict=False)
+    if receipt.exists():
+        raise ProfileError("receipt file must not already exist")
+    if receipt.parent == source or source in receipt.parents:
+        raise ProfileError("receipt file must be outside the source repository")
+    if receipt == output or output in receipt.parents or receipt in output.parents:
+        raise ProfileError("receipt file must be outside the assembled artifact")
+    if not receipt.parent.is_dir() or receipt.parent.is_symlink():
+        raise ProfileError("receipt parent must be an existing non-symlink directory")
+    return receipt
+
+
+def validate_git_identity(value: str | None, label: str) -> str:
+    if not isinstance(value, str) or not GIT_SHA_RE.fullmatch(value):
+        raise ProfileError(f"{label} must be an explicit full lowercase git SHA")
+    return value
+
+
+def artifact_receipt(
+    stage: Path, paths: list[str], profile: str, source_commit: str, source_tree: str
+) -> dict[str, object]:
+    """Return stable artifact evidence using only normalized relative data."""
+    files: list[dict[str, object]] = []
+    tree = hashlib.sha256()
+    for relative in sorted(paths):
+        path = stage / relative
+        if path.is_symlink() or not path.is_file():
+            raise ProfileError(f"assembled artifact contains non-regular file: {relative}")
+        content_sha256 = hashlib.sha256(path.read_bytes()).hexdigest()
+        mode = path.stat().st_mode & 0o777
+        entry = {
+            "path": relative,
+            "sha256": content_sha256,
+            "size": path.stat().st_size,
+            "mode": f"{mode:04o}",
+        }
+        files.append(entry)
+        tree.update(relative.encode("utf-8"))
+        tree.update(b"\0")
+        tree.update(entry["mode"].encode("ascii"))
+        tree.update(b"\0")
+        tree.update(content_sha256.encode("ascii"))
+        tree.update(b"\n")
+    manifest_sha256 = hashlib.sha256(MANIFEST_PATH.read_bytes()).hexdigest()
+    return {
+        "schema_version": "1",
+        "profile": profile,
+        "source_commit": source_commit,
+        "source_tree": source_tree,
+        "package_manifest_sha256": manifest_sha256,
+        "files": files,
+        "artifact_tree_sha256": tree.hexdigest(),
+        "limitations": [
+            "Receipt is artifact evidence only; it does not authorize installation or plugin distribution."
+        ],
+    }
+
+
 def render_markdown(text: str, selected: set[str], profile: str) -> str:
     """Replace unavailable optional links in an assembled profile entrypoint."""
     rendered: list[str] = []
@@ -191,21 +256,39 @@ def render_markdown(text: str, selected: set[str], profile: str) -> str:
                 )
             line = line.replace(
                 token,
-                f"`optional extension not included in profile {profile}`",
+                "`optional extension not included in this assembled profile`",
             )
         rendered.append(line.replace(f" {OPTIONAL_REFERENCE_MARKER}", ""))
     return "".join(rendered)
 
 
-def assemble(paths: list[str], output_root: Path, profile: str) -> None:
+def assemble(
+    paths: list[str],
+    output_root: Path,
+    profile: str,
+    *,
+    source_commit: str | None = None,
+    source_tree: str | None = None,
+    receipt_file: Path | None = None,
+) -> dict[str, object] | None:
     output = validate_output_root(output_root)
+    receipt = (
+        validate_receipt_file(receipt_file, output)
+        if receipt_file is not None
+        else None
+    )
+    if receipt is not None:
+        source_commit = validate_git_identity(source_commit, "source commit")
+        source_tree = validate_git_identity(source_tree, "source tree")
     selected = lhe_selected_relative_paths(paths)
     output.parent.mkdir(parents=True, exist_ok=True)
     stage = Path(tempfile.mkdtemp(prefix=".profile-assembly-", dir=output.parent))
+    receipt_stage: Path | None = None
+    receipt_published = False
     try:
         for relative in paths:
             source = source_path(relative)
-            if not source.is_file():
+            if source.is_symlink() or not source.is_file():
                 raise ProfileError(f"selected source path is missing: {relative}")
             target = stage / relative
             target.parent.mkdir(parents=True, exist_ok=True)
@@ -219,10 +302,30 @@ def assemble(paths: list[str], output_root: Path, profile: str) -> None:
                 shutil.copystat(source, target)
             else:
                 shutil.copy2(source, target)
+        receipt_data = None
+        if receipt is not None:
+            receipt_data = artifact_receipt(
+                stage, paths, profile, source_commit, source_tree
+            )
+            descriptor, receipt_name = tempfile.mkstemp(
+                prefix=".profile-receipt-", dir=receipt.parent
+            )
+            receipt_stage = Path(receipt_name)
+            with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+                json.dump(receipt_data, handle, indent=2, sort_keys=True)
+                handle.write("\n")
         if output.exists():
             output.rmdir()
+        if receipt is not None and receipt_stage is not None:
+            receipt_stage.replace(receipt)
+            receipt_published = True
         stage.replace(output)
+        return receipt_data
     except Exception:
+        if receipt_stage is not None and receipt_stage.exists():
+            receipt_stage.unlink()
+        if receipt_published and receipt is not None and receipt.exists():
+            receipt.unlink()
         shutil.rmtree(stage, ignore_errors=True)
         raise
 
@@ -231,6 +334,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--profile", required=True)
     parser.add_argument("--output-root", type=Path)
+    parser.add_argument("--receipt-file", type=Path)
+    parser.add_argument("--source-commit")
+    parser.add_argument("--source-tree")
     parser.add_argument("--apply", action="store_true")
     return parser.parse_args(argv)
 
@@ -242,6 +348,14 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     if args.output_root is not None and not args.apply:
         print("ERROR: --output-root requires --apply", file=sys.stderr)
+        return 2
+    if args.receipt_file is not None and not args.apply:
+        print("ERROR: --receipt-file requires --apply", file=sys.stderr)
+        return 2
+    if args.receipt_file is not None and (
+        args.source_commit is None or args.source_tree is None
+    ):
+        print("ERROR: --receipt-file requires --source-commit and --source-tree", file=sys.stderr)
         return 2
     try:
         paths = selected_paths(load_manifest(), args.profile)
@@ -257,9 +371,18 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         if args.apply:
             assert args.output_root is not None
-            assemble(paths, args.output_root, args.profile)
+            receipt = assemble(
+                paths,
+                args.output_root,
+                args.profile,
+                source_commit=args.source_commit,
+                source_tree=args.source_tree,
+                receipt_file=args.receipt_file,
+            )
             result["applied"] = True
             result["output_root"] = str(args.output_root.expanduser().resolve())
+            if receipt is not None:
+                result["artifact_tree_sha256"] = receipt["artifact_tree_sha256"]
         print(json.dumps(result, indent=2, sort_keys=True))
         return 0
     except ProfileError as error:
