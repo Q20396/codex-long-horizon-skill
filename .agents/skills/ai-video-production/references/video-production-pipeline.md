@@ -86,6 +86,28 @@ client names, private documents, screenshots, contracts, legal evidence,
 financial details, family information, and confidential research out of public
 or reusable prompts unless the user explicitly approves the exact content.
 
+## Step 4A: Long-Form Footage Analysis And Context-Preserving Clips
+
+When an approved source video is in scope, start with a `video-understand`
+draft instead of immediately cutting it. Record only the required review
+metadata:
+
+- source identifier and approved read boundary
+- timestamped topic, scene, speaker, and uncertainty map
+- scene-change and silence observations when a separately approved local
+  runtime provides them
+- copyright, privacy, factual-claim, and active-content review flags
+
+Then use `video-clip-pipeline` to make *candidate groups*, not isolated quote
+harvesting. For every candidate, record an in-point, out-point, minimum
+pre-roll, minimum post-roll, topic transition, intended audience, narrative
+reason, and `HUMAN_REVIEW_REQUIRED` status. A strong sentence without its
+premise or conclusion is a rejected clip candidate.
+
+This stage is planning-only. It does not scan a media folder, transcribe,
+create proxy files, write an EDL, or render clips unless those effects have
+their own explicit runtime approval.
+
 ## Step 5: Script
 
 Write a script that fits the platform and duration.
@@ -223,6 +245,15 @@ Document export settings:
 - Caption/subtitle output
 - Thumbnail or cover
 - Filename convention
+
+For an approved short-form package, also include:
+
+- source clip IDs and their context boundaries
+- EDL revision and human review status
+- caption track IDs, confidence flags, and spot-check result
+- translation track IDs, glossary version, and language-review result
+- platform-safe area, aspect ratio, duration, and accessibility requirements
+- explicit statement: `publication_authority: HUMAN_ONLY`
 
 ## Step 13: Optional Publish Plan
 

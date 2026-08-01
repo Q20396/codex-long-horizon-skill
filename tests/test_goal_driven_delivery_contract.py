@@ -113,7 +113,7 @@ class GoalDrivenDeliveryContractTests(unittest.TestCase):
         self.assertEqual(len(optional), 101)
         self.assertEqual(
             sum(len(item["paths"]) for item in manifest["separate_skills"]),
-            26,
+            28,
         )
 
         checker = load_module("goal_delivery_checker", CHECKER)
@@ -126,7 +126,7 @@ class GoalDrivenDeliveryContractTests(unittest.TestCase):
             classification["source_manifest_sha256"],
             hashlib.sha256(MANIFEST.read_bytes()).hexdigest(),
         )
-        self.assertEqual(classification["summary"]["manifest_paths_reviewed"], 170)
+        self.assertEqual(classification["summary"]["manifest_paths_reviewed"], 172)
         self.assertEqual(classification["summary"]["core_retained"], 43)
         self.assertEqual(
             classification["summary"]["bundled_optional_retained"],
@@ -138,7 +138,7 @@ class GoalDrivenDeliveryContractTests(unittest.TestCase):
         )
         self.assertEqual(
             classification["summary"]["existing_separate_skill_paths_retained"],
-            26,
+            28,
         )
 
         presentation = json.loads(PRESENTATION.read_text(encoding="utf-8"))
