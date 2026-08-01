@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0",
+  "scope": ".agents/skills/long-horizon-engineering/scripts/*.py",
+  "scripts": {
+    "append_project_memory.py": {"network": "none", "writes": ["approved-target"], "deletes": [], "external_commands": [], "requires_apply_flag": true, "requires_human_confirmation": true},
+    "audit_external_skill_candidate.py": {"network": "none", "writes": [], "deletes": [], "external_commands": [], "requires_apply_flag": false, "requires_human_confirmation": false},
+    "audit_skill_descriptions.py": {"network": "none", "writes": [], "deletes": [], "external_commands": [], "requires_apply_flag": false, "requires_human_confirmation": false},
+    "audit_skill_safety.py": {"network": "none", "writes": [], "deletes": [], "external_commands": [], "requires_apply_flag": false, "requires_human_confirmation": false},
+    "check_for_updates.py": {"network": "explicit-only", "writes": ["temp"], "deletes": ["temp"], "external_commands": ["git"], "requires_apply_flag": false, "requires_human_confirmation": false},
+    "check_skill_package.py": {"network": "none", "writes": [], "deletes": [], "external_commands": [], "requires_apply_flag": false, "requires_human_confirmation": false},
+    "compute_frontier.py": {"network": "none", "writes": [], "deletes": [], "external_commands": [], "requires_apply_flag": false, "requires_human_confirmation": false},
+    "doctor.py": {"network": "none", "writes": [], "deletes": [], "external_commands": [], "requires_apply_flag": false, "requires_human_confirmation": false},
+    "github_skill_scan.py": {"network": "explicit-only", "writes": ["approved-target"], "deletes": [], "external_commands": ["gh"], "requires_apply_flag": false, "requires_human_confirmation": false},
+    "manage_skill_lifecycle.py": {"network": "none", "writes": ["approved-target"], "deletes": [], "external_commands": [], "requires_apply_flag": true, "requires_human_confirmation": false},
+    "scan_top_related_skills.py": {"network": "explicit-only", "writes": ["approved-target"], "deletes": [], "external_commands": ["gh"], "requires_apply_flag": false, "requires_human_confirmation": false},
+    "score_skill_candidate.py": {"network": "none", "writes": [], "deletes": [], "external_commands": [], "requires_apply_flag": false, "requires_human_confirmation": false},
+    "selfcheck_installed_skill.py": {"network": "explicit-only", "writes": ["temp"], "deletes": ["temp"], "external_commands": ["git"], "requires_apply_flag": false, "requires_human_confirmation": false},
+    "test_expected_triggers.py": {"network": "none", "writes": [], "deletes": [], "external_commands": [], "requires_apply_flag": false, "requires_human_confirmation": false},
+    "update_installed_skill.py": {"network": "none", "writes": ["approved-target", "backup", "staging"], "deletes": ["staging", "approved-target"], "external_commands": ["git"], "requires_apply_flag": true, "requires_human_confirmation": false},
+    "update_task_log.py": {"network": "none", "writes": ["approved-target"], "deletes": [], "external_commands": [], "requires_apply_flag": true, "requires_human_confirmation": true},
+    "validate_json_canvas.py": {"network": "none", "writes": [], "deletes": [], "external_commands": [], "requires_apply_flag": false, "requires_human_confirmation": false}
+  },
+  "limitations": [
+    "This manifest is static contract evidence, not host-enforced sandboxing or execution authority.",
+    "A declaration of explicit-only network does not authorize a network call."
+  ]
+}
