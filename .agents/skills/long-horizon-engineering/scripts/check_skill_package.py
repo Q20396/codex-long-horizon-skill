@@ -120,6 +120,7 @@ INSTALLED_REQUIRED_FILES = [
     ".agents/skills/long-horizon-engineering/references/large-migration-playbook.md",
     ".agents/skills/long-horizon-engineering/references/missing-capability-skill-discovery.md",
     ".agents/skills/long-horizon-engineering/references/multi-perspective-financial-research.md",
+    ".agents/skills/long-horizon-engineering/references/multi-perspective-financial-research.contract.json",
     ".agents/skills/long-horizon-engineering/references/notebook-analysis-protocol.md",
     ".agents/skills/long-horizon-engineering/references/obsidian-knowledge-workflow.md",
     ".agents/skills/long-horizon-engineering/references/personal-workflow-review.md",

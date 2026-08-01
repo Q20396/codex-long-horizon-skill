@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "capability": "multi-perspective-financial-research",
+  "mode": "static_research_packet",
+  "activation": "explicit-only",
+  "package_layer": "bundled-optional",
+  "default_network": "disabled",
+  "one_run_public_data_approval_required": true,
+  "account_access": "forbidden",
+  "credential_access": "forbidden",
+  "customer_data_upload": "forbidden",
+  "order_generation": "forbidden",
+  "trade_execution": "forbidden",
+  "background_monitoring": "forbidden",
+  "external_notification": "forbidden",
+  "persistent_memory": "forbidden",
+  "human_decision_required": true,
+  "limitations": [
+    "Static contract evidence is not host-enforced isolation.",
+    "A one-run approval never permits customer-data upload or financial execution.",
+    "Research output is not investment advice."
+  ]
+}
