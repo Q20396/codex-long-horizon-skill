@@ -847,6 +847,23 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.assertIn("git verify-tag <tag>", normalized)
         self.assertIn("do not rewrite an existing immutable tag", normalized)
 
+    def test_trusted_release_signing_key_registry_is_public_and_bounded(self) -> None:
+        registry_path = ROOT / "docs" / "maintainers" / "release-signing-keys.json"
+        registry = json.loads(registry_path.read_text(encoding="utf-8"))
+        self.assertEqual("1", registry["schema_version"])
+        self.assertEqual(1, len(registry["keys"]))
+        key = registry["keys"][0]
+        self.assertEqual("1039EC488BE088997C1740D9ED0002B3562F2F59", key["fingerprint"])
+        self.assertEqual("ed25519", key["algorithm"])
+        self.assertEqual("active", key["status"])
+        self.assertEqual("2027-08-01", key["expires"])
+        self.assertFalse(Path(key["public_key"]).is_absolute())
+        armored_key = registry_path.parent / key["public_key"]
+        text = armored_key.read_text(encoding="utf-8")
+        self.assertTrue(text.startswith("-----BEGIN PGP PUBLIC KEY BLOCK-----"))
+        self.assertIn("-----END PGP PUBLIC KEY BLOCK-----", text)
+        self.assertNotIn("PRIVATE KEY", text)
+
     def test_release_docs_record_action_and_security_provenance(self) -> None:
         checklist = (
             ROOT / "docs" / "maintainers" / "release-checklist.md"
