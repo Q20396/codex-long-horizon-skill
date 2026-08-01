@@ -59,6 +59,40 @@ class LocalVoiceToolSandboxContractTests(unittest.TestCase):
             ],
         )
 
+    def test_voice_companion_profile_is_descriptor_only_and_permissioned(self) -> None:
+        reference = self.read(REFERENCE)
+        template = self.read(TEMPLATE)
+        self.assert_contains_all(
+            reference,
+            [
+                "## Voice Companion Profile",
+                "`DESCRIPTOR_ONLY`",
+                "`PUSH_TO_TALK_ONLY`",
+                "cannot start a listener, record audio, retain a transcript, call a network service",
+                "Network or provider access",
+                "Microphone listening or capture",
+                "Conversation memory",
+                "Voice cloning or voice imitation",
+                "Named-person personality imitation",
+                "Approval for a preset voice is not consent to clone or imitate a person.",
+                "None is implied by a voice-companion request.",
+            ],
+        )
+        self.assert_contains_all(
+            template,
+            [
+                "## Voice Companion Permission Matrix",
+                "Network or provider access | DENY | PENDING",
+                "Microphone listening or capture | DENY | PENDING",
+                "Conversation memory or transcript retention | DENY | PENDING",
+                "Voice cloning or voice imitation | DENY | PENDING",
+                "Named-person personality imitation | DENY | PENDING",
+                "Safe pilot interaction: `PUSH_TO_TALK_ONLY`",
+                "Background listener or wake word: NO",
+                "Speaker consent for voice imitation",
+            ],
+        )
+
     def test_template_defaults_to_no_voice_or_external_permission(self) -> None:
         text = self.read(TEMPLATE)
         self.assert_contains_all(
@@ -94,6 +128,7 @@ class LocalVoiceToolSandboxContractTests(unittest.TestCase):
         doctor = self.read(LHE / "scripts" / "doctor.py")
 
         self.assertIn("local-voice-tool-sandbox.md", skill)
+        self.assertIn("voice-companion workflow", skill)
         self.assertIn("local-voice-tool-sandbox.md", index)
         self.assert_contains_all(
             readme,
