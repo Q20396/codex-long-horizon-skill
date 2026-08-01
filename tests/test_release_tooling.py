@@ -1505,8 +1505,14 @@ class ReleaseReadinessTests(unittest.TestCase):
             "  `--confirm`.\n"
         )
         unreleased_heading = "## Unreleased\n"
-        self.assertIn(unreleased_heading, text)
-        text = text.replace(unreleased_heading, unreleased_heading + "\n" + duplicated, 1)
+        if unreleased_heading in text:
+            text = text.replace(unreleased_heading, unreleased_heading + "\n" + duplicated, 1)
+        else:
+            text = text.replace(
+                "# Changelog\n",
+                "# Changelog\n\n" + unreleased_heading + "\n" + duplicated,
+                1,
+            )
         self.changelog(repo).write_text(text, encoding="utf-8")
         result = self.run_readiness(repo, "--allow-existing-tag")
         self.assert_failed_without_traceback(result, "CHANGELOG duplicates release content under Unreleased")
