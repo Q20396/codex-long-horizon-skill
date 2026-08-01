@@ -15,6 +15,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "assemble_skill_profile.py"
+COMMIT = "a" * 40
+TREE = "b" * 40
 
 
 def load_module():
@@ -73,7 +75,7 @@ class ProfileAssemblyTests(unittest.TestCase):
             ).read_text(encoding="utf-8")
             selected = ASSEMBLER.lhe_selected_relative_paths(paths)
             self.assertNotIn(ASSEMBLER.OPTIONAL_REFERENCE_MARKER, assembled_skill)
-            self.assertIn("optional extension not included in profile core-only", assembled_skill)
+            self.assertIn("optional extension not included in this assembled profile", assembled_skill)
             self.assertEqual(
                 [],
                 [
@@ -121,6 +123,84 @@ class ProfileAssemblyTests(unittest.TestCase):
             self.assertFalse(
                 any("ai-video-production" in path for path in actual)
             )
+
+    def test_receipt_is_deterministic_binds_explicit_identity_and_omits_absolute_paths(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            outputs = (root / "first", root / "second")
+            receipts = (root / "first-receipt.json", root / "second-receipt.json")
+            payloads = []
+            for output, receipt in zip(outputs, receipts):
+                result = subprocess.run(
+                    [
+                        sys.executable, str(SCRIPT), "--profile", "local-governance-core",
+                        "--output-root", str(output), "--receipt-file", str(receipt),
+                        "--source-commit", COMMIT, "--source-tree", TREE, "--apply",
+                    ],
+                    cwd=ROOT, text=True, capture_output=True, check=False,
+                )
+                self.assertEqual(0, result.returncode, result.stderr)
+                payloads.append(json.loads(receipt.read_text(encoding="utf-8")))
+            self.assertEqual(payloads[0], payloads[1])
+            self.assertEqual(COMMIT, payloads[0]["source_commit"])
+            self.assertEqual(TREE, payloads[0]["source_tree"])
+            self.assertNotIn(str(root), json.dumps(payloads[0]))
+            paths = [entry["path"] for entry in payloads[0]["files"]]
+            self.assertEqual(sorted(paths), paths)
+            self.assertFalse(any(path.startswith("/") for path in paths))
+            self.assertFalse(any("ai-video-production" in path for path in paths))
+            self.assertFalse(any(path.startswith("sandbox/") for path in paths))
+
+    def test_equivalent_core_profiles_share_artifact_digest_but_keep_profile_identity(self) -> None:
+        manifest = ASSEMBLER.load_manifest()
+        paths = ASSEMBLER.selected_paths(manifest, "core-only")
+        self.assertEqual(paths, ASSEMBLER.selected_paths(manifest, "local-governance-core"))
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            receipts = []
+            for profile in ("core-only", "local-governance-core"):
+                output = root / profile
+                receipt = root / f"{profile}.json"
+                result = subprocess.run(
+                    [
+                        sys.executable, str(SCRIPT), "--profile", profile,
+                        "--output-root", str(output), "--receipt-file", str(receipt),
+                        "--source-commit", COMMIT, "--source-tree", TREE, "--apply",
+                    ], cwd=ROOT, text=True, capture_output=True, check=False,
+                )
+                self.assertEqual(0, result.returncode, result.stderr)
+                receipts.append(json.loads(receipt.read_text(encoding="utf-8")))
+            self.assertNotEqual(receipts[0]["profile"], receipts[1]["profile"])
+            self.assertEqual(receipts[0]["files"], receipts[1]["files"])
+            self.assertEqual(receipts[0]["artifact_tree_sha256"], receipts[1]["artifact_tree_sha256"])
+
+    def test_invalid_receipt_request_publishes_neither_artifact_nor_receipt(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            output = root / "profile"
+            receipt = root / "receipt.json"
+            result = subprocess.run(
+                [
+                    sys.executable, str(SCRIPT), "--profile", "core-only",
+                    "--output-root", str(output), "--receipt-file", str(receipt),
+                    "--source-commit", "not-a-sha", "--source-tree", TREE, "--apply",
+                ], cwd=ROOT, text=True, capture_output=True, check=False,
+            )
+            self.assertEqual(2, result.returncode)
+            self.assertFalse(output.exists())
+            self.assertFalse(receipt.exists())
+
+    def test_artifact_digest_changes_when_one_file_changes_and_captures_mode(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            stage = Path(temp)
+            path = stage / "example.txt"
+            path.write_text("first", encoding="utf-8")
+            path.chmod(0o640)
+            first = ASSEMBLER.artifact_receipt(stage, ["example.txt"], "core-only", COMMIT, TREE)
+            path.write_text("second", encoding="utf-8")
+            second = ASSEMBLER.artifact_receipt(stage, ["example.txt"], "core-only", COMMIT, TREE)
+            self.assertNotEqual(first["artifact_tree_sha256"], second["artifact_tree_sha256"])
+            self.assertEqual("0640", first["files"][0]["mode"])
 
     def test_full_profile_keeps_marked_source_text_unchanged(self) -> None:
         manifest = ASSEMBLER.load_manifest()
