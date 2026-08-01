@@ -68,7 +68,13 @@ encryption. Passing that pilot does not validate a production connector.
 
 - `local-governance-core`: default and recommended minimal profile for
   high-sensitive work. It contains the engineering governance kernel, static
-  capability catalog, and local work-packet template.
+  capability catalog, and local work-packet template. The repository provides
+  `scripts/assemble_skill_profile.py` to create a deterministic,
+  caller-chosen core artifact for controlled distribution or inspection. The
+  current marketplace plugin manifest still packages the repository skill
+  directory, so this selection is not yet a claim that marketplace installation
+  physically omits optional files. Do not treat the profile label as host
+  isolation until the marketplace artifact layout is separately validated.
 - `core-only`: compatibility alias for the same current core content.
 - `lhe-bundled`: core plus bundled optional references and templates.
 - `legacy-full`: explicit compatibility profile; includes bundled optional

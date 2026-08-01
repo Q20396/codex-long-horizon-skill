@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import importlib.util
+import hashlib
 import json
 import subprocess
 import sys
@@ -26,6 +27,16 @@ def load_module():
 
 
 ASSEMBLER = load_module()
+
+
+def tree_digest(root: Path) -> str:
+    """Return a deterministic digest of an assembled profile tree."""
+    digest = hashlib.sha256()
+    for path in sorted(item for item in root.rglob("*") if item.is_file()):
+        digest.update(str(path.relative_to(root)).encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(hashlib.sha256(path.read_bytes()).digest())
+    return digest.hexdigest()
 
 
 class ProfileAssemblyTests(unittest.TestCase):
@@ -70,6 +81,45 @@ class ProfileAssemblyTests(unittest.TestCase):
                     for reference in ASSEMBLER.REFERENCE_RE.findall(assembled_skill)
                     if reference not in selected
                 ],
+            )
+
+    def test_local_governance_core_assembly_is_deterministic_and_excludes_optional_content(self) -> None:
+        manifest = ASSEMBLER.load_manifest()
+        paths = ASSEMBLER.selected_paths(manifest, "local-governance-core")
+        optional_paths = set(
+            ASSEMBLER.selected_paths(manifest, "lhe-bundled")
+        ) - set(paths)
+        with tempfile.TemporaryDirectory() as temp:
+            first = Path(temp) / "first"
+            second = Path(temp) / "second"
+            for output in (first, second):
+                result = subprocess.run(
+                    [
+                        sys.executable,
+                        str(SCRIPT),
+                        "--profile",
+                        "local-governance-core",
+                        "--output-root",
+                        str(output),
+                        "--apply",
+                    ],
+                    cwd=ROOT,
+                    text=True,
+                    capture_output=True,
+                    check=False,
+                )
+                self.assertEqual(0, result.returncode, result.stderr)
+            self.assertEqual(tree_digest(first), tree_digest(second))
+            actual = {
+                str(path.relative_to(first))
+                for path in first.rglob("*")
+                if path.is_file()
+            }
+            self.assertEqual(set(paths), actual)
+            self.assertFalse(actual & optional_paths)
+            self.assertFalse(any(path.startswith("sandbox/") for path in actual))
+            self.assertFalse(
+                any("ai-video-production" in path for path in actual)
             )
 
     def test_full_profile_keeps_marked_source_text_unchanged(self) -> None:
