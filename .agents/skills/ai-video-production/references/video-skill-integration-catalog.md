@@ -36,6 +36,31 @@ and current terms before a future adapter proposal.
 | Seedance 2 skill | storyboard prompt structure only | `ADAPT_PATTERN_ONLY` | A third-party prompt skill is not the Seedance renderer and cannot authorize generation, account use, or paid credits. |
 | Gen Media | none | `UNVERIFIED_NAME` | The name does not yet identify one canonical open-source project, licence, or data boundary. It stays outside the catalog. |
 
+## Visual-Direction Pattern: Adapted, Not Embedded
+
+The public `taste-skill` project may be used as a source of ideas for an
+anti-generic design review, not as a dependency or a bundled capability. This
+skill embeds no `taste-skill` code, prompts, assets, templates, runtime,
+package, or automatic routing. A future source review must re-check its exact
+commit and licence before any broader proposal.
+
+What this skill adopts as an original, renderer-neutral practice is a compact
+visual direction card and a human anti-generic review:
+
+| Review area | Required question |
+| --- | --- |
+| Visual variance | Does deliberate variation support the story rather than make scenes inconsistent? |
+| Motion intensity | Does each movement reveal, connect, or emphasize something the viewer needs? |
+| Information density | Can the intended viewer understand this shot at its actual duration and platform size? |
+| Visual evidence | Does the scene add a concrete metaphor, demonstration, or context beyond its caption? |
+| Distinctiveness | Are generic effects, stock-looking layouts, or copied brand cues being used as a substitute for an idea? |
+| Rights and truthfulness | Are references authorised, claims supportable, and private material excluded from reusable artifacts? |
+
+The review is neither an aesthetic guarantee nor a reason to override brand,
+accessibility, factual accuracy, privacy, copyright, source, or human approval
+boundaries. Its only permitted output is a draft revision request or
+`DRAFT_FOR_HUMAN_REVIEW` disposition.
+
 ## Default-Disabled Adapter Contract
 
 A future adapter for any candidate must be a separately reviewed package with:

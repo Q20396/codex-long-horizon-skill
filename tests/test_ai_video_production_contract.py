@@ -223,6 +223,45 @@ class AIVideoProductionContractTests(unittest.TestCase):
             ],
         )
 
+    def test_visual_direction_gate_is_original_review_not_external_runtime(self) -> None:
+        skill = self.read("SKILL.md")
+        catalog = self.read("references/video-skill-integration-catalog.md")
+        packet = self.read("templates/SHORT_FORM_PRODUCTION_PACKET_TEMPLATE.md")
+        self.assert_contains_all(
+            skill,
+            [
+                "Visual Direction And Anti-Generic Review Gate",
+                "visual variance",
+                "motion intensity",
+                "information density",
+                "does not install, invoke, or copy an external skill",
+                "Do not copy another creator's protected visual identity",
+                "Brand rules, accessibility, factual accuracy, rights, privacy, and the source boundary always override",
+            ],
+        )
+        self.assert_contains_all(
+            catalog,
+            [
+                "Visual-Direction Pattern: Adapted, Not Embedded",
+                "embeds no `taste-skill` code, prompts, assets, templates, runtime, package, or automatic routing",
+                "Visual evidence",
+                "Rights and truthfulness",
+                "Its only permitted output is a draft revision request or `DRAFT_FOR_HUMAN_REVIEW` disposition",
+            ],
+        )
+        self.assert_contains_all(
+            packet,
+            [
+                "## Visual Direction Card",
+                "Visual variance: Restrained / Balanced / Expressive",
+                "Motion intensity: Still-led / Purposeful / Energetic",
+                "Information density: Light / Focused / Dense",
+                "## Anti-Generic Review",
+                "Does every scene add visual evidence beyond its caption?",
+                "Reviewer disposition: `DRAFT_FOR_HUMAN_REVIEW`",
+            ],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
