@@ -70,7 +70,7 @@ jobs:
           python3 scripts/test_fresh_install.py --skip-codex-cli
           python3 scripts/check_release_readiness.py \
             --version 0.4.0 \
-            --release-state candidate \
+            --release-state final \
             --allow-existing-tag
           python3 scripts/test_skill_update_selfcheck.py
           python3 scripts/test_assemble_skill_profile.py
@@ -198,7 +198,7 @@ jobs:
           "$RUNNER_TEMP/lhe-formal-schema-venv/bin/python" \
             scripts/check_release_readiness.py \
             --version 0.4.0 \
-            --release-state candidate \
+            --release-state final \
             --allow-existing-tag \
             --formal-schema-pip-report "$RUNNER_TEMP/formal-schema-pip-report.json" \
             --formal-schema-acquisition-result "$RUNNER_TEMP/formal-schema-evidence/acquisition-receipt.json" \
