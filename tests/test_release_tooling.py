@@ -836,6 +836,17 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.assertNotIn("live-recomputed acquisition", combined)
         self.assertNotIn("rechecks the acquisition receipt against", combined)
 
+    def test_release_checklist_requires_signed_future_tags_without_rewriting_history(self) -> None:
+        checklist = (
+            ROOT / "docs" / "maintainers" / "release-checklist.md"
+        ).read_text(encoding="utf-8")
+        normalized = " ".join(checklist.split()).lower()
+        self.assertIn("starting with the next release after `v0.4.1`", normalized)
+        self.assertIn("cryptographically signed", normalized)
+        self.assertIn("trusted signing-key fingerprint", normalized)
+        self.assertIn("git verify-tag <tag>", normalized)
+        self.assertIn("do not rewrite an existing immutable tag", normalized)
+
     def test_release_docs_record_action_and_security_provenance(self) -> None:
         checklist = (
             ROOT / "docs" / "maintainers" / "release-checklist.md"
