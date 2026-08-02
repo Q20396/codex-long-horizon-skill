@@ -15,6 +15,9 @@ FORBIDDEN_EFFECTS = [
     "account_access",
     "credential_access",
     "customer_data_upload",
+    "portfolio_data_access",
+    "order_generation",
+    "trade_instruction_generation",
     "trade_execution",
     "background_monitoring",
     "external_notification",
@@ -28,7 +31,14 @@ class ResearchTaskEnvelopeContractTests(unittest.TestCase):
 
     def test_contract_is_static_ephemeral_and_non_executing(self) -> None:
         properties = self.schema["properties"]
-        self.assertEqual("1.0.0", properties["schema_version"]["const"])
+        self.assertEqual("1.1.0", properties["schema_version"]["const"])
+        self.assertEqual(
+            "urn:codex-long-horizon-skill:schema:research-task-envelope:1.1.0",
+            self.schema["$id"],
+        )
+        self.assertEqual(["string", "null"], properties["as_of"]["type"])
+        self.assertEqual("date-time", properties["as_of"]["format"])
+        self.assertEqual("(?:Z|[+-][0-9]{2}:[0-9]{2})$", properties["as_of"]["pattern"])
         self.assertEqual("NOT_GRANTED", properties["authorization_state"]["const"])
         self.assertEqual(
             {"NOT_IMPLEMENTED", "OUT_OF_SCOPE"},
@@ -39,6 +49,8 @@ class ResearchTaskEnvelopeContractTests(unittest.TestCase):
         self.assertEqual("NONE", properties["external_action"]["const"])
         self.assertNotIn("allowed_effects", properties)
         self.assertNotIn("granted_effects", properties)
+        self.assertNotIn("contract_validation", properties)
+        self.assertNotIn("host_enforcement", properties)
 
     def test_task_types_and_portfolio_descriptor_boundary_are_declared(self) -> None:
         task_types = set(self.schema["properties"]["task_type"]["enum"])
@@ -55,13 +67,41 @@ class ResearchTaskEnvelopeContractTests(unittest.TestCase):
         for forbidden_field in ("holdings", "account_identifier", "cost_basis", "tax_information", "portfolio_weights", "broker", "credentials"):
             self.assertNotIn(forbidden_field, self.schema["properties"])
 
+    def test_each_supported_task_has_a_synthetic_fixture_with_its_own_subject_type(self) -> None:
+        expected = {
+            "single_security": "listed_security",
+            "peer_set": "listed_security",
+            "sector": "sector",
+            "index": "index",
+            "etf": "etf",
+            "strategy_research": "strategy",
+        }
+        records = self.cases["base_records"]
+        self.assertEqual(set(expected) | {"portfolio_descriptor"}, set(records))
+        for task_type, subject_type in expected.items():
+            with self.subTest(task_type=task_type):
+                record = records[task_type]
+                self.assertEqual(task_type, record["task_type"])
+                self.assertEqual("SUPPORTED_STATIC_ONLY", record["support_status"])
+                self.assertTrue(record["subjects"])
+                self.assertTrue(
+                    all(subject["subject_type"] == subject_type for subject in record["subjects"])
+                )
+
+        self.assertEqual(2, len(records["peer_set"]["subjects"]))
+
     def test_effect_request_is_not_an_authorization(self) -> None:
         properties = self.schema["properties"]
         self.assertEqual(FORBIDDEN_EFFECTS, properties["forbidden_effects"]["const"])
         self.assertEqual("required_for_effect", properties["grant_requirement"]["const"])
         self.assertIsNone(properties["grant_ref"]["const"])
         self.assertTrue(self.cases["schema_contract_only"])
+        self.assertEqual("PASS", self.cases["contract_validation"])
+        self.assertEqual("NOT_IMPLEMENTED", self.cases["semantic_validation"])
         self.assertEqual("NOT_IMPLEMENTED", self.cases["runtime_execution"])
+        self.assertEqual("NOT_PROVEN", self.cases["host_enforcement"])
+        self.assertEqual("NOT_PERFORMED", self.cases["financial_data_access"])
+        self.assertEqual("NONE", self.cases["external_action"])
 
     def test_single_security_fixture_uses_composite_identity(self) -> None:
         subject = self.cases["base_records"]["single_security"]["subjects"][0]
