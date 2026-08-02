@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:lhe:research-review-package:1.0.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "package_id", "request_id", "purpose", "synthetic", "fixture_only", "persistence", "subject_identity_digest", "requested_effects_digest", "source_scope_digest", "input_contract_digest", "evidence_set_digest", "claim_set_digest", "digest_basis", "digest_computation", "authenticity_verification", "evidence_record_refs", "supporting_claim_refs", "strongest_counter_claim_refs", "assumption_claim_refs", "conflict_claim_refs", "unknown_claim_refs", "falsification_claim_refs", "valuation_material", "review", "customer_review_status", "financial_data_network_access", "runtime_execution", "host_enforcement", "external_action", "investment_authorization", "trade_authorization"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "package_id": {"type": "string", "pattern": "^SYNTHETIC-REVIEW-PACKAGE-[0-9]+$"},
+    "request_id": {"type": "string", "pattern": "^RTE-SYNTHETIC-[0-9]+$"},
+    "purpose": {"const": "RESEARCH_REVIEW_ONLY"},
+    "synthetic": {"const": true},
+    "fixture_only": {"const": true},
+    "persistence": {"const": "ephemeral"},
+    "subject_identity_digest": {"$ref": "#/$defs/digest"},
+    "requested_effects_digest": {"$ref": "#/$defs/digest"},
+    "source_scope_digest": {"$ref": "#/$defs/digest"},
+    "input_contract_digest": {"$ref": "#/$defs/digest"},
+    "evidence_set_digest": {"$ref": "#/$defs/digest"},
+    "claim_set_digest": {"$ref": "#/$defs/digest"},
+    "digest_basis": {"const": "SYNTHETIC_FIXTURE"},
+    "digest_computation": {"const": "NOT_IMPLEMENTED"},
+    "authenticity_verification": {"const": "NOT_PERFORMED"},
+    "evidence_record_refs": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/evidenceReference"}},
+    "supporting_claim_refs": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/claimReference"}},
+    "strongest_counter_claim_refs": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/claimReference"}},
+    "assumption_claim_refs": {"type": "array", "items": {"$ref": "#/$defs/claimReference"}},
+    "conflict_claim_refs": {"type": "array", "items": {"$ref": "#/$defs/claimReference"}},
+    "unknown_claim_refs": {"type": "array", "items": {"$ref": "#/$defs/claimReference"}},
+    "falsification_claim_refs": {"type": "array", "items": {"$ref": "#/$defs/claimReference"}},
+    "valuation_material": {"$ref": "#/$defs/valuationMaterial"},
+    "review": {"$ref": "#/$defs/review"},
+    "customer_review_status": {"enum": ["DRAFT_FOR_REVIEW", "MORE_EVIDENCE_NEEDED", "READY_FOR_CUSTOMER_REVIEW", "BLOCKED"]},
+    "financial_data_network_access": {"const": "NOT_PERFORMED"},
+    "runtime_execution": {"const": "NOT_IMPLEMENTED"},
+    "host_enforcement": {"const": "NOT_PROVEN"},
+    "external_action": {"const": "NONE"},
+    "investment_authorization": {"const": "NONE"},
+    "trade_authorization": {"const": "NONE"}
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "claimReference": {"type": "object", "additionalProperties": false, "required": ["claim_id", "relevance"], "properties": {"claim_id": {"type": "string", "pattern": "^SYNTHETIC-CLAIM-[0-9]+$"}, "relevance": {"const": "MATERIAL"}}},
+    "evidenceReference": {"type": "object", "additionalProperties": false, "required": ["evidence_record_id", "relevance"], "properties": {"evidence_record_id": {"type": "string", "pattern": "^SYNTHETIC-EVIDENCE-[0-9]+$"}, "relevance": {"const": "MATERIAL"}}},
+    "review": {"type": "object", "additionalProperties": false, "required": ["adversarial_review", "independent_review"], "properties": {"adversarial_review": {"const": "NOT_PERFORMED"}, "independent_review": {"const": "NOT_PERFORMED"}}},
+    "valuationMaterial": {
+      "oneOf": [
+        {"type": "object", "additionalProperties": false, "required": ["status", "provenance", "calculation_replay", "calculation_receipt_digest"], "properties": {"status": {"const": "NOT_PROVIDED"}, "provenance": {"const": "NONE"}, "calculation_replay": {"const": "NOT_APPLICABLE"}, "calculation_receipt_digest": {"const": null}}},
+        {"type": "object", "additionalProperties": false, "required": ["status", "provenance", "calculation_replay", "calculation_receipt_digest"], "properties": {"status": {"const": "EXTERNALLY_SUPPLIED_UNVERIFIED"}, "provenance": {"const": "USER_SUPPLIED"}, "calculation_replay": {"const": "EXTERNALLY_SUPPLIED_UNVERIFIED"}, "calculation_receipt_digest": {"const": null}}}
+      ]
+    }
+  }
+}
