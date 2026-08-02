@@ -168,6 +168,7 @@ SCHEMA_INVENTORY = (
     "base-experiment-contract.schema.json",
     "candidate-pattern.schema.json",
     "candidate-state.schema.json",
+    "capability-descriptor.schema.json",
     "capability-profile-doctor.schema.json",
     "capability-family.schema.json",
     "decision-record.schema.json",
@@ -175,6 +176,7 @@ SCHEMA_INVENTORY = (
     "evaluation-run.schema.json",
     "evidence-bound-multi-perspective-research.schema.json",
     "evidence-ledger.schema.json",
+    "execution-receipt.schema.json",
     "experiment.schema.json",
     "gate-result.schema.json",
     "investment-decision-gate.schema.json",
@@ -188,7 +190,9 @@ SCHEMA_INVENTORY = (
     "public-equity-research-sandbox.schema.json",
     "registry.schema.json",
     "research-task-envelope.schema.json",
+    "runtime-observation.schema.json",
     "result.schema.json",
+    "task-grant-record.schema.json",
 )
 FIXTURE_VALIDATED_SCHEMAS = {
     "decision-record.schema.json",
@@ -223,6 +227,17 @@ SYNTAX_ONLY_SCHEMAS["local-case-evidence-provider.schema.json"] = (
     "dependency-free contract tests; this formal gate checks Draft 2020-12 "
     "syntax, dialect, identity, and reference integrity."
 )
+for _static_record_schema in (
+    "capability-descriptor.schema.json",
+    "runtime-observation.schema.json",
+    "task-grant-record.schema.json",
+    "execution-receipt.schema.json",
+):
+    SYNTAX_ONLY_SCHEMAS[_static_record_schema] = (
+        "Synthetic static-record fixtures are checked by dependency-free contract "
+        "tests; this formal gate checks Draft 2020-12 syntax, dialect, identity, "
+        "and reference integrity."
+    )
 PYPI_ARTIFACT_HOSTS = {"files.pythonhosted.org"}
 
 DIRECT_REQUIREMENTS = {
