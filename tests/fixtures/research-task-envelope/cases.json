@@ -54,6 +54,6 @@
     {"case_id": "persistence-not-ephemeral", "base": "single_security", "path": "/persistence", "op": "set", "value": "persistent", "expected_path": "persistence"},
     {"case_id": "portfolio-requested-network", "base": "portfolio_descriptor", "path": "/requested_effects", "op": "set", "value": ["public_network_read"], "expected_path": "requested_effects"},
     {"case_id": "portfolio-subject-present", "base": "portfolio_descriptor", "path": "/subjects", "op": "set", "value": [{"subject_type": "listed_security", "label": "Forbidden", "ticker": "SYN", "exchange": "ASX", "mic": "XASX"}], "expected_path": "subjects"},
-    {"case_id": "unknown-account-field", "base": "portfolio_descriptor", "path": "/account_identifier", "op": "set", "value": "forbidden", "expected_path": "account_identifier"}
+    {"case_id": "unknown-account-field", "base": "portfolio_descriptor", "path": "/account_identifier", "op": "set", "value": "forbidden", "expected_path": "<root>"}
   ]
 }
