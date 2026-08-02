@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:lhe:runtime-observation:1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["record_kind", "record_id", "request_id", "synthetic", "fixture_only", "installation_status", "callability_status", "observation_method", "host_enforcement", "subject_identity_digest", "requested_effects_digest", "source_scope_digest", "input_contract_digest", "persistence"],
+  "properties": {
+    "record_kind": {"const": "RUNTIME_OBSERVATION"},
+    "record_id": {"type": "string", "pattern": "^SYNTHETIC-[A-Z-]+-[0-9]+$"},
+    "request_id": {"type": "string", "pattern": "^RTE-SYNTHETIC-[0-9]+$"},
+    "synthetic": {"const": true},
+    "fixture_only": {"const": true},
+    "installation_status": {"const": "NOT_OBSERVED"},
+    "callability_status": {"const": "NOT_OBSERVED"},
+    "observation_method": {"const": "SYNTHETIC_FIXTURE"},
+    "host_enforcement": {"const": "NOT_PROVEN"},
+    "subject_identity_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "requested_effects_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "source_scope_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "input_contract_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "persistence": {"const": "ephemeral"}
+  }
+}
