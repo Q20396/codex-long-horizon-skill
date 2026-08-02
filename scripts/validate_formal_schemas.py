@@ -193,6 +193,7 @@ SCHEMA_INVENTORY = (
     "public-equity-research-sandbox.schema.json",
     "registry.schema.json",
     "research-task-envelope.schema.json",
+    "research-review-package.schema.json",
     "runtime-observation.schema.json",
     "result.schema.json",
     "task-grant-record.schema.json",
@@ -251,6 +252,11 @@ for _research_record_schema in (
         "tests; this formal gate checks Draft 2020-12 syntax, dialect, identity, "
         "and reference integrity."
     )
+SYNTAX_ONLY_SCHEMAS["research-review-package.schema.json"] = (
+    "Synthetic Research Review Package fixtures are checked by dependency-free "
+    "contract tests; this formal gate checks Draft 2020-12 syntax, dialect, "
+    "identity, and reference integrity."
+)
 PYPI_ARTIFACT_HOSTS = {"files.pythonhosted.org"}
 
 DIRECT_REQUIREMENTS = {
