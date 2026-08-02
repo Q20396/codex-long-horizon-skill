@@ -1,0 +1,163 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:codex-long-horizon-skill:schema:research-task-envelope:1.0.0",
+  "title": "Research Task Envelope",
+  "description": "Static request contract only. It neither grants effects nor executes research.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "request_id",
+    "task_type",
+    "subjects",
+    "requested_effects",
+    "forbidden_effects",
+    "not_requested_effects",
+    "grant_requirement",
+    "grant_ref",
+    "authorization_state",
+    "runtime_execution",
+    "persistence",
+    "financial_data_access",
+    "external_action"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "request_id": { "type": "string", "pattern": "^RTE-[A-Z0-9-]+$" },
+    "task_type": {
+      "enum": [
+        "single_security",
+        "peer_set",
+        "sector",
+        "index",
+        "etf",
+        "strategy_research",
+        "portfolio_research"
+      ]
+    },
+    "support_status": {
+      "enum": ["SUPPORTED_STATIC_ONLY", "DESCRIPTOR_ONLY"]
+    },
+    "subjects": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/subject" }
+    },
+    "requested_effects": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/requestableEffect" }
+    },
+    "forbidden_effects": {
+      "const": [
+        "account_access",
+        "credential_access",
+        "customer_data_upload",
+        "trade_execution",
+        "background_monitoring",
+        "external_notification"
+      ]
+    },
+    "not_requested_effects": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/requestableEffect" }
+    },
+    "grant_requirement": { "const": "required_for_effect" },
+    "grant_ref": { "const": null },
+    "authorization_state": { "const": "NOT_GRANTED" },
+    "runtime_execution": { "enum": ["NOT_IMPLEMENTED", "OUT_OF_SCOPE"] },
+    "persistence": { "const": "ephemeral" },
+    "financial_data_access": { "const": "NOT_PERFORMED" },
+    "external_action": { "const": "NONE" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "task_type": { "const": "single_security" } }, "required": ["task_type"] },
+      "then": {
+        "properties": {
+          "support_status": { "const": "SUPPORTED_STATIC_ONLY" },
+          "subjects": {
+            "minItems": 1,
+            "maxItems": 1,
+            "items": { "$ref": "#/$defs/listedSecurity" }
+          }
+        },
+        "required": ["support_status"]
+      }
+    },
+    {
+      "if": { "properties": { "task_type": { "const": "peer_set" } }, "required": ["task_type"] },
+      "then": {
+        "properties": {
+          "support_status": { "const": "SUPPORTED_STATIC_ONLY" },
+          "subjects": { "type": "array", "minItems": 2, "items": { "$ref": "#/$defs/listedSecurity" } }
+        },
+        "required": ["support_status"]
+      }
+    },
+    {
+      "if": { "properties": { "task_type": { "enum": ["sector", "index", "etf", "strategy_research"] } }, "required": ["task_type"] },
+      "then": {
+        "properties": {
+          "support_status": { "const": "SUPPORTED_STATIC_ONLY" },
+          "subjects": { "type": "array", "minItems": 1 }
+        },
+        "required": ["support_status"]
+      }
+    },
+    {
+      "if": { "properties": { "task_type": { "const": "portfolio_research" } }, "required": ["task_type"] },
+      "then": {
+        "properties": {
+          "support_status": { "const": "DESCRIPTOR_ONLY" },
+          "subjects": { "type": "array", "maxItems": 0 },
+          "requested_effects": { "type": "array", "maxItems": 0 },
+          "runtime_execution": { "const": "OUT_OF_SCOPE" }
+        },
+        "required": ["support_status"]
+      }
+    }
+  ],
+  "$defs": {
+    "requestableEffect": {
+      "enum": [
+        "public_network_read",
+        "local_public_material_read",
+        "research_generation",
+        "calculation_request"
+      ]
+    },
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["subject_type", "label"],
+      "properties": {
+        "subject_type": { "enum": ["listed_security", "sector", "index", "etf", "strategy"] },
+        "label": { "type": "string", "minLength": 1 },
+        "ticker": { "type": ["string", "null"], "pattern": "^[A-Z0-9.:-]+$" },
+        "exchange": { "type": ["string", "null"], "pattern": "^[A-Z0-9_ -]+$" },
+        "mic": { "type": ["string", "null"], "pattern": "^[A-Z]{4}$" },
+        "isin": { "type": ["string", "null"], "pattern": "^[A-Z]{2}[A-Z0-9]{9}[0-9]$" },
+        "issuer_name": { "type": ["string", "null"] },
+        "trading_currency": { "type": ["string", "null"], "pattern": "^[A-Z]{3}$" },
+        "reporting_currency": { "type": ["string", "null"], "pattern": "^[A-Z]{3}$" },
+        "valuation_currency": { "type": ["string", "null"], "pattern": "^[A-Z]{3}$" }
+      }
+    },
+    "listedSecurity": {
+      "allOf": [
+        { "$ref": "#/$defs/subject" },
+        {
+          "properties": {
+            "subject_type": { "const": "listed_security" },
+            "ticker": { "type": "string", "minLength": 1 },
+            "exchange": { "type": "string", "minLength": 1 },
+            "mic": { "type": "string", "pattern": "^[A-Z]{4}$" }
+          },
+          "required": ["ticker", "exchange", "mic"]
+        }
+      ]
+    }
+  }
+}

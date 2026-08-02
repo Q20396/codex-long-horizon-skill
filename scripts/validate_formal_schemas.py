@@ -187,6 +187,7 @@ SCHEMA_INVENTORY = (
     "public-equity-research-governance.schema.json",
     "public-equity-research-sandbox.schema.json",
     "registry.schema.json",
+    "research-task-envelope.schema.json",
     "result.schema.json",
 )
 FIXTURE_VALIDATED_SCHEMAS = {
@@ -197,6 +198,7 @@ FIXTURE_VALIDATED_SCHEMAS = {
     "promotion.schema.json",
     "public-equity-data-freshness.schema.json",
     "public-equity-research-governance.schema.json",
+    "research-task-envelope.schema.json",
 }
 SYNTAX_ONLY_SCHEMAS = {
     name: (
@@ -1040,6 +1042,22 @@ def materialized_fixture_cases() -> tuple[
             "boundaries.network_action_performed",
         )
     )
+
+    envelope = load_json(ROOT / "tests/fixtures/research-task-envelope/cases.json")
+    for name, record in envelope["base_records"].items():
+        positives.append(("research-task-envelope.schema.json", name, record))
+    for case in envelope["negative_cases"]:
+        negatives.append(
+            (
+                "research-task-envelope.schema.json",
+                case["case_id"],
+                apply_mutations(
+                    envelope["base_records"][case["base"]],
+                    [{key: value for key, value in case.items() if key in {"op", "path", "value"}}],
+                ),
+                case["expected_path"],
+            )
+        )
 
     authority = load_json(
         ROOT / "tests/fixtures/formal-authority-boundaries/cases.json"

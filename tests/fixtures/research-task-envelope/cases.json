@@ -1,0 +1,59 @@
+{
+  "fixture_version": "1.0.0",
+  "schema_contract_only": true,
+  "runtime_execution": "NOT_IMPLEMENTED",
+  "base_records": {
+    "single_security": {
+      "schema_version": "1.0.0",
+      "request_id": "RTE-SYNTHETIC-001",
+      "task_type": "single_security",
+      "support_status": "SUPPORTED_STATIC_ONLY",
+      "subjects": [{
+        "subject_type": "listed_security",
+        "label": "Synthetic ASX issuer",
+        "ticker": "SYN",
+        "exchange": "ASX",
+        "mic": "XASX",
+        "isin": null,
+        "issuer_name": "Synthetic Issuer Limited",
+        "trading_currency": "AUD",
+        "reporting_currency": "AUD",
+        "valuation_currency": "AUD"
+      }],
+      "requested_effects": ["research_generation"],
+      "forbidden_effects": ["account_access", "credential_access", "customer_data_upload", "trade_execution", "background_monitoring", "external_notification"],
+      "not_requested_effects": ["public_network_read", "local_public_material_read", "calculation_request"],
+      "grant_requirement": "required_for_effect",
+      "grant_ref": null,
+      "authorization_state": "NOT_GRANTED",
+      "runtime_execution": "NOT_IMPLEMENTED",
+      "persistence": "ephemeral",
+      "financial_data_access": "NOT_PERFORMED",
+      "external_action": "NONE"
+    },
+    "portfolio_descriptor": {
+      "schema_version": "1.0.0",
+      "request_id": "RTE-SYNTHETIC-PORTFOLIO-001",
+      "task_type": "portfolio_research",
+      "support_status": "DESCRIPTOR_ONLY",
+      "subjects": [],
+      "requested_effects": [],
+      "forbidden_effects": ["account_access", "credential_access", "customer_data_upload", "trade_execution", "background_monitoring", "external_notification"],
+      "not_requested_effects": ["public_network_read", "local_public_material_read", "research_generation", "calculation_request"],
+      "grant_requirement": "required_for_effect",
+      "grant_ref": null,
+      "authorization_state": "NOT_GRANTED",
+      "runtime_execution": "OUT_OF_SCOPE",
+      "persistence": "ephemeral",
+      "financial_data_access": "NOT_PERFORMED",
+      "external_action": "NONE"
+    }
+  },
+  "negative_cases": [
+    {"case_id": "missing-mic", "base": "single_security", "path": "/subjects/0/mic", "op": "delete", "expected_path": "subjects.0"},
+    {"case_id": "persistence-not-ephemeral", "base": "single_security", "path": "/persistence", "op": "set", "value": "persistent", "expected_path": "persistence"},
+    {"case_id": "portfolio-requested-network", "base": "portfolio_descriptor", "path": "/requested_effects", "op": "set", "value": ["public_network_read"], "expected_path": "requested_effects"},
+    {"case_id": "portfolio-subject-present", "base": "portfolio_descriptor", "path": "/subjects", "op": "set", "value": [{"subject_type": "listed_security", "label": "Forbidden", "ticker": "SYN", "exchange": "ASX", "mic": "XASX"}], "expected_path": "subjects"},
+    {"case_id": "unknown-account-field", "base": "portfolio_descriptor", "path": "/account_identifier", "op": "set", "value": "forbidden", "expected_path": "account_identifier"}
+  ]
+}
