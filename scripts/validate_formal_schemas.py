@@ -207,6 +207,7 @@ FIXTURE_VALIDATED_SCHEMAS = {
     "public-equity-data-freshness.schema.json",
     "public-equity-research-governance.schema.json",
     "research-task-envelope.schema.json",
+    "research-review-package.schema.json",
 }
 SYNTAX_ONLY_SCHEMAS = {
     name: (
@@ -252,11 +253,6 @@ for _research_record_schema in (
         "tests; this formal gate checks Draft 2020-12 syntax, dialect, identity, "
         "and reference integrity."
     )
-SYNTAX_ONLY_SCHEMAS["research-review-package.schema.json"] = (
-    "Synthetic Research Review Package fixtures are checked by dependency-free "
-    "contract tests; this formal gate checks Draft 2020-12 syntax, dialect, "
-    "identity, and reference integrity."
-)
 PYPI_ARTIFACT_HOSTS = {"files.pythonhosted.org"}
 
 DIRECT_REQUIREMENTS = {
@@ -1089,6 +1085,31 @@ def materialized_fixture_cases() -> tuple[
                     envelope["base_records"][case["base"]],
                     [{key: value for key, value in case.items() if key in {"op", "path", "value"}}],
                 ),
+                case["expected_path"],
+            )
+        )
+
+    review_package = load_json(
+        ROOT / "tests/fixtures/research-review-package/cases.json"
+    )
+    for case in review_package["positive_cases"]:
+        positives.append(
+            (
+                "research-review-package.schema.json",
+                case["case_id"],
+                apply_mutations(
+                    review_package["base_record"], case.get("mutations", [])
+                )["research_review_package"],
+            )
+        )
+    for case in review_package["formal_negative_cases"]:
+        negatives.append(
+            (
+                "research-review-package.schema.json",
+                case["case_id"],
+                apply_mutations(
+                    review_package["base_record"], case["mutations"]
+                )["research_review_package"],
                 case["expected_path"],
             )
         )

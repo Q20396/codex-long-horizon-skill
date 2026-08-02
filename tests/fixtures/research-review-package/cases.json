@@ -1,18 +1,115 @@
 {
+  "fixture_version": "1.1.0",
   "contract_validation": "PASS",
   "runtime_execution": "NOT_IMPLEMENTED",
   "host_enforcement": "NOT_PROVEN",
-  "packages": {
-    "not_provided": {
-      "research_review_package": {
-        "schema_version": "1.0.0", "package_id": "SYNTHETIC-REVIEW-PACKAGE-001", "request_id": "RTE-SYNTHETIC-001", "purpose": "RESEARCH_REVIEW_ONLY", "synthetic": true, "fixture_only": true, "persistence": "ephemeral",
-        "subject_identity_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "requested_effects_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "source_scope_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "input_contract_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd", "evidence_set_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee", "claim_set_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
-        "digest_basis": "SYNTHETIC_FIXTURE", "digest_computation": "NOT_IMPLEMENTED", "authenticity_verification": "NOT_PERFORMED",
-        "evidence_record_refs": [{"evidence_record_id": "SYNTHETIC-EVIDENCE-001", "relevance": "MATERIAL"}], "supporting_claim_refs": [{"claim_id": "SYNTHETIC-CLAIM-001", "relevance": "MATERIAL"}], "strongest_counter_claim_refs": [{"claim_id": "SYNTHETIC-CLAIM-002", "relevance": "MATERIAL"}], "assumption_claim_refs": [], "conflict_claim_refs": [], "unknown_claim_refs": [{"claim_id": "SYNTHETIC-CLAIM-003", "relevance": "MATERIAL"}], "falsification_claim_refs": [],
-        "valuation_material": {"status": "NOT_PROVIDED", "provenance": "NONE", "calculation_replay": "NOT_APPLICABLE", "calculation_receipt_digest": null}, "review": {"adversarial_review": "NOT_PERFORMED", "independent_review": "NOT_PERFORMED"}, "customer_review_status": "DRAFT_FOR_REVIEW", "financial_data_network_access": "NOT_PERFORMED", "runtime_execution": "NOT_IMPLEMENTED", "host_enforcement": "NOT_PROVEN", "external_action": "NONE", "investment_authorization": "NONE", "trade_authorization": "NONE"
-      },
-      "fixture_linkage": {"request_id": "RTE-SYNTHETIC-001", "subject_identity_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "requested_effects_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "source_scope_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "input_contract_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd", "evidence_set_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee", "claim_set_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"}
+  "base_record": {
+    "research_review_package": {
+      "schema_version": "1.0.0",
+      "package_id": "SYNTHETIC-REVIEW-PACKAGE-001",
+      "request_id": "RTE-SYNTHETIC-001",
+      "purpose": "RESEARCH_REVIEW_ONLY",
+      "synthetic": true,
+      "fixture_only": true,
+      "persistence": "ephemeral",
+      "subject_identity_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "requested_effects_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "source_scope_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "input_contract_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "evidence_set_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "claim_set_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "digest_basis": "SYNTHETIC_FIXTURE",
+      "digest_computation": "NOT_IMPLEMENTED",
+      "authenticity_verification": "NOT_PERFORMED",
+      "evidence_record_refs": [{"evidence_record_id": "SYNTHETIC-EVIDENCE-001", "relevance": "MATERIAL"}],
+      "supporting_claim_refs": [{"claim_id": "SYNTHETIC-CLAIM-001", "relevance": "MATERIAL"}],
+      "strongest_counter_claim_refs": [{"claim_id": "SYNTHETIC-CLAIM-002", "relevance": "MATERIAL"}],
+      "assumption_claim_refs": [],
+      "conflict_claim_refs": [],
+      "unknown_claim_refs": [{"claim_id": "SYNTHETIC-CLAIM-003", "relevance": "MATERIAL"}],
+      "falsification_claim_refs": [],
+      "valuation_material": {"status": "NOT_PROVIDED", "provenance": "NONE", "calculation_replay": "NOT_APPLICABLE", "calculation_receipt_digest": null},
+      "review": {"adversarial_review": "NOT_PERFORMED", "independent_review": "NOT_PERFORMED"},
+      "customer_review_status": "DRAFT_FOR_REVIEW",
+      "financial_data_network_access": "NOT_PERFORMED",
+      "runtime_execution": "NOT_IMPLEMENTED",
+      "host_enforcement": "NOT_PROVEN",
+      "external_action": "NONE",
+      "investment_authorization": "NONE",
+      "trade_authorization": "NONE"
     },
-    "externally_supplied": {"base": "not_provided", "customer_review_status": "READY_FOR_CUSTOMER_REVIEW", "valuation_material": {"status": "EXTERNALLY_SUPPLIED_UNVERIFIED", "provenance": "USER_SUPPLIED", "calculation_replay": "EXTERNALLY_SUPPLIED_UNVERIFIED", "calculation_receipt_digest": null}}
-  }
+    "fixture_linkage": {
+      "request_id": "RTE-SYNTHETIC-001",
+      "subject_identity_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "requested_effects_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "source_scope_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "input_contract_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "evidence_set_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "claim_set_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    }
+  },
+  "positive_cases": [
+    {"case_id": "not-provided", "mutations": []},
+    {"case_id": "externally-supplied", "mutations": [
+      {"op": "set", "path": "/research_review_package/customer_review_status", "value": "READY_FOR_CUSTOMER_REVIEW"},
+      {"op": "set", "path": "/research_review_package/valuation_material", "value": {"status": "EXTERNALLY_SUPPLIED_UNVERIFIED", "provenance": "USER_SUPPLIED", "calculation_replay": "EXTERNALLY_SUPPLIED_UNVERIFIED", "calculation_receipt_digest": null}}
+    ]},
+    {"case_id": "more-evidence-needed", "mutations": [{"op": "set", "path": "/research_review_package/customer_review_status", "value": "MORE_EVIDENCE_NEEDED"}]},
+    {"case_id": "blocked", "mutations": [{"op": "set", "path": "/research_review_package/customer_review_status", "value": "BLOCKED"}]}
+  ],
+  "formal_negative_cases": [
+    {"case_id": "empty-support", "expected_path": "supporting_claim_refs", "mutations": [{"op": "set", "path": "/research_review_package/supporting_claim_refs", "value": []}]},
+    {"case_id": "empty-counter", "expected_path": "strongest_counter_claim_refs", "mutations": [{"op": "set", "path": "/research_review_package/strongest_counter_claim_refs", "value": []}]},
+    {"case_id": "invalid-claim-id", "expected_path": "supporting_claim_refs.0.claim_id", "mutations": [{"op": "set", "path": "/research_review_package/supporting_claim_refs/0/claim_id", "value": "claim-1"}]},
+    {"case_id": "invalid-evidence-id", "expected_path": "evidence_record_refs.0.evidence_record_id", "mutations": [{"op": "set", "path": "/research_review_package/evidence_record_refs/0/evidence_record_id", "value": "evidence-1"}]},
+    {"case_id": "valuation-not-provided-user-supplied", "expected_path": "valuation_material", "mutations": [{"op": "set", "path": "/research_review_package/valuation_material/provenance", "value": "USER_SUPPLIED"}]},
+    {"case_id": "valuation-not-provided-external-replay", "expected_path": "valuation_material", "mutations": [{"op": "set", "path": "/research_review_package/valuation_material/calculation_replay", "value": "EXTERNALLY_SUPPLIED_UNVERIFIED"}]},
+    {"case_id": "valuation-external-none", "expected_path": "valuation_material", "mutations": [{"op": "set", "path": "/research_review_package/valuation_material/status", "value": "EXTERNALLY_SUPPLIED_UNVERIFIED"}]},
+    {"case_id": "valuation-external-not-applicable", "expected_path": "valuation_material", "mutations": [{"op": "set", "path": "/research_review_package/valuation_material", "value": {"status": "EXTERNALLY_SUPPLIED_UNVERIFIED", "provenance": "USER_SUPPLIED", "calculation_replay": "NOT_APPLICABLE", "calculation_receipt_digest": null}}]},
+    {"case_id": "valuation-third-status", "expected_path": "valuation_material", "mutations": [{"op": "set", "path": "/research_review_package/valuation_material/status", "value": "CALCULATED"}]},
+    {"case_id": "valuation-receipt-not-null", "expected_path": "valuation_material", "mutations": [{"op": "set", "path": "/research_review_package/valuation_material/calculation_receipt_digest", "value": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}]},
+    {"case_id": "valuation-missing-field", "expected_path": "valuation_material", "mutations": [{"op": "delete", "path": "/research_review_package/valuation_material/provenance"}]},
+    {"case_id": "valuation-unknown-field", "expected_path": "valuation_material", "mutations": [{"op": "set", "path": "/research_review_package/valuation_material/verified", "value": true}]},
+    {"case_id": "network-disclosure-changed", "expected_path": "financial_data_network_access", "mutations": [{"op": "set", "path": "/research_review_package/financial_data_network_access", "value": "PERFORMED"}]},
+    {"case_id": "runtime-disclosure-changed", "expected_path": "runtime_execution", "mutations": [{"op": "set", "path": "/research_review_package/runtime_execution", "value": "IMPLEMENTED"}]},
+    {"case_id": "host-disclosure-changed", "expected_path": "host_enforcement", "mutations": [{"op": "set", "path": "/research_review_package/host_enforcement", "value": "PROVEN"}]},
+    {"case_id": "external-action-changed", "expected_path": "external_action", "mutations": [{"op": "set", "path": "/research_review_package/external_action", "value": "REQUESTED"}]},
+    {"case_id": "investment-authorization-changed", "expected_path": "investment_authorization", "mutations": [{"op": "set", "path": "/research_review_package/investment_authorization", "value": "APPROVED"}]},
+    {"case_id": "trade-authorization-changed", "expected_path": "trade_authorization", "mutations": [{"op": "set", "path": "/research_review_package/trade_authorization", "value": "APPROVED"}]},
+    {"case_id": "invalid-review-status", "expected_path": "customer_review_status", "mutations": [{"op": "set", "path": "/research_review_package/customer_review_status", "value": "APPROVED"}]},
+    {"case_id": "purpose-changed", "expected_path": "purpose", "mutations": [{"op": "set", "path": "/research_review_package/purpose", "value": "INVESTMENT_RECOMMENDATION"}]},
+    {"case_id": "synthetic-false", "expected_path": "synthetic", "mutations": [{"op": "set", "path": "/research_review_package/synthetic", "value": false}]},
+    {"case_id": "fixture-only-false", "expected_path": "fixture_only", "mutations": [{"op": "set", "path": "/research_review_package/fixture_only", "value": false}]},
+    {"case_id": "persistence-changed", "expected_path": "persistence", "mutations": [{"op": "set", "path": "/research_review_package/persistence", "value": "persistent"}]},
+    {"case_id": "digest-basis-changed", "expected_path": "digest_basis", "mutations": [{"op": "set", "path": "/research_review_package/digest_basis", "value": "CONTENT_HASH"}]},
+    {"case_id": "digest-computation-changed", "expected_path": "digest_computation", "mutations": [{"op": "set", "path": "/research_review_package/digest_computation", "value": "IMPLEMENTED"}]},
+    {"case_id": "authenticity-verification-changed", "expected_path": "authenticity_verification", "mutations": [{"op": "set", "path": "/research_review_package/authenticity_verification", "value": "PERFORMED"}]},
+    {"case_id": "adversarial-review-changed", "expected_path": "review.adversarial_review", "mutations": [{"op": "set", "path": "/research_review_package/review/adversarial_review", "value": "PERFORMED"}]},
+    {"case_id": "independent-review-changed", "expected_path": "review.independent_review", "mutations": [{"op": "set", "path": "/research_review_package/review/independent_review", "value": "PERFORMED"}]},
+    {"case_id": "prohibited-buy-field", "expected_path": "<root>", "mutations": [{"op": "set", "path": "/research_review_package/buy", "value": true}]},
+    {"case_id": "prohibited-target-price-field", "expected_path": "<root>", "mutations": [{"op": "set", "path": "/research_review_package/target_price", "value": 1}]},
+    {"case_id": "prohibited-order-field", "expected_path": "<root>", "mutations": [{"op": "set", "path": "/research_review_package/order_quantity", "value": 1}]},
+    {"case_id": "prohibited-account-field", "expected_path": "<root>", "mutations": [{"op": "set", "path": "/research_review_package/account", "value": "forbidden"}]},
+    {"case_id": "prohibited-credential-field", "expected_path": "<root>", "mutations": [{"op": "set", "path": "/research_review_package/credentials", "value": "forbidden"}]},
+    {"case_id": "prohibited-trade-instruction-field", "expected_path": "<root>", "mutations": [{"op": "set", "path": "/research_review_package/trade_instruction", "value": "forbidden"}]},
+    {"case_id": "prohibited-notification-field", "expected_path": "<root>", "mutations": [{"op": "set", "path": "/research_review_package/automatic_notification", "value": true}]},
+    {"case_id": "prohibited-monitoring-field", "expected_path": "<root>", "mutations": [{"op": "set", "path": "/research_review_package/monitoring_schedule", "value": "daily"}]},
+    {"case_id": "unknown-root-field", "expected_path": "<root>", "mutations": [{"op": "set", "path": "/research_review_package/broker", "value": "forbidden"}]}
+  ],
+  "static_negative_cases": [
+    {"case_id": "duplicate-evidence-id", "expected_label": "EVIDENCE_REFERENCE_DUPLICATE", "mutations": [{"op": "append", "path": "/research_review_package/evidence_record_refs", "value": {"evidence_record_id": "SYNTHETIC-EVIDENCE-001", "relevance": "MATERIAL"}}]},
+    {"case_id": "duplicate-support-claim-id", "expected_label": "CLAIM_REFERENCE_DUPLICATE", "mutations": [{"op": "append", "path": "/research_review_package/supporting_claim_refs", "value": {"claim_id": "SYNTHETIC-CLAIM-001", "relevance": "MATERIAL"}}]},
+    {"case_id": "duplicate-assumption-claim-id", "expected_label": "CLAIM_REFERENCE_DUPLICATE", "mutations": [{"op": "append", "path": "/research_review_package/assumption_claim_refs", "value": {"claim_id": "SYNTHETIC-CLAIM-004", "relevance": "MATERIAL"}}, {"op": "append", "path": "/research_review_package/assumption_claim_refs", "value": {"claim_id": "SYNTHETIC-CLAIM-004", "relevance": "MATERIAL"}}]},
+    {"case_id": "duplicate-conflict-claim-id", "expected_label": "CLAIM_REFERENCE_DUPLICATE", "mutations": [{"op": "append", "path": "/research_review_package/conflict_claim_refs", "value": {"claim_id": "SYNTHETIC-CLAIM-005", "relevance": "MATERIAL"}}, {"op": "append", "path": "/research_review_package/conflict_claim_refs", "value": {"claim_id": "SYNTHETIC-CLAIM-005", "relevance": "MATERIAL"}}]},
+    {"case_id": "duplicate-classification-claim-id", "expected_label": "CLAIM_REFERENCE_DUPLICATE", "mutations": [{"op": "append", "path": "/research_review_package/unknown_claim_refs", "value": {"claim_id": "SYNTHETIC-CLAIM-003", "relevance": "MATERIAL"}}]},
+    {"case_id": "duplicate-falsification-claim-id", "expected_label": "CLAIM_REFERENCE_DUPLICATE", "mutations": [{"op": "append", "path": "/research_review_package/falsification_claim_refs", "value": {"claim_id": "SYNTHETIC-CLAIM-006", "relevance": "MATERIAL"}}, {"op": "append", "path": "/research_review_package/falsification_claim_refs", "value": {"claim_id": "SYNTHETIC-CLAIM-006", "relevance": "MATERIAL"}}]},
+    {"case_id": "support-counter-overlap", "expected_label": "SUPPORT_COUNTER_CLAIM_OVERLAP", "mutations": [{"op": "set", "path": "/research_review_package/strongest_counter_claim_refs", "value": [{"claim_id": "SYNTHETIC-CLAIM-001", "relevance": "MATERIAL"}]}]},
+    {"case_id": "request-id-linkage-mismatch", "expected_label": "REQUEST_ID_LINKAGE_MISMATCH", "mutations": [{"op": "set", "path": "/fixture_linkage/request_id", "value": "RTE-SYNTHETIC-999"}]},
+    {"case_id": "subject-digest-linkage-mismatch", "expected_label": "SUBJECT_IDENTITY_DIGEST_MISMATCH", "mutations": [{"op": "set", "path": "/fixture_linkage/subject_identity_digest", "value": "sha256:0000000000000000000000000000000000000000000000000000000000000000"}]},
+    {"case_id": "effects-digest-linkage-mismatch", "expected_label": "REQUESTED_EFFECTS_DIGEST_MISMATCH", "mutations": [{"op": "set", "path": "/fixture_linkage/requested_effects_digest", "value": "sha256:0000000000000000000000000000000000000000000000000000000000000000"}]},
+    {"case_id": "scope-digest-linkage-mismatch", "expected_label": "SOURCE_SCOPE_DIGEST_MISMATCH", "mutations": [{"op": "set", "path": "/fixture_linkage/source_scope_digest", "value": "sha256:0000000000000000000000000000000000000000000000000000000000000000"}]},
+    {"case_id": "input-digest-linkage-mismatch", "expected_label": "INPUT_CONTRACT_DIGEST_MISMATCH", "mutations": [{"op": "set", "path": "/fixture_linkage/input_contract_digest", "value": "sha256:0000000000000000000000000000000000000000000000000000000000000000"}]},
+    {"case_id": "evidence-digest-linkage-mismatch", "expected_label": "EVIDENCE_SET_DIGEST_MISMATCH", "mutations": [{"op": "set", "path": "/fixture_linkage/evidence_set_digest", "value": "sha256:0000000000000000000000000000000000000000000000000000000000000000"}]},
+    {"case_id": "claim-digest-linkage-mismatch", "expected_label": "CLAIM_SET_DIGEST_MISMATCH", "mutations": [{"op": "set", "path": "/fixture_linkage/claim_set_digest", "value": "sha256:0000000000000000000000000000000000000000000000000000000000000000"}]}
+  ]
 }
