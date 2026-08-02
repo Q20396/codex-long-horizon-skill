@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:lhe:claim-record:1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["record_kind", "record_id", "request_id", "synthetic", "fixture_only", "claim_status", "evidence_status", "materiality", "claim_material", "subject_identity_digest", "requested_effects_digest", "source_scope_digest", "input_contract_digest", "persistence"],
+  "properties": {
+    "record_kind": {"const": "CLAIM_RECORD"},
+    "record_id": {"type": "string", "pattern": "^SYNTHETIC-CLAIM-[0-9]+$"},
+    "request_id": {"type": "string", "pattern": "^RTE-SYNTHETIC-[0-9]+$"},
+    "synthetic": {"const": true},
+    "fixture_only": {"const": true},
+    "claim_status": {"const": "NOT_ASSESSED"},
+    "evidence_status": {"const": "SYNTHETIC_ONLY"},
+    "materiality": {"enum": ["low", "medium", "high", "critical"]},
+    "claim_material": {"const": null},
+    "subject_identity_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "requested_effects_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "source_scope_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "input_contract_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "persistence": {"const": "ephemeral"}
+  }
+}

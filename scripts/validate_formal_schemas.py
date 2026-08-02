@@ -171,11 +171,14 @@ SCHEMA_INVENTORY = (
     "capability-descriptor.schema.json",
     "capability-profile-doctor.schema.json",
     "capability-family.schema.json",
+    "calculation-receipt.schema.json",
+    "claim-record.schema.json",
     "decision-record.schema.json",
     "deduplication-record.schema.json",
     "evaluation-run.schema.json",
     "evidence-bound-multi-perspective-research.schema.json",
     "evidence-ledger.schema.json",
+    "evidence-record.schema.json",
     "execution-receipt.schema.json",
     "experiment.schema.json",
     "gate-result.schema.json",
@@ -235,6 +238,16 @@ for _static_record_schema in (
 ):
     SYNTAX_ONLY_SCHEMAS[_static_record_schema] = (
         "Synthetic static-record fixtures are checked by dependency-free contract "
+        "tests; this formal gate checks Draft 2020-12 syntax, dialect, identity, "
+        "and reference integrity."
+    )
+for _research_record_schema in (
+    "evidence-record.schema.json",
+    "claim-record.schema.json",
+    "calculation-receipt.schema.json",
+):
+    SYNTAX_ONLY_SCHEMAS[_research_record_schema] = (
+        "Synthetic research-record fixtures are checked by dependency-free contract "
         "tests; this formal gate checks Draft 2020-12 syntax, dialect, identity, "
         "and reference integrity."
     )
