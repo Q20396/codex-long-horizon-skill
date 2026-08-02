@@ -110,12 +110,12 @@ class ResearchTaskEnvelopeContractTests(unittest.TestCase):
         self.assertEqual("ASX", subject["exchange"])
         self.assertEqual("XASX", subject["mic"])
 
-    def test_negative_fixtures_are_declared_without_a_runtime_validator(self) -> None:
+    def test_negative_fixtures_are_declared_without_a_runtime_execution_engine(self) -> None:
         for case in self.cases["negative_cases"]:
             self.assertIn(case["base"], self.cases["base_records"])
             self.assertIn(case["op"], {"set", "delete"})
             self.assertTrue(case["path"].startswith("/"))
-        self.assertFalse((ROOT / "scripts" / "validate_research_task_envelope.py").exists())
+        self.assertTrue((ROOT / "scripts" / "validate_research_task_envelope.py").exists())
 
 
 if __name__ == "__main__":
