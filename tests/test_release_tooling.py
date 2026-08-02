@@ -753,8 +753,8 @@ class ReleaseReadinessTests(unittest.TestCase):
         result = self.run_readiness(repo, "--allow-existing-tag")
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
-    def test_release_notes_match_formal_schema_inventory(self) -> None:
-        notes = self.release_notes(ROOT, "0.5.0").read_text(encoding="utf-8")
+    def test_candidate_release_notes_match_formal_schema_inventory(self) -> None:
+        notes = self.release_notes(ROOT, "0.6.0-dev").read_text(encoding="utf-8")
         normalized = " ".join(notes.split())
         schema_count = len(FORMAL_VALIDATOR.SCHEMA_INVENTORY)
         fixture_count = len(FORMAL_VALIDATOR.FIXTURE_VALIDATED_SCHEMAS)

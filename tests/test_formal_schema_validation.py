@@ -1126,8 +1126,14 @@ class FormalSchemaEngineTests(unittest.TestCase):
         self.assertEqual(len(VALIDATOR.SCHEMA_INVENTORY), result["schema_count"])
         self.assertGreater(result["positive_fixture_count"], 0)
         self.assertGreater(result["negative_fixture_count"], 0)
-        self.assertEqual(7, result["fixture_validated_schema_count"])
-        self.assertEqual(16, result["syntax_only_schema_count"])
+        self.assertEqual(
+            len(VALIDATOR.FIXTURE_VALIDATED_SCHEMAS),
+            result["fixture_validated_schema_count"],
+        )
+        self.assertEqual(
+            len(VALIDATOR.SYNTAX_ONLY_SCHEMAS),
+            result["syntax_only_schema_count"],
+        )
 
 
 if __name__ == "__main__":
