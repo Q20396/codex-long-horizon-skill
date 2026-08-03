@@ -23,7 +23,7 @@ Claim Record identifiers with a customer-review-ready structure. Its purpose is
 strictly `RESEARCH_REVIEW_ONLY`; it is not an investment recommendation,
 decision, signal, portfolio action, or trading instruction.
 
-All future PR-5 fixtures and package instances must retain:
+All implemented PR-5 fixtures and package instances retain:
 
 ```text
 synthetic: true
@@ -120,7 +120,7 @@ classification sets (`assumption_claim_refs`, `conflict_claim_refs`,
 `unknown_claim_refs`, and `falsification_claim_refs`) may reuse a Claim across
 different classifications: an unresolved Claim can, for example, be both an
 assumption and an unknown. Each classification set remains internally unique.
-A future static contract test must implement these ID-based checks.
+The implemented static contract tests enforce these ID-based checks.
 
 The design labels for negative fixtures are `CLAIM_REFERENCE_DUPLICATE` and
 `SUPPORT_COUNTER_CLAIM_OVERLAP`. They are fixture expectations, not stable
@@ -138,13 +138,13 @@ Only these two combinations are legal:
 `valuation_material` is a closed object with exactly these four required
 members: `status`, `provenance`, `calculation_replay`, and
 `calculation_receipt_digest`. No third status, omitted member, or extra member
-is legal. A future PR-5 package cannot create, populate, infer, or validate a
+is legal. The implemented PR-5 package cannot create, populate, infer, or validate a
 Calculation Receipt digest. In particular, it cannot say an external valuation
 is calculated, verified, replayed, decision-grade, or correct.
 
 ### Review-readiness status
 
-The only future values are `DRAFT_FOR_REVIEW`, `MORE_EVIDENCE_NEEDED`,
+The only allowed values are `DRAFT_FOR_REVIEW`, `MORE_EVIDENCE_NEEDED`,
 `READY_FOR_CUSTOMER_REVIEW`, and `BLOCKED`. These are a legal-combinations
 table, not a runtime state machine. Every value remains non-authorizing.
 
@@ -154,11 +154,11 @@ counter case does not imply that either review occurred.
 
 ### Synthetic fixture wrapper and linkage
 
-The future `Research Review Package` schema contains the six digest fields and
+The implemented `Research Review Package` schema contains the six digest fields and
 the Evidence/Claim references above. It never contains `fixture_linkage`.
 `fixture_linkage` is a test-fixture-wrapper object only, not a customer field,
 runtime linkage receipt, or evidence artifact. It is the only comparison
-carrier for future static tests:
+carrier for the implemented static contract tests:
 
 ```yaml
 fixture_id: RRP-FIXTURE-001
@@ -185,7 +185,7 @@ It does not calculate, normalize, validate, resolve, or authenticate a digest,
 and it does not parse actual PR-4 records. A passing comparison proves only
 that synthetic fixture strings match.
 
-## Fixture matrix for a future implementation
+## Fixture matrix for the implemented static contract
 
 | Fixture | Expected structural result | Boundary it demonstrates |
 | --- | --- | --- |
