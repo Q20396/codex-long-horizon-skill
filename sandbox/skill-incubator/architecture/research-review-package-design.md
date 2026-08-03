@@ -1,14 +1,14 @@
 # Research Review Package: PR-5 Design Baseline
 
-Status: `STATIC_IMPLEMENTATION_MERGED — STATIC CONTRACT REMEDIATION PENDING`
+Status: `STATIC_IMPLEMENTATION_AND_REMEDIATION_MERGED`
 
 ```text
 design_review: APPROVED_FOR_STATIC_IMPLEMENTATION
 static_implementation: MERGED
-static_contract_remediation: PENDING
+static_contract_remediation: MERGED
 runtime_validator: NOT_AUTHORIZED
 runtime_execution: NOT_IMPLEMENTED
-next_stage: STATIC_CONTRACT_REMEDIATION_REVIEW
+next_stage: 0.6.0_DEV_ARCHITECTURE_CLOSEOUT_REVIEW
 ```
 
 This document records the approved static design for the implemented
@@ -18,7 +18,7 @@ or execution path. It does not supersede the immutable `v0.5.0` release.
 
 ## Purpose and fixed boundaries
 
-The future package may organize pre-existing **synthetic** Evidence Record and
+The implemented static package organizes pre-existing **synthetic** Evidence Record and
 Claim Record identifiers with a customer-review-ready structure. Its purpose is
 strictly `RESEARCH_REVIEW_ONLY`; it is not an investment recommendation,
 decision, signal, portfolio action, or trading instruction.
@@ -214,21 +214,30 @@ already returns an exact path.
 
 ## Explicitly prohibited fields and aliases
 
-A future closed schema must reject, including as structured aliases:
+The implemented static closed schema rejects this explicit finite field
+registry, including these structured aliases:
 
 ```text
 buy, sell, hold, rating, target_price, price_target, position_size,
 portfolio_weight, allocation, order, order_quantity, broker, brokerage,
-account, account_id, credential, api_key, trade_instruction,
+account, account_id, credential, credentials, api_key, trade_instruction,
 execution_instruction, automatic_notification, monitoring_schedule,
 watchlist_schedule, source_url, evidence_text, customer_material
 ```
 
-The list is a design guardrail, not a natural-language safety classifier.
+```text
+coverage: EXPLICIT_FINITE_FIELD_REGISTRY
+natural_language_alias_detection: NOT_IMPLEMENTED
+```
 
-## Definition of done for the future implementation PR
+Static fixtures cover every field in this registry. This is not a
+natural-language safety classifier: it does not claim detection of arbitrary
+spellings, nesting forms, or synonyms outside the registered fields. The
+closed root object separately rejects unknown root fields.
 
-The implementation PR may add only a static schema, wholly synthetic fixtures,
+## Definition of done for the implemented static package
+
+The static implementation contains only a schema, wholly synthetic fixtures,
 static contract tests, formal inventory updates, and minimal `0.6.0-dev`
 documentation. It succeeds only if it can honestly report:
 
