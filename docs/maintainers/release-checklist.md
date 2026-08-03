@@ -34,15 +34,19 @@ stages. Completing Phase A does not establish release readiness.
       separately; neither result substitutes for the other.
 - [ ] Release notes report schema coverage from the formal validator inventory;
       no separate hand-maintained manifest is treated as authoritative.
-- [ ] Confirm the current inventory is 23 schemas: 7 fixture-validated and 16
-      syntax-only. The local capability catalog and local case provider have
+- [ ] Confirm the current `0.6.0-dev` inventory is 32 schemas: 9
+      fixture-validated and 23 syntax-only. This candidate inventory does not
+      rewrite immutable `v0.5.0` release evidence. The local capability catalog and local case provider have
       dependency-free synthetic contracts but remain syntax-only in the formal
       gate.
-- [ ] An unreleased candidate keeps marketplace
-      `policy.installation: NOT_AVAILABLE` and is never rewritten beneath an
-      existing tag. A stable state uses a new version and a separately reviewed
-      release-state change after the applicable immutable-candidate and
-      isolated marketplace-resolution evidence.
+- [ ] The development source may identify as `0.6.0-dev` while the existing
+      stable marketplace selector remains pinned to immutable `v0.5.0` with
+      `policy.installation: AVAILABLE`. Only a separately created installable
+      candidate marketplace artifact must use `policy.installation:
+      NOT_AVAILABLE`; no such candidate artifact exists for this source state.
+      Never rewrite an existing tag. A stable state uses a new version and a
+      separately reviewed release-state change after the applicable
+      immutable-candidate and isolated marketplace-resolution evidence.
 - [ ] A final release-state change uses one exact coherent contract:
       marketplace `AVAILABLE`, both Skill channels `stable`, release manifests
       `channel: stable`, `released: true`, and `risk: reviewed`.

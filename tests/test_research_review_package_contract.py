@@ -25,6 +25,14 @@ DIGEST_MISMATCH_LABELS = {
     "evidence_set_digest": "EVIDENCE_SET_DIGEST_MISMATCH",
     "claim_set_digest": "CLAIM_SET_DIGEST_MISMATCH",
 }
+PROHIBITED_ROOT_FIELDS = {
+    "buy", "sell", "hold", "rating", "target_price", "price_target",
+    "position_size", "portfolio_weight", "allocation", "order",
+    "order_quantity", "broker", "brokerage", "account", "account_id",
+    "credential", "credentials", "api_key", "trade_instruction", "execution_instruction",
+    "automatic_notification", "monitoring_schedule", "watchlist_schedule",
+    "source_url", "evidence_text", "customer_material",
+}
 
 
 class ResearchReviewPackageContractTests(unittest.TestCase):
@@ -170,14 +178,30 @@ class ResearchReviewPackageContractTests(unittest.TestCase):
         self.assertGreaterEqual(sum(item[0] == name for item in positives), 4)
         self.assertGreaterEqual(sum(item[0] == name for item in negatives), 20)
 
-    def test_schema_is_closed_and_has_no_runtime_surface(self):
-        prohibited = {
-            "buy", "sell", "hold", "rating", "target_price", "position_size",
-            "portfolio_weight", "order_quantity", "broker", "account", "credentials",
-            "trade_instruction", "execution_instruction", "automatic_notification",
-            "monitoring_schedule", "fixture_linkage",
+    def test_formal_fixtures_cover_empty_evidence_and_finite_prohibited_registry(self):
+        _, negatives = formal.materialized_fixture_cases()
+        review_cases = {
+            case_id: (record, expected_path)
+            for schema_name, case_id, record, expected_path in negatives
+            if schema_name == "research-review-package.schema.json"
         }
-        self.assertFalse(prohibited & set(self.schema["properties"]))
+        empty_evidence, expected_path = review_cases["empty-evidence"]
+        self.assertEqual([], empty_evidence["evidence_record_refs"])
+        self.assertEqual("evidence_record_refs", expected_path)
+        self.assertEqual(
+            1,
+            self.schema["properties"]["evidence_record_refs"]["minItems"],
+        )
+        covered = {
+            field
+            for field in PROHIBITED_ROOT_FIELDS
+            if f"prohibited-{field.replace('_', '-')}-field" in review_cases
+        }
+        self.assertEqual(PROHIBITED_ROOT_FIELDS, covered)
+
+    def test_schema_is_closed_and_has_no_runtime_surface(self):
+        self.assertFalse(PROHIBITED_ROOT_FIELDS & set(self.schema["properties"]))
+        self.assertNotIn("fixture_linkage", self.schema["properties"])
         self.assertFalse(self.schema["$defs"]["review"]["additionalProperties"])
         self.assertEqual(
             {"adversarial_review", "independent_review"},
