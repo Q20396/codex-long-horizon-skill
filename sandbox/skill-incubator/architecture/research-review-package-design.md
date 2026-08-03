@@ -1,18 +1,18 @@
 # Research Review Package: PR-5 Design Baseline
 
-Status: `CLOSED_PENDING_REVISION — DESIGN ONLY`
+Status: `STATIC_IMPLEMENTATION_MERGED — STATIC CONTRACT REMEDIATION PENDING`
 
 ```text
-design_revision: AUTHORIZED
-independent_read_only_review: AUTHORIZED
-static_implementation: NOT_AUTHORIZED
-schema_or_validator_work: NOT_AUTHORIZED
-commit_or_pr: NOT_AUTHORIZED
-next_stage: INDEPENDENT_DESIGN_REVIEW
+design_review: APPROVED_FOR_STATIC_IMPLEMENTATION
+static_implementation: MERGED
+static_contract_remediation: PENDING
+runtime_validator: NOT_AUTHORIZED
+runtime_execution: NOT_IMPLEMENTED
+next_stage: STATIC_CONTRACT_REMEDIATION_REVIEW
 ```
 
-This document is a static design-review artifact for a possible future
-`Research Review Package`. It does not add a schema, validator, research
+This document records the approved static design for the implemented
+`Research Review Package` schema. It does not add a validator, research
 generator, capability, data source, calculation, grant, runtime observation,
 or execution path. It does not supersede the immutable `v0.5.0` release.
 
