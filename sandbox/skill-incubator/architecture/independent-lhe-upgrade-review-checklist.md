@@ -6,14 +6,9 @@
 design_status: PROPOSAL_ONLY
 implementation_authorized: false
 test_execution_authorized: false
-design_artifact_state: CREATED_AND_COMMITTED
-prior_candidate_commit: da522b2
-candidate_identity_after_amend: PENDING
 additional_file_creation_authorized: false
 additional_repository_changes_authorized: false
-push_authorized: false
-draft_pr_authorized: false
-external_action: NONE
+external_action_authorized: NONE
 ```
 
 This is a static task card for an independently reviewed LHE upgrade. It is
@@ -27,9 +22,8 @@ release, installation, or execution authority.
 review_conclusion_owner: INDEPENDENT_REVIEWER
 external_action_authority: HUMAN_GATE
 
-engineering_method_family: MATT_POCOCK_SKILLS
-review_discipline: KARPATHY_GUIDELINES
-method_selection: EXPLICIT_PER_TASK
+primary_engineering_method: KARPATHY_GUIDELINES
+matt_role: OPTIONAL_TASK_SPECIFIC_METHODS
 automatic_method_pipeline: FORBIDDEN
 
 lhe_role: REVIEW_TARGET_AND_AUXILIARY_GOVERNANCE_EVIDENCE
@@ -49,13 +43,12 @@ ACCEPT != INSTALLATION_AUTHORIZED
 ACCEPT != RUNTIME_EFFECT_AUTHORIZED
 ```
 
-Karpathy guidelines are the cross-cutting discipline for assumptions,
-simplicity, surgical scope, and verifiable goals. Matt is a task-scoped
-engineering method family, not an automatic pipeline. Select the smallest
-applicable Matt method set when it materially helps this task; otherwise record
-`NO_APPLICABLE_METHOD` and its reason. Selecting one method does not activate
-any other Matt method or imply an implementation, Issue, Hook, sub-agent,
-network, or write effect.
+Karpathy guidelines are the primary method for assumptions, simplicity,
+surgical scope, and verifiable goals. Matt methods are optional,
+task-specific aids only when Karpathy-led scope analysis identifies a material
+gap they help close. An unselected Matt method requires no `NO_APPLICABLE_METHOD`
+record. Selecting a Matt method does not activate any other Matt method or
+imply an implementation, Issue, Hook, sub-agent, network, or write effect.
 
 LHE checks provide contract or validation evidence only:
 
@@ -152,11 +145,9 @@ requested_outcome: "<bounded outcome>"
 in_scope: []
 out_of_scope: []
 
-engineering_method_family: MATT_POCOCK_SKILLS
-selected_matt_methods: []
-method_selection_result: PENDING
-no_applicable_method_reason: null
-review_discipline: KARPATHY_GUIDELINES
+primary_method: KARPATHY_GUIDELINES
+optional_task_methods: []
+optional_method_selection_result: NOT_EVALUATED
 optional_ecc_reference: null
 
 allowed_effects: []
@@ -222,17 +213,16 @@ artifacts, and user-directory effects.
 
 ```mermaid
 flowchart TD
-  S["Human-approved review scope"] --> Q["Select smallest applicable Matt method set"]
-  K["Karpathy guidelines"] -. discipline .-> Q
+  S["Human-approved review scope"] --> K["Karpathy guidelines<br/>primary method"]
+  K --> D["Assumptions, minimal scope,<br/>acceptance criteria"]
+  D --> R["Independent reviewer<br/>ACCEPT / CHANGES_REQUIRED / BLOCKED"]
 
-  Q -->|"one or more selected"| M["Task-scoped Matt method"]
-  Q -->|"no applicable method"| N["Documented NO_APPLICABLE_METHOD"]
-
-  M --> R["Independent reviewer<br/>ACCEPT / CHANGES_REQUIRED / BLOCKED"]
-  N --> R
+  D -. task-specific optional selection .-> M["Optional Matt method"]
+  M -. supplied method evidence .-> R
   E["Optional pinned ECC reference"] -. read-only .-> R
   L["LHE governance evidence / review target"] --> R
   P["Specialist plugin"] -. separately effect-authorized .-> R
+  A["Authorized and supplied evidence<br/>no execution implied"] --> R
 
   R --> H["Human gate<br/>separate decisions: test, commit, push/PR, merge, release, install, runtime"]
 ```
