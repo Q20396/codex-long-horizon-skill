@@ -41,7 +41,14 @@ ACCEPT != MERGE_AUTHORIZED
 ACCEPT != RELEASE_AUTHORIZED
 ACCEPT != INSTALLATION_AUTHORIZED
 ACCEPT != RUNTIME_EFFECT_AUTHORIZED
+CI_SUCCESS != EXECUTION_OR_HUMAN_AUTHORIZATION
+SIGNATURE_VERIFIED != EXECUTION_OR_HUMAN_AUTHORIZATION
 ```
+
+CI success is automated-check evidence. Signature verification establishes the
+integrity and signer attribution of the verified Git object. Neither establishes
+independent review approval, human action authority, execution, merge, release,
+or installation authority.
 
 Karpathy guidelines are the primary method for assumptions, simplicity,
 surgical scope, and verifiable goals. Matt methods are optional,
