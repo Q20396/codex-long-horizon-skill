@@ -802,6 +802,42 @@ class ReleaseReadinessTests(unittest.TestCase):
             normalized,
         )
 
+    def test_v060_post_release_receipt_is_bounded_evidence_only(self) -> None:
+        receipt_path = ROOT / "docs" / "releases" / "v0.6.0-post-release-receipt.json"
+        receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(1, receipt["schema_version"])
+        self.assertEqual("POST_RELEASE_EVIDENCE_ATTACHMENT", receipt["receipt_kind"])
+        self.assertEqual("v0.6.0", receipt["release"])
+        self.assertEqual("PUBLISHED", receipt["release_state"])
+
+        tag = receipt["tag"]
+        self.assertEqual("v0.6.0", tag["name"])
+        self.assertEqual("annotated", tag["tag_type"])
+        self.assertRegex(tag["tag_object"], r"^[0-9a-f]{40}$")
+        self.assertRegex(tag["peeled_commit"], r"^[0-9a-f]{40}$")
+        self.assertEqual("KEY_HOLDER_VERIFIED_GOOD_SIGNATURE", tag["signature_evidence"])
+
+        release = receipt["github_release"]
+        self.assertTrue(release["url"].endswith("/releases/tag/v0.6.0"))
+        self.assertFalse(release["draft"])
+        self.assertFalse(release["prerelease"])
+        self.assertEqual([], release["assets"])
+
+        ci = receipt["post_merge_ci"]
+        self.assertEqual(tag["peeled_commit"], ci["head_commit"])
+        self.assertEqual("success", ci["conclusion"])
+        self.assertTrue(ci["run_url"].endswith(f"/runs/{ci['run_id']}"))
+
+        boundary = receipt["unverified_or_not_performed"]
+        self.assertEqual("NOT_VERIFIED", boundary["marketplace_resolution"])
+        self.assertEqual("NOT_PERFORMED", boundary["installation"])
+        self.assertEqual("NOT_CREATED", boundary["installable_artifact"])
+        self.assertEqual("NOT_IMPLEMENTED", boundary["runtime_execution"])
+        self.assertEqual("NOT_PROVEN", boundary["host_enforcement"])
+        self.assertEqual("NOT_PERFORMED", boundary["financial_data_access"])
+        self.assertEqual("NONE", boundary["external_action"])
+
     def test_installation_docs_bind_v060_final_state(self) -> None:
         for relative_path in (
             "README.md",
