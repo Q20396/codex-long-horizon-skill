@@ -2,11 +2,17 @@
 
 All notable changes to this project are summarized here.
 
-## 0.6.0-dev - 2026-08-02
+## 0.6.0 - 2026-08-04
 
-- Main is a candidate line after the immutable `v0.5.0` release. Marketplace
-  installation continues to resolve the reviewed `v0.5.0` tag; this source tree
-  is not a stable release or installation target.
+- Added synthetic-only static contracts for research requests, semantic
+  validation, capability/observation/grant/execution records, evidence/claim/
+  calculation records, and research review packages.
+- Kept financial-data access, accounts, credentials, Grant issuance or
+  consumption, valuation runtime, orders, trading, persistence, and external
+  actions out of scope and unimplemented.
+- Finalized the reviewed stable package state for the immutable `v0.6.0` tag;
+  tag creation, GitHub Release publication, marketplace resolution, and
+  installation remain distinct approval-gated actions.
 
 ## 0.5.0 - 2026-08-01
 

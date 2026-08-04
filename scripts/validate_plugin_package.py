@@ -13,8 +13,8 @@ ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / ".codex-plugin" / "plugin.json"
 MARKETPLACE = ROOT / ".agents" / "plugins" / "marketplace.json"
 EXPECTED_NAME = "codex-long-horizon-skill"
-EXPECTED_VERSION = "0.6.0-dev"
-STABLE_RELEASE_VERSION = "0.5.0"
+EXPECTED_VERSION = "0.6.0"
+STABLE_RELEASE_VERSION = "0.6.0"
 EXPECTED_REPOSITORY = "https://github.com/Q20396/codex-long-horizon-skill"
 EXPECTED_LICENSE = "MIT"
 SEMVER = re.compile(r"^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$")
@@ -103,7 +103,7 @@ def bundled_skill_names(skills_root: Path, errors: list[str], root: Path = ROOT)
     return skill_names
 
 
-def validate_manifest(errors: list[str]) -> dict:
+def validate_manifest(errors: list[str], expected_version: str) -> dict:
     try:
         manifest = load_json(MANIFEST)
     except (OSError, ValueError, json.JSONDecodeError) as exc:
@@ -123,8 +123,8 @@ def validate_manifest(errors: list[str]) -> dict:
         errors.append("plugin name must be stable kebab-case")
     if not SEMVER.match(str(version)):
         errors.append("plugin version must be valid semantic version syntax")
-    if version != EXPECTED_VERSION:
-        errors.append(f"plugin version must be {EXPECTED_VERSION} for this phase")
+    if version != expected_version:
+        errors.append(f"plugin version must be {expected_version} for this phase")
     if not isinstance(description, str) or not description.strip():
         errors.append("plugin description must be non-empty")
     elif len(description) > 180:
@@ -236,13 +236,20 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Alias for the default validation mode.",
     )
+    parser.add_argument(
+        "--expected-version",
+        default=EXPECTED_VERSION,
+        help="Expected package version for an isolated release-readiness check.",
+    )
     return parser.parse_args()
 
 
 def main() -> None:
-    parse_args()
+    args = parse_args()
+    if not SEMVER.match(args.expected_version):
+        raise SystemExit("ERROR: --expected-version must be valid semantic version syntax")
     errors: list[str] = []
-    manifest = validate_manifest(errors)
+    manifest = validate_manifest(errors, args.expected_version)
     validate_marketplace(errors, manifest)
     validate_release_sync(errors)
 

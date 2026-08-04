@@ -1,15 +1,15 @@
 {
   "skill_id": "ai-video-production",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "repo": "https://github.com/Q20396/codex-long-horizon-skill",
   "path": ".agents/skills/ai-video-production",
   "channel": "stable",
   "released": true,
-  "release_date": "2026-08-01",
+  "release_date": "2026-08-04",
   "risk": "reviewed",
   "summary": [
-    "Aligned package metadata with the stable v0.5.0 feature release state.",
-    "Introduced no AI Video functional payload in this patch release.",
+    "Aligned package metadata with the stable v0.6.0 release state.",
+    "Introduced no AI Video functional payload in this release.",
     "Retained separate approval gates for rendering, installation, external processing, and publication."
   ],
   "requires_manual_approval": true,
