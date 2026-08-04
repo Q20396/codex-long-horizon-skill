@@ -4,36 +4,36 @@
 
 | Line | Status | Security policy |
 | --- | --- | --- |
-| `main` / v0.4 release line | Supported stable and development line | Fixes land on `main`; tag, GitHub Release, Marketplace resolution, and installed update remain separate evidence stages. |
-| v0.3.3 | Security-only maintenance | Previous stable release; upgrade to v0.4.0 is recommended. |
-| v0.3.0 tag | Historical candidate | Immutable candidate evidence only; it is not the supported stable installation ref. |
-| `release/0.2.x` / v0.2.5 | Retired maintenance line | The maintenance window ended on 2026-07-31 after v0.3.1 publication and independent replacement-install verification. No routine security or feature backports. |
-| v0.2.4 and earlier | Unsupported | Upgrade guidance or a separately approved exceptional fix is required. |
+| `main` / v0.6.x | Current supported line | Fixes land on `main`; tag, GitHub Release, Marketplace resolution, and installed update remain separate evidence stages. |
+| v0.5.0 | Security-only until 2026-11-02 | Security reports remain in scope during this bounded window. Any backport requires a separate support decision, independent change, review, validation, tag, release, and installation decision. |
+| v0.4.x and earlier | Unsupported | Upgrade guidance or a separately approved exceptional fix is required. |
 
-Any exceptional retired-line fix requires a separate support decision,
-independent change, review, validation, tag, release, and installation decision.
-A fix on `main` does not automatically advance `release/0.2.x`, and a tagged
-maintenance commit does not by itself establish a GitHub Release, Marketplace
-resolution, or installed update.
+This includes the historical `release/0.2.x` line and its tags, which remain a
+Retired maintenance line. Its maintenance window ended on 2026-07-31. No routine security or feature backports are provided. A fix on `main` does not
+automatically advance an unsupported line, and a tagged maintenance commit does
+not by itself establish a GitHub Release, Marketplace resolution, or installed
+update.
 
 ## Repository Security Observability
 
-Public GitHub API checks on 2026-08-01 reported private vulnerability reporting,
-Code Scanning analysis, Dependabot alerts/security updates, Secret Scanning, and
-push protection as disabled or unavailable for this repository. This is a
-repository-control gap, not evidence that a vulnerability exists or that the
-source is unsafe. Recheck these controls before each release. Enabling them is a
-separate repository-administration decision and must not be inferred from a
-source change or passing CI.
+Observed at: 2026-08-05.
+
+Public GitHub API checks observed private vulnerability reporting, Dependabot
+security updates and vulnerability alerts, Secret Scanning, and Push Protection
+as enabled. GitHub Code Scanning default setup: CodeQL default setup was
+`not-configured`. This is an external
+repository-control snapshot, not proof that a vulnerability is absent, source is
+safe, Actions are vulnerability-free, host enforcement exists, or a release is
+authorized. Recheck these controls before each release; a source change or
+passing CI does not establish their current state.
 
 ## Reporting A Vulnerability
 
 Do not open a public issue with sensitive vulnerability details.
 
-Private vulnerability reporting was not enabled at the 2026-08-01 check. Ask
-the maintainers to establish a verified private security contact before sharing
-sensitive details. Do not place sensitive vulnerability details in a public
-issue, pull request, log, or discussion.
+Use GitHub private vulnerability reporting for sensitive reports where it is
+available. Do not place sensitive vulnerability details in a public issue, pull
+request, log, or discussion.
 
 ## What To Include
 
