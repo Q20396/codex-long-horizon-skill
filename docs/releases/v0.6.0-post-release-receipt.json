@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "receipt_kind": "POST_RELEASE_EVIDENCE_ATTACHMENT",
+  "release": "v0.6.0",
+  "release_state": "PUBLISHED",
+  "observed_at_utc": "2026-08-04T00:35:04Z",
+  "tag": {
+    "name": "v0.6.0",
+    "tag_object": "7c3f79ecc2aaf0128d782761a7bc2c524f368702",
+    "peeled_commit": "1606bd21b91980c265fea82718e7d2cca12d3495",
+    "tag_type": "annotated",
+    "signature_evidence": "KEY_HOLDER_VERIFIED_GOOD_SIGNATURE"
+  },
+  "github_release": {
+    "url": "https://github.com/Q20396/codex-long-horizon-skill/releases/tag/v0.6.0",
+    "published_at": "2026-08-04T00:35:04Z",
+    "draft": false,
+    "prerelease": false,
+    "assets": []
+  },
+  "post_merge_ci": {
+    "workflow": "Check skill package",
+    "run_id": 30865560244,
+    "run_url": "https://github.com/Q20396/codex-long-horizon-skill/actions/runs/30865560244",
+    "head_commit": "1606bd21b91980c265fea82718e7d2cca12d3495",
+    "conclusion": "success"
+  },
+  "unverified_or_not_performed": {
+    "marketplace_resolution": "NOT_VERIFIED",
+    "installation": "NOT_PERFORMED",
+    "installable_artifact": "NOT_CREATED",
+    "runtime_execution": "NOT_IMPLEMENTED",
+    "host_enforcement": "NOT_PROVEN",
+    "financial_data_access": "NOT_PERFORMED",
+    "external_action": "NONE"
+  },
+  "limitations": [
+    "This is an observed post-release evidence attachment, not pre-release evidence.",
+    "It does not authorize marketplace resolution, installation, runtime execution, or external action.",
+    "It does not prove that the release tag was never moved at an earlier point in time.",
+    "It does not prove that any host installed or can invoke the published package."
+  ]
+}
