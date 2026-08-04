@@ -472,7 +472,14 @@ def package_errors(
         if not (ROOT / path).is_file():
             errors.append(f"required release-readiness file missing: {path}")
 
-    validator = run(["python3", "scripts/validate_plugin_package.py"])
+    validator = run(
+        [
+            "python3",
+            "scripts/validate_plugin_package.py",
+            "--expected-version",
+            version,
+        ]
+    )
     if validator.returncode != 0:
         output = (validator.stdout + validator.stderr).strip()
         if "Traceback" in output:
