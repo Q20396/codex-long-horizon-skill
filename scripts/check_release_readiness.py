@@ -16,7 +16,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$")
-STABLE_RELEASE_VERSION = "0.5.0"
+STABLE_RELEASE_VERSION = "0.6.0"
 RELEASE_DATE_RE = re.compile(r"^Release date:\s*(\d{4}-\d{2}-\d{2})\s*$", re.MULTILINE)
 RELEASE_STATE_CONTRACTS = {
     "candidate": {

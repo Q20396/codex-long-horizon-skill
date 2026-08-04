@@ -1,10 +1,10 @@
 ---
 name: ai-video-production
 description: Use for AI-assisted video or animation planning: video briefs, scripts, storyboards, shot lists, visual prompts, asset manifests, preview plans, and render handoffs. Do not use for general repository engineering or automatic rendering, uploading, publishing, or posting.
-version: 0.6.0-dev
+version: 0.6.0
 repo: https://github.com/Q20396/codex-long-horizon-skill
 skill_id: ai-video-production
-update_channel: candidate
+update_channel: stable
 ---
 
 # AI Video Production

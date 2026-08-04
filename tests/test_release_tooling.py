@@ -453,7 +453,7 @@ class FrontMatterParserTests(unittest.TestCase):
         output = result.stdout + result.stderr
         self.assertNotEqual(result.returncode, 0)
         self.assertIn(
-            "marketplace source.ref must match immutable release tag 'v0.5.0'",
+            "marketplace source.ref must match immutable release tag 'v0.6.0'",
             output,
         )
 
@@ -476,7 +476,7 @@ class FrontMatterParserTests(unittest.TestCase):
                         repo,
                         marketplace_name="codex-long-horizon-skills",
                         plugin_name="codex-long-horizon-skill",
-                        version="0.5.0",
+                        version="0.6.0",
                         boundary=self.temp,
                     )
                 )
@@ -489,7 +489,7 @@ class FrontMatterParserTests(unittest.TestCase):
                 repo,
                 marketplace_name="codex-long-horizon-skills",
                 plugin_name="codex-long-horizon-skill",
-                version="0.5.0",
+                version="0.6.0",
                 boundary=self.temp,
             ),
             str(repo.resolve()),
@@ -497,6 +497,9 @@ class FrontMatterParserTests(unittest.TestCase):
 
 
 class ReleaseReadinessTests(unittest.TestCase):
+    FINAL_VERSION = "0.6.0"
+    CANDIDATE_VERSION = "0.6.1-dev"
+
     def setUp(self) -> None:
         self.temp = Path(tempfile.mkdtemp(prefix="release-readiness-test-"))
 
@@ -513,18 +516,21 @@ class ReleaseReadinessTests(unittest.TestCase):
         repo: Path,
         *args: str,
         env: dict[str, str] | None = None,
-        release_state: str = "candidate",
-        version: str = "0.6.0-dev",
+        release_state: str = "final",
+        version: str | None = None,
     ) -> subprocess.CompletedProcess[str]:
         run_env = os.environ.copy()
         if env:
             run_env.update(env)
+        selected_version = version or (
+            self.CANDIDATE_VERSION if release_state == "candidate" else self.FINAL_VERSION
+        )
         return subprocess.run(
             [
                 sys.executable,
                 "scripts/check_release_readiness.py",
                 "--version",
-                version,
+                selected_version,
                 "--release-state",
                 release_state,
                 *args,
@@ -537,30 +543,51 @@ class ReleaseReadinessTests(unittest.TestCase):
         )
 
     def set_candidate_state(self, repo: Path) -> None:
-        """The source is a candidate while published selectors stay on v0.5.0."""
-        self.assertIn("version: 0.6.0-dev", (repo / ".agents/skills/long-horizon-engineering/SKILL.md").read_text(encoding="utf-8"))
+        """Create a future candidate fixture while preserving v0.6.0 selectors."""
+        for skill_name in ("long-horizon-engineering", "ai-video-production"):
+            skill = repo / ".agents" / "skills" / skill_name / "SKILL.md"
+            skill.write_text(
+                skill.read_text(encoding="utf-8")
+                .replace("version: 0.6.0", f"version: {self.CANDIDATE_VERSION}", 1)
+                .replace("update_channel: stable", "update_channel: candidate", 1),
+                encoding="utf-8",
+            )
+        manifest = repo / ".codex-plugin/plugin.json"
+        manifest.write_text(
+            manifest.read_text(encoding="utf-8").replace(
+                '"0.6.0"', f'"{self.CANDIDATE_VERSION}"', 1
+            ),
+            encoding="utf-8",
+        )
+        (repo / "docs/releases" / f"v{self.CANDIDATE_VERSION}.md").write_text(
+            "# Long-Horizon Engineering v0.6.1-dev\n\n"
+            "Release date: 2026-08-05\n\n"
+            "Release state: candidate\n\n"
+            "This Long-Horizon Engineering and AI video production candidate "
+            "does not change the stable Codex plugin or repository marketplace. "
+            "Validation and installation remain separate approval-gated stages.\n",
+            encoding="utf-8",
+        )
+        changelog = repo / "CHANGELOG.md"
+        changelog.write_text(
+            changelog.read_text(encoding="utf-8").replace(
+                "## 0.6.0 - 2026-08-04\n",
+                "## 0.6.1-dev - 2026-08-05\n\n"
+                "- Candidate-only synthetic fixture for release-readiness tests.\n\n"
+                "## 0.6.0 - 2026-08-04\n",
+                1,
+            ),
+            encoding="utf-8",
+        )
         self.assertEqual(
             "AVAILABLE",
             json.loads((repo / ".agents/plugins/marketplace.json").read_text(encoding="utf-8"))["plugins"][0]["policy"]["installation"],
         )
 
     def set_final_release_state(self, repo: Path) -> None:
-        """Create a stable v0.5.0 fixture without changing the candidate source."""
-        for skill_name in ("long-horizon-engineering", "ai-video-production"):
-            skill = repo / ".agents" / "skills" / skill_name / "SKILL.md"
-            skill.write_text(
-                skill.read_text(encoding="utf-8")
-                .replace("version: 0.6.0-dev", "version: 0.5.0", 1)
-                .replace("update_channel: candidate", "update_channel: stable", 1),
-                encoding="utf-8",
-            )
-        manifest = repo / ".codex-plugin/plugin.json"
-        manifest.write_text(
-            manifest.read_text(encoding="utf-8").replace('"0.6.0-dev"', '"0.5.0"', 1),
-            encoding="utf-8",
-        )
+        """The copied repository already represents the v0.6.0 final state."""
 
-    def release_notes(self, repo: Path, version: str = "0.6.0-dev") -> Path:
+    def release_notes(self, repo: Path, version: str = "0.6.0") -> Path:
         return repo / "docs" / "releases" / f"v{version}.md"
 
     def changelog(self, repo: Path) -> Path:
@@ -575,7 +602,7 @@ class ReleaseReadinessTests(unittest.TestCase):
             capture_output=True,
             text=True,
         )
-        subprocess.run(["git", "tag", "v0.5.0"], cwd=repo, check=True, capture_output=True, text=True)
+        subprocess.run(["git", "tag", self.FINAL_VERSION], cwd=repo, check=True, capture_output=True, text=True)
 
     def init_committed_repo(self, repo: Path) -> tuple[str, str]:
         subprocess.run(
@@ -679,8 +706,8 @@ class ReleaseReadinessTests(unittest.TestCase):
         release_notes = self.release_notes(repo)
         release_notes.write_text(
             release_notes.read_text(encoding="utf-8").replace(
-                "Release state: candidate",
                 "Release state: final",
+                "Release state: candidate",
                 1,
             ),
             encoding="utf-8",
@@ -688,7 +715,7 @@ class ReleaseReadinessTests(unittest.TestCase):
         result = self.run_readiness(repo, "--allow-existing-tag")
         self.assert_failed_without_traceback(
             result,
-            "release notes state 'final' does not match 'candidate'",
+            "release notes state 'candidate' does not match 'final'",
         )
 
     def test_prepared_not_released_marker_fails(self) -> None:
@@ -730,7 +757,7 @@ class ReleaseReadinessTests(unittest.TestCase):
     def test_missing_dated_changelog_heading_fails(self) -> None:
         repo = self.copy_repo("missing-changelog-heading")
         self.changelog(repo).write_text(
-            self.changelog(repo).read_text(encoding="utf-8").replace("## 0.6.0-dev - 2026-08-02", "## 0.6.0-dev"),
+            self.changelog(repo).read_text(encoding="utf-8").replace("## 0.6.0 - 2026-08-04", "## 0.6.0"),
             encoding="utf-8",
         )
         result = self.run_readiness(repo, "--allow-existing-tag")
@@ -741,7 +768,7 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.changelog(repo).write_text(
             "# Changelog\n\nAll notable changes to this project are summarized here.\n\n"
             "## Unreleased\n\nNo unreleased changes.\n\n"
-            "## 0.6.0-dev - 2026-08-02\n\n"
+            "## 0.6.0 - 2026-08-04\n\n"
             "## 2026-06-15\n\n- Older work.\n",
             encoding="utf-8",
         )
@@ -753,8 +780,8 @@ class ReleaseReadinessTests(unittest.TestCase):
         result = self.run_readiness(repo, "--allow-existing-tag")
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
-    def test_candidate_release_notes_match_formal_schema_inventory(self) -> None:
-        notes = self.release_notes(ROOT, "0.6.0-dev").read_text(encoding="utf-8")
+    def test_final_release_notes_match_formal_schema_inventory(self) -> None:
+        notes = self.release_notes(ROOT, "0.6.0").read_text(encoding="utf-8")
         normalized = " ".join(notes.split())
         schema_count = len(FORMAL_VALIDATOR.SCHEMA_INVENTORY)
         fixture_count = len(FORMAL_VALIDATOR.FIXTURE_VALIDATED_SCHEMAS)
@@ -775,7 +802,7 @@ class ReleaseReadinessTests(unittest.TestCase):
             normalized,
         )
 
-    def test_installation_docs_bind_v050_final_state(self) -> None:
+    def test_installation_docs_bind_v060_final_state(self) -> None:
         for relative_path in (
             "README.md",
             "INSTALL.md",
@@ -784,7 +811,7 @@ class ReleaseReadinessTests(unittest.TestCase):
         ):
             with self.subTest(path=relative_path):
                 text = (ROOT / relative_path).read_text(encoding="utf-8")
-                self.assertIn("--ref v0.5.0", text)
+                self.assertIn("--ref v0.6.0", text)
                 self.assertNotIn("--ref v0.3.0", text)
                 self.assertIn("AVAILABLE", text)
 
@@ -1113,7 +1140,7 @@ class ReleaseReadinessTests(unittest.TestCase):
         data["version"] = "9.9.9"
         manifest.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
         result = self.run_readiness(repo, "--allow-existing-tag")
-        self.assert_failed_without_traceback(result, "plugin version '9.9.9' does not match '0.6.0-dev'")
+        self.assert_failed_without_traceback(result, "plugin version '9.9.9' does not match '0.6.0'")
 
     def test_marketplace_ref_must_match_release_version(self) -> None:
         for index, bad_ref in enumerate(
@@ -1134,7 +1161,7 @@ class ReleaseReadinessTests(unittest.TestCase):
                 result = self.run_readiness(repo, "--allow-existing-tag")
                 self.assert_failed_without_traceback(
                     result,
-                    "does not match immutable release tag 'v0.5.0'",
+                    "does not match immutable release tag 'v0.6.0'",
                 )
 
     def test_unreleased_candidate_marketplace_is_not_installable(self) -> None:
@@ -1226,7 +1253,7 @@ class ReleaseReadinessTests(unittest.TestCase):
         skill = repo / ".agents" / "skills" / "ai-video-production" / "SKILL.md"
         skill.write_text(
             skill.read_text(encoding="utf-8").replace(
-                "version: 0.6.0-dev",
+                "version: 0.6.0",
                 "version: 9.9.9",
                 1,
             ),
@@ -1235,7 +1262,7 @@ class ReleaseReadinessTests(unittest.TestCase):
         result = self.run_readiness(repo, "--allow-existing-tag")
         self.assert_failed_without_traceback(
             result,
-            "ai-video-production/SKILL.md version '9.9.9' does not match '0.6.0-dev'",
+            "ai-video-production/SKILL.md version '9.9.9' does not match '0.6.0'",
         )
 
     def test_v050_finance_release_keeps_research_and_execution_separate(self) -> None:
@@ -1268,10 +1295,10 @@ class ReleaseReadinessTests(unittest.TestCase):
         data = json.loads(manifest.read_text(encoding="utf-8"))
         data["release_date"] = "2026-07-26"
         manifest.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
-        result = self.run_readiness(repo, "--allow-existing-tag", release_state="final", version="0.5.0")
+        result = self.run_readiness(repo, "--allow-existing-tag", release_state="final", version=self.FINAL_VERSION)
         self.assert_failed_without_traceback(
             result,
-            "release_date '2026-07-26' does not match '2026-08-01'",
+            "release_date '2026-07-26' does not match '2026-08-04'",
         )
 
     def test_release_note_date_must_match_changelog_date(self) -> None:
@@ -1279,12 +1306,12 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.set_final_release_state(repo)
         self.changelog(repo).write_text(
             self.changelog(repo).read_text(encoding="utf-8").replace(
-                "## 0.5.0 - 2026-08-01",
-                "## 0.5.0 - 2026-07-23",
+                "## 0.6.0 - 2026-08-04",
+                "## 0.6.0 - 2026-07-23",
             ),
             encoding="utf-8",
         )
-        result = self.run_readiness(repo, "--allow-existing-tag", release_state="final", version="0.5.0")
+        result = self.run_readiness(repo, "--allow-existing-tag", release_state="final", version=self.FINAL_VERSION)
         self.assert_failed_without_traceback(result, "CHANGELOG missing dated version section")
 
     def test_pre_tag_static_passes_without_formal_schema_gate(self) -> None:
@@ -1303,7 +1330,7 @@ class ReleaseReadinessTests(unittest.TestCase):
         repo = self.copy_repo("pre-tag-static-final")
         self.set_final_release_state(repo)
         result = self.run_readiness(
-            repo, "--pre-tag-static", release_state="final", version="0.5.0"
+            repo, "--pre-tag-static", release_state="final", version=self.FINAL_VERSION
         )
         self.assert_failed_without_traceback(
             result,
@@ -1347,7 +1374,7 @@ class ReleaseReadinessTests(unittest.TestCase):
                     encoding="utf-8",
                 )
                 result = self.run_readiness(
-                    repo, "--allow-existing-tag", release_state="final", version="0.5.0"
+                    repo, "--allow-existing-tag", release_state="final", version=self.FINAL_VERSION
                 )
                 self.assert_failed_without_traceback(result, expected)
 
@@ -1364,7 +1391,7 @@ class ReleaseReadinessTests(unittest.TestCase):
             encoding="utf-8",
         )
         result = self.run_readiness(
-            repo, "--allow-existing-tag", release_state="final", version="0.5.0"
+            repo, "--allow-existing-tag", release_state="final", version=self.FINAL_VERSION
         )
         self.assert_failed_without_traceback(
             result,
@@ -1381,6 +1408,7 @@ class ReleaseReadinessTests(unittest.TestCase):
 
     def test_pre_tag_rejects_handwritten_pass_receipt(self) -> None:
         repo = self.copy_repo("pre-tag-handwritten-pass")
+        self.set_candidate_state(repo)
         result_path = self.write_formal_result(repo)
         result = self.run_readiness(
             repo,
@@ -1500,7 +1528,7 @@ class ReleaseReadinessTests(unittest.TestCase):
     def test_pre_tag_fails_with_local_tag(self) -> None:
         repo = self.copy_repo("pre-tag-with-tag")
         self.init_repo_with_tag(repo)
-        subprocess.run(["git", "tag", "v0.6.0-dev"], cwd=repo, check=True, capture_output=True, text=True)
+        subprocess.run(["git", "tag", "v0.6.0"], cwd=repo, check=True, capture_output=True, text=True)
         result = self.run_readiness(repo, "--pre-tag")
         self.assert_failed_without_traceback(result, "local tag already exists")
 
@@ -1562,7 +1590,7 @@ class ReleaseReadinessTests(unittest.TestCase):
         repo = self.copy_repo("duplicated-changelog")
         text = self.changelog(repo).read_text(encoding="utf-8")
         duplicated = (
-            "- Main is a candidate line after the immutable `v0.5.0` release. Marketplace\n"
+            "- Added synthetic-only static contracts for research requests, semantic\n"
         )
         unreleased_heading = "## Unreleased\n"
         if unreleased_heading in text:

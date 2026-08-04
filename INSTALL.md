@@ -9,16 +9,16 @@ This repository contains reusable Codex skills:
 
 Plugin installation is the preferred reusable distribution path.
 
-The stable release-state contract records the immutable `v0.5.0` marketplace
+The stable release-state contract records the immutable `v0.6.0` marketplace
 reference with `policy.installation: AVAILABLE`:
 
 ```bash
-codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.5.0
+codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.6.0
 ```
 
 Before running it, independently verify the remote annotated tag, peeled
 commit/tree, published GitHub Release, and isolated marketplace resolution for
-`v0.5.0`. Repository metadata alone does not prove those external stages.
+`v0.6.0`. Repository metadata alone does not prove those external stages.
 `main` is mutable repository state and is not a stable installation channel:
 
 ```bash
