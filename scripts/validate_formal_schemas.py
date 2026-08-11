@@ -1139,6 +1139,43 @@ def materialized_fixture_cases() -> tuple[
     return positives, negatives
 
 
+def validate_public_equity_timestamp_gate(
+    schema: object, record: object
+) -> list[str]:
+    """Run the Public Equity semantic gate after Draft instance validation.
+
+    This is intentionally limited to the one fixture-validated Public Equity
+    contract. All other formal-schema behaviour remains Draft-only.
+    """
+
+    try:
+        from scripts.validate_public_equity_research_governance_contract import (
+            TIMESTAMP_FIELD_INVENTORY,
+            timestamp_manifest_semantic_digest,
+            validate_timestamp_contract,
+        )
+    except ModuleNotFoundError:
+        # Direct execution places ``scripts`` on sys.path rather than ROOT.
+        from validate_public_equity_research_governance_contract import (
+            TIMESTAMP_FIELD_INVENTORY,
+            timestamp_manifest_semantic_digest,
+            validate_timestamp_contract,
+        )
+
+    guide = (
+        ROOT
+        / "sandbox/skill-incubator/architecture/public-equity-research-governance.md"
+    ).read_text(encoding="utf-8")
+    digest = timestamp_manifest_semantic_digest(guide)
+    return validate_timestamp_contract(
+        schema=schema,
+        markdown=guide,
+        record=record,
+        inventory=TIMESTAMP_FIELD_INVENTORY,
+        expected_semantic_digest=digest,
+    )
+
+
 def validate_fixture_coverage(
     positives: list[tuple[str, str, dict[str, Any]]],
     negatives: list[tuple[str, str, dict[str, Any], str]],
@@ -1601,6 +1638,15 @@ def validate_formal(
                         f"{case_id}: positive fixture failed at "
                         f"{dotted_path(found[0].absolute_path)}: {found[0].message}"
                     )
+                elif schema_name == "public-equity-research-governance.schema.json":
+                    timestamp_errors = validate_public_equity_timestamp_gate(
+                        schemas[schema_name], record
+                    )
+                    if timestamp_errors:
+                        errors.append(
+                            f"{case_id}: public-equity timestamp gate failed: "
+                            f"{','.join(timestamp_errors)}"
+                        )
                 positive_count += 1
             for schema_name, case_id, record, expected_path in negatives:
                 validator = Draft202012Validator(

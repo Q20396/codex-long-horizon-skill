@@ -3,13 +3,34 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from datetime import datetime
+from dataclasses import replace
 import importlib.util
 import json
 from pathlib import Path
 import re
+import sys
+from types import ModuleType
 import unittest
+from unittest.mock import patch
 from urllib.parse import parse_qsl, unquote, urlsplit
+
+from scripts import validate_formal_schemas as formal_schemas
+from scripts.validate_formal_schemas import validate_public_equity_timestamp_gate
+from scripts.validate_public_equity_research_governance_contract import (
+    TIMESTAMP_CALENDAR_INVALID,
+    TIMESTAMP_CONTAINER_INVALID,
+    TIMESTAMP_FIELD_INVENTORY,
+    TIMESTAMP_LEXICAL_PROFILE_INVALID,
+    TIMESTAMP_OFFSET_INVALID_OR_REQUIRED,
+    TimestampFieldSpec,
+    parse_offset_datetime,
+    schema_semantic_digest,
+    timestamp_inventory_alignment_errors,
+    timestamp_inventory_manifest_digest,
+    timestamp_manifest_errors,
+    timestamp_manifest_semantic_digest,
+    validate_timestamp_contract,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -28,12 +49,25 @@ CASES = (
     / "public-equity-research-governance"
     / "cases.json"
 )
-PRIORITY = INCUBATOR / "architecture" / "implementation-priority.md"
+_TIMESTAMP_GATE_SCHEMA: object | None = None
+_TIMESTAMP_GATE_MARKDOWN: str | None = None
+_TIMESTAMP_GATE_DIGEST: str | None = None
 
-OFFSET_DATETIME = re.compile(
-    r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}"
-    r"(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$"
-)
+
+def timestamp_contract_reason_codes(
+    record: object,
+    inventory: tuple[TimestampFieldSpec, ...] = TIMESTAMP_FIELD_INVENTORY,
+) -> list[str]:
+    """Test seam that always uses the public manifest-and-Schema gate."""
+
+    return validate_timestamp_contract(
+        schema=_TIMESTAMP_GATE_SCHEMA,
+        markdown=_TIMESTAMP_GATE_MARKDOWN,
+        record=record,
+        inventory=inventory,
+        expected_semantic_digest=_TIMESTAMP_GATE_DIGEST,
+    )
+
 DISPOSITIONS = {
     "accepted_for_monitoring",
     "request_more_evidence",
@@ -219,29 +253,6 @@ def apply_mutations(base_record: dict, mutations: list[dict]) -> dict:
     return record
 
 
-def parse_offset_datetime(value) -> datetime | None:
-    if not isinstance(value, str) or not OFFSET_DATETIME.fullmatch(value):
-        return None
-    try:
-        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
-        if parsed.utcoffset() is None:
-            return None
-        return parsed
-    except ValueError:
-        return None
-
-
-def all_timestamp_values(value):
-    if isinstance(value, dict):
-        for key, child in value.items():
-            if key.endswith("_at") or key == "research_as_of":
-                yield child
-            yield from all_timestamp_values(child)
-    elif isinstance(value, list):
-        for child in value:
-            yield from all_timestamp_values(child)
-
-
 def has_text(value) -> bool:
     return isinstance(value, str) and bool(value.strip())
 
@@ -386,11 +397,138 @@ def has_duplicate_entity_ids(record: dict) -> bool:
     return False
 
 
-def structural_reason_codes(record: dict) -> list[str]:
+def _is_exact_json_value(value: object, active: set[int] | None = None) -> bool:
+    """Admit only finite, acyclic, exact-builtin JSON values."""
+
+    if value is None or type(value) in {str, bool, int}:
+        return True
+    if type(value) is float:
+        return value == value and value not in (float("inf"), float("-inf"))
+    if active is None:
+        active = set()
+    if type(value) is dict:
+        identity = id(value)
+        if identity in active:
+            return False
+        active.add(identity)
+        try:
+            return all(
+                type(key) is str and _is_exact_json_value(child, active)
+                for key, child in value.items()
+            )
+        finally:
+            active.remove(identity)
+    if type(value) is list:
+        identity = id(value)
+        if identity in active:
+            return False
+        active.add(identity)
+        try:
+            return all(_is_exact_json_value(child, active) for child in value)
+        finally:
+            active.remove(identity)
+    return False
+
+
+def _aggregate_traversal_shape_is_safe(record: object) -> bool:
+    """Check only the bounded shapes this aggregate subsequently traverses."""
+
+    def scalar(value: object) -> bool:
+        return value is None or type(value) in {str, bool, int, float}
+
+    def scalar_list(value: object) -> bool:
+        return type(value) is list and all(scalar(item) for item in value)
+
+    def records_with_scalar_fields(
+        value: object,
+        scalar_fields: tuple[str, ...],
+        list_fields: tuple[str, ...] = (),
+    ) -> bool:
+        return type(value) is list and all(
+            type(item) is dict
+            and all(scalar(item.get(field)) for field in scalar_fields)
+            and all(scalar_list(item.get(field)) for field in list_fields)
+            for item in value
+        )
+
+    if type(record) is not dict:
+        return False
+    try:
+        recommendation = record.get("recommendation")
+        if (
+            type(record.get("research_context")) is not dict
+            or type(recommendation) is not dict
+            or type(record.get("boundaries")) is not dict
+            or type(recommendation.get("next_research_action")) is not dict
+            or not all(
+                scalar_list(recommendation.get(field))
+                for field in ("risk_ids", "missing_evidence_ids")
+            )
+            or not scalar(recommendation.get("human_disposition"))
+        ):
+            return False
+        return all(
+            (
+                records_with_scalar_fields(record.get("sources"), ("source_id",)),
+                records_with_scalar_fields(
+                    record.get("core_claims"),
+                    ("claim_id",),
+                    ("supporting_evidence_ids", "disconfirming_evidence_ids"),
+                ),
+                records_with_scalar_fields(record.get("assumptions"), ("assumption_id",)),
+                records_with_scalar_fields(record.get("scenarios"), ("scenario_id",)),
+                records_with_scalar_fields(record.get("risks"), ("risk_id",)),
+                records_with_scalar_fields(
+                    record.get("missing_evidence"), ("missing_evidence_id",)
+                ),
+                records_with_scalar_fields(
+                    record.get("decision_log"),
+                    ("entry_id", "supersedes_entry_id", "human_disposition"),
+                    (
+                        "source_ids",
+                        "assumption_ids",
+                        "scenario_ids",
+                        "risk_ids",
+                        "missing_evidence_ids",
+                    ),
+                ),
+            )
+        )
+    except (RecursionError, TypeError, ValueError, AttributeError, KeyError):
+        return False
+
+
+def structural_reason_codes(record: object) -> list[str]:
     """Return stable rejection reasons without repairing the supplied record."""
 
+    # The public gate owns all untrusted timestamp-container admission. It must
+    # run before this aggregate reads any caller-controlled mapping.
+    try:
+        timestamp_codes = timestamp_contract_reason_codes(record)
+    except Exception:
+        return [TIMESTAMP_CONTAINER_INVALID]
+    if TIMESTAMP_CONTAINER_INVALID in timestamp_codes:
+        return sorted(set(timestamp_codes))
+    try:
+        if not _is_exact_json_value(record) or not _aggregate_traversal_shape_is_safe(record):
+            return sorted(set(timestamp_codes) | {TIMESTAMP_CONTAINER_INVALID})
+    except (RecursionError, TypeError, ValueError, AttributeError, KeyError):
+        return sorted(set(timestamp_codes) | {TIMESTAMP_CONTAINER_INVALID})
+
+    try:
+        return _structural_reason_codes_after_admission(record, timestamp_codes)
+    except (RecursionError, TypeError, ValueError, AttributeError, KeyError):
+        return sorted(set(timestamp_codes) | {TIMESTAMP_CONTAINER_INVALID})
+
+
+def _structural_reason_codes_after_admission(
+    record: dict,
+    timestamp_codes: list[str],
+) -> list[str]:
+    """Run aggregate semantics only after public and structural admission."""
+
     reasons: set[str] = set()
-    sources = record.get("sources", [])
+    sources = record["sources"]
     for source in sources:
         if not has_text(source.get("source_locator")):
             reasons.add("EVIDENCE_LOCATOR_REQUIRED")
@@ -407,25 +545,19 @@ def structural_reason_codes(record: dict) -> list[str]:
         if not has_text(source.get("source_version")):
             reasons.add("EVIDENCE_VERSION_REQUIRED")
 
-    for value in all_timestamp_values(record):
-        if value is None:
-            continue
-        if parse_offset_datetime(value) is None:
-            reasons.add("TIMESTAMP_OFFSET_REQUIRED")
-    context = record.get("research_context", {})
-    required_timestamps = (
-        record.get("created_at"),
-        context.get("research_as_of"),
-        context.get("decision_at"),
-    )
-    if any(value is None for value in required_timestamps):
-        reasons.add("TIMESTAMP_OFFSET_REQUIRED")
-    for entry in record.get("decision_log", []):
-        if entry.get("recorded_at") is None or entry.get("research_as_of") is None:
-            reasons.add("TIMESTAMP_OFFSET_REQUIRED")
+    timestamp_reasons = set(timestamp_codes)
 
     status = record.get("point_in_time_status")
-    block_reasons = set(record.get("point_in_time_block_reasons", []))
+    if type(status) is not str:
+        return sorted(reasons | {TIMESTAMP_CONTAINER_INVALID})
+    raw_block_reasons = record.get("point_in_time_block_reasons", [])
+    if type(raw_block_reasons) is not list or not all(
+        type(reason) is str for reason in raw_block_reasons
+    ):
+        reasons.add(TIMESTAMP_CONTAINER_INVALID)
+        block_reasons: set[str] = set()
+    else:
+        block_reasons = set(raw_block_reasons)
     imprecise = any(
         source.get("time_precision") != "exact_timestamp" for source in sources
     )
@@ -453,21 +585,7 @@ def structural_reason_codes(record: dict) -> list[str]:
     )
     if (imprecise or missing_source_time) and not precision_is_blocked:
         reasons.add("TIME_PRECISION_BLOCKED")
-
-    decision_at = record.get("research_context", {}).get("decision_at")
-    decision_time = parse_offset_datetime(decision_at)
-    if decision_time is not None:
-        available_after_decision = False
-        for source in sources:
-            available_time = parse_offset_datetime(source.get("available_at"))
-            if available_time is not None and available_time > decision_time:
-                available_after_decision = True
-        violation_is_blocked = (
-            status == "point_in_time_blocked"
-            and "AVAILABLE_AFTER_DECISION" in block_reasons
-        )
-        if available_after_decision and not violation_is_blocked:
-            reasons.add("POINT_IN_TIME_VIOLATION")
+    reasons.update(timestamp_reasons)
 
     required_claim_fields = (
         "claim",
@@ -669,9 +787,15 @@ def structural_reason_codes(record: dict) -> list[str]:
 class PublicEquityResearchGovernanceContractTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
+        global _TIMESTAMP_GATE_DIGEST, _TIMESTAMP_GATE_MARKDOWN, _TIMESTAMP_GATE_SCHEMA
         cls.contract = load_json(CONTRACT)
         cls.schema = load_json(SCHEMA)
         cls.fixtures = load_json(CASES)
+        _TIMESTAMP_GATE_SCHEMA = cls.schema
+        _TIMESTAMP_GATE_MARKDOWN = GUIDE.read_text(encoding="utf-8")
+        _TIMESTAMP_GATE_DIGEST = timestamp_manifest_semantic_digest(
+            _TIMESTAMP_GATE_MARKDOWN
+        )
 
     def materialize(self, case: dict) -> dict:
         return apply_mutations(
@@ -735,7 +859,15 @@ class PublicEquityResearchGovernanceContractTests(unittest.TestCase):
             )
             self.assertEqual(case["expected_valid"], not actual, case["case_id"])
             seen.update(actual)
-        self.assertEqual(stable, seen)
+        # Container totality is deliberately exercised by direct malformed
+        # input regressions below so the fixed 109-fixture corpus can remain
+        # stable.
+        self.assertEqual(stable, seen | {TIMESTAMP_CONTAINER_INVALID})
+
+    def test_fixture_corpus_is_fixed_and_case_ids_are_unique(self) -> None:
+        case_ids = [case["case_id"] for case in self.fixtures["cases"]]
+        self.assertEqual(109, len(case_ids))
+        self.assertEqual(len(case_ids), len(set(case_ids)))
 
     def test_formal_schema_validates_positive_fixtures_when_engine_available(self) -> None:
         if importlib.util.find_spec("jsonschema") is None:
@@ -800,6 +932,930 @@ class PublicEquityResearchGovernanceContractTests(unittest.TestCase):
                 list(validator.iter_errors(self.materialize(cases[case_id]))),
                 case_id,
             )
+
+    def test_timestamp_profile_and_gregorian_calendar_gates_are_separate(self) -> None:
+        cases = {case["case_id"]: case for case in self.fixtures["cases"]}
+        lexical_schema_cases = {
+            "invalid-retrieved-month",
+            "invalid-decision-month",
+            "invalid-lowercase-t-z",
+            "invalid-leap-second",
+            "invalid-trailing-newline",
+            "invalid-fractional-second-7",
+            "invalid-trailing-carriage-return",
+            "invalid-trailing-line-separator",
+            "invalid-trailing-paragraph-separator",
+        }
+        offset_cases = {
+            "timestamp-without-offset",
+            "invalid-negative-zero-offset",
+            "invalid-offset-14-01",
+        }
+        calendar_only_cases = {
+            "invalid-common-year-feb-29",
+            "invalid-feb-30",
+            "invalid-feb-31",
+            "invalid-apr-31",
+            "invalid-year-zero",
+        }
+
+        self.assertEqual([], structural_reason_codes(
+            self.materialize(cases["valid-leap-year-feb-29"])
+        ))
+        for case_id in lexical_schema_cases:
+            self.assertEqual(
+                [TIMESTAMP_LEXICAL_PROFILE_INVALID],
+                structural_reason_codes(self.materialize(cases[case_id])),
+                case_id,
+            )
+        for case_id in calendar_only_cases:
+            self.assertEqual(
+                [TIMESTAMP_CALENDAR_INVALID],
+                structural_reason_codes(self.materialize(cases[case_id])),
+                case_id,
+            )
+        for case_id in offset_cases:
+            self.assertEqual(
+                [TIMESTAMP_OFFSET_INVALID_OR_REQUIRED],
+                structural_reason_codes(self.materialize(cases[case_id])),
+                case_id,
+            )
+
+        first = parse_offset_datetime("2026-07-26T09:00:00.123455Z")
+        second = parse_offset_datetime("2026-07-26T09:00:00.123456Z")
+        self.assertIsNotNone(first)
+        self.assertIsNotNone(second)
+        self.assertLess(first, second)
+
+        if importlib.util.find_spec("jsonschema") is None:
+            self.skipTest("jsonschema is not installed")
+        from jsonschema import Draft202012Validator
+
+        validator = Draft202012Validator(self.schema)
+        for case_id in lexical_schema_cases:
+            self.assertTrue(
+                list(validator.iter_errors(self.materialize(cases[case_id]))),
+                case_id,
+            )
+        for case_id in offset_cases - {"timestamp-without-offset"}:
+            self.assertTrue(
+                list(validator.iter_errors(self.materialize(cases[case_id]))),
+                case_id,
+            )
+        for case_id in calendar_only_cases:
+            self.assertEqual(
+                [],
+                list(validator.iter_errors(self.materialize(cases[case_id]))),
+                case_id,
+            )
+
+    def test_record_timestamp_verifier_covers_every_declared_path(self) -> None:
+        def pointer(spec: TimestampFieldSpec) -> str:
+            if spec.container_path == "record":
+                return f"/{spec.field}"
+            index = "/0" if spec.repeated else ""
+            return f"/{spec.container_path}{index}/{spec.field}"
+
+        invalid_values = (
+            ("2026-07-26t09:00:00z", TIMESTAMP_LEXICAL_PROFILE_INVALID),
+            ("2025-02-29T09:00:00+10:00", TIMESTAMP_CALENDAR_INVALID),
+            ("2026-07-26T09:00:00+14:01", TIMESTAMP_OFFSET_INVALID_OR_REQUIRED),
+        )
+        for spec in (
+            spec for spec in TIMESTAMP_FIELD_INVENTORY
+            if spec.conditional_context == "always"
+        ):
+            for value, expected_reason in invalid_values:
+                with self.subTest(path=spec.path, expected_reason=expected_reason):
+                    record = apply_mutations(
+                        self.fixtures["base_record"],
+                        [{"op": "set", "path": pointer(spec), "value": value}],
+                    )
+                    self.assertEqual(
+                        [expected_reason],
+                        timestamp_contract_reason_codes(record),
+                    )
+
+    def test_schema_and_verifier_timestamp_inventories_match(self) -> None:
+        guide = GUIDE.read_text(encoding="utf-8")
+        inventory_manifests = re.findall(
+            r"<!-- PUBLIC_EQUITY_TIMESTAMP_INVENTORY_MANIFEST\s+"
+            r"sha256:([0-9a-f]{64})\s+"
+            r"canonicalization:json-sort-keys-compact-separators\s+-->",
+            guide,
+        )
+        semantic_manifests = re.findall(
+            r"<!-- PUBLIC_EQUITY_TIMESTAMP_SCHEMA_SEMANTIC_DIGEST\s+"
+            r"sha256:([0-9a-f]{64})\s+"
+            r"canonicalization:utf-8-json-sort-keys-compact-separators-array-order-preserved\s+"
+            r"annotation_pointers:[^\n]+\s+"
+            r"annotation_keys:title,description,\$comment\s+-->",
+            guide,
+        )
+        self.assertEqual(1, len(inventory_manifests))
+        self.assertEqual(1, len(semantic_manifests))
+        inventory_manifest, semantic_manifest = inventory_manifests[0], semantic_manifests[0]
+        self.assertEqual(inventory_manifest, timestamp_inventory_manifest_digest())
+        self.assertEqual(semantic_manifest, schema_semantic_digest(self.schema))
+        self.assertEqual([], timestamp_manifest_errors(guide, self.schema))
+        self.assertEqual(
+            [], timestamp_inventory_alignment_errors(self.schema, expected_semantic_digest=semantic_manifest)
+        )
+        for digest in (None, [], {}, "not-a-digest"):
+            with self.subTest(missing_or_invalid_digest=digest):
+                self.assertEqual(
+                    [TIMESTAMP_CONTAINER_INVALID],
+                    timestamp_inventory_alignment_errors(
+                        self.schema, expected_semantic_digest=digest
+                    ),
+                )
+
+        schema_mutations = []
+        removed = deepcopy(self.schema)
+        del removed["properties"]["created_at"]
+        schema_mutations.append(removed)
+        required_changed = deepcopy(self.schema)
+        required_changed["$defs"]["source"]["required"].remove("available_at")
+        schema_mutations.append(required_changed)
+        nullable_changed = deepcopy(self.schema)
+        nullable_changed["$defs"]["source"]["properties"]["available_at"] = {"$ref": "#/$defs/offsetDateTime"}
+        schema_mutations.append(nullable_changed)
+        min_items_changed = deepcopy(self.schema)
+        min_items_changed["properties"]["sources"]["minItems"] = 0
+        schema_mutations.append(min_items_changed)
+        object_type_changed = deepcopy(self.schema)
+        object_type_changed["properties"]["research_context"]["type"] = "array"
+        schema_mutations.append(object_type_changed)
+        items_ref_changed = deepcopy(self.schema)
+        items_ref_changed["properties"]["sources"]["items"] = {"$ref": "#/$defs/decisionEntry"}
+        schema_mutations.append(items_ref_changed)
+        pattern_changed = deepcopy(self.schema)
+        pattern_changed["$defs"]["offsetDateTime"]["pattern"] = "^different$"
+        schema_mutations.append(pattern_changed)
+        root_constraint = deepcopy(self.schema)
+        root_constraint["not"] = {}
+        schema_mutations.append(root_constraint)
+        research_context_constraint = deepcopy(self.schema)
+        research_context_constraint["properties"]["research_context"]["maxProperties"] = 1
+        schema_mutations.append(research_context_constraint)
+        source_constraint = deepcopy(self.schema)
+        source_constraint["$defs"]["source"]["not"] = {}
+        schema_mutations.append(source_constraint)
+        decision_constraint = deepcopy(self.schema)
+        decision_constraint["$defs"]["decisionEntry"]["not"] = {}
+        schema_mutations.append(decision_constraint)
+        source_max_items = deepcopy(self.schema)
+        source_max_items["properties"]["sources"]["maxItems"] = 0
+        schema_mutations.append(source_max_items)
+        decision_max_items = deepcopy(self.schema)
+        decision_max_items["properties"]["decision_log"]["maxItems"] = 0
+        schema_mutations.append(decision_max_items)
+        restrictive_sibling = deepcopy(self.schema)
+        restrictive_sibling["$defs"]["source"]["properties"]["available_at"]["type"] = "string"
+        schema_mutations.append(restrictive_sibling)
+        unsupported_not = deepcopy(self.schema)
+        unsupported_not["$defs"]["offsetDateTime"]["not"] = {"type": "null"}
+        schema_mutations.append(unsupported_not)
+        cyclic_ref = deepcopy(self.schema)
+        cyclic_ref["$defs"]["offsetDateTime"] = {"$ref": "#/$defs/offsetDateTime"}
+        schema_mutations.append(cyclic_ref)
+        escaped_alias = deepcopy(self.schema)
+        escaped_alias["$defs"]["offsetDateTimeAlias"] = deepcopy(escaped_alias["$defs"]["offsetDateTime"])
+        escaped_alias["properties"]["created_at"] = {"$ref": "#/$defs/offsetDateTimeAlias"}
+        schema_mutations.append(escaped_alias)
+        duplicate_occurrence = deepcopy(self.schema)
+        duplicate_occurrence["allOf"][0]["then"]["properties"]["sources"]["items"]["allOf"].append({"$ref": "#/$defs/source"})
+        schema_mutations.append(duplicate_occurrence)
+        conditional_changed = deepcopy(self.schema)
+        conditional_changed["allOf"][0]["if"]["required"].append("created_at")
+        schema_mutations.append(conditional_changed)
+        ready_not = deepcopy(self.schema)
+        ready_not["allOf"][0]["then"]["properties"]["sources"]["items"]["allOf"][1]["not"] = {}
+        schema_mutations.append(ready_not)
+        ready_min_items = deepcopy(self.schema)
+        ready_min_items["allOf"][0]["then"]["properties"]["sources"]["items"]["allOf"][1]["minItems"] = 1
+        schema_mutations.append(ready_min_items)
+        missing_ready_descriptor = deepcopy(self.schema)
+        del missing_ready_descriptor["allOf"][0]["then"]["properties"]["sources"]["items"]["allOf"][1]["properties"]["available_at"]
+        schema_mutations.append(missing_ready_descriptor)
+        else_constraint = deepcopy(self.schema)
+        else_constraint["allOf"][0]["else"]["properties"]["sources"] = {"minItems": 2}
+        schema_mutations.append(else_constraint)
+        recursive_schema = deepcopy(self.schema)
+        recursive_else = recursive_schema["allOf"][0]["else"]
+        recursive_else["recursive"] = recursive_else
+        schema_mutations.append(recursive_schema)
+        for mutation in schema_mutations:
+            with self.subTest(mutation=mutation):
+                self.assertEqual(
+                    [TIMESTAMP_CONTAINER_INVALID],
+                    timestamp_inventory_alignment_errors(mutation, expected_semantic_digest=semantic_manifest),
+                )
+
+        annotations = deepcopy(self.schema)
+        annotations["$comment"] = "non-semantic root annotation"
+        annotations["$defs"]["offsetDateTime"]["title"] = "Timestamp"
+        annotations["$defs"]["nullableOffsetDateTime"]["description"] = "Nullable timestamp"
+        annotations["properties"]["sources"]["title"] = "Sources"
+        annotations["allOf"][0]["then"]["properties"]["sources"]["items"]["allOf"][1]["$comment"] = "Ready-only source wrapper"
+        self.assertEqual(
+            [], timestamp_inventory_alignment_errors(annotations, expected_semantic_digest=semantic_manifest)
+        )
+
+        conditional_index = next(
+            index for index, spec in enumerate(TIMESTAMP_FIELD_INVENTORY)
+            if spec.condition_id == "POINT_IN_TIME_READY"
+        )
+        decision_index = next(
+            index for index, spec in enumerate(TIMESTAMP_FIELD_INVENTORY)
+            if spec.temporal_role == "decision_instant"
+        )
+        inventory_mutations = (
+            tuple(spec for index, spec in enumerate(TIMESTAMP_FIELD_INVENTORY) if index != conditional_index),
+            (*TIMESTAMP_FIELD_INVENTORY, TIMESTAMP_FIELD_INVENTORY[conditional_index]),
+            tuple(
+                replace(spec, condition_id="UNKNOWN", conditional_context="unknown")
+                if index == conditional_index else spec
+                for index, spec in enumerate(TIMESTAMP_FIELD_INVENTORY)
+            ),
+            tuple(
+                replace(spec, field="research_as_of") if index == decision_index else spec
+                for index, spec in enumerate(TIMESTAMP_FIELD_INVENTORY)
+            ),
+            tuple(
+                replace(spec, path="research_context.research_as_of") if index == decision_index else spec
+                for index, spec in enumerate(TIMESTAMP_FIELD_INVENTORY)
+            ),
+            tuple(
+                replace(spec, schema_pointer="/$defs/decisionEntry/properties/research_as_of") if index == decision_index else spec
+                for index, spec in enumerate(TIMESTAMP_FIELD_INVENTORY)
+            ),
+        )
+        for inventory in inventory_mutations:
+            with self.subTest(inventory=inventory):
+                self.assertEqual(
+                    [TIMESTAMP_CONTAINER_INVALID],
+                    timestamp_inventory_alignment_errors(
+                        self.schema, inventory, expected_semantic_digest=semantic_manifest
+                    ),
+                )
+                with self.assertRaises(ValueError):
+                    timestamp_inventory_manifest_digest(inventory)
+
+    def test_schema_semantic_digest_is_annotation_scoped_and_total(self) -> None:
+        guide = GUIDE.read_text(encoding="utf-8")
+        marker = re.findall(
+            r"<!-- PUBLIC_EQUITY_TIMESTAMP_SCHEMA_SEMANTIC_DIGEST\s+sha256:([0-9a-f]{64})",
+            guide,
+        )
+        self.assertEqual(1, len(marker))
+        expected = marker[0]
+
+        annotations = deepcopy(self.schema)
+        annotations["title"] = "allowed root annotation"
+        annotations["properties"]["sources"]["description"] = "allowed source annotation"
+        self.assertEqual(expected, schema_semantic_digest(annotations))
+
+        for path, value in (
+            ("/properties/title", {"const": "validation property"}),
+            ("/allOf/0/if/properties/title", {"const": "selector property"}),
+            ("/properties/point_in_time_block_reasons/contains", {}),
+            ("/properties/new_at", {"type": "string"}),
+        ):
+            with self.subTest(path=path):
+                changed = apply_mutations(self.schema, [{"op": "set", "path": path, "value": value}])
+                self.assertNotEqual(expected, schema_semantic_digest(changed))
+                self.assertEqual(
+                    [TIMESTAMP_CONTAINER_INVALID],
+                    timestamp_inventory_alignment_errors(changed, expected_semantic_digest=expected),
+                )
+
+        for pointer in ("/title", "/$defs/offsetDateTime/title"):
+            with self.subTest(pointer=pointer):
+                changed = apply_mutations(self.schema, [{"op": "set", "path": pointer, "value": 1}])
+                self.assertEqual(
+                    [TIMESTAMP_CONTAINER_INVALID],
+                    timestamp_inventory_alignment_errors(changed, expected_semantic_digest=expected),
+                )
+
+        duplicate = guide + "\n" + re.search(
+            r"<!-- PUBLIC_EQUITY_TIMESTAMP_SCHEMA_SEMANTIC_DIGEST.*?-->",
+            guide,
+            flags=re.DOTALL,
+        ).group(0)
+        self.assertEqual(
+            [TIMESTAMP_CONTAINER_INVALID], timestamp_manifest_errors(duplicate, self.schema)
+        )
+        malformed_duplicate = guide + "\n<!-- PUBLIC_EQUITY_TIMESTAMP_SCHEMA_SEMANTIC_DIGEST malformed -->"
+        partial_duplicate = guide + "\n<!-- PUBLIC_EQUITY_TIMESTAMP_SCHEMA_SEMANTIC_DIGEST\nsha256:bad\n-->"
+        malformed_inventory_duplicate = guide + "\n<!-- PUBLIC_EQUITY_TIMESTAMP_INVENTORY_MANIFEST malformed -->"
+        wrong_canonicalization = guide.replace(
+            "canonicalization:utf-8-json-sort-keys-compact-separators-array-order-preserved",
+            "canonicalization:wrong",
+        )
+        for document in (malformed_duplicate, partial_duplicate, malformed_inventory_duplicate, wrong_canonicalization):
+            self.assertEqual(
+                [TIMESTAMP_CONTAINER_INVALID], timestamp_manifest_errors(document, self.schema)
+            )
+
+        for document in (
+            guide + "\nPUBLIC_EQUITY_TIMESTAMP_SCHEMA_SEMANTIC_DIGEST",
+            guide + "\n<!--- PUBLIC_EQUITY_TIMESTAMP_SCHEMA_SEMANTIC_DIGEST malformed -->",
+            guide + "\n<!-- malformed PUBLIC_EQUITY_TIMESTAMP_SCHEMA_SEMANTIC_DIGEST sha256:bad -->",
+            guide.replace("<!-- PUBLIC_EQUITY_TIMESTAMP_SCHEMA_SEMANTIC_DIGEST", "<!--\u00a0PUBLIC_EQUITY_TIMESTAMP_SCHEMA_SEMANTIC_DIGEST", 1),
+        ):
+            with self.subTest(marker_document=document[-100:]):
+                self.assertEqual(
+                    [TIMESTAMP_CONTAINER_INVALID],
+                    timestamp_manifest_errors(document, self.schema),
+                )
+
+        for value in (float("nan"), float("inf"), float("-inf")):
+            with self.subTest(non_finite=value):
+                changed = deepcopy(self.schema)
+                changed["x-test-number"] = value
+                self.assertEqual(
+                    [TIMESTAMP_CONTAINER_INVALID],
+                    timestamp_inventory_alignment_errors(changed, expected_semantic_digest=expected),
+                )
+
+    def test_public_timestamp_gate_is_required_by_formal_public_equity_path(self) -> None:
+        record = deepcopy(self.fixtures["base_record"])
+        changed_schema = apply_mutations(
+            self.schema,
+            [{"op": "set", "path": "/$defs/offsetDateTime/pattern", "value": ".*"}],
+        )
+        self.assertEqual(
+            [TIMESTAMP_CONTAINER_INVALID],
+            validate_public_equity_timestamp_gate(changed_schema, record),
+        )
+        if importlib.util.find_spec("jsonschema") is None:
+            self.skipTest("jsonschema is not installed")
+        from jsonschema import Draft202012Validator
+
+        self.assertEqual([], list(Draft202012Validator(changed_schema).iter_errors(record)))
+
+    def test_public_formal_gate_accepts_every_positive_synthetic_fixture(self) -> None:
+        for case in self.fixtures["cases"]:
+            if case["expected_valid"]:
+                with self.subTest(case_id=case["case_id"]):
+                    self.assertEqual(
+                        [],
+                        validate_public_equity_timestamp_gate(
+                            self.schema, self.materialize(case)
+                        ),
+                    )
+        with self.assertRaises(TypeError):
+            validate_timestamp_contract(
+                schema=self.schema,
+                markdown=_TIMESTAMP_GATE_MARKDOWN,
+                record=self.fixtures["base_record"],
+                expected_semantic_digest=_TIMESTAMP_GATE_DIGEST,
+            )
+
+    def test_formal_aggregate_executes_public_equity_double_gate(self) -> None:
+        """Exercise the actual formal aggregate wiring with in-memory seams."""
+
+        positive = [
+            (
+                "public-equity-research-governance.schema.json",
+                "aggregate-public-equity-positive",
+                deepcopy(self.fixtures["base_record"]),
+            )
+        ]
+
+        class Draft202012ValidatorStub:
+            """Dependency-free seam; engine behavior is tested by formal-schema-gate."""
+
+            @staticmethod
+            def check_schema(schema: object) -> None:
+                del schema
+
+            def __init__(self, schema: object, **kwargs: object) -> None:
+                del schema, kwargs
+
+            def iter_errors(self, record: object) -> tuple[object, ...]:
+                del record
+                return ()
+
+        class FormatCheckerStub:
+            pass
+
+        class RegistryStub:
+            def with_resources(self, resources: object) -> "RegistryStub":
+                tuple(resources)
+                return self
+
+        class ResourceStub:
+            @staticmethod
+            def from_contents(schema: object) -> object:
+                return schema
+
+        jsonschema_stub = ModuleType("jsonschema")
+        jsonschema_stub.Draft202012Validator = Draft202012ValidatorStub
+        jsonschema_stub.FormatChecker = FormatCheckerStub
+        referencing_stub = ModuleType("referencing")
+        referencing_stub.Registry = RegistryStub
+        referencing_stub.Resource = ResourceStub
+
+        def run(**gate_kwargs):
+            gate_patch = patch.object(
+                formal_schemas,
+                "validate_public_equity_timestamp_gate",
+                **gate_kwargs,
+            )
+            with (
+                patch.dict(
+                    sys.modules,
+                    {"jsonschema": jsonschema_stub, "referencing": referencing_stub},
+                ),
+                patch.object(formal_schemas, "validate_clean_worktree", return_value=[]),
+                patch.object(formal_schemas, "validate_lock", return_value=[]),
+                patch.object(
+                    formal_schemas,
+                    "validate_schema_inventory",
+                    return_value=(
+                        [],
+                        {"public-equity-research-governance.schema.json": self.schema},
+                    ),
+                ),
+                patch.object(formal_schemas, "verify_runtime_versions", return_value=[]),
+                patch.object(formal_schemas, "validate_pip_report", return_value=([], {})),
+                patch.object(
+                    formal_schemas,
+                    "validate_acquisition_receipt",
+                    return_value=([], {}, ""),
+                ),
+                patch.object(formal_schemas, "bootstrap_identity", return_value=([], {})),
+                patch.object(formal_schemas, "candidate_binding", return_value=([], {})),
+                patch.object(formal_schemas, "schema_inventory_binding", return_value={}),
+                patch.object(formal_schemas, "validate_fixture_coverage", return_value=[]),
+                patch.object(
+                    formal_schemas,
+                    "materialized_fixture_cases",
+                    return_value=(positive, []),
+                ),
+                patch.object(
+                    formal_schemas,
+                    "TARGET_PYTHON",
+                    formal_schemas.sys.version_info[:2],
+                ),
+                patch.object(formal_schemas, "TARGET_SYSTEM", formal_schemas.platform.system()),
+                patch.object(formal_schemas, "TARGET_MACHINE", formal_schemas.platform.machine()),
+                gate_patch as gate,
+            ):
+                errors, result = formal_schemas.validate_formal(
+                    Path(__file__), Path(__file__), Path(__file__), {}, "synthetic-base"
+                )
+            return errors, result, gate
+
+        errors, _, gate = run(wraps=validate_public_equity_timestamp_gate)
+        self.assertEqual([], errors)
+        gate.assert_called_once_with(self.schema, positive[0][2])
+
+        errors, _, gate = run(return_value=[TIMESTAMP_CONTAINER_INVALID])
+        gate.assert_called_once()
+        self.assertTrue(
+            any("public-equity timestamp gate failed" in error for error in errors)
+        )
+
+        errors, _, _ = run(side_effect=RuntimeError("public gate failure"))
+        self.assertTrue(
+            any("formal Draft 2020-12 validation raised" in error for error in errors)
+        )
+
+    def test_structural_aggregate_short_circuits_hostile_timestamp_selector(self) -> None:
+        class HostileStatus(str):
+            def __eq__(self, other: object) -> bool:
+                raise RuntimeError("must not compare hostile status")
+
+        record = deepcopy(self.fixtures["base_record"])
+        record["point_in_time_status"] = HostileStatus("point_in_time_ready")
+        self.assertIn(TIMESTAMP_CONTAINER_INVALID, structural_reason_codes(record))
+
+    def test_public_timestamp_gate_rejects_hostile_or_non_string_mapping_keys(self) -> None:
+        class HostileKey:
+            def __hash__(self) -> int:
+                return hash("synthetic-hostile-key")
+
+            def __eq__(self, other: object) -> bool:
+                raise RuntimeError("must not compare hostile key")
+
+        targets = (
+            ("root", lambda record: record),
+            ("research_context", lambda record: record["research_context"]),
+            ("sources", lambda record: record["sources"][0]),
+            ("decision_log", lambda record: record["decision_log"][0]),
+        )
+        for name, target in targets:
+            for key in (HostileKey(), 1):
+                with self.subTest(container=name, key_type=type(key).__name__):
+                    record = deepcopy(self.fixtures["base_record"])
+                    target(record)[key] = "synthetic"
+                    self.assertEqual(
+                        [TIMESTAMP_CONTAINER_INVALID],
+                        timestamp_contract_reason_codes(record),
+                    )
+
+    def test_structural_aggregate_short_circuits_hostile_mapping_keys(self) -> None:
+        class CollisionKey:
+            def __init__(self, target: str) -> None:
+                self.target = target
+                self.armed = False
+
+            def __hash__(self) -> int:
+                return hash(self.target)
+
+            def __eq__(self, other: object) -> bool:
+                if self.armed:
+                    raise RuntimeError("must not compare hostile key")
+                return False
+
+        targets = (
+            ("root", lambda record: record, 1),
+            ("research_context", lambda record: record["research_context"], 1),
+            ("sources", lambda record: record["sources"][0], 1),
+            ("decision_log", lambda record: record["decision_log"][0], 1),
+        )
+        for name, target, key in targets:
+            with self.subTest(container=name, kind="non-string"):
+                record = deepcopy(self.fixtures["base_record"])
+                target(record)[key] = "synthetic"
+                self.assertEqual(
+                    [TIMESTAMP_CONTAINER_INVALID], structural_reason_codes(record)
+                )
+
+        for name, target, collision in (
+            ("sources", lambda record: record, "sources"),
+            ("source_locator", lambda record: record["sources"][0], "source_locator"),
+            ("research_context", lambda record: record, "research_context"),
+            ("decision_log", lambda record: record, "decision_log"),
+        ):
+            with self.subTest(container=name, kind="hostile-collision"):
+                record = deepcopy(self.fixtures["base_record"])
+                container = target(record)
+                original = container.pop(collision)
+                key = CollisionKey(collision)
+                container[key] = original
+                # This control proves that a pre-admission lookup would reach
+                # the armed colliding key once the genuine string key is gone.
+                key.armed = True
+                with self.assertRaises(RuntimeError):
+                    container.get(collision)
+                self.assertEqual(
+                    [TIMESTAMP_CONTAINER_INVALID], structural_reason_codes(record)
+                )
+
+    def test_structural_aggregate_full_record_admission_is_total(self) -> None:
+        class DictSubclass(dict):
+            pass
+
+        class ListSubclass(list):
+            pass
+
+        class StringSubclass(str):
+            pass
+
+        cases = (
+            ("recommendation-dict-subclass", "/recommendation", DictSubclass()),
+            ("core-claims-list-subclass", "/core_claims", ListSubclass()),
+            ("boundaries-dict-subclass", "/boundaries", DictSubclass()),
+            ("recommendation-string-subclass", "/recommendation/summary", StringSubclass("synthetic")),
+            ("non-finite-float", "/recommendation/confidence", float("inf")),
+        )
+        for case_id, path, value in cases:
+            with self.subTest(case_id=case_id):
+                record = self.materialize({"mutations": [{"op": "set", "path": path, "value": value}]})
+                self.assertEqual(
+                    [TIMESTAMP_CONTAINER_INVALID], structural_reason_codes(record)
+                )
+
+        cyclic = deepcopy(self.fixtures["base_record"])
+        cyclic["recommendation"]["cycle"] = cyclic
+        self.assertEqual([TIMESTAMP_CONTAINER_INVALID], structural_reason_codes(cyclic))
+
+        deep = deepcopy(self.fixtures["base_record"])
+        nested: dict[str, object] = {}
+        cursor = nested
+        for _ in range(2_000):
+            child: dict[str, object] = {}
+            cursor["next"] = child
+            cursor = child
+        deep["recommendation"]["deep"] = nested
+        self.assertEqual([TIMESTAMP_CONTAINER_INVALID], structural_reason_codes(deep))
+
+    def test_structural_aggregate_rejects_exact_json_wrong_shapes(self) -> None:
+        malformed = (
+            ("core-claims-scalar", "/core_claims", 1),
+            ("core-claims-element", "/core_claims", [1]),
+            ("recommendation-list", "/recommendation", []),
+            ("boundaries-list", "/boundaries", []),
+            ("research-context-list", "/research_context", []),
+        )
+        for field in (
+            "assumptions",
+            "scenarios",
+            "risks",
+            "missing_evidence",
+            "decision_log",
+        ):
+            malformed += (
+                (f"{field}-scalar", f"/{field}", 1),
+                (f"{field}-object", f"/{field}", {}),
+                (f"{field}-element", f"/{field}", [1]),
+            )
+        for case_id, path, value in malformed:
+            with self.subTest(case_id=case_id):
+                record = self.materialize(
+                    {"mutations": [{"op": "set", "path": path, "value": value}]}
+                )
+                self.assertEqual(
+                    [TIMESTAMP_CONTAINER_INVALID], structural_reason_codes(record)
+                )
+
+    def test_structural_aggregate_rejects_nested_traversal_wrong_shapes(self) -> None:
+        malformed = (
+            ("next-action-list", "/recommendation/next_research_action", []),
+            ("next-action-null", "/recommendation/next_research_action", None),
+            ("next-action-scalar", "/recommendation/next_research_action", 1),
+            ("claim-reference-object", "/core_claims/0/supporting_evidence_ids", [{}]),
+            ("recommendation-risk-object", "/recommendation/risk_ids", [{}]),
+            ("decision-reference-object", "/decision_log/0/source_ids", [{}]),
+        )
+        for case_id, path, value in malformed:
+            with self.subTest(case_id=case_id):
+                record = self.materialize(
+                    {"mutations": [{"op": "set", "path": path, "value": value}]}
+                )
+                self.assertEqual(
+                    [TIMESTAMP_CONTAINER_INVALID], structural_reason_codes(record)
+                )
+
+    def test_structural_admission_preserves_public_timestamp_reasons(self) -> None:
+        record = deepcopy(self.fixtures["base_record"])
+        record["sources"][0].pop("available_at")
+        record["recommendation"] = []
+        self.assertCountEqual(
+            [TIMESTAMP_OFFSET_INVALID_OR_REQUIRED, TIMESTAMP_CONTAINER_INVALID],
+            structural_reason_codes(record),
+        )
+
+        nested = deepcopy(self.fixtures["base_record"])
+        nested["sources"][0].pop("available_at")
+        nested["recommendation"]["next_research_action"] = []
+        self.assertCountEqual(
+            [TIMESTAMP_OFFSET_INVALID_OR_REQUIRED, TIMESTAMP_CONTAINER_INVALID],
+            structural_reason_codes(nested),
+        )
+
+    def test_structural_aggregate_fails_closed_when_public_gate_raises(self) -> None:
+        original = timestamp_contract_reason_codes
+        globals()["timestamp_contract_reason_codes"] = lambda record: (_ for _ in ()).throw(RuntimeError("gate failure"))
+        try:
+            self.assertEqual(
+                [TIMESTAMP_CONTAINER_INVALID],
+                structural_reason_codes(self.fixtures["base_record"]),
+            )
+        finally:
+            globals()["timestamp_contract_reason_codes"] = original
+
+    def test_inventory_rejects_strict_type_confusion(self) -> None:
+        base = TIMESTAMP_FIELD_INVENTORY
+        for field, value in (
+            ("repeated", 0), ("nullable", 1), ("min_items", True),
+            ("path", ["sources[].available_at"]), ("condition_id", {}),
+        ):
+            with self.subTest(field=field, value=value):
+                changed = (replace(base[0], **{field: value}), *base[1:])
+                self.assertEqual(
+                    [TIMESTAMP_CONTAINER_INVALID],
+                    timestamp_inventory_alignment_errors(self.schema, changed, expected_semantic_digest=schema_semantic_digest(self.schema)),
+                )
+
+        class TupleSubclass(tuple):
+            pass
+
+        class WrongDescriptor:
+            pass
+
+        for changed in (TupleSubclass(TIMESTAMP_FIELD_INVENTORY), (WrongDescriptor(),)):
+            with self.subTest(inventory=changed):
+                self.assertEqual(
+                    [TIMESTAMP_CONTAINER_INVALID],
+                    timestamp_inventory_alignment_errors(self.schema, changed, expected_semantic_digest=schema_semantic_digest(self.schema)),
+                )
+
+    def test_record_timestamp_verifier_is_total_for_malformed_containers(self) -> None:
+        malformed_mutations = (
+            {"op": "set", "path": "/sources", "value": None},
+            {"op": "set", "path": "/sources", "value": []},
+            {"op": "set", "path": "/sources", "value": {}},
+            {"op": "set", "path": "/sources", "value": [[]]},
+            {"op": "set", "path": "/sources", "value": [None]},
+            {"op": "set", "path": "/decision_log", "value": None},
+            {"op": "set", "path": "/decision_log", "value": []},
+            {"op": "set", "path": "/decision_log", "value": {}},
+            {"op": "set", "path": "/decision_log", "value": [[]]},
+            {"op": "set", "path": "/decision_log", "value": [None]},
+            {"op": "set", "path": "/point_in_time_block_reasons", "value": None},
+            {"op": "set", "path": "/point_in_time_block_reasons", "value": {}},
+            {"op": "set", "path": "/point_in_time_block_reasons", "value": [{}]},
+            {"op": "set", "path": "/point_in_time_block_reasons", "value": [[]]},
+        )
+        for mutation in malformed_mutations:
+            with self.subTest(mutation=mutation):
+                record = apply_mutations(self.fixtures["base_record"], [mutation])
+                self.assertIn(
+                    TIMESTAMP_CONTAINER_INVALID,
+                    timestamp_contract_reason_codes(record),
+                )
+
+        for value in (None, {}, [[]]):
+            with self.subTest(structural_block_reasons=value):
+                record = deepcopy(self.fixtures["base_record"])
+                record["point_in_time_block_reasons"] = value
+                self.assertIn(TIMESTAMP_CONTAINER_INVALID, structural_reason_codes(record))
+
+        class HostileList(list):
+            def __iter__(self):
+                raise RuntimeError("must not iterate subclass")
+
+        record = deepcopy(self.fixtures["base_record"])
+        record["point_in_time_block_reasons"] = HostileList(["AVAILABLE_AFTER_DECISION"])
+        self.assertIn(TIMESTAMP_CONTAINER_INVALID, timestamp_contract_reason_codes(record))
+
+    def test_record_timestamp_verifier_is_total_for_untrusted_root_and_values(self) -> None:
+        for root in (None, True, 1, "not-a-record", []):
+            with self.subTest(root=root):
+                self.assertEqual(
+                    [TIMESTAMP_CONTAINER_INVALID],
+                    timestamp_contract_reason_codes(root),
+                )
+        for value in (None, True, 1, "not-a-context", []):
+            with self.subTest(research_context=value):
+                record = deepcopy(self.fixtures["base_record"])
+                record["research_context"] = value
+                self.assertIn(
+                    TIMESTAMP_CONTAINER_INVALID,
+                    timestamp_contract_reason_codes(record),
+                )
+        for spec in (
+            spec for spec in TIMESTAMP_FIELD_INVENTORY
+            if spec.conditional_context == "always"
+        ):
+            path = (
+                f"/{spec.field}" if spec.container_path == "record"
+                else f"/{spec.container_path}{'/0' if spec.repeated else ''}/{spec.field}"
+            )
+            for value in ([], {}, 1, True):
+                with self.subTest(path=path, value=value):
+                    record = apply_mutations(
+                        self.fixtures["base_record"],
+                        [{"op": "set", "path": path, "value": value}],
+                    )
+                    self.assertIn(
+                        TIMESTAMP_LEXICAL_PROFILE_INVALID,
+                        timestamp_contract_reason_codes(record),
+                    )
+
+    def test_record_timestamp_verifier_distinguishes_missing_and_null(self) -> None:
+        base_specs = tuple(
+            spec for spec in TIMESTAMP_FIELD_INVENTORY
+            if spec.conditional_context == "always"
+        )
+        def pointer(spec: TimestampFieldSpec) -> str:
+            return f"/{spec.field}" if spec.container_path == "record" else f"/{spec.container_path}{'/0' if spec.repeated else ''}/{spec.field}"
+        for spec in base_specs:
+            path = pointer(spec)
+            with self.subTest(path=path, mutation="delete"):
+                record = apply_mutations(
+                    self.fixtures["base_record"], [{"op": "delete", "path": path}]
+                )
+                self.assertIn(
+                    TIMESTAMP_OFFSET_INVALID_OR_REQUIRED,
+                    timestamp_contract_reason_codes(record),
+                )
+        for spec in (spec for spec in base_specs if not spec.nullable):
+            path = pointer(spec)
+            with self.subTest(path=path, mutation="null"):
+                record = apply_mutations(
+                    self.fixtures["base_record"], [{"op": "set", "path": path, "value": None}]
+                )
+                self.assertIn(
+                    TIMESTAMP_OFFSET_INVALID_OR_REQUIRED,
+                    timestamp_contract_reason_codes(record),
+                )
+        for spec in (spec for spec in base_specs if spec.nullable):
+            path = pointer(spec)
+            with self.subTest(path=path, mutation="source-null"):
+                record = apply_mutations(
+                    self.fixtures["base_record"], [
+                        {"op": "set", "path": "/point_in_time_status", "value": "point_in_time_blocked"},
+                        {"op": "set", "path": "/point_in_time_block_reasons", "value": ["TIMESTAMP_MISSING"]},
+                        {"op": "set", "path": path, "value": None},
+                    ]
+                )
+                self.assertEqual([], timestamp_contract_reason_codes(record))
+
+    def test_record_timestamp_verifier_applies_ready_nullability_and_temporal_roles(self) -> None:
+        source_fields = ("effective_at", "published_at", "available_at", "retrieved_at")
+        for field in source_fields:
+            with self.subTest(state="ready", field=field):
+                record = apply_mutations(
+                    self.fixtures["base_record"],
+                    [{"op": "set", "path": f"/sources/0/{field}", "value": None}],
+                )
+                self.assertIn(
+                    TIMESTAMP_OFFSET_INVALID_OR_REQUIRED,
+                    timestamp_contract_reason_codes(record),
+                )
+            with self.subTest(state="blocked", field=field):
+                record = apply_mutations(
+                    self.fixtures["base_record"],
+                    [
+                        {"op": "set", "path": "/point_in_time_status", "value": "point_in_time_blocked"},
+                        {"op": "set", "path": "/point_in_time_block_reasons", "value": ["TIMESTAMP_MISSING"]},
+                        {"op": "set", "path": f"/sources/0/{field}", "value": None},
+                    ],
+                )
+                self.assertEqual([], timestamp_contract_reason_codes(record))
+
+        for invalid_status in (None, True, 1, [], {}, "UNKNOWN"):
+            with self.subTest(invalid_status=invalid_status):
+                record = apply_mutations(
+                    self.fixtures["base_record"],
+                    [
+                        {"op": "set", "path": "/point_in_time_status", "value": invalid_status},
+                        {"op": "set", "path": "/sources/0/available_at", "value": None},
+                    ],
+                )
+                self.assertEqual(
+                    [TIMESTAMP_CONTAINER_INVALID],
+                    timestamp_contract_reason_codes(record),
+                )
+
+        decision_index = next(
+            index for index, spec in enumerate(TIMESTAMP_FIELD_INVENTORY)
+            if spec.temporal_role == "decision_instant"
+        )
+        available_index = next(
+            index for index, spec in enumerate(TIMESTAMP_FIELD_INVENTORY)
+            if spec.temporal_role == "source_available_instant"
+        )
+        without_role = tuple(
+            replace(spec, temporal_role="timestamp_only") if index == decision_index else spec
+            for index, spec in enumerate(TIMESTAMP_FIELD_INVENTORY)
+        )
+        duplicate_role = (*TIMESTAMP_FIELD_INVENTORY, replace(TIMESTAMP_FIELD_INVENTORY[0], temporal_role="decision_instant"))
+        redirected_role = tuple(
+            replace(spec, temporal_role="source_available_instant") if spec.field == "published_at" and spec.condition_id == "ALWAYS" else
+            replace(spec, temporal_role="timestamp_only") if index == available_index else spec
+            for index, spec in enumerate(TIMESTAMP_FIELD_INVENTORY)
+        )
+        for inventory in (without_role, duplicate_role, redirected_role):
+            with self.subTest(inventory=inventory):
+                self.assertIn(
+                    TIMESTAMP_CONTAINER_INVALID,
+                    timestamp_contract_reason_codes(self.fixtures["base_record"], inventory),
+                )
+
+    def test_record_timestamp_verifier_compares_offset_aware_instants(self) -> None:
+        cases = {case["case_id"]: case for case in self.fixtures["cases"]}
+        self.assertEqual(
+            [],
+            timestamp_contract_reason_codes(
+                self.materialize(cases["valid-offset-same-instant"])
+            ),
+        )
+
+        one_microsecond_late = apply_mutations(
+            self.fixtures["base_record"],
+            [{
+                "op": "set",
+                "path": "/sources/0/available_at",
+                "value": "2026-07-26T09:00:00.000001+10:00",
+            }],
+        )
+        self.assertEqual(
+            ["POINT_IN_TIME_VIOLATION"],
+            timestamp_contract_reason_codes(one_microsecond_late),
+        )
+        self.assertEqual(
+            ["POINT_IN_TIME_VIOLATION"],
+            timestamp_contract_reason_codes(
+                self.materialize(cases["invalid-offset-order-across-year"])
+            ),
+        )
+        self.assertEqual(
+            [],
+            timestamp_contract_reason_codes(
+                self.materialize(cases["valid-offset-order-across-year"])
+            ),
+        )
+
+        same_utc = parse_offset_datetime("2026-07-26T00:00:00Z")
+        same_offset = parse_offset_datetime("2026-07-26T10:00:00+10:00")
+        self.assertEqual(same_utc, same_offset)
 
     def test_supersession_is_append_only_and_acyclic(self) -> None:
         case = next(
@@ -995,17 +2051,7 @@ class PublicEquityResearchGovernanceContractTests(unittest.TestCase):
             self.fixtures["base_record"]["boundaries"]["customer_material_used"]
         )
 
-    def test_contract_does_not_register_or_promote_the_candidate(self) -> None:
-        priority = PRIORITY.read_text(encoding="utf-8")
-        self.assertIn(
-            "outside the registered experiment and skill catalogs",
-            priority,
-        )
-        self.assertIn("not permission", priority)
-        self.assertFalse(self.contract["registered_skill"])
-        self.assertFalse(self.contract["runtime_integration_exists"])
-
-    def test_contract_tests_import_only_python_standard_library(self) -> None:
+    def test_contract_tests_use_only_stdlib_and_the_formal_timestamp_verifier(self) -> None:
         source = Path(__file__).read_text(encoding="utf-8")
         imports = set(
             re.findall(
@@ -1018,11 +2064,14 @@ class PublicEquityResearchGovernanceContractTests(unittest.TestCase):
             {
                 "__future__",
                 "copy",
-                "datetime",
+                "dataclasses",
                 "importlib",
                 "json",
                 "pathlib",
                 "re",
+                "scripts",
+                "sys",
+                "types",
                 "unittest",
                 "urllib",
             },
