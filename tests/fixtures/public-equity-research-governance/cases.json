@@ -274,7 +274,7 @@
       "case_id": "timestamp-without-offset",
       "expected_valid": false,
       "expected_reason_codes": [
-        "TIMESTAMP_OFFSET_REQUIRED"
+        "TIMESTAMP_OFFSET_INVALID_OR_REQUIRED"
       ],
       "mutations": [
         {
@@ -288,6 +288,7 @@
       "case_id": "missing-source-time-not-blocked",
       "expected_valid": false,
       "expected_reason_codes": [
+        "TIMESTAMP_OFFSET_INVALID_OR_REQUIRED",
         "TIME_PRECISION_BLOCKED"
       ],
       "mutations": [
@@ -390,7 +391,8 @@
       "case_id": "human-disposition-time-missing",
       "expected_valid": false,
       "expected_reason_codes": [
-        "HUMAN_DISPOSITION_TIMESTAMP_REQUIRED"
+        "HUMAN_DISPOSITION_TIMESTAMP_REQUIRED",
+        "TIMESTAMP_OFFSET_INVALID_OR_REQUIRED"
       ],
       "mutations": [
         {
@@ -674,7 +676,7 @@
       "case_id": "invalid-retrieved-month",
       "expected_valid": false,
       "expected_reason_codes": [
-        "TIMESTAMP_OFFSET_REQUIRED"
+        "TIMESTAMP_LEXICAL_PROFILE_INVALID"
       ],
       "mutations": [
         {
@@ -688,13 +690,322 @@
       "case_id": "invalid-decision-month",
       "expected_valid": false,
       "expected_reason_codes": [
-        "TIMESTAMP_OFFSET_REQUIRED"
+        "TIMESTAMP_LEXICAL_PROFILE_INVALID"
       ],
       "mutations": [
         {
           "op": "set",
           "path": "/research_context/decision_at",
           "value": "2026-13-25T18:00:00+10:00"
+        }
+      ]
+    },
+    {
+      "case_id": "valid-leap-year-feb-29",
+      "expected_valid": true,
+      "expected_reason_codes": [],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/created_at",
+          "value": "2024-02-29T09:00:00+10:00"
+        }
+      ]
+    },
+    {
+      "case_id": "invalid-common-year-feb-29",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "TIMESTAMP_CALENDAR_INVALID"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/created_at",
+          "value": "2025-02-29T09:00:00+10:00"
+        }
+      ]
+    },
+    {
+      "case_id": "invalid-feb-30",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "TIMESTAMP_CALENDAR_INVALID"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/created_at",
+          "value": "2024-02-30T09:00:00+10:00"
+        }
+      ]
+    },
+    {
+      "case_id": "invalid-feb-31",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "TIMESTAMP_CALENDAR_INVALID"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/created_at",
+          "value": "2024-02-31T09:00:00+10:00"
+        }
+      ]
+    },
+    {
+      "case_id": "invalid-apr-31",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "TIMESTAMP_CALENDAR_INVALID"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/created_at",
+          "value": "2024-04-31T09:00:00+10:00"
+        }
+      ]
+    },
+    {
+      "case_id": "invalid-year-zero",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "TIMESTAMP_CALENDAR_INVALID"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/created_at",
+          "value": "0000-01-01T00:00:00Z"
+        }
+      ]
+    },
+    {
+      "case_id": "invalid-lowercase-t-z",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "TIMESTAMP_LEXICAL_PROFILE_INVALID"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/created_at",
+          "value": "2026-07-26t09:00:00z"
+        }
+      ]
+    },
+    {
+      "case_id": "invalid-leap-second",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "TIMESTAMP_LEXICAL_PROFILE_INVALID"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/created_at",
+          "value": "2026-07-26T09:00:60Z"
+        }
+      ]
+    },
+    {
+      "case_id": "invalid-negative-zero-offset",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "TIMESTAMP_OFFSET_INVALID_OR_REQUIRED"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/created_at",
+          "value": "2026-07-26T09:00:00-00:00"
+        }
+      ]
+    },
+    {
+      "case_id": "invalid-trailing-newline",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "TIMESTAMP_LEXICAL_PROFILE_INVALID"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/created_at",
+          "value": "2026-07-26T09:00:00Z\n"
+        }
+      ]
+    },
+    {
+      "case_id": "valid-positive-offset-14",
+      "expected_valid": true,
+      "expected_reason_codes": [],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/created_at",
+          "value": "2026-07-26T09:00:00+14:00"
+        }
+      ]
+    },
+    {
+      "case_id": "valid-negative-offset-14",
+      "expected_valid": true,
+      "expected_reason_codes": [],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/created_at",
+          "value": "2026-07-26T09:00:00-14:00"
+        }
+      ]
+    },
+    {
+      "case_id": "invalid-offset-14-01",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "TIMESTAMP_OFFSET_INVALID_OR_REQUIRED"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/created_at",
+          "value": "2026-07-26T09:00:00+14:01"
+        }
+      ]
+    },
+    {
+      "case_id": "valid-fractional-second-1",
+      "expected_valid": true,
+      "expected_reason_codes": [],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/created_at",
+          "value": "2026-07-26T09:00:00.1Z"
+        }
+      ]
+    },
+    {
+      "case_id": "valid-fractional-second-6",
+      "expected_valid": true,
+      "expected_reason_codes": [],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/created_at",
+          "value": "2026-07-26T09:00:00.123456Z"
+        }
+      ]
+    },
+    {
+      "case_id": "invalid-fractional-second-7",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "TIMESTAMP_LEXICAL_PROFILE_INVALID"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/created_at",
+          "value": "2026-07-26T09:00:00.1234567Z"
+        }
+      ]
+    },
+    {
+      "case_id": "invalid-trailing-carriage-return",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "TIMESTAMP_LEXICAL_PROFILE_INVALID"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/created_at",
+          "value": "2026-07-26T09:00:00Z\r"
+        }
+      ]
+    },
+    {
+      "case_id": "invalid-trailing-line-separator",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "TIMESTAMP_LEXICAL_PROFILE_INVALID"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/created_at",
+          "value": "2026-07-26T09:00:00Z\u2028"
+        }
+      ]
+    },
+    {
+      "case_id": "invalid-trailing-paragraph-separator",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "TIMESTAMP_LEXICAL_PROFILE_INVALID"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/created_at",
+          "value": "2026-07-26T09:00:00Z\u2029"
+        }
+      ]
+    },
+    {
+      "case_id": "valid-offset-same-instant",
+      "expected_valid": true,
+      "expected_reason_codes": [],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/research_context/decision_at",
+          "value": "2026-07-26T00:00:00Z"
+        },
+        {
+          "op": "set",
+          "path": "/sources/0/available_at",
+          "value": "2026-07-26T10:00:00+10:00"
+        }
+      ]
+    },
+    {
+      "case_id": "invalid-offset-order-across-year",
+      "expected_valid": false,
+      "expected_reason_codes": [
+        "POINT_IN_TIME_VIOLATION"
+      ],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/research_context/decision_at",
+          "value": "2027-01-01T00:30:00+14:00"
+        },
+        {
+          "op": "set",
+          "path": "/sources/0/available_at",
+          "value": "2026-12-31T23:45:00-12:00"
+        }
+      ]
+    },
+    {
+      "case_id": "valid-offset-order-across-year",
+      "expected_valid": true,
+      "expected_reason_codes": [],
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/research_context/decision_at",
+          "value": "2027-01-01T00:30:00+14:00"
+        },
+        {
+          "op": "set",
+          "path": "/sources/0/available_at",
+          "value": "2026-12-31T22:00:00+12:00"
         }
       ]
     },
