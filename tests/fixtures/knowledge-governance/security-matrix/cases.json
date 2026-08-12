@@ -1,0 +1,172 @@
+[
+  {
+    "case_id": "K6-K5-CAPABILITY-PERSISTENCE-001",
+    "synthetic": true,
+    "fixture_only": true,
+    "expected_result": "NOT_AUTHORIZED",
+    "expected_outcome": "CAPABILITY_EXPANSION_NOT_AUTHORIZED",
+    "payload": {
+      "case_subject": "K5_CAPABILITY_ATTEMPT",
+      "attempt": "PERSISTENCE",
+      "requested_state": "ENABLED"
+    }
+  },
+  {
+    "case_id": "K6-K5-CAPABILITY-MEMORY-001",
+    "synthetic": true,
+    "fixture_only": true,
+    "expected_result": "NOT_AUTHORIZED",
+    "expected_outcome": "CAPABILITY_EXPANSION_NOT_AUTHORIZED",
+    "payload": {
+      "case_subject": "K5_CAPABILITY_ATTEMPT",
+      "attempt": "AUTOMATIC_MEMORY",
+      "requested_state": "ENABLED"
+    }
+  },
+  {
+    "case_id": "K6-K5-CAPABILITY-HOOK-001",
+    "synthetic": true,
+    "fixture_only": true,
+    "expected_result": "NOT_AUTHORIZED",
+    "expected_outcome": "CAPABILITY_EXPANSION_NOT_AUTHORIZED",
+    "payload": {
+      "case_subject": "K5_CAPABILITY_ATTEMPT",
+      "attempt": "HOOK",
+      "requested_state": "ENABLED"
+    }
+  },
+  {
+    "case_id": "K6-K5-CAPABILITY-MCP-001",
+    "synthetic": true,
+    "fixture_only": true,
+    "expected_result": "NOT_AUTHORIZED",
+    "expected_outcome": "CAPABILITY_EXPANSION_NOT_AUTHORIZED",
+    "payload": {
+      "case_subject": "K5_CAPABILITY_ATTEMPT",
+      "attempt": "MCP",
+      "requested_state": "ENABLED"
+    }
+  },
+  {
+    "case_id": "K6-K5-CAPABILITY-SCHEDULER-001",
+    "synthetic": true,
+    "fixture_only": true,
+    "expected_result": "NOT_AUTHORIZED",
+    "expected_outcome": "CAPABILITY_EXPANSION_NOT_AUTHORIZED",
+    "payload": {
+      "case_subject": "K5_CAPABILITY_ATTEMPT",
+      "attempt": "SCHEDULER",
+      "requested_state": "ENABLED"
+    }
+  },
+  {
+    "case_id": "K6-K5-CAPABILITY-NETWORK-001",
+    "synthetic": true,
+    "fixture_only": true,
+    "expected_result": "NOT_AUTHORIZED",
+    "expected_outcome": "CAPABILITY_EXPANSION_NOT_AUTHORIZED",
+    "payload": {
+      "case_subject": "K5_CAPABILITY_ATTEMPT",
+      "attempt": "NETWORK",
+      "requested_state": "ENABLED"
+    }
+  },
+  {
+    "case_id": "K6-K5-RUNTIME-AUTHORIZATION-LOOKUP-001",
+    "synthetic": true,
+    "fixture_only": true,
+    "expected_result": "OUT_OF_SCOPE",
+    "expected_outcome": "FUTURE_RUNTIME_SCENARIO_NOT_EXECUTED",
+    "payload": {
+      "case_subject": "K5_RUNTIME_SCENARIO",
+      "scenario": "AUTHORIZATION_LOOKUP",
+      "design_disposition": "OUT_OF_SCOPE",
+      "execution_status": "NOT_EXECUTED",
+      "host_enforcement": "NOT_PROVEN"
+    }
+  },
+  {
+    "case_id": "K6-K5-RUNTIME-SYMLINK-001",
+    "synthetic": true,
+    "fixture_only": true,
+    "expected_result": "OUT_OF_SCOPE",
+    "expected_outcome": "FUTURE_RUNTIME_SCENARIO_NOT_EXECUTED",
+    "payload": {
+      "case_subject": "K5_RUNTIME_SCENARIO",
+      "scenario": "SYMLINK_RESOLUTION",
+      "design_disposition": "OUT_OF_SCOPE",
+      "execution_status": "NOT_EXECUTED",
+      "host_enforcement": "NOT_PROVEN"
+    }
+  },
+  {
+    "case_id": "K6-K5-RUNTIME-DIRECTORY-001",
+    "synthetic": true,
+    "fixture_only": true,
+    "expected_result": "OUT_OF_SCOPE",
+    "expected_outcome": "FUTURE_RUNTIME_SCENARIO_NOT_EXECUTED",
+    "payload": {
+      "case_subject": "K5_RUNTIME_SCENARIO",
+      "scenario": "DIRECTORY_CHECK",
+      "design_disposition": "OUT_OF_SCOPE",
+      "execution_status": "NOT_EXECUTED",
+      "host_enforcement": "NOT_PROVEN"
+    }
+  },
+  {
+    "case_id": "K6-K5-RUNTIME-CONTAINMENT-001",
+    "synthetic": true,
+    "fixture_only": true,
+    "expected_result": "OUT_OF_SCOPE",
+    "expected_outcome": "FUTURE_RUNTIME_SCENARIO_NOT_EXECUTED",
+    "payload": {
+      "case_subject": "K5_RUNTIME_SCENARIO",
+      "scenario": "RESOLVED_CONTAINMENT",
+      "design_disposition": "OUT_OF_SCOPE",
+      "execution_status": "NOT_EXECUTED",
+      "host_enforcement": "NOT_PROVEN"
+    }
+  },
+  {
+    "case_id": "K6-K5-RUNTIME-RENDERER-001",
+    "synthetic": true,
+    "fixture_only": true,
+    "expected_result": "OUT_OF_SCOPE",
+    "expected_outcome": "FUTURE_RUNTIME_SCENARIO_NOT_EXECUTED",
+    "payload": {
+      "case_subject": "K5_RUNTIME_SCENARIO",
+      "scenario": "RENDERER_EXECUTION",
+      "design_disposition": "OUT_OF_SCOPE",
+      "execution_status": "NOT_EXECUTED",
+      "host_enforcement": "NOT_PROVEN"
+    }
+  },
+  {
+    "case_id": "K6-K5-RUNTIME-HOST-001",
+    "synthetic": true,
+    "fixture_only": true,
+    "expected_result": "OUT_OF_SCOPE",
+    "expected_outcome": "FUTURE_RUNTIME_SCENARIO_NOT_EXECUTED",
+    "payload": {
+      "case_subject": "K5_RUNTIME_SCENARIO",
+      "scenario": "HOST_ENFORCEMENT",
+      "design_disposition": "OUT_OF_SCOPE",
+      "execution_status": "NOT_EXECUTED",
+      "host_enforcement": "NOT_PROVEN"
+    }
+  },
+  {
+    "case_id": "K6-K5-RUNTIME-CAPABILITY-ACTIVATION-001",
+    "synthetic": true,
+    "fixture_only": true,
+    "expected_result": "OUT_OF_SCOPE",
+    "expected_outcome": "FUTURE_RUNTIME_SCENARIO_NOT_EXECUTED",
+    "payload": {
+      "case_subject": "K5_RUNTIME_SCENARIO",
+      "scenario": "CAPABILITY_EXPANSION_ACTIVATION",
+      "design_disposition": "OUT_OF_SCOPE",
+      "execution_status": "NOT_EXECUTED",
+      "host_enforcement": "NOT_PROVEN"
+    }
+  }
+]

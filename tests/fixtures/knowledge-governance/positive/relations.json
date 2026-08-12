@@ -1,0 +1,125 @@
+[
+  {
+    "case_id": "POS-K3-NOT-EXECUTED-001",
+    "synthetic": true,
+    "fixture_only": true,
+    "expected_result": "NOT_AUTHORIZED",
+    "expected_outcome": "NOT_EXECUTED",
+    "payload": {
+      "case_subject": "K3_READ_EVALUATION",
+      "request": {
+        "request_id": "KRR-ABCDEFGH23456723",
+        "task_reference": "KRT-ABCDEFGH23456723",
+        "authorization_reference": "KRA-ABCDEFGH23456723",
+        "sensitivity_basis": "HUMAN_DECLARED",
+        "target_locator": {"relative_path": "docs/synthetic-note.md", "section_heading": "Decision"},
+        "requested_effect": "READ_ONE_DECLARED_NON_SENSITIVE_SECTION_ONLY",
+        "requested_read_range": "EXACT_DECLARED_SECTION_ONLY",
+        "request_evaluated_at": "2030-01-01T00:00:00Z",
+        "proposed_expires_at": "2030-01-02T00:00:00Z"
+      },
+      "authorization": null,
+      "receipt": {
+        "request_reference": "KRR-ABCDEFGH23456723",
+        "task_reference": "KRT-ABCDEFGH23456723",
+        "authorization_reference": "KRA-ABCDEFGH23456723",
+        "outcome": "NOT_EXECUTED",
+        "recorded_at": "2030-01-01T00:00:00Z",
+        "authorization_expiry_at": null,
+        "revocation_checked_at": "NOT_APPLICABLE",
+        "revocation_checked_authorization_reference": "NOT_APPLICABLE"
+      },
+      "evaluation_at": "2030-01-01T00:00:00Z",
+      "evaluator_ran": false,
+      "future_execution_terminal_state": null
+    }
+  },
+  {
+    "case_id": "POS-K3-FUTURE-ONLY-001",
+    "synthetic": true,
+    "fixture_only": true,
+    "expected_result": "OUT_OF_SCOPE",
+    "expected_outcome": "FUTURE_COMPLETED_WITHOUT_CONTENT_RETENTION",
+    "payload": {
+      "case_subject": "K3_READ_EVALUATION",
+      "request": {
+        "request_id": "KRR-ABCDEFGH23456723",
+        "task_reference": "KRT-ABCDEFGH23456723",
+        "authorization_reference": "KRA-ABCDEFGH23456723",
+        "sensitivity_basis": "HUMAN_DECLARED",
+        "target_locator": {"relative_path": "docs/synthetic-note.md", "section_heading": "Decision"},
+        "requested_effect": "READ_ONE_DECLARED_NON_SENSITIVE_SECTION_ONLY",
+        "requested_read_range": "EXACT_DECLARED_SECTION_ONLY",
+        "request_evaluated_at": "2030-01-01T00:00:00Z",
+        "proposed_expires_at": "2030-01-02T00:00:00Z"
+      },
+      "authorization": {
+        "authorization_id": "KRA-ABCDEFGH23456723",
+        "request_reference": "KRR-ABCDEFGH23456723",
+        "task_reference": "KRT-ABCDEFGH23456723",
+        "effect": "READ_ONE_DECLARED_NON_SENSITIVE_SECTION_ONLY",
+        "target_locator": {"relative_path": "docs/synthetic-note.md", "section_heading": "Decision"},
+        "requested_read_range": "EXACT_DECLARED_SECTION_ONLY",
+        "expires_at": "2030-01-03T00:00:00Z",
+        "authorization_status": "GRANTED",
+        "revoked_at": null
+      },
+      "receipt": {
+        "request_reference": "KRR-ABCDEFGH23456723",
+        "task_reference": "KRT-ABCDEFGH23456723",
+        "authorization_reference": "KRA-ABCDEFGH23456723",
+        "outcome": "FUTURE_COMPLETED_WITHOUT_CONTENT_RETENTION",
+        "recorded_at": "2030-01-01T12:00:00Z",
+        "authorization_expiry_at": "2030-01-03T00:00:00Z",
+        "revocation_checked_at": "2030-01-01T12:00:00Z",
+        "revocation_checked_authorization_reference": "KRA-ABCDEFGH23456723"
+      },
+      "evaluation_at": "2030-01-01T12:00:00Z",
+      "evaluator_ran": true,
+      "future_execution_terminal_state": "COMPLETED_WITHOUT_CONTENT_RETENTION"
+    }
+  },
+  {
+    "case_id": "POS-K4-APPROVE-NO-WRITE-001",
+    "synthetic": true,
+    "fixture_only": true,
+    "expected_result": "ACCEPT",
+    "expected_outcome": "HUMAN_DISPOSITION_RECORDED_NOT_EXECUTABLE",
+    "payload": {
+      "case_subject": "K4_WRITE_EVALUATION",
+      "proposal": {
+        "proposal_id": "KWP-ABCDEFGH23456723",
+        "task_reference": "KRT-ABCDEFGH23456723",
+        "source_request_reference": "KRR-ABCDEFGH23456723",
+        "proposed_target_path": "docs/synthetic-output.md",
+        "proposed_effect": "WRITE_ONE_DECLARED_PROJECT_RELATIVE_FILE_ONLY",
+        "proposed_change_summary": "Add one synthetic governance note",
+        "sensitivity_basis": "PROJECT_POLICY",
+        "proposed_expires_at": "2030-01-04T00:00:00Z"
+      },
+      "source_request": {
+        "request_id": "KRR-ABCDEFGH23456723",
+        "task_reference": "KRT-ABCDEFGH23456723",
+        "authorization_reference": "KRA-ABCDEFGH23456723",
+        "sensitivity_basis": "HUMAN_DECLARED",
+        "target_locator": {"relative_path": "docs/synthetic-note.md", "section_heading": "Decision"},
+        "requested_effect": "READ_ONE_DECLARED_NON_SENSITIVE_SECTION_ONLY",
+        "requested_read_range": "EXACT_DECLARED_SECTION_ONLY",
+        "request_evaluated_at": "2030-01-01T00:00:00Z",
+        "proposed_expires_at": "2030-01-02T00:00:00Z"
+      },
+      "human_disposition": {
+        "disposition_id": "KHD-ABCDEFGH23456723",
+        "proposal_reference": "KWP-ABCDEFGH23456723",
+        "task_reference": "KRT-ABCDEFGH23456723",
+        "allowed_effect": "WRITE_ONE_DECLARED_PROJECT_RELATIVE_FILE_ONLY",
+        "approved_target_path": "docs/synthetic-output.md",
+        "disposition": "APPROVE",
+        "expires_at": "2030-01-03T00:00:00Z",
+        "revoked_at": null
+      },
+      "evaluation_at": "2030-01-01T12:00:00Z",
+      "rendering_risk": false
+    }
+  }
+]
