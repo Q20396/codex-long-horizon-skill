@@ -1,0 +1,429 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/lhe/knowledge-governance-k6/knowledge-governance.schema.json",
+  "title": "LHE K6 Knowledge Governance Static Records",
+  "description": "Candidate-only K0-K5 static record schema. It provides no read, write, authorization, rendering, network, persistence, or host capability.",
+  "oneOf": [
+    { "$ref": "#/$defs/KnowledgeItemDescriptor" },
+    { "$ref": "#/$defs/KnowledgeReadRequest" },
+    { "$ref": "#/$defs/AuthorizationRecord" },
+    { "$ref": "#/$defs/KnowledgeReadReceipt" },
+    { "$ref": "#/$defs/WriteProposal" },
+    { "$ref": "#/$defs/HumanDisposition" }
+  ],
+  "x-k6-boundary": {
+    "candidate_only": true,
+    "synthetic_fixtures_only": true,
+    "local_acceptance_authority": "DRAFT202012_SCHEMA_ONLY",
+    "runtime_execution": "NOT_IMPLEMENTED",
+    "fixture_input_read": "CALLER_SUPPLIED_JSON_UNTRUSTED_UNTIL_ENVELOPE_VALIDATED",
+    "governed_target_io": "NOT_IMPLEMENTED",
+    "authorization_lookup": "NOT_IMPLEMENTED",
+    "preview_renderer": "NOT_IMPLEMENTED",
+    "persistence": "NOT_AUTHORIZED",
+    "automatic_memory": "DISABLED",
+    "hook": "NOT_AUTHORIZED",
+    "mcp": "NOT_AUTHORIZED",
+    "scheduler": "NOT_AUTHORIZED",
+    "network": "NOT_IMPLEMENTED",
+    "host_enforcement": "NOT_PROVEN",
+    "external_action": "NONE"
+  },
+  "$defs": {
+    "OpaqueKID": {
+      "type": "string",
+      "pattern": "^KID-[A-Z2-7]{16}$"
+    },
+    "OpaqueKRR": {
+      "type": "string",
+      "pattern": "^KRR-[A-Z2-7]{16}$"
+    },
+    "OpaqueKRT": {
+      "type": "string",
+      "pattern": "^KRT-[A-Z2-7]{16}$"
+    },
+    "OpaqueKRA": {
+      "type": "string",
+      "pattern": "^KRA-[A-Z2-7]{16}$"
+    },
+    "OpaqueKWP": {
+      "type": "string",
+      "pattern": "^KWP-[A-Z2-7]{16}$"
+    },
+    "OpaqueKHD": {
+      "type": "string",
+      "pattern": "^KHD-[A-Z2-7]{16}$"
+    },
+    "FixedUtcTimestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+    },
+    "FixedDate": {
+      "type": "string",
+      "format": "date",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    },
+    "ProjectRelativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*//)(?!.*\\\\)(?!.*(?:^|/)(?:\\.|\\.\\.|\\.git|\\.agents|\\.codex)(?:/|$))[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$"
+    },
+    "SingleLineHeading": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120,
+      "pattern": "^[^\\u000A\\u000B\\u000C\\u000D\\u0085\\u2028\\u2029]+$",
+      "allOf": [
+        { "$ref": "#/$defs/ForbiddenSensitiveText" }
+      ]
+    },
+    "SourceLocator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["relative_path", "section_heading"],
+      "properties": {
+        "relative_path": { "$ref": "#/$defs/ProjectRelativePath" },
+        "section_heading": { "$ref": "#/$defs/SingleLineHeading" }
+      }
+    },
+    "DescriptorStatement": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 280,
+      "pattern": "^[^\\u000A\\u000B\\u000C\\u000D\\u0085\\u2028\\u2029]+$",
+      "allOf": [
+        { "$ref": "#/$defs/ForbiddenSensitiveText" }
+      ]
+    },
+    "ProposalSummary": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 280,
+      "pattern": "^[^\\u0000-\\u001F\\u007F-\\u009F\\u061C\\u200E\\u200F\\u2028-\\u202E\\u2066-\\u2069<>`\\[\\]*_]+$",
+      "allOf": [
+        { "$ref": "#/$defs/ForbiddenSensitiveText" }
+      ]
+    },
+    "ForbiddenSensitiveText": {
+      "description": "Shared lexical policy only; cross-record semantics remain validator responsibilities.",
+      "allOf": [
+        { "not": { "pattern": "[Aa][Cc][Cc][Oo][Uu][Nn][Tt]_[Nn][Uu][Mm][Bb][Ee][Rr]=" } },
+        { "not": { "pattern": "[Bb][Rr][Oo][Kk][Ee][Rr]_[Aa][Cc][Cc][Oo][Uu][Nn][Tt]=" } },
+        { "not": { "pattern": "[Aa][Pp][Ii]_[Kk][Ee][Yy]=" } },
+        { "not": { "pattern": "[Pp][Aa][Ss][Ss][Ww][Oo][Rr][Dd]=" } },
+        { "not": { "pattern": "/[Uu][Ss][Ee][Rr][Ss]/" } },
+        { "not": { "pattern": "[Ii][Gg][Nn][Oo][Rr][Ee] [Tt][Hh][Ee] [Cc][Oo][Nn][Tt][Rr][Aa][Cc][Tt]" } },
+        { "not": { "pattern": "[Ii][Gg][Nn][Oo][Rr][Ee] [Ss][Aa][Ff][Ee][Gg][Uu][Aa][Rr][Dd][Ss]" } },
+        { "not": { "pattern": "[Rr][Ee][Aa][Dd] [Aa][Ll][Ll] [Ff][Ii][Ll][Ee][Ss]" } }
+      ]
+    },
+    "KnowledgeItemDescriptor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "knowledge_item_id",
+        "project_scope",
+        "knowledge_kind",
+        "statement",
+        "classification",
+        "source_locator",
+        "sensitivity_basis",
+        "observed_at",
+        "review_by",
+        "retention_status"
+      ],
+      "properties": {
+        "knowledge_item_id": { "$ref": "#/$defs/OpaqueKID" },
+        "project_scope": { "const": "SINGLE_PROJECT_ONLY" },
+        "knowledge_kind": {
+          "enum": [
+            "ARCHITECTURE_DECISION",
+            "GOVERNANCE_BOUNDARY",
+            "VERIFICATION_EVIDENCE",
+            "GLOSSARY_ENTRY",
+            "OPEN_QUESTION",
+            "KNOWN_LIMITATION"
+          ]
+        },
+        "statement": { "$ref": "#/$defs/DescriptorStatement" },
+        "classification": { "enum": ["FACT", "INFERENCE", "UNKNOWN"] },
+        "source_locator": {
+          "oneOf": [
+            { "$ref": "#/$defs/SourceLocator" },
+            { "type": "null" }
+          ]
+        },
+        "sensitivity_basis": {
+          "enum": ["HUMAN_DECLARED", "PROJECT_POLICY", "KNOWN_PATH_RULE"]
+        },
+        "observed_at": { "$ref": "#/$defs/FixedUtcTimestamp" },
+        "review_by": { "$ref": "#/$defs/FixedDate" },
+        "retention_status": { "const": "EPHEMERAL_ONLY" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "knowledge_kind": { "const": "OPEN_QUESTION" } },
+            "required": ["knowledge_kind"]
+          },
+          "then": { "properties": { "source_locator": { "type": "null" } } },
+          "else": { "properties": { "source_locator": { "$ref": "#/$defs/SourceLocator" } } }
+        }
+      ]
+    },
+    "KnowledgeReadRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "request_id",
+        "task_reference",
+        "authorization_reference",
+        "sensitivity_basis",
+        "target_locator",
+        "requested_effect",
+        "requested_read_range",
+        "request_evaluated_at",
+        "proposed_expires_at"
+      ],
+      "properties": {
+        "request_id": { "$ref": "#/$defs/OpaqueKRR" },
+        "task_reference": { "$ref": "#/$defs/OpaqueKRT" },
+        "authorization_reference": { "$ref": "#/$defs/OpaqueKRA" },
+        "sensitivity_basis": {
+          "enum": ["HUMAN_DECLARED", "PROJECT_POLICY", "KNOWN_PATH_RULE", "UNKNOWN"]
+        },
+        "target_locator": { "$ref": "#/$defs/SourceLocator" },
+        "requested_effect": { "const": "READ_ONE_DECLARED_NON_SENSITIVE_SECTION_ONLY" },
+        "requested_read_range": { "const": "EXACT_DECLARED_SECTION_ONLY" },
+        "request_evaluated_at": { "$ref": "#/$defs/FixedUtcTimestamp" },
+        "proposed_expires_at": { "$ref": "#/$defs/FixedUtcTimestamp" }
+      }
+    },
+    "AuthorizationRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "authorization_id",
+        "request_reference",
+        "task_reference",
+        "effect",
+        "target_locator",
+        "requested_read_range",
+        "expires_at",
+        "authorization_status",
+        "revoked_at"
+      ],
+      "properties": {
+        "authorization_id": { "$ref": "#/$defs/OpaqueKRA" },
+        "request_reference": { "$ref": "#/$defs/OpaqueKRR" },
+        "task_reference": { "$ref": "#/$defs/OpaqueKRT" },
+        "effect": { "const": "READ_ONE_DECLARED_NON_SENSITIVE_SECTION_ONLY" },
+        "target_locator": { "$ref": "#/$defs/SourceLocator" },
+        "requested_read_range": { "const": "EXACT_DECLARED_SECTION_ONLY" },
+        "expires_at": { "$ref": "#/$defs/FixedUtcTimestamp" },
+        "authorization_status": { "enum": ["GRANTED", "REVOKED"] },
+        "revoked_at": {
+          "oneOf": [
+            { "$ref": "#/$defs/FixedUtcTimestamp" },
+            { "type": "null" }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "authorization_status": { "const": "GRANTED" } },
+            "required": ["authorization_status"]
+          },
+          "then": { "properties": { "revoked_at": { "type": "null" } } },
+          "else": { "properties": { "revoked_at": { "$ref": "#/$defs/FixedUtcTimestamp" } } }
+        }
+      ]
+    },
+    "KnowledgeReadReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "request_reference",
+        "task_reference",
+        "authorization_reference",
+        "outcome",
+        "recorded_at",
+        "authorization_expiry_at",
+        "revocation_checked_at",
+        "revocation_checked_authorization_reference"
+      ],
+      "properties": {
+        "request_reference": { "$ref": "#/$defs/OpaqueKRR" },
+        "task_reference": { "$ref": "#/$defs/OpaqueKRT" },
+        "authorization_reference": { "$ref": "#/$defs/OpaqueKRA" },
+        "outcome": {
+          "enum": [
+            "NOT_EXECUTED",
+            "BLOCKED_SENSITIVITY_UNKNOWN",
+            "BLOCKED_AUTHORIZATION_MISSING_OR_INVALID",
+            "BLOCKED_REQUEST_EXPIRED",
+            "BLOCKED_AUTHORIZATION_EXPIRED",
+            "BLOCKED_AUTHORIZATION_REVOKED",
+            "FUTURE_READ_TARGET_UNAVAILABLE_OR_UNRESOLVED",
+            "FUTURE_READ_HOST_DENIED",
+            "FUTURE_READ_ABORTED_OR_INTERNAL_FAILURE",
+            "FUTURE_READ_NOT_COMPLETED",
+            "FUTURE_CONTENT_RETENTION_VIOLATION",
+            "FUTURE_COMPLETED_WITHOUT_CONTENT_RETENTION"
+          ]
+        },
+        "recorded_at": { "$ref": "#/$defs/FixedUtcTimestamp" },
+        "authorization_expiry_at": {
+          "oneOf": [
+            { "$ref": "#/$defs/FixedUtcTimestamp" },
+            { "type": "null" }
+          ]
+        },
+        "revocation_checked_at": {
+          "oneOf": [
+            { "$ref": "#/$defs/FixedUtcTimestamp" },
+            { "const": "NOT_APPLICABLE" }
+          ]
+        },
+        "revocation_checked_authorization_reference": {
+          "oneOf": [
+            { "$ref": "#/$defs/OpaqueKRA" },
+            { "const": "NOT_APPLICABLE" }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "outcome": {
+                "enum": [
+                  "NOT_EXECUTED",
+                  "BLOCKED_SENSITIVITY_UNKNOWN",
+                  "BLOCKED_AUTHORIZATION_MISSING_OR_INVALID"
+                ]
+              }
+            },
+            "required": ["outcome"]
+          },
+          "then": {
+            "properties": {
+              "authorization_expiry_at": { "type": "null" },
+              "revocation_checked_at": { "const": "NOT_APPLICABLE" },
+              "revocation_checked_authorization_reference": { "const": "NOT_APPLICABLE" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "outcome": {
+                "enum": ["BLOCKED_REQUEST_EXPIRED", "BLOCKED_AUTHORIZATION_EXPIRED"]
+              }
+            },
+            "required": ["outcome"]
+          },
+          "then": {
+            "properties": {
+              "authorization_expiry_at": { "$ref": "#/$defs/FixedUtcTimestamp" },
+              "revocation_checked_at": { "const": "NOT_APPLICABLE" },
+              "revocation_checked_authorization_reference": { "const": "NOT_APPLICABLE" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "outcome": {
+                "enum": [
+                  "BLOCKED_AUTHORIZATION_REVOKED",
+                  "FUTURE_READ_TARGET_UNAVAILABLE_OR_UNRESOLVED",
+                  "FUTURE_READ_HOST_DENIED",
+                  "FUTURE_READ_ABORTED_OR_INTERNAL_FAILURE",
+                  "FUTURE_READ_NOT_COMPLETED",
+                  "FUTURE_CONTENT_RETENTION_VIOLATION",
+                  "FUTURE_COMPLETED_WITHOUT_CONTENT_RETENTION"
+                ]
+              }
+            },
+            "required": ["outcome"]
+          },
+          "then": {
+            "properties": {
+              "authorization_expiry_at": { "$ref": "#/$defs/FixedUtcTimestamp" },
+              "revocation_checked_at": { "$ref": "#/$defs/FixedUtcTimestamp" },
+              "revocation_checked_authorization_reference": { "$ref": "#/$defs/OpaqueKRA" }
+            }
+          }
+        }
+      ]
+    },
+    "WriteProposal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "proposal_id",
+        "task_reference",
+        "source_request_reference",
+        "proposed_target_path",
+        "proposed_effect",
+        "proposed_change_summary",
+        "sensitivity_basis",
+        "proposed_expires_at"
+      ],
+      "properties": {
+        "proposal_id": { "$ref": "#/$defs/OpaqueKWP" },
+        "task_reference": { "$ref": "#/$defs/OpaqueKRT" },
+        "source_request_reference": { "$ref": "#/$defs/OpaqueKRR" },
+        "proposed_target_path": { "$ref": "#/$defs/ProjectRelativePath" },
+        "proposed_effect": { "const": "WRITE_ONE_DECLARED_PROJECT_RELATIVE_FILE_ONLY" },
+        "proposed_change_summary": { "$ref": "#/$defs/ProposalSummary" },
+        "sensitivity_basis": {
+          "enum": ["HUMAN_DECLARED", "PROJECT_POLICY", "KNOWN_PATH_RULE", "UNKNOWN"]
+        },
+        "proposed_expires_at": { "$ref": "#/$defs/FixedUtcTimestamp" }
+      }
+    },
+    "HumanDisposition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "disposition_id",
+        "proposal_reference",
+        "task_reference",
+        "allowed_effect",
+        "approved_target_path",
+        "disposition",
+        "expires_at",
+        "revoked_at"
+      ],
+      "properties": {
+        "disposition_id": { "$ref": "#/$defs/OpaqueKHD" },
+        "proposal_reference": { "$ref": "#/$defs/OpaqueKWP" },
+        "task_reference": { "$ref": "#/$defs/OpaqueKRT" },
+        "allowed_effect": { "const": "WRITE_ONE_DECLARED_PROJECT_RELATIVE_FILE_ONLY" },
+        "approved_target_path": { "$ref": "#/$defs/ProjectRelativePath" },
+        "disposition": { "enum": ["APPROVE", "REJECT", "DEFER", "REVOKED"] },
+        "expires_at": { "$ref": "#/$defs/FixedUtcTimestamp" },
+        "revoked_at": {
+          "oneOf": [
+            { "$ref": "#/$defs/FixedUtcTimestamp" },
+            { "type": "null" }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "disposition": { "const": "REVOKED" } },
+            "required": ["disposition"]
+          },
+          "then": { "properties": { "revoked_at": { "$ref": "#/$defs/FixedUtcTimestamp" } } },
+          "else": { "properties": { "revoked_at": { "type": "null" } } }
+        }
+      ]
+    }
+  }
+}

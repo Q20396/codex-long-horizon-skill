@@ -1,0 +1,43 @@
+[
+  {
+    "case_id": "POS-KIND-ARCHITECTURE-001", "synthetic": true, "fixture_only": true,
+    "expected_result": "ACCEPT", "expected_outcome": "DESCRIPTOR_STATICALLY_VALID",
+    "payload": {"case_subject": "KNOWLEDGE_ITEM_DESCRIPTOR", "record": {"knowledge_item_id": "KID-ABCD2345EFGH6723", "project_scope": "SINGLE_PROJECT_ONLY", "knowledge_kind": "ARCHITECTURE_DECISION", "statement": "Synthetic architecture decision", "classification": "FACT", "source_locator": {"relative_path": "docs/architecture.md", "section_heading": "Decision"}, "sensitivity_basis": "PROJECT_POLICY", "observed_at": "2030-01-01T00:00:00Z", "review_by": "2030-02-01", "retention_status": "EPHEMERAL_ONLY"}}
+  },
+  {
+    "case_id": "POS-KIND-GOVERNANCE-001", "synthetic": true, "fixture_only": true,
+    "expected_result": "ACCEPT", "expected_outcome": "DESCRIPTOR_STATICALLY_VALID",
+    "payload": {"case_subject": "KNOWLEDGE_ITEM_DESCRIPTOR", "record": {"knowledge_item_id": "KID-BCDE2345FGHJ6723", "project_scope": "SINGLE_PROJECT_ONLY", "knowledge_kind": "GOVERNANCE_BOUNDARY", "statement": "Synthetic governance boundary", "classification": "FACT", "source_locator": {"relative_path": "docs/governance.md", "section_heading": "Boundary"}, "sensitivity_basis": "PROJECT_POLICY", "observed_at": "2030-01-01T00:00:00Z", "review_by": "2030-02-01", "retention_status": "EPHEMERAL_ONLY"}}
+  },
+  {
+    "case_id": "POS-KIND-EVIDENCE-001", "synthetic": true, "fixture_only": true,
+    "expected_result": "ACCEPT", "expected_outcome": "DESCRIPTOR_STATICALLY_VALID",
+    "payload": {"case_subject": "KNOWLEDGE_ITEM_DESCRIPTOR", "record": {"knowledge_item_id": "KID-CDEF2345GHJK6723", "project_scope": "SINGLE_PROJECT_ONLY", "knowledge_kind": "VERIFICATION_EVIDENCE", "statement": "Synthetic verification evidence", "classification": "FACT", "source_locator": {"relative_path": "docs/evidence.md", "section_heading": "Evidence"}, "sensitivity_basis": "KNOWN_PATH_RULE", "observed_at": "2030-01-01T00:00:00Z", "review_by": "2030-02-01", "retention_status": "EPHEMERAL_ONLY"}}
+  },
+  {
+    "case_id": "POS-KIND-GLOSSARY-001", "synthetic": true, "fixture_only": true,
+    "expected_result": "ACCEPT", "expected_outcome": "DESCRIPTOR_STATICALLY_VALID",
+    "payload": {"case_subject": "KNOWLEDGE_ITEM_DESCRIPTOR", "record": {"knowledge_item_id": "KID-DEFG2345HJKM6723", "project_scope": "SINGLE_PROJECT_ONLY", "knowledge_kind": "GLOSSARY_ENTRY", "statement": "Synthetic glossary entry", "classification": "FACT", "source_locator": {"relative_path": "docs/glossary.md", "section_heading": "Term"}, "sensitivity_basis": "HUMAN_DECLARED", "observed_at": "2030-01-01T00:00:00Z", "review_by": "2030-02-01", "retention_status": "EPHEMERAL_ONLY"}}
+  },
+  {
+    "case_id": "POS-KIND-QUESTION-001", "synthetic": true, "fixture_only": true,
+    "expected_result": "ACCEPT", "expected_outcome": "DESCRIPTOR_STATICALLY_VALID",
+    "payload": {"case_subject": "KNOWLEDGE_ITEM_DESCRIPTOR", "record": {"knowledge_item_id": "KID-EFGH2345JKMN6723", "project_scope": "SINGLE_PROJECT_ONLY", "knowledge_kind": "OPEN_QUESTION", "statement": "Synthetic open question", "classification": "UNKNOWN", "source_locator": null, "sensitivity_basis": "HUMAN_DECLARED", "observed_at": "2030-01-01T00:00:00Z", "review_by": "2030-02-01", "retention_status": "EPHEMERAL_ONLY"}}
+  },
+  {
+    "case_id": "POS-KIND-LIMITATION-001", "synthetic": true, "fixture_only": true,
+    "expected_result": "ACCEPT", "expected_outcome": "DESCRIPTOR_STATICALLY_VALID",
+    "payload": {"case_subject": "KNOWLEDGE_ITEM_DESCRIPTOR", "record": {"knowledge_item_id": "KID-FGHJ2345KMNP6723", "project_scope": "SINGLE_PROJECT_ONLY", "knowledge_kind": "KNOWN_LIMITATION", "statement": "Synthetic known limitation", "classification": "FACT", "source_locator": {"relative_path": "docs/limitations.md", "section_heading": "Limitation"}, "sensitivity_basis": "PROJECT_POLICY", "observed_at": "2030-01-01T00:00:00Z", "review_by": "2030-02-01", "retention_status": "EPHEMERAL_ONLY"}}
+  },
+  {
+    "case_id": "POS-K4-APPROVE-NOT-EXECUTABLE-001", "synthetic": true, "fixture_only": true,
+    "expected_result": "ACCEPT", "expected_outcome": "HUMAN_DISPOSITION_RECORDED_NOT_EXECUTABLE",
+    "payload": {
+      "case_subject": "K4_WRITE_EVALUATION",
+      "proposal": {"proposal_id": "KWP-ABCDEFGH23456723", "task_reference": "KRT-ABCDEFGH23456723", "source_request_reference": "KRR-ABCDEFGH23456723", "proposed_target_path": "docs/synthetic-output.md", "proposed_effect": "WRITE_ONE_DECLARED_PROJECT_RELATIVE_FILE_ONLY", "proposed_change_summary": "Synthetic minimal change summary", "sensitivity_basis": "HUMAN_DECLARED", "proposed_expires_at": "2030-01-02T00:00:00Z"},
+      "source_request": {"request_id": "KRR-ABCDEFGH23456723", "task_reference": "KRT-ABCDEFGH23456723", "authorization_reference": "KRA-ABCDEFGH23456723", "sensitivity_basis": "HUMAN_DECLARED", "target_locator": {"relative_path": "docs/synthetic-note.md", "section_heading": "Decision"}, "requested_effect": "READ_ONE_DECLARED_NON_SENSITIVE_SECTION_ONLY", "requested_read_range": "EXACT_DECLARED_SECTION_ONLY", "request_evaluated_at": "2030-01-01T00:00:00Z", "proposed_expires_at": "2030-01-02T00:00:00Z"},
+      "human_disposition": {"disposition_id": "KHD-ABCDEFGH23456723", "proposal_reference": "KWP-ABCDEFGH23456723", "task_reference": "KRT-ABCDEFGH23456723", "allowed_effect": "WRITE_ONE_DECLARED_PROJECT_RELATIVE_FILE_ONLY", "approved_target_path": "docs/synthetic-output.md", "disposition": "APPROVE", "expires_at": "2030-01-03T00:00:00Z", "revoked_at": null},
+      "evaluation_at": "2030-01-01T12:00:00Z", "rendering_risk": false
+    }
+  }
+]
