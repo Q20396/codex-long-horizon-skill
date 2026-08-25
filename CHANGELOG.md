@@ -2,6 +2,15 @@
 
 All notable changes to this project are summarized here.
 
+## 0.6.1 - 2026-08-25
+
+- Hardened updater filesystem cleanup with no-replace rename and directory FD
+  anchoring across publish, rollback, receipt, and recovery paths.
+- Retained cleanup artifacts under an explicit security policy instead of
+  automatically deleting transaction-controlled objects.
+- Strengthened receipt and recovery evidence for identity checks, manual
+  recovery, and fail-closed error states.
+
 ## 0.6.0 - 2026-08-04
 
 - Added synthetic-only static contracts for research requests, semantic
