@@ -68,11 +68,24 @@ jobs:
           python3 -m unittest discover -s tests -p "test_*.py"
           python3 scripts/validate_plugin_package.py
           python3 scripts/test_fresh_install.py --skip-codex-cli
-          python3 scripts/check_release_readiness.py \
-            --version 0.6.0 \
-            --release-state final --allow-existing-tag
           python3 scripts/test_skill_update_selfcheck.py
           python3 scripts/test_assemble_skill_profile.py
+
+      - name: Run candidate release hygiene gate for pull requests
+        if: github.event_name == 'pull_request'
+        run: |
+          python3 scripts/check_release_readiness.py \
+            --version 0.6.1 \
+            --release-state candidate \
+            --allow-existing-tag
+
+      - name: Run final release-state consistency gate on main
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          python3 scripts/check_release_readiness.py \
+            --version 0.6.1 \
+            --release-state final \
+            --allow-existing-tag
 
       - name: Compile Python helper scripts
         run: |
@@ -192,19 +205,36 @@ jobs:
             --workflow-ref "$GITHUB_WORKFLOW_REF" \
             --job-name "$GITHUB_JOB"
 
-      - name: Run formal Draft 2020-12 gate in routine post-tag-safe mode
+      - name: Run formal Draft 2020-12 gate for pull request candidate
+        if: github.event_name == 'pull_request'
         run: |
           "$RUNNER_TEMP/lhe-formal-schema-venv/bin/python" \
             -m unittest tests.test_formal_schema_validation -v
           "$RUNNER_TEMP/lhe-formal-schema-venv/bin/python" \
             scripts/check_release_readiness.py \
-            --version 0.6.0 \
-            --release-state final \
+            --version 0.6.1 \
+            --release-state candidate \
             --allow-existing-tag \
             --formal-schema-pip-report "$RUNNER_TEMP/formal-schema-pip-report.json" \
             --formal-schema-acquisition-result "$RUNNER_TEMP/formal-schema-evidence/acquisition-receipt.json" \
             --formal-schema-evidence-dir "$RUNNER_TEMP/formal-schema-evidence" \
             --formal-schema-candidate-base "$FORMAL_CANDIDATE_BASE" \
+            --formal-schema-result "$RUNNER_TEMP/formal-schema-result.json"
+
+      - name: Validate formal evidence for main final state
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          "$RUNNER_TEMP/lhe-formal-schema-venv/bin/python" \
+            -m unittest tests.test_formal_schema_validation -v
+          "$RUNNER_TEMP/lhe-formal-schema-venv/bin/python" \
+            scripts/check_release_readiness.py \
+            --version 0.6.1 \
+            --release-state final \
+            --allow-existing-tag \
+            --formal-schema-pip-report "$RUNNER_TEMP/formal-schema-pip-report.json" \
+            --formal-schema-acquisition-result "$RUNNER_TEMP/formal-schema-evidence/acquisition-receipt.json" \
+            --formal-schema-evidence-dir "$RUNNER_TEMP/formal-schema-evidence" \
+            --formal-schema-candidate-base "${FORMAL_CANDIDATE_BASE}" \
             --formal-schema-result "$RUNNER_TEMP/formal-schema-result.json"
 
       - name: Report checkout status paths after formal gate failure

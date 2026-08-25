@@ -175,9 +175,10 @@ CORE_COMMANDS = [
         PYTHON,
         "scripts/check_release_readiness.py",
         "--version",
-        "0.6.0",
+        "0.6.1",
         "--release-state",
-        "final",
+        "candidate",
+        "--allow-existing-tag",
     ],
     [PYTHON, "scripts/test_skill_update_selfcheck.py"],
     [PYTHON, "scripts/test_assemble_skill_profile.py"],
@@ -196,16 +197,6 @@ CI_EXPECTED = [
     ("generate_skill_catalog.py --check", ["generate_skill_catalog.py", "--check"]),
     ("validate_plugin_package.py", ["validate_plugin_package.py"]),
     ("test_fresh_install.py --skip-codex-cli", ["test_fresh_install.py", "--skip-codex-cli"]),
-    (
-        "check_release_readiness.py final release state",
-        [
-            "check_release_readiness.py",
-            "--version",
-            "0.6.0",
-            "--release-state",
-            "final",
-        ],
-    ),
     ("skill_update_selfcheck.py --help", ["skill_update_selfcheck.py", "--help"]),
     ("test_skill_update_selfcheck.py", ["test_skill_update_selfcheck.py"]),
     ("test_assemble_skill_profile.py", ["test_assemble_skill_profile.py"]),
@@ -213,6 +204,87 @@ CI_EXPECTED = [
     ("git diff --check", ["git", "diff", "--check"]),
     ("update dry-run smoke test", ["update_installed_skill.py", "--target-root"]),
 ]
+
+
+def _workflow_steps(text: str) -> list[str]:
+    steps: list[list[str]] = []
+    current: list[str] | None = None
+    for line in text.splitlines():
+        if line.startswith("      - name:"):
+            if current is not None:
+                steps.append(current)
+            current = [line]
+        elif current is not None:
+            current.append(line)
+    if current is not None:
+        steps.append(current)
+    return ["\n".join(step) for step in steps]
+
+
+def release_gate_workflow_errors(text: str) -> list[str]:
+    """Validate release-state commands against their GitHub event context."""
+    errors: list[str] = []
+    if "  pull_request:" not in text:
+        errors.append("workflow must retain pull_request coverage")
+    if "  push:" not in text or "      - main" not in text:
+        errors.append("workflow must retain push-to-main coverage")
+
+    steps = _workflow_steps(text)
+    readiness_steps = [
+        step for step in steps if "scripts/check_release_readiness.py" in step
+    ]
+    candidate_steps = [
+        step for step in readiness_steps if "--release-state candidate" in step
+    ]
+    final_steps = [
+        step for step in readiness_steps if "--release-state final" in step
+    ]
+
+    candidate_pr_steps = [
+        step
+        for step in candidate_steps
+        if "if: github.event_name == 'pull_request'" in step
+    ]
+    if not candidate_pr_steps:
+        errors.append("candidate readiness gate must be scoped to pull_request")
+    else:
+        candidate_step = candidate_pr_steps[0]
+        if "--allow-existing-tag" not in candidate_step:
+            errors.append("pull_request candidate gate must use --allow-existing-tag")
+        if "--pre-tag-static" in candidate_step:
+            errors.append("pull_request candidate gate must not use --pre-tag-static")
+        if "--release-hygiene-base" in candidate_step:
+            errors.append("pull_request candidate gate must not require linked-worktree hygiene")
+
+    final_main_steps = [
+        step
+        for step in final_steps
+        if "if: github.event_name == 'push'" in step
+        and "refs/heads/main" in step
+    ]
+    if not final_main_steps:
+        errors.append("final readiness gate must be scoped to push on main")
+    elif "--allow-existing-tag" not in final_main_steps[0]:
+        errors.append("main final gate must use --allow-existing-tag")
+
+    for step in readiness_steps:
+        has_candidate = "--release-state candidate" in step
+        has_final = "--release-state final" in step
+        is_pull_request = "github.event_name == 'pull_request'" in step
+        is_main_push = (
+            "github.event_name == 'push'" in step
+            and "refs/heads/main" in step
+        )
+        if has_candidate and has_final:
+            errors.append("one readiness step cannot contain candidate and final states")
+        if has_final and not is_main_push:
+            errors.append("final readiness gate is outside the push-main context")
+        if has_candidate and not is_pull_request:
+            errors.append("candidate readiness gate is outside the pull_request context")
+
+    if "--pre-tag \\" in text or "--pre-tag\n" in text:
+        errors.append("workflow must not invoke the Phase B --pre-tag gate")
+    return errors
 
 OPTIONAL_WARNING_WAIVERS = {
     (
@@ -734,6 +806,16 @@ def check_ci_coverage(report: Report) -> None:
             report.pass_("CI Coverage", label, "covered")
         else:
             report.partial("CI Coverage", label, "not found in workflow")
+    gate_errors = release_gate_workflow_errors(text)
+    if gate_errors:
+        for error in gate_errors:
+            report.fail("CI Coverage", "release readiness lifecycle gates", error)
+    else:
+        report.pass_(
+            "CI Coverage",
+            "release readiness lifecycle gates",
+            "candidate PR and main final contexts covered",
+        )
 
 
 def enforce_release_warning_allowlist(report: Report) -> None:
