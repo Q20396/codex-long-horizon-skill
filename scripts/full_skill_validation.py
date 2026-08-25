@@ -3,8 +3,10 @@
 
 from __future__ import annotations
 
+import argparse
 import ast
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -177,7 +179,7 @@ CORE_COMMANDS = [
         "--version",
         "0.6.1",
         "--release-state",
-        "candidate",
+        "__RELEASE_STATE__",
         "--allow-existing-tag",
     ],
     [PYTHON, "scripts/test_skill_update_selfcheck.py"],
@@ -222,69 +224,128 @@ def _workflow_steps(text: str) -> list[str]:
 
 
 def release_gate_workflow_errors(text: str) -> list[str]:
-    """Validate release-state commands against their GitHub event context."""
+    """Validate dynamic release-state gates against their event contexts."""
     errors: list[str] = []
     if "  pull_request:" not in text:
         errors.append("workflow must retain pull_request coverage")
     if "  push:" not in text or "      - main" not in text:
         errors.append("workflow must retain push-to-main coverage")
 
-    steps = _workflow_steps(text)
-    readiness_steps = [
-        step for step in steps if "scripts/check_release_readiness.py" in step
-    ]
-    candidate_steps = [
-        step for step in readiness_steps if "--release-state candidate" in step
-    ]
-    final_steps = [
-        step for step in readiness_steps if "--release-state final" in step
-    ]
+    jobs: dict[str, str] = {}
+    in_jobs = False
+    current_job: str | None = None
+    current_lines: list[str] = []
+    for line in text.splitlines():
+        if line == "jobs:":
+            in_jobs = True
+            continue
+        if in_jobs and re.fullmatch(r"  [A-Za-z0-9_-]+:", line):
+            if current_job is not None:
+                jobs[current_job] = "\n".join(current_lines)
+            current_job = line.strip()[:-1]
+            current_lines = [line]
+            continue
+        if current_job is not None:
+            current_lines.append(line)
+    if current_job is not None:
+        jobs[current_job] = "\n".join(current_lines)
 
-    candidate_pr_steps = [
-        step
-        for step in candidate_steps
-        if "if: github.event_name == 'pull_request'" in step
-    ]
-    if not candidate_pr_steps:
-        errors.append("candidate readiness gate must be scoped to pull_request")
-    else:
-        candidate_step = candidate_pr_steps[0]
-        if "--allow-existing-tag" not in candidate_step:
-            errors.append("pull_request candidate gate must use --allow-existing-tag")
-        if "--pre-tag-static" in candidate_step:
-            errors.append("pull_request candidate gate must not use --pre-tag-static")
-        if "--release-hygiene-base" in candidate_step:
-            errors.append("pull_request candidate gate must not require linked-worktree hygiene")
+    for job_name in ("check-skill", "formal-schema-gate"):
+        if job_name not in jobs:
+            errors.append(f"workflow must retain {job_name} job")
 
-    final_main_steps = [
-        step
-        for step in final_steps
-        if "if: github.event_name == 'push'" in step
-        and "refs/heads/main" in step
-    ]
-    if not final_main_steps:
-        errors.append("final readiness gate must be scoped to push on main")
-    elif "--allow-existing-tag" not in final_main_steps[0]:
-        errors.append("main final gate must use --allow-existing-tag")
+    dynamic_state = '--release-state "${{ steps.release-state.outputs.state }}"'
 
-    for step in readiness_steps:
-        has_candidate = "--release-state candidate" in step
-        has_final = "--release-state final" in step
-        is_pull_request = "github.event_name == 'pull_request'" in step
-        is_main_push = (
-            "github.event_name == 'push'" in step
-            and "refs/heads/main" in step
+    def readiness_steps(job_text: str) -> list[str]:
+        return [
+            step
+            for step in _workflow_steps(job_text)
+            if "scripts/check_release_readiness.py" in step
+            and "--release-state" in step
+        ]
+
+    def has_state_resolver(job_text: str) -> bool:
+        return any(
+            "id: release-state" in step
+            and "scripts/full_skill_validation.py --print-release-state" in step
+            for step in _workflow_steps(job_text)
         )
-        if has_candidate and has_final:
-            errors.append("one readiness step cannot contain candidate and final states")
-        if has_final and not is_main_push:
-            errors.append("final readiness gate is outside the push-main context")
-        if has_candidate and not is_pull_request:
-            errors.append("candidate readiness gate is outside the pull_request context")
 
-    if "--pre-tag \\" in text or "--pre-tag\n" in text:
-        errors.append("workflow must not invoke the Phase B --pre-tag gate")
+    check_steps = readiness_steps(jobs.get("check-skill", ""))
+    formal_steps = readiness_steps(jobs.get("formal-schema-gate", ""))
+    if not has_state_resolver(jobs.get("check-skill", "")):
+        errors.append("check-skill job must resolve Release state through the shared parser")
+    if not has_state_resolver(jobs.get("formal-schema-gate", "")):
+        errors.append("formal-schema-gate job must resolve Release state through the shared parser")
+
+    check_pr_steps = [
+        step for step in check_steps if "if: github.event_name == 'pull_request'" in step
+    ]
+    if not check_pr_steps:
+        errors.append("check-skill pull_request readiness gate is missing")
+    else:
+        step = check_pr_steps[0]
+        if dynamic_state not in step:
+            errors.append("pull_request readiness gate must use the shared dynamic Release state")
+        if "--allow-existing-tag" not in step:
+            errors.append("pull_request readiness gate must use --allow-existing-tag")
+        if "--pre-tag" in step or "--pre-tag-static" in step:
+            errors.append("pull_request readiness gate must not use a pre-tag mode")
+
+    check_main_steps = [
+        step
+        for step in check_steps
+        if "if: github.event_name == 'push'" in step and "refs/heads/main" in step
+    ]
+    if not check_main_steps:
+        errors.append("check-skill final readiness gate must be scoped to push on main")
+    else:
+        step = check_main_steps[0]
+        if "--release-state final" not in step:
+            errors.append("push-main check-skill gate must use final release state")
+        if "--allow-existing-tag" not in step:
+            errors.append("push-main check-skill gate must use --allow-existing-tag")
+
+    formal_pr_steps = [
+        step for step in formal_steps if "if: github.event_name == 'pull_request'" in step
+    ]
+    if not formal_pr_steps:
+        errors.append("formal-schema-gate pull_request readiness gate is missing")
+    else:
+        step = formal_pr_steps[0]
+        if dynamic_state not in step:
+            errors.append("formal pull_request gate must use the shared dynamic Release state")
+        if "--allow-existing-tag" not in step:
+            errors.append("formal pull_request gate must use --allow-existing-tag")
+        if "--pre-tag" in step or "--pre-tag-static" in step:
+            errors.append("formal pull_request gate must not use a pre-tag mode")
+
+    formal_main_steps = [
+        step
+        for step in formal_steps
+        if "if: github.event_name == 'push'" in step and "refs/heads/main" in step
+    ]
+    if not formal_main_steps:
+        errors.append("formal main readiness gate must be scoped to push on main")
+    elif dynamic_state not in formal_main_steps[0]:
+        errors.append("formal main gate must use the shared dynamic Release state")
+
+    for job_name, job_text in jobs.items():
+        for step in readiness_steps(job_text):
+            is_pull_request = "if: github.event_name == 'pull_request'" in step
+            is_main_push = (
+                "if: github.event_name == 'push'" in step
+                and "refs/heads/main" in step
+            )
+            if not (is_pull_request or is_main_push):
+                errors.append(f"readiness gate in {job_name} has no allowed event context")
+            if is_pull_request and ("--pre-tag" in step or "--pre-tag-static" in step):
+                errors.append(f"{job_name} pull_request gate must not invoke a pre-tag mode")
+
+    if "--pre-tag" in text or "--pre-tag-static" in text:
+        errors.append("workflow must not invoke --pre-tag or --pre-tag-static")
     return errors
+
 
 OPTIONAL_WARNING_WAIVERS = {
     (
@@ -556,8 +617,31 @@ def check_optional_group(report: Report, name: str, files: list[Path], required_
             report.warn("Optional Integration Checks", rel(path), "optional related file missing")
 
 
+def release_state_for_validation() -> str:
+    """Read exactly one supported release state from the active release note."""
+    notes = ROOT / "docs/releases/v0.6.1.md"
+    try:
+        text = notes.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise ValueError(f"cannot read active release note: {exc}") from exc
+    states = re.findall(r"^Release state:\s*(candidate|final)\s*$", text, re.MULTILINE)
+    if len(states) != 1:
+        raise ValueError("active release note must contain exactly one supported Release state")
+    return states[0]
+
+
 def run_core_commands(report: Report) -> None:
-    for args in CORE_COMMANDS:
+    try:
+        release_state = release_state_for_validation()
+    except ValueError as exc:
+        report.fail("Core Command Results", "release-state selector", str(exc))
+        return
+
+    commands = [
+        [release_state if arg == "__RELEASE_STATE__" else arg for arg in args]
+        for args in CORE_COMMANDS
+    ]
+    for args in commands:
         timeout = (
             FULL_UNITTEST_TIMEOUT_SECONDS
             if args == FULL_UNITTEST_COMMAND
@@ -885,7 +969,22 @@ def print_report(report: Report) -> None:
         print("FAIL: one or more required checks failed")
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--print-release-state",
+        action="store_true",
+        help="print the single active release-note state and perform no other checks",
+    )
+    args = parser.parse_args(argv)
+    if args.print_release_state:
+        try:
+            print(release_state_for_validation())
+        except ValueError as exc:
+            print(f"ERROR: {exc}", file=sys.stderr)
+            return 1
+        return 0
+
     report = Report()
     required_by_checker = load_required_from_check_script()
 

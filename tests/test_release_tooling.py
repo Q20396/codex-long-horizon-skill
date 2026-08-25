@@ -1013,18 +1013,98 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.assertIn("partial error", result.stderr)
         self.assertIn("command timed out after 7 seconds", result.stderr)
 
+    def test_full_validation_uses_active_release_note_state(self) -> None:
+        repo = self.copy_repo("full-validation-final-state")
+        self.set_final_release_state(repo)
+        calls: list[list[str]] = []
+
+        def fake_run(
+            command: list[str],
+            *,
+            timeout: int,
+        ) -> subprocess.CompletedProcess[str]:
+            calls.append(command)
+            return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
+
+        with mock.patch.object(FULL_VALIDATION, "ROOT", repo):
+            with mock.patch.object(FULL_VALIDATION, "run_command", side_effect=fake_run):
+                report = FULL_VALIDATION.Report()
+                FULL_VALIDATION.run_core_commands(report)
+
+        readiness = next(
+            command for command in calls if "scripts/check_release_readiness.py" in command
+        )
+        self.assertEqual("final", readiness[readiness.index("--release-state") + 1])
+        self.assertFalse(report.failures())
+
+    def test_full_validation_selects_candidate_release_note_state(self) -> None:
+        repo = self.copy_repo("full-validation-candidate-state")
+        notes = self.release_notes(repo)
+        notes.write_text(
+            notes.read_text(encoding="utf-8").replace(
+                "Release state: final", "Release state: candidate", 1
+            ),
+            encoding="utf-8",
+        )
+        for skill_name in ("long-horizon-engineering", "ai-video-production"):
+            skill = repo / ".agents" / "skills" / skill_name / "SKILL.md"
+            skill.write_text(
+                skill.read_text(encoding="utf-8").replace(
+                    "update_channel: stable", "update_channel: candidate", 1
+                ),
+                encoding="utf-8",
+            )
+        calls: list[list[str]] = []
+
+        def fake_run(
+            command: list[str],
+            *,
+            timeout: int,
+        ) -> subprocess.CompletedProcess[str]:
+            calls.append(command)
+            return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
+
+        with mock.patch.object(FULL_VALIDATION, "ROOT", repo):
+            with mock.patch.object(FULL_VALIDATION, "run_command", side_effect=fake_run):
+                report = FULL_VALIDATION.Report()
+                FULL_VALIDATION.run_core_commands(report)
+
+        readiness = next(
+            command for command in calls if "scripts/check_release_readiness.py" in command
+        )
+        self.assertEqual("candidate", readiness[readiness.index("--release-state") + 1])
+        self.assertFalse(report.failures())
+
+    def test_full_validation_rejects_ambiguous_release_note_state(self) -> None:
+        repo = self.copy_repo("full-validation-ambiguous-state")
+        notes = repo / "docs/releases/v0.6.1.md"
+        notes.write_text(
+            notes.read_text(encoding="utf-8") + "\nRelease state: candidate\n",
+            encoding="utf-8",
+        )
+        report = FULL_VALIDATION.Report()
+        with mock.patch.object(FULL_VALIDATION, "ROOT", repo):
+            FULL_VALIDATION.run_core_commands(report)
+
+        self.assertEqual(1, len(report.failures()))
+        self.assertIn("exactly one supported Release state", report.failures()[0].detail)
+
     def test_check_skill_workflow_has_candidate_and_final_lifecycle_contexts(self) -> None:
         workflow = (ROOT / ".github" / "workflows" / "check-skill.yml").read_text(
             encoding="utf-8"
         )
         self.assertEqual([], FULL_VALIDATION.release_gate_workflow_errors(workflow))
+        dynamic_state = '--release-state "${{ steps.release-state.outputs.state }}"'
+        self.assertEqual(3, workflow.count(dynamic_state))
+        self.assertEqual(2, workflow.count("scripts/full_skill_validation.py --print-release-state"))
+        self.assertNotIn("--pre-tag", workflow)
 
     def test_workflow_candidate_gate_cannot_be_changed_to_final(self) -> None:
         workflow = (ROOT / ".github" / "workflows" / "check-skill.yml").read_text(
             encoding="utf-8"
         )
         broken = workflow.replace(
-            "--release-state candidate \\\n            --allow-existing-tag",
+            '--release-state "${{ steps.release-state.outputs.state }}" \\\n            --allow-existing-tag',
             "--release-state final \\\n            --allow-existing-tag",
             1,
         )
@@ -1036,7 +1116,7 @@ class ReleaseReadinessTests(unittest.TestCase):
             encoding="utf-8"
         )
         broken = workflow.replace(
-            "--release-state candidate \\\n            --allow-existing-tag",
+            '--release-state "${{ steps.release-state.outputs.state }}" \\\n            --allow-existing-tag',
             "--release-state candidate \\\n            --pre-tag-static",
             1,
         )
@@ -1054,6 +1134,40 @@ class ReleaseReadinessTests(unittest.TestCase):
         )
         self.assertNotEqual(workflow, broken)
         self.assertTrue(FULL_VALIDATION.release_gate_workflow_errors(broken))
+
+    def test_workflow_formal_and_package_pr_gates_must_share_dynamic_state(self) -> None:
+        workflow = (ROOT / ".github" / "workflows" / "check-skill.yml").read_text(
+            encoding="utf-8"
+        )
+        dynamic_state = '--release-state "${{ steps.release-state.outputs.state }}"'
+        broken = workflow.replace(dynamic_state, "--release-state final", 2)
+        self.assertTrue(FULL_VALIDATION.release_gate_workflow_errors(broken))
+
+    def test_workflow_requires_shared_release_state_resolver_in_both_jobs(self) -> None:
+        workflow = (ROOT / ".github" / "workflows" / "check-skill.yml").read_text(
+            encoding="utf-8"
+        )
+        broken = workflow.replace(
+            "python3 scripts/full_skill_validation.py --print-release-state",
+            "python3 -c 'print(\"final\")'",
+            1,
+        )
+        self.assertTrue(FULL_VALIDATION.release_gate_workflow_errors(broken))
+
+    def test_release_state_parser_rejects_missing_and_invalid_state(self) -> None:
+        for marker in ("Release state: missing", "Release state: candidate\nRelease state: final"):
+            with self.subTest(marker=marker):
+                repo = self.copy_repo(f"invalid-release-state-{hash(marker)}")
+                notes = self.release_notes(repo)
+                notes.write_text(
+                    notes.read_text(encoding="utf-8").replace(
+                        "Release state: final", marker, 1
+                    ),
+                    encoding="utf-8",
+                )
+                with mock.patch.object(FULL_VALIDATION, "ROOT", repo):
+                    with self.assertRaisesRegex(ValueError, "exactly one supported Release state"):
+                        FULL_VALIDATION.release_state_for_validation()
 
     def test_full_validation_gives_unittest_discovery_extended_budget(self) -> None:
         calls: list[tuple[list[str], int]] = []
