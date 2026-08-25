@@ -71,12 +71,18 @@ jobs:
           python3 scripts/test_skill_update_selfcheck.py
           python3 scripts/test_assemble_skill_profile.py
 
-      - name: Run candidate release hygiene gate for pull requests
+      - name: Resolve active release state
+        id: release-state
+        run: |
+          state="$(python3 scripts/full_skill_validation.py --print-release-state)"
+          printf 'state=%s\n' "$state" >> "$GITHUB_OUTPUT"
+
+      - name: Run release-state consistency gate for pull requests
         if: github.event_name == 'pull_request'
         run: |
           python3 scripts/check_release_readiness.py \
             --version 0.6.1 \
-            --release-state candidate \
+            --release-state "${{ steps.release-state.outputs.state }}" \
             --allow-existing-tag
 
       - name: Run final release-state consistency gate on main
@@ -163,6 +169,12 @@ jobs:
           python-version: "3.11"
           architecture: "x64"
 
+      - name: Resolve active release state
+        id: release-state
+        run: |
+          state="$(python3 scripts/full_skill_validation.py --print-release-state)"
+          printf 'state=%s\n' "$state" >> "$GITHUB_OUTPUT"
+
       - name: Record isolated runner identity
         run: |
           python3 --version
@@ -205,7 +217,7 @@ jobs:
             --workflow-ref "$GITHUB_WORKFLOW_REF" \
             --job-name "$GITHUB_JOB"
 
-      - name: Run formal Draft 2020-12 gate for pull request candidate
+      - name: Run formal Draft 2020-12 gate for pull request
         if: github.event_name == 'pull_request'
         run: |
           "$RUNNER_TEMP/lhe-formal-schema-venv/bin/python" \
@@ -213,7 +225,7 @@ jobs:
           "$RUNNER_TEMP/lhe-formal-schema-venv/bin/python" \
             scripts/check_release_readiness.py \
             --version 0.6.1 \
-            --release-state candidate \
+            --release-state "${{ steps.release-state.outputs.state }}" \
             --allow-existing-tag \
             --formal-schema-pip-report "$RUNNER_TEMP/formal-schema-pip-report.json" \
             --formal-schema-acquisition-result "$RUNNER_TEMP/formal-schema-evidence/acquisition-receipt.json" \
@@ -229,7 +241,7 @@ jobs:
           "$RUNNER_TEMP/lhe-formal-schema-venv/bin/python" \
             scripts/check_release_readiness.py \
             --version 0.6.1 \
-            --release-state final \
+            --release-state "${{ steps.release-state.outputs.state }}" \
             --allow-existing-tag \
             --formal-schema-pip-report "$RUNNER_TEMP/formal-schema-pip-report.json" \
             --formal-schema-acquisition-result "$RUNNER_TEMP/formal-schema-evidence/acquisition-receipt.json" \

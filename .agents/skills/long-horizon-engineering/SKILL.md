@@ -4,7 +4,7 @@ description: Use for long-running software engineering and local static capabili
 version: 0.6.1
 repo: https://github.com/Q20396/codex-long-horizon-skill
 skill_id: long-horizon-engineering
-update_channel: candidate
+update_channel: stable
 ---
 
 # Long-Horizon Engineering
