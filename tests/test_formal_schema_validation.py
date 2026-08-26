@@ -144,6 +144,51 @@ def write_synthetic_evidence(
 
 
 class FormalSchemaStaticTests(unittest.TestCase):
+    def test_workflow_identity_is_exact_and_fail_closed(self) -> None:
+        workflow = ROOT / ".github" / "workflows" / "formal-release-gate.yml"
+        digest = VALIDATOR.sha256_file(workflow)
+        identity = {
+            "path": ".github/workflows/formal-release-gate.yml",
+            "sha256": digest,
+            "workflow_ref": "Q20396/codex-long-horizon-skill/.github/workflows/formal-release-gate.yml@refs/heads/main",
+        }
+        self.assertEqual([], VALIDATOR.validate_workflow_identity(identity))
+        for field, value in (
+            ("path", "wrong.yml"),
+            ("sha256", "not-a-sha"),
+            ("workflow_ref", ""),
+        ):
+            mutated = dict(identity)
+            mutated[field] = value
+            self.assertTrue(VALIDATOR.validate_workflow_identity(mutated))
+
+    def test_action_provenance_file_is_closed_and_bound(self) -> None:
+        workflow = ROOT / ".github" / "workflows" / "formal-release-gate.yml"
+        identity = {
+            "path": ".github/workflows/formal-release-gate.yml",
+            "sha256": VALIDATOR.sha256_file(workflow),
+            "workflow_ref": "workflow-ref",
+        }
+        payload = {
+            "github_run_id": "1", "github_run_attempt": "1", "workflow_ref": "workflow-ref",
+            "job": "formal", "release_commit": "c", "candidate_base": "b",
+            "workflow_identity": identity, "actions": VALIDATOR.ACTION_PROVENANCE,
+        }
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "runner-identity.json"
+            path.write_text(json.dumps(payload), encoding="utf-8")
+            errors, actions, digest = VALIDATOR.load_action_provenance(path, identity)
+            self.assertEqual([], errors)
+            self.assertEqual(VALIDATOR.ACTION_PROVENANCE, actions)
+            self.assertEqual(VALIDATOR.sha256_file(path), digest)
+            for mutation in (
+                {**payload, "actions": {"checkout": "x"}},
+                {**payload, "actions": {**VALIDATOR.ACTION_PROVENANCE, "extra": "x"}},
+                {**payload, "workflow_identity": {**identity, "sha256": "0" * 64}},
+            ):
+                path.write_text(json.dumps(mutation), encoding="utf-8")
+                self.assertTrue(VALIDATOR.load_action_provenance(path, identity)[0])
+
     def test_lock_is_exact_and_dependency_free_to_check(self) -> None:
         self.assertEqual([], VALIDATOR.validate_lock())
 

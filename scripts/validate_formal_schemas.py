@@ -26,6 +26,11 @@ from urllib.request import Request, urlopen
 ROOT = Path(__file__).resolve().parents[1]
 LOCK_PATH = ROOT / "requirements-release.txt"
 DRAFT_2020_12 = "https://json-schema.org/draft/2020-12/schema"
+ACTION_PROVENANCE = {
+    "checkout": "3d3c42e5aac5ba805825da76410c181273ba90b1",
+    "setup-python": "5fda3b95a4ea91299a34e894583c3862153e4b97",
+    "upload-artifact": "ea165f8d65b6e75b540449e92b4886f43607fa02",
+}
 BOOTSTRAP_PARENT = "6f1f48381f465b460a9390643fc835b666604207"
 BOOTSTRAP_COMMIT = "5f8540db1994839ad644b8fa3203642d82c1d581"
 BOOTSTRAP_TREE = "9b13edb16d90db0d5f69a252bfebe69fa2c10d04"
@@ -1285,6 +1290,9 @@ def acquire_evidence(
     receipt_path: Path,
     identity: dict[str, str],
     candidate_base: str,
+    workflow_identity: dict[str, str] | None = None,
+    action_provenance: dict[str, Any] | None = None,
+    runner_identity_sha256: str | None = None,
 ) -> tuple[list[str], dict[str, Any]]:
     errors = validate_clean_worktree()
     errors.extend(validate_lock())
@@ -1298,6 +1306,8 @@ def acquire_evidence(
     errors.extend(candidate_errors)
     identity_errors, normalized_identity = job_identity(**identity)
     errors.extend(identity_errors)
+    if workflow_identity is not None:
+        errors.extend(validate_workflow_identity(workflow_identity))
     evidence_dir = evidence_dir.resolve()
     receipt_path = receipt_path.resolve()
     if receipt_path.parent != evidence_dir:
@@ -1322,6 +1332,8 @@ def acquire_evidence(
         "acquisition_started_at": iso_utc(started),
         "acquired_at": iso_utc(completed),
         "job_identity": normalized_identity,
+        **({"workflow_identity": workflow_identity} if workflow_identity is not None else {}),
+        **({"action_provenance": action_provenance, "runner_identity_sha256": runner_identity_sha256} if action_provenance is not None else {}),
         "bootstrap_identity": bootstrap,
         "candidate": candidate,
         "schema_inventory": schema_inventory_binding(schemas),
@@ -1441,6 +1453,9 @@ def validate_acquisition_receipt(
     pip_report: Path,
     identity: dict[str, str],
     candidate_base: str,
+    workflow_identity: dict[str, str] | None = None,
+    action_provenance: dict[str, Any] | None = None,
+    runner_identity_sha256: str | None = None,
 ) -> tuple[list[str], dict[str, Any], str]:
     errors: list[str] = []
     try:
@@ -1472,6 +1487,9 @@ def validate_acquisition_receipt(
         "approval_authority",
         "next_stage_authorized",
     }
+    if workflow_identity is not None:
+        receipt_keys.add("workflow_identity")
+        receipt_keys.update(("action_provenance", "runner_identity_sha256"))
     if set(receipt) != receipt_keys:
         errors.append("acquisition receipt structure is not closed")
     if (
@@ -1489,6 +1507,14 @@ def validate_acquisition_receipt(
     errors.extend(identity_errors)
     if receipt.get("job_identity") != normalized_identity:
         errors.append("acquisition receipt job identity mismatch")
+    if workflow_identity is not None:
+        errors.extend(validate_workflow_identity(workflow_identity))
+        if receipt.get("workflow_identity") != workflow_identity:
+            errors.append("acquisition receipt workflow identity mismatch")
+        if receipt.get("action_provenance") != action_provenance:
+            errors.append("acquisition receipt action provenance mismatch")
+        if receipt.get("runner_identity_sha256") != runner_identity_sha256:
+            errors.append("acquisition receipt runner identity hash mismatch")
     bootstrap_errors, bootstrap = bootstrap_identity()
     errors.extend(bootstrap_errors)
     if receipt.get("bootstrap_identity") != bootstrap:
@@ -1574,6 +1600,9 @@ def validate_formal(
     evidence_dir: Path,
     identity: dict[str, str],
     candidate_base: str,
+    workflow_identity: dict[str, str] | None = None,
+    action_provenance: dict[str, Any] | None = None,
+    runner_identity_sha256: str | None = None,
 ) -> tuple[list[str], dict[str, Any]]:
     errors = validate_clean_worktree()
     errors.extend(validate_lock())
@@ -1597,6 +1626,9 @@ def validate_formal(
         pip_report,
         identity,
         candidate_base,
+        workflow_identity,
+        action_provenance,
+        runner_identity_sha256,
     )
     errors.extend(acquisition_errors)
     bootstrap_errors, bootstrap = bootstrap_identity()
@@ -1708,6 +1740,8 @@ def validate_formal(
             "raw_evidence_manifest_sha256", ""
         ),
         "job_identity": receipt.get("job_identity", {}),
+        **({"workflow_identity": workflow_identity} if workflow_identity is not None else {}),
+        **({"action_provenance": action_provenance, "runner_identity_sha256": runner_identity_sha256} if action_provenance is not None else {}),
         "pip_report_sha256": sha256_file(pip_report),
         "limitations": [
             "PyPI publish attestations do not prove source-to-wheel provenance.",
@@ -1723,6 +1757,46 @@ def validate_formal(
 def write_json(path: Path, payload: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def validate_workflow_identity(identity: dict[str, str]) -> list[str]:
+    errors: list[str] = []
+    path = identity.get("path", "")
+    digest = identity.get("sha256", "")
+    workflow_ref = identity.get("workflow_ref", "")
+    if path != ".github/workflows/formal-release-gate.yml":
+        errors.append("workflow identity path is not the fixed formal gate path")
+    if not re.fullmatch(r"[0-9a-f]{64}", digest):
+        errors.append("workflow identity sha256 must be 64 lowercase hex characters")
+    if not isinstance(workflow_ref, str) or not workflow_ref.strip():
+        errors.append("workflow identity workflow_ref must be non-empty")
+    workflow_path = ROOT / path
+    if not workflow_path.is_file():
+        errors.append("workflow identity file is missing")
+    elif re.fullmatch(r"[0-9a-f]{64}", digest) and sha256_file(workflow_path) != digest:
+        errors.append("workflow identity sha256 does not match the checked-out workflow")
+    return errors
+
+
+def load_action_provenance(path: Path, workflow_identity: dict[str, str]) -> tuple[list[str], dict[str, str] | None, str | None]:
+    errors: list[str] = []
+    try:
+        payload = load_json(path)
+    except (OSError, ValueError) as exc:
+        return [f"action provenance file could not be read: {exc}"], None, None
+    if not isinstance(payload, dict) or set(payload) != {"github_run_id", "github_run_attempt", "workflow_ref", "job", "release_commit", "candidate_base", "workflow_identity", "actions"}:
+        errors.append("runner identity structure is not closed")
+    actions = payload.get("actions") if isinstance(payload, dict) else None
+    if not isinstance(actions, dict) or set(actions) != set(ACTION_PROVENANCE):
+        errors.append("runner identity actions structure is not closed")
+        actions = None
+    elif actions != ACTION_PROVENANCE:
+        errors.append("runner identity action provenance does not match approved SHAs")
+    file_identity = payload.get("workflow_identity") if isinstance(payload, dict) else None
+    if not isinstance(file_identity, dict) or file_identity != workflow_identity:
+        errors.append("runner identity workflow identity mismatch")
+    digest = sha256_file(path) if path.is_file() else None
+    return errors, actions, digest
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -1749,6 +1823,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=os.environ.get("GITHUB_WORKFLOW_REF", ""),
     )
     parser.add_argument("--job-name", default=os.environ.get("GITHUB_JOB", ""))
+    parser.add_argument("--workflow-sha256")
+    parser.add_argument("--workflow-path")
+    parser.add_argument("--action-provenance-file", type=Path)
     return parser.parse_args(argv)
 
 
@@ -1760,6 +1837,23 @@ def main(argv: list[str] | None = None) -> int:
         "workflow_ref": args.workflow_ref,
         "job_name": args.job_name,
     }
+    workflow_identity = None
+    if args.workflow_sha256 is not None or args.workflow_path is not None:
+        workflow_identity = {
+            "path": args.workflow_path or "",
+            "sha256": args.workflow_sha256 or "",
+            "workflow_ref": args.workflow_ref,
+        }
+    action_provenance = None
+    runner_identity_sha256 = None
+    if args.action_provenance_file is not None:
+        if workflow_identity is None:
+            workflow_identity = {"path": "", "sha256": "", "workflow_ref": args.workflow_ref}
+        action_errors, action_provenance, runner_identity_sha256 = load_action_provenance(
+            args.action_provenance_file.resolve(), workflow_identity
+        )
+    else:
+        action_errors = []
     try:
         if args.check_lock:
             errors = validate_lock()
@@ -1785,6 +1879,12 @@ def main(argv: list[str] | None = None) -> int:
                 missing.append("--result")
             if args.candidate_base is None:
                 missing.append("--candidate-base")
+            if args.action_provenance_file is None:
+                missing.append("--action-provenance-file")
+            if args.workflow_sha256 is None:
+                missing.append("--workflow-sha256")
+            if args.workflow_path is None:
+                missing.append("--workflow-path")
             if missing:
                 errors = [f"--verify-acquisition requires {' and '.join(missing)}"]
                 payload = {"status": "FAIL", "gate": "formal-acquisition"}
@@ -1795,7 +1895,11 @@ def main(argv: list[str] | None = None) -> int:
                     args.result.resolve(),
                     identity,
                     args.candidate_base,
+                    workflow_identity,
+                    action_provenance,
+                    runner_identity_sha256,
                 )
+            errors.extend(action_errors)
         else:
             missing = []
             if args.pip_report is None:
@@ -1806,6 +1910,12 @@ def main(argv: list[str] | None = None) -> int:
                 missing.append("--evidence-dir")
             if args.candidate_base is None:
                 missing.append("--candidate-base")
+            if args.action_provenance_file is None:
+                missing.append("--action-provenance-file")
+            if args.workflow_sha256 is None:
+                missing.append("--workflow-sha256")
+            if args.workflow_path is None:
+                missing.append("--workflow-path")
             if missing:
                 errors = [f"--formal requires {' and '.join(missing)}"]
                 payload = {"status": "FAIL", "gate": "formal-draft-2020-12"}
@@ -1816,7 +1926,11 @@ def main(argv: list[str] | None = None) -> int:
                     args.evidence_dir.resolve(),
                     identity,
                     args.candidate_base,
+                    workflow_identity,
+                    action_provenance,
+                    runner_identity_sha256,
                 )
+            errors.extend(action_errors)
     except Exception as exc:
         errors = [f"validator failed closed: {exc}"]
         payload = {"status": "FAIL"}

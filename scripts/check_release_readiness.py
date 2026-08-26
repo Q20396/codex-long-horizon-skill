@@ -206,6 +206,9 @@ def parse_args() -> argparse.Namespace:
         "--formal-schema-candidate-base",
         help="Full immutable base commit for the current descendant candidate.",
     )
+    parser.add_argument("--formal-schema-workflow-sha256")
+    parser.add_argument("--formal-schema-workflow-path")
+    parser.add_argument("--formal-schema-action-provenance-file", type=Path)
     parser.add_argument(
         "--release-hygiene-base",
         help=(
@@ -589,6 +592,9 @@ def formal_schema_errors(args: argparse.Namespace, errors: list[str]) -> None:
         "--formal-schema-acquisition-result": args.formal_schema_acquisition_result,
         "--formal-schema-evidence-dir": args.formal_schema_evidence_dir,
         "--formal-schema-candidate-base": args.formal_schema_candidate_base,
+        "--formal-schema-workflow-sha256": args.formal_schema_workflow_sha256,
+        "--formal-schema-workflow-path": args.formal_schema_workflow_path,
+        "--formal-schema-action-provenance-file": args.formal_schema_action_provenance_file,
     }
     supplied = {name for name, value in paths.items() if value is not None}
     if args.pre_tag_static:
@@ -603,6 +609,12 @@ def formal_schema_errors(args: argparse.Namespace, errors: list[str]) -> None:
             "formal Draft 2020-12 schema gate is UNVERIFIED; "
             f"controlled formal execution requires {', '.join(missing)}"
         )
+        formal_worktree_errors(errors)
+        if args.formal_schema_result is not None and args.formal_schema_result.resolve().exists():
+            errors.append(
+                "formal schema result output already exists; prewritten PASS receipts "
+                "are not accepted"
+            )
         return
     if not re.fullmatch(r"[0-9a-f]{40}", args.formal_schema_candidate_base):
         errors.append("formal schema candidate base must be a full commit SHA")
@@ -640,6 +652,12 @@ def formal_schema_errors(args: argparse.Namespace, errors: list[str]) -> None:
         os.environ.get("GITHUB_WORKFLOW_REF", ""),
         "--job-name",
         os.environ.get("GITHUB_JOB", ""),
+        "--workflow-sha256",
+        args.formal_schema_workflow_sha256,
+        "--workflow-path",
+        args.formal_schema_workflow_path,
+        "--action-provenance-file",
+        str(args.formal_schema_action_provenance_file.resolve()),
         "--result",
         str(path),
     ]
@@ -667,6 +685,19 @@ def formal_schema_errors(args: argparse.Namespace, errors: list[str]) -> None:
         "candidate_merge_base": args.formal_schema_candidate_base,
         "approval_authority": "none",
         "next_stage_authorized": False,
+        "workflow_identity": {
+            "path": args.formal_schema_workflow_path,
+            "sha256": args.formal_schema_workflow_sha256,
+            "workflow_ref": os.environ.get("GITHUB_WORKFLOW_REF", ""),
+        },
+        "action_provenance": {
+            "checkout": "3d3c42e5aac5ba805825da76410c181273ba90b1",
+            "setup-python": "5fda3b95a4ea91299a34e894583c3862153e4b97",
+            "upload-artifact": "ea165f8d65b6e75b540449e92b4886f43607fa02",
+        },
+        "runner_identity_sha256": sha256_file(
+            args.formal_schema_action_provenance_file.resolve()
+        ),
         "bootstrap_identity": {
             "commit": FORMAL_BOOTSTRAP_COMMIT,
             "tree": FORMAL_BOOTSTRAP_TREE,

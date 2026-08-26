@@ -1,0 +1,181 @@
+name: Formal release evidence gate
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  RELEASE_VERSION: "0.6.1"
+  RELEASE_TAG: "v0.6.1"
+  PYTHONDONTWRITEBYTECODE: "1"
+  PYTHONNOUSERSITE: "1"
+  PIP_NO_INPUT: "1"
+  PIP_NO_CACHE_DIR: "1"
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+
+jobs:
+  formal-release-gate:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out exact release commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up exact CPython
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.11.15"
+          architecture: x64
+
+      - name: Record runner identity and initialize retained evidence paths
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = "refs/heads/main"
+          release_commit="$GITHUB_SHA"
+          test -n "$release_commit"
+          test "$(git rev-parse HEAD)" = "$release_commit"
+          parent_line="$(git rev-list --parents -n 1 "$release_commit")"
+          set -- $parent_line
+          test "$#" -eq 2
+          candidate_base="$2"
+          test -n "$candidate_base"
+          test "$(git merge-base "$candidate_base" "$release_commit")" = "$candidate_base"
+          printf 'RELEASE_COMMIT=%s\n' "$release_commit" >> "$GITHUB_ENV"
+          printf 'CANDIDATE_BASE=%s\n' "$candidate_base" >> "$GITHUB_ENV"
+          EVIDENCE_DIR="$RUNNER_TEMP/formal-schema-evidence-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          RUNNER_IDENTITY="$RUNNER_TEMP/lhe-v0.6.1-runner-identity.json"
+          WORKFLOW_PATH=.github/workflows/formal-release-gate.yml
+          WORKFLOW_SHA256="$(sha256sum "$WORKFLOW_PATH" | awk '{print $1}')"
+          test ! -e "$EVIDENCE_DIR"
+          python3 - "$RUNNER_IDENTITY" "$WORKFLOW_SHA256" "$WORKFLOW_PATH" <<'PY'
+          import json, os, sys
+          path, workflow_sha, workflow_path = sys.argv[1:]
+          payload = {
+              "github_run_id": os.environ["GITHUB_RUN_ID"],
+              "github_run_attempt": os.environ["GITHUB_RUN_ATTEMPT"],
+              "workflow_ref": os.environ["GITHUB_WORKFLOW_REF"],
+              "job": os.environ["GITHUB_JOB"],
+              "release_commit": os.environ["RELEASE_COMMIT"],
+              "candidate_base": os.environ["CANDIDATE_BASE"],
+              "workflow_identity": {"path": workflow_path, "sha256": workflow_sha},
+              "actions": {
+                  "checkout": "3d3c42e5aac5ba805825da76410c181273ba90b1",
+                  "setup-python": "5fda3b95a4ea91299a34e894583c3862153e4b97",
+                  "upload-artifact": "ea165f8d65b6e75b540449e92b4886f43607fa02",
+              },
+          }
+          with open(path, "w", encoding="utf-8") as handle:
+              json.dump(payload, handle, indent=2, sort_keys=True)
+              handle.write("\n")
+          PY
+
+      - name: Verify immutable runner and release identity
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(uname -s)" = Linux
+          test "$(uname -m)" = x86_64
+          . /etc/os-release
+          test "${ID:-}" = ubuntu
+          test "${VERSION_ID:-}" = 24.04
+          test "$(python3 --version 2>&1)" = 'Python 3.11.15'
+          test "$(git rev-parse HEAD)" = "$RELEASE_COMMIT"
+          test "$(git merge-base "$CANDIDATE_BASE" HEAD)" = "$CANDIDATE_BASE"
+          test -z "$(git status --porcelain=v1)"
+          if ! remote_tag="$(git ls-remote --tags origin "refs/tags/$RELEASE_TAG" 2>&1)"; then
+            echo "remote tag lookup failed; refusing to continue" >&2
+            exit 1
+          fi
+          if [ -n "$remote_tag" ]; then
+            echo "$RELEASE_TAG already exists remotely; refusing to continue" >&2
+            exit 1
+          fi
+          release_probe="$RUNNER_TEMP/$RELEASE_TAG-release-probe.txt"
+          if gh api --include "repos/${GITHUB_REPOSITORY}/releases/tags/$RELEASE_TAG" > "$release_probe" 2>&1; then
+            echo "GitHub Release $RELEASE_TAG already exists" >&2
+            exit 1
+          fi
+          if ! grep -Eq '^HTTP/[0-9.]+ 404($| )' "$release_probe"; then
+            echo "GitHub Release lookup was not an explicit 404; refusing to continue" >&2
+            exit 1
+          fi
+          python3 - <<'PY'
+          import os
+          for name in ("GITHUB_RUN_ID", "GITHUB_RUN_ATTEMPT", "GITHUB_WORKFLOW_REF", "GITHUB_JOB"):
+              if not os.environ.get(name):
+                  raise SystemExit(f"missing workflow identity: {name}")
+          PY
+
+      - name: Create exact-wheel virtual environment
+        run: |
+          python3 -m venv "$RUNNER_TEMP/lhe-v0.6.1-formal-venv"
+          "$RUNNER_TEMP/lhe-v0.6.1-formal-venv/bin/python" -m pip install \
+            --isolated \
+            --index-url https://pypi.org/simple \
+            --only-binary=:all: \
+            --require-hashes \
+            --no-input \
+            --no-cache-dir \
+            --report "$RUNNER_TEMP/lhe-v0.6.1-formal-schema-pip-report.json" \
+            -r requirements-release.txt
+
+      - name: Acquire official evidence exactly once
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          VENV="$RUNNER_TEMP/lhe-v0.6.1-formal-venv/bin/python"
+          EVIDENCE="$RUNNER_TEMP/formal-schema-evidence-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          WORKFLOW_SHA256="$(sha256sum .github/workflows/formal-release-gate.yml | awk '{print $1}')"
+          "$VENV" scripts/validate_formal_schemas.py --check-lock
+          "$VENV" scripts/validate_formal_schemas.py \
+            --verify-acquisition \
+            --pip-report "$RUNNER_TEMP/lhe-v0.6.1-formal-schema-pip-report.json" \
+            --evidence-dir "$EVIDENCE" \
+            --result "$EVIDENCE/acquisition-receipt.json" \
+            --candidate-base "$CANDIDATE_BASE" \
+            --run-id "$GITHUB_RUN_ID" \
+            --run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --workflow-ref "$GITHUB_WORKFLOW_REF" \
+            --job-name "$GITHUB_JOB" \
+            --workflow-sha256 "$WORKFLOW_SHA256" \
+            --workflow-path .github/workflows/formal-release-gate.yml \
+            --action-provenance-file "$RUNNER_IDENTITY"
+
+      - name: Run offline final formal replay
+        run: |
+          set -euo pipefail
+          VENV="$RUNNER_TEMP/lhe-v0.6.1-formal-venv/bin/python"
+          EVIDENCE="$RUNNER_TEMP/formal-schema-evidence-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          WORKFLOW_SHA256="$(sha256sum .github/workflows/formal-release-gate.yml | awk '{print $1}')"
+          "$VENV" -m unittest tests.test_formal_schema_validation -v
+          "$VENV" scripts/check_release_readiness.py \
+            --version "$RELEASE_VERSION" \
+            --release-state final \
+            --pre-tag \
+            --formal-schema-pip-report "$RUNNER_TEMP/lhe-v0.6.1-formal-schema-pip-report.json" \
+            --formal-schema-acquisition-result "$EVIDENCE/acquisition-receipt.json" \
+            --formal-schema-evidence-dir "$EVIDENCE" \
+            --formal-schema-candidate-base "$CANDIDATE_BASE" \
+            --formal-schema-workflow-sha256 "$WORKFLOW_SHA256" \
+            --formal-schema-workflow-path .github/workflows/formal-release-gate.yml \
+            --formal-schema-action-provenance-file "$RUNNER_IDENTITY" \
+            --formal-schema-result "$EVIDENCE/formal-result.json"
+
+      - name: Upload retained formal evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lhe-v0.6.1-formal-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/lhe-v0.6.1-runner-identity.json
+            ${{ runner.temp }}/lhe-v0.6.1-formal-schema-pip-report.json
+            ${{ runner.temp }}/formal-schema-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          if-no-files-found: error
+          retention-days: 90
