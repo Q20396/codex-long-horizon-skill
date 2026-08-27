@@ -1153,7 +1153,6 @@ class ReleaseReadinessTests(unittest.TestCase):
             ('--workflow-path ".github/workflows/check-skill.yml"', '--workflow-path ".github/workflows/other.yml"'),
             ('--formal-schema-workflow-sha256 "$WORKFLOW_SHA256"', '--formal-schema-workflow-sha256 ""'),
             ('--formal-schema-workflow-path ".github/workflows/check-skill.yml"', '--formal-schema-workflow-path ""'),
-            ('"release_commit": os.environ["RELEASE_COMMIT"]', '"release_commit": os.environ["GITHUB_REF"]'),
             ('"candidate_base": os.environ["FORMAL_CANDIDATE_BASE"]', '"candidate_base": os.environ["GITHUB_SHA"]'),
             ('actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02', 'actions/upload-artifact@v4'),
             ("if: always()", "if: success()"),

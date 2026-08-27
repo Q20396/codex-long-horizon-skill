@@ -54,9 +54,9 @@ jobs:
           WORKFLOW_PATH=.github/workflows/formal-release-gate.yml
           WORKFLOW_SHA256="$(sha256sum "$WORKFLOW_PATH" | awk '{print $1}')"
           test ! -e "$EVIDENCE_DIR"
-          python3 - "$RUNNER_IDENTITY" "$WORKFLOW_SHA256" "$WORKFLOW_PATH" <<'PY'
+          python3 - "$RUNNER_IDENTITY" "$WORKFLOW_SHA256" "$WORKFLOW_PATH" "$release_commit" <<'PY'
           import json, os, sys
-          path, workflow_sha, workflow_path = sys.argv[1:]
+          path, workflow_sha, workflow_path, release_commit = sys.argv[1:]
           payload = {
               "github_run_id": os.environ["GITHUB_RUN_ID"],
               "github_run_attempt": os.environ["GITHUB_RUN_ATTEMPT"],
@@ -64,7 +64,7 @@ jobs:
               "job": os.environ["GITHUB_JOB"],
               "repository": os.environ["FORMAL_REPOSITORY"],
               "event_target_sha": os.environ["FORMAL_EVENT_TARGET_SHA"],
-              "release_commit": os.environ["RELEASE_COMMIT"],
+              "release_commit": release_commit,
               "candidate_base": os.environ["CANDIDATE_BASE"],
               "workflow_identity": {"path": workflow_path, "sha256": workflow_sha},
               "actions": {
