@@ -1105,6 +1105,71 @@ class ReleaseReadinessTests(unittest.TestCase):
         )
         self.assertEqual([], FULL_VALIDATION.formal_release_evidence_workflow_errors(workflow))
 
+    def test_manual_formal_runner_identity_persistence_is_fail_closed(self) -> None:
+        workflow = (ROOT / ".github" / "workflows" / "formal-release-gate.yml").read_text(
+            encoding="utf-8"
+        )
+        writer = "          printf 'RUNNER_IDENTITY=%s\\n' \"$RUNNER_IDENTITY\" >> \"$GITHUB_ENV\"\n"
+        self.assertEqual(workflow.count(writer), 1)
+        self.assertLess(workflow.index('test -s "$RUNNER_IDENTITY"'), workflow.index(writer))
+        mutations = (
+            (writer, ""),
+            (writer, writer + writer),
+            (writer, "          export RUNNER_IDENTITY=\"$RUNNER_IDENTITY\"\n"),
+            ('--action-provenance-file "$RUNNER_IDENTITY"', '--action-provenance-file "$OTHER_IDENTITY"'),
+            ('--formal-schema-action-provenance-file "$RUNNER_IDENTITY"', '--formal-schema-action-provenance-file "$OTHER_IDENTITY"'),
+            (writer, "          printf 'RUNNER_IDENTITY=%s\\n' \"$RUNNER_IDENTITY\" >> \"$GITHUB_ENV\"\n          RUNNER_IDENTITY=\"$RUNNER_TEMP/other.json\"\n"),
+            ('test -s "$RUNNER_IDENTITY"', 'test -f "$RUNNER_IDENTITY"'),
+            (writer, "          printf 'OTHER_IDENTITY=%s\\n' \"$RUNNER_IDENTITY\" >> \"$GITHUB_ENV\"\n"),
+            (writer, "          printf 'RUNNER_IDENTITY=%s\\n' \"${RUNNER_IDENTITY:-fallback}\" >> \"$GITHUB_ENV\"\n"),
+        )
+        for old, new in mutations:
+            with self.subTest(old=old, new=new):
+                broken = workflow.replace(old, new, 1)
+                self.assertTrue(FULL_VALIDATION.formal_release_evidence_workflow_errors(broken))
+
+    def test_both_workflows_are_real_yaml_and_broken_indent_fails(self) -> None:
+        paths = [
+            ROOT / ".github" / "workflows" / "check-skill.yml",
+            ROOT / ".github" / "workflows" / "formal-release-gate.yml",
+        ]
+        command = ["ruby", "-e", 'require "yaml"; ARGV.each { |path| YAML.load_file(path) }']
+        valid = subprocess.run(command + [str(path) for path in paths], capture_output=True, text=True)
+        self.assertEqual(0, valid.returncode, valid.stderr)
+        with tempfile.TemporaryDirectory(prefix="workflow-yaml-") as temp:
+            broken = Path(temp) / "broken.yml"
+            broken.write_text(paths[1].read_text(encoding="utf-8").replace("  RELEASE_TAG:", "    RELEASE_TAG:", 1), encoding="utf-8")
+            invalid = subprocess.run(command + [str(broken)], capture_output=True, text=True)
+            self.assertNotEqual(0, invalid.returncode)
+
+    def test_check_skill_formal_evidence_chain_is_fixed_and_fail_closed(self) -> None:
+        workflow = ROOT / ".github" / "workflows" / "check-skill.yml"
+        text = workflow.read_text(encoding="utf-8")
+        self.assertEqual([], FULL_VALIDATION.check_skill_formal_evidence_workflow_errors(text))
+        mutations = (
+            ("Record formal runner identity", "Remove formal runner identity"),
+            ('--action-provenance-file "$RUNNER_TEMP/formal-schema-runner-identity.json"', "--action-provenance-file \"$RUNNER_TEMP/other.json\""),
+            ('--workflow-sha256 "$WORKFLOW_SHA256"', '--workflow-sha256 "hardcoded"'),
+            ('--workflow-path ".github/workflows/check-skill.yml"', '--workflow-path ".github/workflows/other.yml"'),
+            ('--formal-schema-workflow-sha256 "$WORKFLOW_SHA256"', '--formal-schema-workflow-sha256 ""'),
+            ('--formal-schema-workflow-path ".github/workflows/check-skill.yml"', '--formal-schema-workflow-path ""'),
+            ('"release_commit": os.environ["RELEASE_COMMIT"]', '"release_commit": os.environ["GITHUB_REF"]'),
+            ('"candidate_base": os.environ["FORMAL_CANDIDATE_BASE"]', '"candidate_base": os.environ["GITHUB_SHA"]'),
+            ('actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02', 'actions/upload-artifact@v4'),
+            ("if: always()", "if: success()"),
+            ("retention-days: 90", "retention-days: 1"),
+            ("${{ runner.temp }}/formal-schema-result.json", "${{ runner.temp }}/missing-result.json"),
+            ("--verify-acquisition", "--verify-acquisition\n            --verify-acquisition"),
+            ("--allow-existing-tag", "--pre-tag"),
+            ('"actions": {', '"fake-actions": {'),
+            ('json.dump(payload, handle, indent=2, sort_keys=True)', 'json.dump(other, handle, indent=2, sort_keys=True)'),
+        )
+        prefix, formal = text.split("  formal-schema-gate:", 1)
+        for old, new in mutations:
+            with self.subTest(old=old):
+                broken = prefix + "  formal-schema-gate:" + formal.replace(old, new, 1)
+                self.assertTrue(FULL_VALIDATION.check_skill_formal_evidence_workflow_errors(broken))
+
     def test_manual_formal_evidence_workflow_rejects_unsafe_mutations(self) -> None:
         workflow = (ROOT / ".github" / "workflows" / "formal-release-gate.yml").read_text(
             encoding="utf-8"

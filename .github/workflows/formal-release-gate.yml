@@ -9,6 +9,8 @@ permissions:
 env:
   RELEASE_VERSION: "0.6.1"
   RELEASE_TAG: "v0.6.1"
+  FORMAL_EVENT_TARGET_SHA: ${{ github.sha }}
+  FORMAL_REPOSITORY: ${{ github.repository }}
   PYTHONDONTWRITEBYTECODE: "1"
   PYTHONNOUSERSITE: "1"
   PIP_NO_INPUT: "1"
@@ -60,6 +62,8 @@ jobs:
               "github_run_attempt": os.environ["GITHUB_RUN_ATTEMPT"],
               "workflow_ref": os.environ["GITHUB_WORKFLOW_REF"],
               "job": os.environ["GITHUB_JOB"],
+              "repository": os.environ["FORMAL_REPOSITORY"],
+              "event_target_sha": os.environ["FORMAL_EVENT_TARGET_SHA"],
               "release_commit": os.environ["RELEASE_COMMIT"],
               "candidate_base": os.environ["CANDIDATE_BASE"],
               "workflow_identity": {"path": workflow_path, "sha256": workflow_sha},
@@ -73,6 +77,8 @@ jobs:
               json.dump(payload, handle, indent=2, sort_keys=True)
               handle.write("\n")
           PY
+          test -s "$RUNNER_IDENTITY"
+          printf 'RUNNER_IDENTITY=%s\n' "$RUNNER_IDENTITY" >> "$GITHUB_ENV"
 
       - name: Verify immutable runner and release identity
         env:
@@ -146,7 +152,9 @@ jobs:
             --job-name "$GITHUB_JOB" \
             --workflow-sha256 "$WORKFLOW_SHA256" \
             --workflow-path .github/workflows/formal-release-gate.yml \
-            --action-provenance-file "$RUNNER_IDENTITY"
+            --action-provenance-file "$RUNNER_IDENTITY" \
+            --event-target-sha "$FORMAL_EVENT_TARGET_SHA" \
+            --repository "$FORMAL_REPOSITORY"
 
       - name: Run offline final formal replay
         run: |
@@ -166,6 +174,8 @@ jobs:
             --formal-schema-workflow-sha256 "$WORKFLOW_SHA256" \
             --formal-schema-workflow-path .github/workflows/formal-release-gate.yml \
             --formal-schema-action-provenance-file "$RUNNER_IDENTITY" \
+            --formal-schema-event-target-sha "$FORMAL_EVENT_TARGET_SHA" \
+            --formal-schema-repository "$FORMAL_REPOSITORY" \
             --formal-schema-result "$EVIDENCE/formal-result.json"
 
       - name: Upload retained formal evidence

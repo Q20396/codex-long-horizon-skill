@@ -348,12 +348,127 @@ def release_gate_workflow_errors(text: str) -> list[str]:
     return errors
 
 
+def check_skill_formal_evidence_workflow_errors(text: str) -> list[str]:
+    """Validate the ordinary CI formal evidence path and its retained artifact."""
+    errors: list[str] = []
+    executable = "\n".join(line.split("#", 1)[0].rstrip() for line in text.splitlines())
+    match = re.search(r"(?ms)^  formal-schema-gate:\n(?P<body>.*?)(?=^  [A-Za-z0-9_-]+:|\Z)", executable)
+    if match is None:
+        return ["check-skill formal-schema-gate job is missing"]
+    job = match.group("body")
+    steps = _workflow_steps(job)
+    named = {step.splitlines()[0].strip(): step for step in steps if step.splitlines()}
+    identity = [step for step in steps if step.strip().startswith("- name: Record formal runner identity")]
+    acquire = [step for step in steps if "--verify-acquisition" in step]
+    upload = [step for step in steps if "actions/upload-artifact@" in step]
+    if len(identity) != 1:
+        errors.append("formal-schema-gate must have exactly one formal runner identity step")
+    if len(acquire) != 1 or job.count("--verify-acquisition") != 1:
+        errors.append("formal-schema-gate must perform exactly one acquisition")
+    if len(upload) != 1:
+        errors.append("formal-schema-gate must have exactly one formal evidence upload step")
+    if "runs-on: ubuntu-24.04" not in job or "permissions:\n      contents: read" not in job:
+        errors.append("formal-schema-gate runner or permissions contract is missing")
+    for action, sha in {
+        "actions/checkout": "3d3c42e5aac5ba805825da76410c181273ba90b1",
+        "actions/setup-python": "5fda3b95a4ea91299a34e894583c3862153e4b97",
+        "actions/upload-artifact": "ea165f8d65b6e75b540449e92b4886f43607fa02",
+    }.items():
+        if f"{action}@{sha}" not in job:
+            errors.append(f"formal-schema-gate missing approved action pin: {action}")
+    if identity:
+        step = identity[0]
+        if 'RUNNER_IDENTITY="$RUNNER_TEMP/formal-schema-runner-identity.json"' not in step:
+            errors.append("formal runner identity path is not fixed")
+        if 'WORKFLOW_SHA256="$(sha256sum "$WORKFLOW_PATH" | awk' not in step:
+            errors.append("formal runner identity workflow SHA must come from the checked-out file")
+        heredoc = re.search(r"<<'PY'\n(?P<body>.*?)\n\s*PY", step, re.S)
+        if heredoc is None:
+            errors.append("formal runner identity must contain a Python heredoc")
+        else:
+            try:
+                tree = ast.parse(textwrap.dedent(heredoc.group("body")))
+                payloads = [node for node in ast.walk(tree) if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "payload" for t in node.targets)]
+                dumps = [node for node in ast.walk(tree) if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr == "dump"]
+                if len(payloads) != 1 or not isinstance(payloads[0].value, ast.Dict):
+                    errors.append("formal runner identity payload must be one dict")
+                else:
+                    pairs = {k.value: v for k, v in zip(payloads[0].value.keys, payloads[0].value.values) if isinstance(k, ast.Constant) and isinstance(k.value, str)}
+                    if set(pairs) != {"github_run_id", "github_run_attempt", "workflow_ref", "job", "repository", "event_target_sha", "release_commit", "candidate_base", "workflow_identity", "actions"}:
+                        errors.append("formal runner identity payload keys are not closed")
+                    for key, env_name in (("repository", "FORMAL_REPOSITORY"), ("event_target_sha", "FORMAL_EVENT_TARGET_SHA")):
+                        node = pairs.get(key)
+                        if not (isinstance(node, ast.Subscript) and isinstance(node.value, ast.Attribute) and isinstance(node.value.value, ast.Name) and node.value.value.id == "os" and node.value.attr == "environ" and isinstance(node.slice, ast.Constant) and node.slice.value == env_name):
+                            errors.append(f"runner identity {key} must come from {env_name}")
+                    for key, expected in {
+                        "release_commit": ("RELEASE_COMMIT", "release_commit must come from RELEASE_COMMIT"),
+                        "candidate_base": ("FORMAL_CANDIDATE_BASE", "candidate_base must come from FORMAL_CANDIDATE_BASE"),
+                    }.items():
+                        node = pairs.get(key)
+                        if not (
+                            isinstance(node, ast.Subscript)
+                            and isinstance(node.value, ast.Attribute)
+                            and isinstance(node.value.value, ast.Name)
+                            and node.value.value.id == "os"
+                            and node.value.attr == "environ"
+                            and isinstance(node.slice, ast.Constant)
+                            and node.slice.value == expected[0]
+                        ):
+                            errors.append(expected[1])
+                    actions = pairs.get("actions")
+                    action_pairs = {} if not isinstance(actions, ast.Dict) else {k.value: v.value for k, v in zip(actions.keys, actions.values) if isinstance(k, ast.Constant) and isinstance(k.value, str) and isinstance(v, ast.Constant) and isinstance(v.value, str)}
+                    if action_pairs != {"checkout": "3d3c42e5aac5ba805825da76410c181273ba90b1", "setup-python": "5fda3b95a4ea91299a34e894583c3862153e4b97", "upload-artifact": "ea165f8d65b6e75b540449e92b4886f43607fa02"}:
+                        errors.append("formal runner identity actions are not the approved closed set")
+                    workflow_identity = pairs.get("workflow_identity")
+                    if not isinstance(workflow_identity, ast.Dict) or not any(isinstance(k, ast.Constant) and k.value == "path" and isinstance(v, ast.Name) and v.id == "workflow_path" for k, v in zip(workflow_identity.keys, workflow_identity.values)):
+                        errors.append("formal runner identity workflow path is not bound to workflow_path")
+                if len(dumps) != 1 or not dumps[0].args or not isinstance(dumps[0].args[0], ast.Name) or dumps[0].args[0].id != "payload":
+                    errors.append("formal runner identity must json.dump(payload, handle) exactly once")
+            except SyntaxError as exc:
+                errors.append(f"formal runner identity heredoc is invalid: {exc}")
+    if acquire:
+        step = acquire[0]
+        for fragment in ('--action-provenance-file "$RUNNER_TEMP/formal-schema-runner-identity.json"', '--workflow-sha256 "$WORKFLOW_SHA256"', '--workflow-path ".github/workflows/check-skill.yml"', '--candidate-base "$FORMAL_CANDIDATE_BASE"'):
+            if fragment not in step:
+                errors.append(f"acquisition missing required fragment: {fragment}")
+    for context in ("if: github.event_name == 'pull_request'", "if: github.event_name == 'push' && github.ref == 'refs/heads/main'"):
+        paths = [step for step in steps if context in step and "check_release_readiness.py" in step]
+        required = (
+            '--formal-schema-action-provenance-file "$RUNNER_TEMP/formal-schema-runner-identity.json"',
+            '--formal-schema-workflow-sha256 "$WORKFLOW_SHA256"',
+            '--formal-schema-workflow-path ".github/workflows/check-skill.yml"',
+            '--formal-schema-event-target-sha "$FORMAL_EVENT_TARGET_SHA"',
+            '--formal-schema-repository "$FORMAL_REPOSITORY"',
+        )
+        if len(paths) != 1 or any(fragment not in paths[0] for fragment in required):
+            errors.append(f"readiness path missing action provenance for context: {context}")
+    if upload:
+        step = upload[0]
+        for fragment in ("if: always()", "retention-days: 90", "if-no-files-found: error", "formal-schema-runner-identity.json", "formal-schema-result.json", "formal-schema-evidence", "formal-schema-pip-report.json"):
+            if fragment not in step:
+                errors.append(f"formal evidence upload missing required fragment: {fragment}")
+    if "--pre-tag" in job or "git tag" in job or "git push" in job or "gh release" in job or "update_installed_skill.py --apply" in job or "marketplace" in job.lower():
+        errors.append("ordinary formal CI must not publish, install, or use pre-tag")
+    validator_path = ROOT / "scripts/validate_formal_schemas.py"
+    if validator_path.is_file():
+        source = validator_path.read_text(encoding="utf-8")
+        preflight = source.find("preflight_acquisition_context(")
+        acquisition = source.find("errors, payload = acquire_evidence(", preflight + 1)
+        guarded = source.find("if preflight_errors:", preflight + 1)
+        if preflight < 0 or acquisition < 0 or guarded < 0 or not (preflight < guarded < acquisition):
+            errors.append("verify-acquisition must fail closed through preflight before acquisition")
+    else:
+        errors.append("formal validator source is missing for acquisition preflight contract")
+    return errors
+
+
 def formal_release_evidence_workflow_errors(text: str) -> list[str]:
     """Validate the manual Phase B workflow as a small fail-closed YAML shape."""
     errors: list[str] = []
     executable = "\n".join(
         line.split("#", 1)[0].rstrip() for line in text.splitlines()
     )
+    lines = executable.splitlines()
     step_lines = executable.splitlines()
     try:
         start = next(i for i, line in enumerate(step_lines) if line.strip() == "- name: Record runner identity and initialize retained evidence paths")
@@ -422,14 +537,40 @@ def formal_release_evidence_workflow_errors(text: str) -> list[str]:
                 errors.append(f"runner identity heredoc is not valid Python: {exc}")
         if 'python3 - "$RUNNER_IDENTITY"' not in identity_step or 'with open(path, "w"' not in identity_step:
             errors.append("runner identity step must write the declared runner identity path")
+        identity_assignment = 'RUNNER_IDENTITY="$RUNNER_TEMP/lhe-v0.6.1-runner-identity.json"'
+        persistence = "printf 'RUNNER_IDENTITY=%s\\n' \"$RUNNER_IDENTITY\" >> \"$GITHUB_ENV\""
+        if identity_step.count(identity_assignment) != 1:
+            errors.append("RUNNER_IDENTITY must have exactly one definition")
+        assignments = re.findall(r"(?m)^\s*RUNNER_IDENTITY=", identity_step)
+        if len(assignments) != 1:
+            errors.append("RUNNER_IDENTITY must not be reassigned")
+        if identity_step.count(persistence) != 1:
+            errors.append("RUNNER_IDENTITY persistence writer is missing or duplicated")
+        if 'test -s "$RUNNER_IDENTITY"' not in identity_step:
+            errors.append("runner identity must be non-empty before persistence")
+        if identity_step.find('test -s "$RUNNER_IDENTITY"') > identity_step.find(persistence):
+            errors.append("RUNNER_IDENTITY persistence must follow identity validation")
+        if 'export RUNNER_IDENTITY=' in executable or '${RUNNER_IDENTITY:-' in executable:
+            errors.append("RUNNER_IDENTITY must not have export or fallback reassignment")
     if executable.count('with open(path, "w"') != 1:
         errors.append("runner identity must have exactly one writer")
+    if executable.count("printf 'RUNNER_IDENTITY=%s\\n'") != 1:
+        errors.append("formal evidence workflow must have exactly one RUNNER_IDENTITY GITHUB_ENV writer")
+    if 'RUNNER_IDENTITY="$RUNNER_TEMP/lhe-v0.6.1-runner-identity.json"' in executable:
+        consumers = [
+            line for line in lines
+            if '--action-provenance-file "$RUNNER_IDENTITY"' in line
+            or '--formal-schema-action-provenance-file "$RUNNER_IDENTITY"' in line
+        ]
+        if len(consumers) != 2:
+            errors.append("acquisition and replay must consume the persisted RUNNER_IDENTITY")
+        if '${{ runner.temp }}/lhe-v0.6.1-runner-identity.json' not in executable:
+            errors.append("artifact must include the persisted runner identity")
     if executable.count("  workflow_dispatch:") != 1 or any(
         f"  {event}:" in executable
         for event in ("push", "pull_request", "schedule", "repository_dispatch")
     ):
         errors.append("formal evidence workflow must only use workflow_dispatch")
-    lines = executable.splitlines()
     try:
         permission_start = lines.index("permissions:")
         permission_end = next(
@@ -1112,6 +1253,22 @@ def check_ci_coverage(report: Report) -> None:
         report.warn("CI Coverage", "workflow", "missing .github/workflows/check-skill.yml")
         return
     text = workflow.read_text(encoding="utf-8")
+    yaml_check = subprocess.run(
+        [
+            "ruby", "-e",
+            'require "yaml"; ARGV.each { |path| YAML.load_file(path) }',
+            str(workflow),
+            str(ROOT / ".github/workflows/formal-release-gate.yml"),
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if yaml_check.returncode != 0:
+        report.fail("CI Coverage", "workflow YAML syntax", summarize_output(yaml_check))
+    else:
+        report.pass_("CI Coverage", "workflow YAML syntax", "Ruby Psych parsed both workflows")
     for label, fragments in CI_EXPECTED:
         if all(fragment in text for fragment in fragments):
             report.pass_("CI Coverage", label, "covered")
@@ -1127,6 +1284,12 @@ def check_ci_coverage(report: Report) -> None:
             "release readiness lifecycle gates",
             "candidate PR and main final contexts covered",
         )
+    formal_ci_errors = check_skill_formal_evidence_workflow_errors(text)
+    if formal_ci_errors:
+        for error in formal_ci_errors:
+            report.fail("CI Coverage", "formal-schema-gate evidence chain", error)
+    else:
+        report.pass_("CI Coverage", "formal-schema-gate evidence chain", "runner provenance and retained artifact covered")
     formal_workflow = ROOT / ".github/workflows/formal-release-gate.yml"
     if not formal_workflow.is_file():
         report.fail("CI Coverage", "formal release evidence gate", "workflow is missing")
