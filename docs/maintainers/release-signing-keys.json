@@ -6,9 +6,21 @@
       "algorithm": "ed25519",
       "public_key": "release-signing-keys/Q20396-LHE-Release-Signing.asc",
       "purpose": "annotated LHE release tags",
+      "trust_domain": "release_tag",
       "status": "active",
       "valid_from": "2026-08-01",
-      "expires": "2027-08-01"
+      "expires": "2027-08-01",
+      "may_sign_commits": false,
+      "may_sign_release_tags": true
     }
-  ]
+  ],
+  "commit_signer_policy": {
+    "fingerprint": "SHA256:TakAONGUVp2o/aQK9cJSncIDOZ3HEr27M6Ctr84LdGY",
+    "purpose": "ordinary commit signing",
+    "trust_domain": "commit",
+    "source": "GitHub account SSH signing key",
+    "independent_verification": "required",
+    "may_sign_commits": true,
+    "may_sign_release_tags": false
+  }
 }

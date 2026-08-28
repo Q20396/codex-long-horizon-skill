@@ -14,6 +14,24 @@ import sys
 from datetime import date
 from pathlib import Path
 
+try:
+    from scripts.release_signing_policy import (
+        RELEASE_TAG_FINGERPRINT,
+        validate_signer_for_artifact,
+        verify_release_tag_signer,
+    )
+except ModuleNotFoundError:
+    _policy_spec = importlib.util.spec_from_file_location(
+        "release_signing_policy", Path(__file__).with_name("release_signing_policy.py")
+    )
+    if _policy_spec is None or _policy_spec.loader is None:
+        raise
+    _policy_module = importlib.util.module_from_spec(_policy_spec)
+    _policy_spec.loader.exec_module(_policy_module)
+    RELEASE_TAG_FINGERPRINT = _policy_module.RELEASE_TAG_FINGERPRINT
+    validate_signer_for_artifact = _policy_module.validate_signer_for_artifact
+    verify_release_tag_signer = _policy_module.verify_release_tag_signer
+
 
 ROOT = Path(__file__).resolve().parents[1]
 SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$")
@@ -181,6 +199,11 @@ def parse_args() -> argparse.Namespace:
         "--audit-existing-formal-result",
         action="store_true",
         help="Read-only audit of an existing formal result and acquisition receipt.",
+    )
+    mode.add_argument(
+        "--audit-release-tag",
+        metavar="TAG",
+        help="Read-only verification of an existing annotated release tag.",
     )
     parser.add_argument(
         "--formal-schema-result",
@@ -506,6 +529,10 @@ def tag_errors(version: str, pre_tag: bool, errors: list[str]) -> None:
     if not pre_tag:
         return
     tag = f"v{version}"
+    try:
+        validate_signer_for_artifact(RELEASE_TAG_FINGERPRINT, "release_tag")
+    except ValueError as exc:
+        errors.append(f"release-tag signer policy failed: {exc}")
     tag_result = run(["git", "rev-parse", "-q", "--verify", f"refs/tags/{tag}"])
     if tag_result.returncode == 0:
         errors.append(f"local tag already exists; cannot run pre-tag gate for {tag}")
@@ -670,6 +697,12 @@ def formal_schema_errors(args: argparse.Namespace, errors: list[str]) -> None:
             workflow_ref=args.formal_schema_workflow_ref,
             job=args.formal_schema_job,
         ))
+        return
+    if args.audit_release_tag:
+        try:
+            verify_release_tag_signer(args.audit_release_tag)
+        except ValueError as exc:
+            errors.append(f"release-tag audit failed: {exc}")
         return
     paths = {
         "--formal-schema-result": args.formal_schema_result,
@@ -1016,6 +1049,13 @@ def validate(args: argparse.Namespace) -> list[str]:
     version = args.version
     errors: list[str] = []
 
+    if args.audit_release_tag:
+        try:
+            verify_release_tag_signer(args.audit_release_tag)
+        except ValueError as exc:
+            errors.append(f"release-tag audit failed: {exc}")
+        return errors
+
     if not SEMVER_RE.match(version):
         errors.append("version must be plain semantic version syntax")
         return errors
@@ -1045,6 +1085,8 @@ def main() -> int:
         mode = "pre-tag"
     elif args.audit_existing_formal_result:
         mode = "audit-existing-formal-result"
+    elif args.audit_release_tag:
+        mode = "audit-release-tag"
     else:
         mode = "allow-existing-tag"
     try:

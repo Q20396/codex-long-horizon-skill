@@ -43,6 +43,10 @@ FORMAL_VALIDATOR = load_module(
     "validate_formal_schemas_release_evidence_under_test",
     ROOT / "scripts" / "validate_formal_schemas.py",
 )
+SIGNING_POLICY = load_module(
+    "release_signing_policy_under_test",
+    ROOT / "scripts" / "release_signing_policy.py",
+)
 
 
 def write_fake_codex(bin_dir: Path) -> Path:
@@ -943,6 +947,90 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.assertTrue(text.startswith("-----BEGIN PGP PUBLIC KEY BLOCK-----"))
         self.assertIn("-----END PGP PUBLIC KEY BLOCK-----", text)
         self.assertNotIn("PRIVATE KEY", text)
+
+        policy = registry["commit_signer_policy"]
+        self.assertEqual("SHA256:TakAONGUVp2o/aQK9cJSncIDOZ3HEr27M6Ctr84LdGY", policy["fingerprint"])
+        self.assertEqual("ordinary commit signing", policy["purpose"])
+        self.assertEqual("commit", policy["trust_domain"])
+        self.assertEqual("GitHub account SSH signing key", policy["source"])
+        self.assertEqual("required", policy["independent_verification"])
+        self.assertFalse(policy["may_sign_release_tags"])
+
+        SIGNING_POLICY.validate_signer_for_artifact(
+            policy["fingerprint"], "commit"
+        )
+        SIGNING_POLICY.validate_signer_for_artifact(
+            key["fingerprint"], "release_tag"
+        )
+
+    def test_signing_registry_rejects_cross_domain_mutations(self) -> None:
+        registry_path = ROOT / "docs" / "maintainers" / "release-signing-keys.json"
+        registry = json.loads(registry_path.read_text(encoding="utf-8"))
+        original_sha = __import__("hashlib").sha256(
+            registry_path.read_bytes()
+        ).hexdigest()
+
+        def validate(candidate: dict) -> None:
+            with tempfile.TemporaryDirectory() as temp:
+                isolated = Path(temp) / "release-signing-keys.json"
+                isolated.write_text(json.dumps(candidate), encoding="utf-8")
+                with mock.patch.object(SIGNING_POLICY, "REGISTRY_PATH", isolated):
+                    SIGNING_POLICY.load_signing_policy(isolated)
+        mutations = (
+            ("missing purpose", lambda c: c["keys"][0].pop("purpose")),
+            ("wrong release fingerprint", lambda c: c["keys"][0].update(
+                fingerprint="0" * 40
+            )),
+            ("trust-domain swap", lambda c: c["commit_signer_policy"].update(
+                trust_domain="release-tag"
+            )),
+            ("commit key may sign tags", lambda c: c["commit_signer_policy"].update(
+                may_sign_release_tags=True
+            )),
+        )
+        for name, mutate in mutations:
+            with self.subTest(name=name):
+                candidate = json.loads(json.dumps(registry))
+                mutate(candidate)
+                with self.assertRaises(ValueError):
+                    validate(candidate)
+        self.assertEqual(
+            original_sha,
+            __import__("hashlib").sha256(registry_path.read_bytes()).hexdigest(),
+        )
+
+    def test_signing_policy_rejects_cross_domain_signers(self) -> None:
+        with self.assertRaises(ValueError):
+            SIGNING_POLICY.validate_signer_for_artifact(
+                "1039EC488BE088997C1740D9ED0002B3562F2F59", "commit"
+            )
+        with self.assertRaises(ValueError):
+            SIGNING_POLICY.validate_signer_for_artifact(
+                "SHA256:TakAONGUVp2o/aQK9cJSncIDOZ3HEr27M6Ctr84LdGY", "release_tag"
+            )
+
+    def test_pre_tag_readiness_requires_tag_absence_without_fake_signer_pass(self) -> None:
+        errors: list[str] = []
+        RELEASE_READINESS.tag_errors("0.6.1", True, errors)
+        self.assertEqual([], errors)
+
+    def test_release_tag_audit_uses_actual_verified_signer(self) -> None:
+        good = subprocess.CompletedProcess(
+            ["git"], 0, "", "[GNUPG:] VALIDSIG 1039EC488BE088997C1740D9ED0002B3562F2F59\n"
+        )
+        tag = subprocess.CompletedProcess(["git"], 0, "tag", "")
+        target = subprocess.CompletedProcess(["git"], 0, "abc", "")
+        with mock.patch.object(SIGNING_POLICY.subprocess, "run", side_effect=[tag, target, good]):
+            self.assertEqual(
+                "1039EC488BE088997C1740D9ED0002B3562F2F59",
+                SIGNING_POLICY.verify_release_tag_signer("v0.6.1", expected_target="abc"),
+            )
+
+    def test_release_tag_audit_rejects_missing_tag(self) -> None:
+        missing = subprocess.CompletedProcess(["git"], 128, "", "")
+        with mock.patch.object(SIGNING_POLICY.subprocess, "run", return_value=missing):
+            with self.assertRaisesRegex(ValueError, "does not exist"):
+                SIGNING_POLICY.verify_release_tag_signer("v0.6.1")
 
     def test_release_docs_record_action_and_security_provenance(self) -> None:
         checklist = (
