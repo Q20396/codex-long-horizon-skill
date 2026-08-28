@@ -1146,6 +1146,9 @@ class ReleaseReadinessTests(unittest.TestCase):
         workflow = ROOT / ".github" / "workflows" / "check-skill.yml"
         text = workflow.read_text(encoding="utf-8")
         self.assertEqual([], FULL_VALIDATION.check_skill_formal_evidence_workflow_errors(text))
+        self.assertEqual([], FULL_VALIDATION.formal_release_evidence_workflow_errors(
+            (ROOT / ".github" / "workflows" / "formal-release-gate.yml").read_text(encoding="utf-8")
+        ))
         mutations = (
             ("Record formal runner identity", "Remove formal runner identity"),
             ('--action-provenance-file "$RUNNER_TEMP/formal-schema-runner-identity.json"', "--action-provenance-file \"$RUNNER_TEMP/other.json\""),
@@ -1162,6 +1165,8 @@ class ReleaseReadinessTests(unittest.TestCase):
             ("--allow-existing-tag", "--pre-tag"),
             ('"actions": {', '"fake-actions": {'),
             ('json.dump(payload, handle, indent=2, sort_keys=True)', 'json.dump(other, handle, indent=2, sort_keys=True)'),
+            ('python3 - "$RUNNER_IDENTITY" "$WORKFLOW_SHA256" "$WORKFLOW_PATH" "$RELEASE_COMMIT" <<\'PY\'', 'python3 - "$RUNNER_IDENTITY" "$WORKFLOW_SHA256" "$WORKFLOW_PATH" <<\'PY\''),
+            ('"release_commit": release_commit', '"release_commit": os.environ["RELEASE_COMMIT"]'),
         )
         prefix, formal = text.split("  formal-schema-gate:", 1)
         for old, new in mutations:

@@ -414,12 +414,15 @@ def check_skill_formal_evidence_workflow_errors(text: str) -> list[str]:
                             and node.slice.value == expected[0]
                         ):
                             errors.append(expected[1])
-                    if "formal-release-gate.yml" in text:
-                        release_node = pairs.get("release_commit")
-                        if not (isinstance(release_node, ast.Name) and release_node.id == "release_commit"):
-                            errors.append("release_commit must come from the same-step explicit release_commit argument")
-                        if '"$release_commit"' not in step:
-                            errors.append("runner identity must receive release_commit explicitly in the same step")
+                    release_node = pairs.get("release_commit")
+                    if not (isinstance(release_node, ast.Name) and release_node.id == "release_commit"):
+                        errors.append("release_commit must come from the same-step explicit release_commit argument")
+                    if '"$release_commit"' not in step and '"$RELEASE_COMMIT"' not in step:
+                        errors.append("runner identity must receive release_commit explicitly in the same step")
+                    if "check-skill.yml" in text and 'python3 - "$RUNNER_IDENTITY" "$WORKFLOW_SHA256" "$WORKFLOW_PATH" "$RELEASE_COMMIT"' not in step:
+                        errors.append("check-skill runner identity must receive RELEASE_COMMIT as an explicit argument")
+                    if 'os.environ["RELEASE_COMMIT"]' in heredoc.group("body"):
+                        errors.append("runner identity must not read same-step RELEASE_COMMIT from os.environ")
                     actions = pairs.get("actions")
                     action_pairs = {} if not isinstance(actions, ast.Dict) else {k.value: v.value for k, v in zip(actions.keys, actions.values) if isinstance(k, ast.Constant) and isinstance(k.value, str) and isinstance(v, ast.Constant) and isinstance(v.value, str)}
                     if action_pairs != {"checkout": "3d3c42e5aac5ba805825da76410c181273ba90b1", "setup-python": "5fda3b95a4ea91299a34e894583c3862153e4b97", "upload-artifact": "ea165f8d65b6e75b540449e92b4886f43607fa02"}:
