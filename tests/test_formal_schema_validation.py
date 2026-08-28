@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import importlib.util
+import contextlib
+import io
 import json
 from datetime import timedelta
 from pathlib import Path
@@ -16,6 +18,13 @@ from urllib.error import HTTPError
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT_PATH = ROOT / "scripts" / "validate_formal_schemas.py"
 WORKFLOW = ROOT / ".github" / "workflows" / "check-skill.yml"
+FORMAL_RELEASE_WORKFLOW = ROOT / ".github" / "workflows" / "formal-release-gate.yml"
+
+APPROVED_ACTIONS = {
+    "actions/checkout": "3d3c42e5aac5ba805825da76410c181273ba90b1",
+    "actions/setup-python": "5fda3b95a4ea91299a34e894583c3862153e4b97",
+    "actions/upload-artifact": "ea165f8d65b6e75b540449e92b4886f43607fa02",
+}
 
 
 def load_module():
@@ -144,6 +153,425 @@ def write_synthetic_evidence(
 
 
 class FormalSchemaStaticTests(unittest.TestCase):
+    def _synthetic_topology(self, root: Path) -> tuple[str, str, str]:
+        subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+        subprocess.run(["git", "config", "user.email", "test@example.invalid"], cwd=root, check=True)
+        subprocess.run(["git", "config", "user.name", "Synthetic Test"], cwd=root, check=True)
+        (root / "marker").write_text("B\n", encoding="utf-8")
+        subprocess.run(["git", "add", "marker"], cwd=root, check=True)
+        subprocess.run(["git", "commit", "-qm", "B"], cwd=root, check=True)
+        base = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
+        for value in ("C", "D"):
+            (root / "marker").write_text(value + "\n", encoding="utf-8")
+            subprocess.run(["git", "commit", "-qam", value], cwd=root, check=True)
+        head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
+        parent = subprocess.check_output(["git", "rev-parse", "HEAD^"], cwd=root, text=True).strip()
+        return base, parent, head
+
+    def _run_synthetic_verify(self, root: Path, workflow_path: str, job: str, base: str, head: str, provenance: Path):
+        evidence = root / f"evidence-{job}"
+        report = root / f"pip-{job}.json"
+        report.write_text("{}", encoding="utf-8")
+        receipt = evidence / "acquisition-receipt.json"
+        argv = ["--verify-acquisition", "--pip-report", str(report), "--evidence-dir", str(evidence),
+                "--result", str(receipt), "--candidate-base", base, "--run-id", "12345", "--run-attempt", "1",
+                "--workflow-ref", f"Q20396/codex-long-horizon-skill/{workflow_path}@refs/heads/main",
+                "--job-name", job, "--workflow-sha256", VALIDATOR.sha256_file(root / workflow_path),
+                "--workflow-path", workflow_path, "--action-provenance-file", str(provenance),
+                "--event-target-sha", head, "--repository", "Q20396/codex-long-horizon-skill"]
+        return argv, evidence, receipt
+
+    def _write_real_ci_fixture(self, temp_root: Path) -> tuple[Path, str, str, Path, Path, Path]:
+        """Build an isolated clean repository and keep runner inputs outside it."""
+        root = temp_root / "repo"
+        inputs = temp_root / "inputs"
+        root.mkdir()
+        base, _parent, _head = self._synthetic_topology(root)
+        workflow_path = ".github/workflows/check-skill.yml"
+        workflow = root / workflow_path
+        workflow.parent.mkdir(parents=True)
+        workflow.write_text((ROOT / workflow_path).read_text(encoding="utf-8"), encoding="utf-8")
+        subprocess.run(["git", "add", workflow_path], cwd=root, check=True)
+        subprocess.run(["git", "commit", "-qm", "workflow"], cwd=root, check=True)
+        head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
+        inputs.mkdir()
+        evidence = inputs / "evidence"
+        report = inputs / "pip-report.json"
+        report.write_text("{}", encoding="utf-8")
+        workflow_ref = f"Q20396/codex-long-horizon-skill/{workflow_path}@refs/heads/main"
+        identity = inputs / "runner-identity.json"
+        identity.write_text(json.dumps({
+            "github_run_id": "12345", "github_run_attempt": "1",
+            "workflow_ref": workflow_ref, "job": "formal-schema-gate",
+            "repository": "Q20396/codex-long-horizon-skill",
+            "event_target_sha": head, "release_commit": head, "candidate_base": base,
+            "workflow_identity": {"path": workflow_path, "sha256": VALIDATOR.sha256_file(workflow), "workflow_ref": workflow_ref},
+            "actions": VALIDATOR.ACTION_PROVENANCE,
+        }), encoding="utf-8")
+        return identity, base, head, evidence, report, workflow
+
+    def test_synthetic_ci_ancestor_topology_allows_multi_commit_head(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="formal-topology-ci-") as temp:
+            root = Path(temp)
+            provenance, base, head, evidence, report, workflow = self._write_real_ci_fixture(root)
+            workflow_path = ".github/workflows/check-skill.yml"
+            receipt = evidence / "acquisition-receipt.json"
+            argv = ["--verify-acquisition", "--pip-report", str(report), "--evidence-dir", str(evidence),
+                    "--result", str(receipt), "--candidate-base", base, "--run-id", "12345", "--run-attempt", "1",
+                    "--workflow-ref", f"Q20396/codex-long-horizon-skill/{workflow_path}@refs/heads/main",
+                    "--job-name", "formal-schema-gate", "--workflow-sha256", VALIDATOR.sha256_file(workflow),
+                    "--workflow-path", workflow_path, "--action-provenance-file", str(provenance),
+                    "--event-target-sha", head, "--repository", "Q20396/codex-long-horizon-skill"]
+            with mock.patch.object(VALIDATOR, "ROOT", workflow.parent.parent.parent), mock.patch.object(VALIDATOR, "acquire_evidence", return_value=([], {"status": "PASS"})) as acquire, mock.patch.object(VALIDATOR, "urlopen") as network:
+                self.assertEqual(0, VALIDATOR.main(argv))
+            acquire.assert_called_once()
+            network.assert_not_called()
+            context = acquire.call_args.kwargs["verified_context"]
+            self.assertEqual("ci_ancestor_base", context["topology_mode"])
+            self.assertEqual(base, context["candidate_base_commit"])
+            self.assertEqual(base, context["candidate_merge_base"])
+
+    def test_synthetic_release_topology_requires_direct_parent(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="formal-topology-release-") as temp:
+            root = Path(temp)
+            base, parent, head = self._synthetic_topology(root)
+            workflow_path = ".github/workflows/formal-release-gate.yml"
+            workflow = root / workflow_path
+            workflow.parent.mkdir(parents=True)
+            workflow.write_text((ROOT / workflow_path).read_text(encoding="utf-8"), encoding="utf-8")
+            subprocess.run(["git", "add", workflow_path], cwd=root, check=True)
+            subprocess.run(["git", "commit", "-qm", "workflow"], cwd=root, check=True)
+            head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
+            parent = subprocess.check_output(["git", "rev-parse", "HEAD^"], cwd=root, text=True).strip()
+            workflow_ref = f"Q20396/codex-long-horizon-skill/{workflow_path}@refs/heads/main"
+            provenance = root / "identity.json"
+            provenance.write_text(json.dumps({"github_run_id": "12345", "github_run_attempt": "1", "workflow_ref": workflow_ref,
+                "job": "formal-release-gate", "repository": "Q20396/codex-long-horizon-skill", "event_target_sha": head,
+                "release_commit": head, "candidate_base": base, "workflow_identity": {"path": workflow_path, "sha256": VALIDATOR.sha256_file(workflow), "workflow_ref": workflow_ref}, "actions": VALIDATOR.ACTION_PROVENANCE}), encoding="utf-8")
+            argv, evidence, receipt = self._run_synthetic_verify(root, workflow_path, "formal-release-gate", base, head, provenance)
+            with mock.patch.object(VALIDATOR, "ROOT", root), mock.patch.object(VALIDATOR, "acquire_evidence") as acquire, mock.patch.object(VALIDATOR, "urlopen") as network:
+                output = io.StringIO()
+                with contextlib.redirect_stdout(output), contextlib.redirect_stderr(output):
+                    self.assertNotEqual(0, VALIDATOR.main(argv))
+            acquire.assert_not_called(); network.assert_not_called()
+            self.assertFalse(evidence.exists()); self.assertFalse(receipt.exists())
+            self.assertIn("unique parent", output.getvalue())
+
+    def test_verify_acquisition_hits_merge_base_mismatch_without_other_binding_errors(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="formal-merge-base-mismatch-") as temp:
+            root = Path(temp)
+            provenance, parent, head, evidence, report, workflow = self._write_real_ci_fixture(root)
+            result = root / "inputs" / "formal-result.json"
+            receipt = evidence / "acquisition-receipt.json"
+            argv = ["--verify-acquisition", "--pip-report", str(report), "--evidence-dir", str(evidence),
+                    "--result", str(receipt), "--candidate-base", parent, "--run-id", "12345", "--run-attempt", "1",
+                    "--workflow-ref", "Q20396/codex-long-horizon-skill/.github/workflows/check-skill.yml@refs/heads/main",
+                    "--job-name", "formal-schema-gate", "--workflow-sha256", VALIDATOR.sha256_file(workflow),
+                    "--workflow-path", ".github/workflows/check-skill.yml", "--action-provenance-file", str(provenance),
+                    "--event-target-sha", head, "--repository", "Q20396/codex-long-horizon-skill"]
+            real_run = VALIDATOR.subprocess.run
+            merge_base_calls = []
+
+            def merge_base_mismatch(*args, **kwargs):
+                command = args[0] if args else kwargs.get("args", [])
+                if command[:2] == ["git", "merge-base"]:
+                    merge_base_calls.append(command)
+                    return subprocess.CompletedProcess(command, 0, "f" * 40, "")
+                return real_run(*args, **kwargs)
+
+            with mock.patch.object(VALIDATOR, "ROOT", workflow.parent.parent.parent), mock.patch.object(VALIDATOR.subprocess, "run", side_effect=merge_base_mismatch), mock.patch.object(VALIDATOR, "acquire_evidence") as acquire, mock.patch.object(VALIDATOR, "urlopen") as network:
+                output = io.StringIO()
+                with contextlib.redirect_stdout(output), contextlib.redirect_stderr(output):
+                    self.assertNotEqual(0, VALIDATOR.main(argv))
+            acquire.assert_not_called(); network.assert_not_called()
+            self.assertEqual(1, len(merge_base_calls))
+            self.assertEqual(["git", "merge-base", parent, head], merge_base_calls[0])
+            text = output.getvalue()
+            self.assertIn("merge-base", text)
+            self.assertNotIn("exactly one parent", text)
+            self.assertNotIn("unique parent", text)
+            self.assertNotIn("must be a full lowercase commit SHA", text)
+            self.assertNotIn("HEAD does not match", text)
+            self.assertFalse(evidence.exists()); self.assertFalse(receipt.exists()); self.assertFalse(result.exists())
+
+    def test_verify_acquisition_rejects_real_dirty_worktree_before_acquisition(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="formal-dirty-topology-") as temp:
+            root = Path(temp)
+            provenance, base, head, evidence, report, workflow = self._write_real_ci_fixture(root)
+            (root / "repo" / "dirty-marker").write_text("uncommitted\n", encoding="utf-8")
+            receipt = evidence / "acquisition-receipt.json"
+            argv = ["--verify-acquisition", "--pip-report", str(report), "--evidence-dir", str(evidence),
+                    "--result", str(receipt), "--candidate-base", base, "--run-id", "12345", "--run-attempt", "1",
+                    "--workflow-ref", "Q20396/codex-long-horizon-skill/.github/workflows/check-skill.yml@refs/heads/main",
+                    "--job-name", "formal-schema-gate", "--workflow-sha256", VALIDATOR.sha256_file(workflow),
+                    "--workflow-path", ".github/workflows/check-skill.yml", "--action-provenance-file", str(provenance),
+                    "--event-target-sha", head, "--repository", "Q20396/codex-long-horizon-skill"]
+            with mock.patch.object(VALIDATOR, "ROOT", workflow.parent.parent.parent), mock.patch.object(VALIDATOR, "acquire_evidence") as acquire, mock.patch.object(VALIDATOR, "urlopen") as network:
+                output = io.StringIO()
+                with contextlib.redirect_stdout(output), contextlib.redirect_stderr(output):
+                    self.assertNotEqual(0, VALIDATOR.main(argv))
+            acquire.assert_not_called(); network.assert_not_called()
+            self.assertIn("not clean", output.getvalue())
+            self.assertFalse(evidence.exists()); self.assertFalse(receipt.exists())
+
+    def test_real_clean_synthetic_ci_ancestor_worktree_control(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="formal-clean-topology-") as temp:
+            root = Path(temp)
+            base, _parent, head = self._synthetic_topology(root)
+            with tempfile.TemporaryDirectory(prefix="formal-identity-") as external_temp:
+                external = Path(external_temp)
+                workflow_path = ".github/workflows/check-skill.yml"
+                workflow = root / workflow_path
+                workflow.parent.mkdir(parents=True)
+                workflow.write_text((ROOT / workflow_path).read_text(encoding="utf-8"), encoding="utf-8")
+                subprocess.run(["git", "add", workflow_path], cwd=root, check=True)
+                subprocess.run(["git", "commit", "-qm", "workflow"], cwd=root, check=True)
+                head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
+                identity = external / "identity.json"
+                identity.write_text(json.dumps({
+                    "github_run_id": "12345", "github_run_attempt": "1",
+                    "workflow_ref": f"Q20396/codex-long-horizon-skill/{workflow_path}@refs/heads/main",
+                    "job": "formal-schema-gate", "repository": "Q20396/codex-long-horizon-skill",
+                    "event_target_sha": head, "release_commit": head, "candidate_base": base,
+                    "workflow_identity": {"path": workflow_path, "sha256": VALIDATOR.sha256_file(WORKFLOW), "workflow_ref": f"Q20396/codex-long-horizon-skill/{workflow_path}@refs/heads/main"},
+                    "actions": VALIDATOR.ACTION_PROVENANCE,
+                }), encoding="utf-8")
+                errors, context = VALIDATOR.preflight_acquisition_context(
+                    release_commit=head, candidate_base=base, event_target_sha=head,
+                    repository="Q20396/codex-long-horizon-skill", workflow_sha256=VALIDATOR.sha256_file(WORKFLOW),
+                    workflow_path=workflow_path, action_provenance_file=identity, runner_identity_file=identity,
+                    worktree=root, evidence_dir=root / "new-evidence",
+                    workflow_ref=f"Q20396/codex-long-horizon-skill/{workflow_path}@refs/heads/main",
+                    run_id="12345", run_attempt="1", job_name="formal-schema-gate",
+                )
+                self.assertEqual([], errors)
+                self.assertEqual("ci_ancestor_base", context["topology_mode"])
+                self.assertEqual(base, context["candidate_base_commit"])
+                self.assertEqual(base, context["candidate_merge_base"])
+    def _write_main_provenance(self, root: Path, **changes: object) -> tuple[Path, str, str]:
+        head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
+        parent = subprocess.check_output(["git", "rev-parse", "HEAD^"], cwd=ROOT, text=True).strip()
+        workflow_path = ".github/workflows/check-skill.yml"
+        workflow_ref = f"Q20396/codex-long-horizon-skill/{workflow_path}@refs/heads/main"
+        payload = {
+            "github_run_id": "12345", "github_run_attempt": "1",
+            "workflow_ref": workflow_ref, "job": "formal-schema-gate",
+            "repository": "Q20396/codex-long-horizon-skill",
+            "event_target_sha": head, "release_commit": head,
+            "candidate_base": parent,
+            "workflow_identity": {"path": workflow_path, "sha256": VALIDATOR.sha256_file(ROOT / workflow_path), "workflow_ref": workflow_ref},
+            "actions": VALIDATOR.ACTION_PROVENANCE,
+        }
+        payload.update(changes)
+        path = root / "runner-identity.json"
+        path.write_text(json.dumps(payload), encoding="utf-8")
+        return path, head, parent
+
+    def _run_verify_acquisition(self, root: Path, provenance: Path, head: str, parent: str, evidence_exists: bool = False):
+        evidence = root / "evidence"
+        if evidence_exists:
+            evidence.mkdir()
+        receipt = evidence / "acquisition-receipt.json"
+        result = root / "formal-result.json"
+        report = root / "pip-report.json"
+        report.write_text("{}", encoding="utf-8")
+        argv = ["--verify-acquisition", "--pip-report", str(report), "--evidence-dir", str(evidence), "--result", str(receipt), "--candidate-base", parent, "--run-id", "12345", "--run-attempt", "1", "--workflow-ref", "Q20396/codex-long-horizon-skill/.github/workflows/check-skill.yml@refs/heads/main", "--job-name", "formal-schema-gate", "--workflow-sha256", VALIDATOR.sha256_file(WORKFLOW), "--workflow-path", ".github/workflows/check-skill.yml", "--action-provenance-file", str(provenance), "--event-target-sha", head, "--repository", "Q20396/codex-long-horizon-skill"]
+        return argv, evidence, receipt, result
+
+    def test_verify_acquisition_preflight_failures_do_not_acquire(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="formal-preflight-") as temp:
+            root = Path(temp)
+            provenance, head, parent = self._write_main_provenance(root)
+            mutations = [
+                ("candidate_base", "bad-base", "candidate_base"),
+                ("provenance candidate base", {"candidate_base": "f" * 40}, "candidate_base"),
+                ("event target", {"event_target_sha": "e" * 40}, "event_target_sha"),
+                ("release commit", {"release_commit": "e" * 40}, "release_commit"),
+                ("repository", {"repository": "foreign/repo"}, "repository"),
+                ("workflow ref", {"workflow_ref": "foreign/ref"}, "workflow_ref"),
+                ("job", {"job": "wrong-job"}, "job"),
+            ]
+            for label, mutation, field in mutations:
+                with self.subTest(label=label), mock.patch.object(VALIDATOR, "acquire_evidence") as acquire, mock.patch.object(VALIDATOR, "urlopen") as network:
+                    if isinstance(mutation, dict):
+                        provenance, head, parent = self._write_main_provenance(root, **mutation)
+                        argv, evidence, receipt, result = self._run_verify_acquisition(root, provenance, head, parent)
+                    else:
+                        argv, evidence, receipt, result = self._run_verify_acquisition(root, provenance, head, mutation)
+                        argv[argv.index("--candidate-base") + 1] = mutation
+                    output = io.StringIO()
+                    with contextlib.redirect_stdout(output), contextlib.redirect_stderr(output):
+                        self.assertNotEqual(0, VALIDATOR.main(argv))
+                    acquire.assert_not_called()
+                    network.assert_not_called()
+                    self.assertFalse(evidence.exists())
+                    self.assertFalse(receipt.exists())
+                    self.assertFalse(result.exists())
+                    self.assertIn(field, output.getvalue())
+                    self.assertNotIn('"status": "PASS"', output.getvalue())
+
+    def test_verify_acquisition_rejects_invalid_event_and_foreign_workflow_path(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="formal-preflight-context-") as temp:
+            root = Path(temp)
+            provenance, head, parent = self._write_main_provenance(root)
+            cases = [
+                ("invalid event target", {"event_target_sha": "not-a-sha"}, "event_target_sha"),
+                ("foreign workflow path", {
+                    "workflow_identity": {
+                        "path": ".github/workflows/foreign.yml",
+                        "sha256": VALIDATOR.sha256_file(WORKFLOW),
+                        "workflow_ref": "Q20396/codex-long-horizon-skill/.github/workflows/foreign.yml@refs/heads/main",
+                    },
+                }, "workflow identity"),
+            ]
+            for label, mutation, field in cases:
+                with self.subTest(label=label):
+                    provenance, head, parent = self._write_main_provenance(root, **mutation)
+                    argv, evidence, receipt, result = self._run_verify_acquisition(root, provenance, head, parent)
+                    with mock.patch.object(VALIDATOR, "acquire_evidence") as acquire, mock.patch.object(VALIDATOR, "urlopen") as network:
+                        output = io.StringIO()
+                        with contextlib.redirect_stdout(output), contextlib.redirect_stderr(output):
+                            self.assertNotEqual(0, VALIDATOR.main(argv))
+                    acquire.assert_not_called(); network.assert_not_called()
+                    self.assertFalse(evidence.exists()); self.assertFalse(receipt.exists()); self.assertFalse(result.exists())
+                    self.assertIn(field, output.getvalue())
+
+    def test_verify_acquisition_rejects_topology_binding_before_acquisition(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="formal-preflight-topology-") as temp:
+            root = Path(temp)
+            provenance, head, parent = self._write_main_provenance(root)
+            argv, evidence, receipt, result = self._run_verify_acquisition(root, provenance, head, parent)
+            real_run = subprocess.run
+
+            def topology_run(*args, **kwargs):
+                command = args[0] if args else kwargs.get("args", [])
+                if command[:4] == ["git", "rev-list", "--parents", "-n"]:
+                    return subprocess.CompletedProcess(command, 0, head, "")
+                if command[:2] == ["git", "merge-base"]:
+                    return subprocess.CompletedProcess(command, 0, "wrong" + "0" * 35, "")
+                if command[:3] == ["git", "status", "--porcelain=v1"]:
+                    return subprocess.CompletedProcess(command, 0, "", "")
+                return real_run(*args, **kwargs)
+
+            with mock.patch.object(VALIDATOR.subprocess, "run", side_effect=topology_run), mock.patch.object(VALIDATOR, "acquire_evidence") as acquire, mock.patch.object(VALIDATOR, "urlopen") as network:
+                output = io.StringIO()
+                with contextlib.redirect_stdout(output), contextlib.redirect_stderr(output):
+                    self.assertNotEqual(0, VALIDATOR.main(argv))
+            acquire.assert_not_called(); network.assert_not_called()
+            self.assertFalse(evidence.exists()); self.assertFalse(receipt.exists()); self.assertFalse(result.exists())
+            self.assertIn("exactly one parent", output.getvalue())
+
+    def test_verify_acquisition_preflight_success_passes_verified_context(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="formal-preflight-success-") as temp:
+            root = Path(temp)
+            provenance, base, head, evidence, report, workflow = self._write_real_ci_fixture(root)
+            workflow_path = ".github/workflows/check-skill.yml"
+            receipt = evidence / "acquisition-receipt.json"
+            argv = ["--verify-acquisition", "--pip-report", str(report), "--evidence-dir", str(evidence),
+                    "--result", str(receipt), "--candidate-base", base, "--run-id", "12345", "--run-attempt", "1",
+                    "--workflow-ref", f"Q20396/codex-long-horizon-skill/{workflow_path}@refs/heads/main",
+                    "--job-name", "formal-schema-gate", "--workflow-sha256", VALIDATOR.sha256_file(workflow),
+                    "--workflow-path", workflow_path, "--action-provenance-file", str(provenance),
+                    "--event-target-sha", head, "--repository", "Q20396/codex-long-horizon-skill"]
+            with mock.patch.object(VALIDATOR, "ROOT", workflow.parent.parent.parent), mock.patch.object(VALIDATOR, "acquire_evidence", return_value=([], {"status": "PASS"})) as acquire, mock.patch.object(VALIDATOR, "urlopen") as network:
+                self.assertEqual(0, VALIDATOR.main(argv))
+            acquire.assert_called_once()
+            network.assert_not_called()
+            context = acquire.call_args.kwargs["verified_context"]
+            self.assertEqual(base, context["candidate_base_commit"])
+            self.assertEqual(base, context["candidate_merge_base"])
+            self.assertEqual("ci_ancestor_base", context["topology_mode"])
+            self.assertTrue(evidence.exists())
+            self.assertTrue(receipt.exists())
+
+    def test_existing_evidence_directory_is_rejected_before_acquisition(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="formal-preflight-existing-") as temp:
+            root = Path(temp)
+            provenance, head, parent = self._write_main_provenance(root)
+            argv, evidence, receipt, result = self._run_verify_acquisition(root, provenance, head, parent, True)
+            with mock.patch.object(VALIDATOR, "acquire_evidence") as acquire, mock.patch.object(VALIDATOR, "urlopen") as network:
+                self.assertNotEqual(0, VALIDATOR.main(argv))
+            acquire.assert_not_called(); network.assert_not_called(); self.assertTrue(evidence.exists()); self.assertFalse(receipt.exists()); self.assertFalse(result.exists())
+
+    def test_workflow_identity_is_exact_and_fail_closed(self) -> None:
+        workflow = ROOT / ".github" / "workflows" / "formal-release-gate.yml"
+        digest = VALIDATOR.sha256_file(workflow)
+        identity = {
+            "path": ".github/workflows/formal-release-gate.yml",
+            "sha256": digest,
+            "workflow_ref": "Q20396/codex-long-horizon-skill/.github/workflows/formal-release-gate.yml@refs/heads/main",
+        }
+        self.assertEqual([], VALIDATOR.validate_workflow_identity(identity))
+        for field, value in (
+            ("path", "wrong.yml"),
+            ("sha256", "not-a-sha"),
+            ("workflow_ref", ""),
+        ):
+            mutated = dict(identity)
+            mutated[field] = value
+            self.assertTrue(VALIDATOR.validate_workflow_identity(mutated))
+
+    def test_action_provenance_file_is_closed_and_bound(self) -> None:
+        workflow = ROOT / ".github" / "workflows" / "formal-release-gate.yml"
+        identity = {
+            "path": ".github/workflows/formal-release-gate.yml",
+            "sha256": VALIDATOR.sha256_file(workflow),
+            "workflow_ref": "Q20396/codex-long-horizon-skill/.github/workflows/check-skill.yml@refs/heads/main",
+        }
+        payload = {
+            "github_run_id": "1", "github_run_attempt": "1", "workflow_ref": "workflow-ref",
+            "job": "formal", "repository": "Q20396/codex-long-horizon-skill",
+            "event_target_sha": "t", "release_commit": "c", "candidate_base": "b",
+            "workflow_identity": identity, "actions": VALIDATOR.ACTION_PROVENANCE,
+        }
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "runner-identity.json"
+            path.write_text(json.dumps(payload), encoding="utf-8")
+            errors, actions, digest = VALIDATOR.load_action_provenance(path, identity)
+            self.assertEqual([], errors)
+            self.assertEqual(VALIDATOR.ACTION_PROVENANCE, actions)
+            self.assertEqual(VALIDATOR.sha256_file(path), digest)
+            for mutation in (
+                {**payload, "actions": {"checkout": "x"}},
+                {**payload, "actions": {**VALIDATOR.ACTION_PROVENANCE, "extra": "x"}},
+                {**payload, "workflow_identity": {**identity, "sha256": "0" * 64}},
+            ):
+                path.write_text(json.dumps(mutation), encoding="utf-8")
+                self.assertTrue(VALIDATOR.load_action_provenance(path, identity)[0])
+
+    def test_action_provenance_binds_current_execution_context(self) -> None:
+        workflow = ROOT / ".github" / "workflows" / "check-skill.yml"
+        identity = {
+            "path": ".github/workflows/check-skill.yml",
+            "sha256": VALIDATOR.sha256_file(workflow),
+            "workflow_ref": "Q20396/codex-long-horizon-skill/.github/workflows/check-skill.yml@refs/heads/main",
+        }
+        payload = {
+            "github_run_id": "1", "github_run_attempt": "1",
+            "workflow_ref": "Q20396/codex-long-horizon-skill/.github/workflows/check-skill.yml@refs/heads/main", "job": "formal-schema-gate",
+            "repository": "Q20396/codex-long-horizon-skill", "event_target_sha": "c" * 40,
+            "release_commit": "c" * 40, "candidate_base": "b" * 40,
+            "workflow_identity": identity, "actions": VALIDATOR.ACTION_PROVENANCE,
+        }
+        expected = {
+            "github_run_id": "1", "github_run_attempt": "1",
+            "workflow_ref": "Q20396/codex-long-horizon-skill/.github/workflows/check-skill.yml@refs/heads/main", "job": "formal-schema-gate",
+            "repository": "Q20396/codex-long-horizon-skill", "event_target_sha": "c" * 40,
+            "release_commit": "c" * 40, "candidate_base": "b" * 40,
+        }
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "runner-identity.json"
+            path.write_text(json.dumps(payload), encoding="utf-8")
+            self.assertFalse(
+                VALIDATOR.load_action_provenance(path, identity, expected)[0]
+            )
+            for field in expected:
+                mutated = dict(expected)
+                mutated[field] = "foreign"
+                self.assertTrue(
+                    VALIDATOR.load_action_provenance(path, identity, mutated)[0]
+                )
+
     def test_lock_is_exact_and_dependency_free_to_check(self) -> None:
         self.assertEqual([], VALIDATOR.validate_lock())
 
@@ -978,28 +1406,25 @@ class FormalSchemaStaticTests(unittest.TestCase):
         self.assertNotIn("--verify-acquisition", formal_step)
 
     def test_workflow_pins_third_party_actions_to_reviewed_commits(self) -> None:
-        text = WORKFLOW.read_text(encoding="utf-8")
-        action_lines = [
-            line.strip()
-            for line in text.splitlines()
-            if line.strip().startswith("uses: actions/")
-        ]
-        self.assertEqual(4, len(action_lines))
-        for line in action_lines:
-            reference = line.rsplit("@", 1)[-1]
-            self.assertRegex(reference, r"^[0-9a-f]{40}$")
-        self.assertEqual(
-            2,
-            action_lines.count(
-                "uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1"
-            ),
-        )
-        self.assertEqual(
-            2,
-            action_lines.count(
-                "uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97"
-            ),
-        )
+        for workflow_path in (WORKFLOW, FORMAL_RELEASE_WORKFLOW):
+            text = workflow_path.read_text(encoding="utf-8")
+            action_refs = []
+            for line in text.splitlines():
+                stripped = line.strip()
+                if not stripped.startswith("uses: actions/"):
+                    continue
+                action, separator, reference = stripped[6:].partition("@")
+                self.assertEqual("@", separator, workflow_path)
+                self.assertIn(action, APPROVED_ACTIONS, workflow_path)
+                self.assertRegex(reference, r"^[0-9a-f]{40}$", workflow_path)
+                self.assertEqual(APPROVED_ACTIONS[action], reference, workflow_path)
+                action_refs.append(action)
+
+            self.assertEqual(
+                set(APPROVED_ACTIONS), set(action_refs), workflow_path
+            )
+            for action in APPROVED_ACTIONS:
+                self.assertGreaterEqual(action_refs.count(action), 1, workflow_path)
 
     def test_workflow_rejects_missing_or_step_local_candidate_base(self) -> None:
         text = WORKFLOW.read_text(encoding="utf-8")

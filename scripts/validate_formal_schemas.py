@@ -26,6 +26,27 @@ from urllib.request import Request, urlopen
 ROOT = Path(__file__).resolve().parents[1]
 LOCK_PATH = ROOT / "requirements-release.txt"
 DRAFT_2020_12 = "https://json-schema.org/draft/2020-12/schema"
+ACTION_PROVENANCE = {
+    "checkout": "3d3c42e5aac5ba805825da76410c181273ba90b1",
+    "setup-python": "5fda3b95a4ea91299a34e894583c3862153e4b97",
+    "upload-artifact": "ea165f8d65b6e75b540449e92b4886f43607fa02",
+}
+FORMAL_WORKFLOW_CONTRACTS = {
+    ".github/workflows/formal-release-gate.yml": {
+        "job": "formal-release-gate",
+        "actions": ACTION_PROVENANCE,
+    },
+    ".github/workflows/check-skill.yml": {
+        "job": "formal-schema-gate",
+        "actions": ACTION_PROVENANCE,
+    },
+}
+EXPECTED_REPOSITORY = "Q20396/codex-long-horizon-skill"
+WORKFLOW_REF_RE = re.compile(
+    r"^(?P<repository>Q20396/codex-long-horizon-skill)/"
+    r"(?P<path>\.github/workflows/(?:check-skill|formal-release-gate)\.yml)@"
+    r"(?P<ref>refs/(?:heads/[^\s]+|pull/[1-9][0-9]*/merge))$"
+)
 BOOTSTRAP_PARENT = "6f1f48381f465b460a9390643fc835b666604207"
 BOOTSTRAP_COMMIT = "5f8540db1994839ad644b8fa3203642d82c1d581"
 BOOTSTRAP_TREE = "9b13edb16d90db0d5f69a252bfebe69fa2c10d04"
@@ -384,6 +405,112 @@ def candidate_binding(base_commit: str) -> tuple[list[str], dict[str, Any]]:
         "changed_paths_sha256": sha256_bytes(canonical_json_bytes(paths)),
         "diff_sha256": diff_sha256,
         "worktree_clean": not validate_clean_worktree(),
+    }
+
+
+def preflight_acquisition_context(
+    *,
+    release_commit: str,
+    candidate_base: str,
+    event_target_sha: str,
+    repository: str,
+    workflow_sha256: str,
+    workflow_path: str,
+    action_provenance_file: Path,
+    runner_identity_file: Path,
+    worktree: Path,
+    evidence_dir: Path,
+    workflow_ref: str,
+    run_id: str,
+    run_attempt: str,
+    job_name: str,
+) -> tuple[list[str], dict[str, Any] | None]:
+    """Perform all local acquisition checks without creating or writing anything."""
+    errors: list[str] = []
+    sha_fields = {
+        "release_commit": release_commit,
+        "candidate_base": candidate_base,
+        "event_target_sha": event_target_sha,
+    }
+    for field, value in sha_fields.items():
+        if not isinstance(value, str) or not re.fullmatch(r"[0-9a-f]{40}", value):
+            errors.append(f"preflight {field} must be a full lowercase commit SHA")
+    if release_commit != event_target_sha:
+        errors.append("preflight release_commit does not match event_target_sha")
+    if repository != EXPECTED_REPOSITORY:
+        errors.append("preflight repository is not the canonical repository")
+    if not os.path.lexists(evidence_dir):
+        pass
+    else:
+        errors.append("preflight evidence directory must not already exist")
+
+    def git_at(*args: str) -> str:
+        result = subprocess.run(
+            ["git", *args], cwd=worktree, text=True, capture_output=True, check=False
+        )
+        if result.returncode != 0:
+            raise RuntimeError(result.stderr.strip() or "git command failed")
+        return result.stdout.strip()
+
+    topology_mode = {
+        (".github/workflows/formal-release-gate.yml", "formal-release-gate"): "release_direct_parent",
+        (".github/workflows/check-skill.yml", "formal-schema-gate"): "ci_ancestor_base",
+    }.get((workflow_path, job_name))
+    if topology_mode is None:
+        errors.append("preflight workflow/job has no approved topology mode")
+        topology_mode = ""
+    try:
+        if git_at("rev-parse", "HEAD") != release_commit:
+            errors.append("preflight HEAD does not match release_commit")
+        parent_line = git_at("rev-list", "--parents", "-n", "1", release_commit)
+        parents = parent_line.split()[1:]
+        if len(parents) != 1:
+            errors.append("preflight release commit must have exactly one parent")
+        elif topology_mode == "release_direct_parent" and parents[0] != candidate_base:
+            errors.append("preflight unique parent does not match candidate_base")
+        if len(parents) == 1 and git_at("merge-base", candidate_base, release_commit) != candidate_base:
+            errors.append("preflight merge-base does not match candidate_base")
+        if topology_mode == "ci_ancestor_base" and len(parents) == 1 and parents[0] == candidate_base:
+            # Direct-parent is valid but the CI mode also permits older ancestors.
+            pass
+        if git_at("status", "--porcelain=v1", "--untracked-files=all"):
+            errors.append("preflight worktree is not clean")
+    except (RuntimeError, OSError) as exc:
+        errors.append(f"preflight git binding could not be verified: {exc}")
+
+    workflow_identity = {
+        "path": workflow_path,
+        "sha256": workflow_sha256,
+        "workflow_ref": workflow_ref,
+    }
+    expected_context = {
+        "github_run_id": run_id,
+        "github_run_attempt": run_attempt,
+        "workflow_ref": workflow_ref,
+        "job": job_name,
+        "repository": repository,
+        "event_target_sha": event_target_sha,
+        "release_commit": release_commit,
+        "candidate_base": candidate_base,
+    }
+    identity_errors, identity_values = job_identity(run_id, run_attempt, workflow_ref, job_name)
+    errors.extend(identity_errors)
+    action_errors, actions, runner_sha = load_action_provenance(
+        action_provenance_file.resolve(), workflow_identity, expected_context
+    )
+    errors.extend(action_errors)
+    if runner_identity_file.resolve() != action_provenance_file.resolve():
+        errors.append("preflight runner identity and action provenance files differ")
+    if errors:
+        return errors, None
+    return errors, {
+        **expected_context,
+        "workflow_identity": workflow_identity,
+        "action_provenance": actions,
+        "runner_identity_sha256": runner_sha,
+        "candidate_base_commit": candidate_base,
+        "candidate_merge_base": candidate_base,
+        "topology_mode": topology_mode,
     }
 
 
@@ -1285,8 +1412,30 @@ def acquire_evidence(
     receipt_path: Path,
     identity: dict[str, str],
     candidate_base: str,
+    workflow_identity: dict[str, str] | None = None,
+    action_provenance: dict[str, Any] | None = None,
+    runner_identity_sha256: str | None = None,
+    repository: str | None = None,
+    event_target_sha: str | None = None,
+    release_commit: str | None = None,
+    verified_context: dict[str, Any] | None = None,
 ) -> tuple[list[str], dict[str, Any]]:
     errors = validate_clean_worktree()
+    if verified_context is None:
+        errors.append("verified acquisition context is required")
+    else:
+        raw_context = {
+            "repository": repository,
+            "event_target_sha": event_target_sha,
+            "release_commit": release_commit,
+            "candidate_base": candidate_base,
+            "workflow_identity": workflow_identity,
+            "action_provenance": action_provenance,
+            "runner_identity_sha256": runner_identity_sha256,
+        }
+        for field, value in raw_context.items():
+            if verified_context.get(field) != value:
+                errors.append(f"verified acquisition context {field} mismatch")
     errors.extend(validate_lock())
     bootstrap_errors, bootstrap = bootstrap_identity()
     errors.extend(bootstrap_errors)
@@ -1298,6 +1447,8 @@ def acquire_evidence(
     errors.extend(candidate_errors)
     identity_errors, normalized_identity = job_identity(**identity)
     errors.extend(identity_errors)
+    if workflow_identity is not None:
+        errors.extend(validate_workflow_identity(workflow_identity))
     evidence_dir = evidence_dir.resolve()
     receipt_path = receipt_path.resolve()
     if receipt_path.parent != evidence_dir:
@@ -1319,9 +1470,12 @@ def acquire_evidence(
         "schema_version": 2,
         "status": "PASS" if not errors else "FAIL",
         "gate": "formal-acquisition",
+        **({"repository": repository, "event_target_sha": event_target_sha, "release_commit": release_commit, "candidate_base_commit": candidate_base, "candidate_merge_base": candidate_base} if repository is not None else {}),
         "acquisition_started_at": iso_utc(started),
         "acquired_at": iso_utc(completed),
         "job_identity": normalized_identity,
+        **({"workflow_identity": workflow_identity} if workflow_identity is not None else {}),
+        **({"action_provenance": action_provenance, "runner_identity_sha256": runner_identity_sha256} if action_provenance is not None else {}),
         "bootstrap_identity": bootstrap,
         "candidate": candidate,
         "schema_inventory": schema_inventory_binding(schemas),
@@ -1441,6 +1595,12 @@ def validate_acquisition_receipt(
     pip_report: Path,
     identity: dict[str, str],
     candidate_base: str,
+    workflow_identity: dict[str, str] | None = None,
+    action_provenance: dict[str, Any] | None = None,
+    runner_identity_sha256: str | None = None,
+    repository: str | None = None,
+    event_target_sha: str | None = None,
+    release_commit: str | None = None,
 ) -> tuple[list[str], dict[str, Any], str]:
     errors: list[str] = []
     try:
@@ -1472,6 +1632,11 @@ def validate_acquisition_receipt(
         "approval_authority",
         "next_stage_authorized",
     }
+    if workflow_identity is not None:
+        receipt_keys.add("workflow_identity")
+        receipt_keys.update(("action_provenance", "runner_identity_sha256"))
+    if repository is not None:
+        receipt_keys.update(("repository", "event_target_sha", "release_commit", "candidate_base_commit", "candidate_merge_base"))
     if set(receipt) != receipt_keys:
         errors.append("acquisition receipt structure is not closed")
     if (
@@ -1489,6 +1654,25 @@ def validate_acquisition_receipt(
     errors.extend(identity_errors)
     if receipt.get("job_identity") != normalized_identity:
         errors.append("acquisition receipt job identity mismatch")
+    if workflow_identity is not None:
+        errors.extend(validate_workflow_identity(workflow_identity))
+        if receipt.get("workflow_identity") != workflow_identity:
+            errors.append("acquisition receipt workflow identity mismatch")
+        if receipt.get("action_provenance") != action_provenance:
+            errors.append("acquisition receipt action provenance mismatch")
+        if receipt.get("runner_identity_sha256") != runner_identity_sha256:
+            errors.append("acquisition receipt runner identity hash mismatch")
+    if repository is not None:
+        expected_context = {
+            "repository": repository,
+            "event_target_sha": event_target_sha,
+            "release_commit": release_commit,
+            "candidate_base_commit": candidate_base,
+            "candidate_merge_base": candidate_base,
+        }
+        for field, value in expected_context.items():
+            if receipt.get(field) != value:
+                errors.append(f"acquisition receipt {field} mismatch")
     bootstrap_errors, bootstrap = bootstrap_identity()
     errors.extend(bootstrap_errors)
     if receipt.get("bootstrap_identity") != bootstrap:
@@ -1574,6 +1758,12 @@ def validate_formal(
     evidence_dir: Path,
     identity: dict[str, str],
     candidate_base: str,
+    workflow_identity: dict[str, str] | None = None,
+    action_provenance: dict[str, Any] | None = None,
+    runner_identity_sha256: str | None = None,
+    repository: str | None = None,
+    event_target_sha: str | None = None,
+    release_commit: str | None = None,
 ) -> tuple[list[str], dict[str, Any]]:
     errors = validate_clean_worktree()
     errors.extend(validate_lock())
@@ -1597,6 +1787,12 @@ def validate_formal(
         pip_report,
         identity,
         candidate_base,
+        workflow_identity,
+        action_provenance,
+        runner_identity_sha256,
+        repository,
+        event_target_sha,
+        release_commit,
     )
     errors.extend(acquisition_errors)
     bootstrap_errors, bootstrap = bootstrap_identity()
@@ -1673,6 +1869,7 @@ def validate_formal(
     result = {
         "status": "PASS" if not errors else "FAIL",
         "gate": "formal-draft-2020-12",
+        **({"repository": repository, "event_target_sha": event_target_sha, "release_commit": release_commit} if repository is not None else {}),
         "draft": DRAFT_2020_12,
         "candidate_commit": candidate.get("commit", "UNKNOWN"),
         "candidate_tree": candidate.get("tree", "UNKNOWN"),
@@ -1708,6 +1905,8 @@ def validate_formal(
             "raw_evidence_manifest_sha256", ""
         ),
         "job_identity": receipt.get("job_identity", {}),
+        **({"workflow_identity": workflow_identity} if workflow_identity is not None else {}),
+        **({"action_provenance": action_provenance, "runner_identity_sha256": runner_identity_sha256} if action_provenance is not None else {}),
         "pip_report_sha256": sha256_file(pip_report),
         "limitations": [
             "PyPI publish attestations do not prove source-to-wheel provenance.",
@@ -1725,12 +1924,91 @@ def write_json(path: Path, payload: Any) -> None:
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
+def validate_workflow_identity(identity: dict[str, str], job_name: str | None = None) -> list[str]:
+    errors: list[str] = []
+    path = identity.get("path", "")
+    digest = identity.get("sha256", "")
+    workflow_ref = identity.get("workflow_ref", "")
+    contract = FORMAL_WORKFLOW_CONTRACTS.get(path)
+    if contract is None:
+        errors.append("workflow identity path is not an approved formal workflow")
+    elif job_name is not None and job_name != contract["job"]:
+        errors.append("workflow identity job does not match the workflow contract")
+    if not re.fullmatch(r"[0-9a-f]{64}", digest):
+        errors.append("workflow identity sha256 must be 64 lowercase hex characters")
+    if not isinstance(workflow_ref, str) or not workflow_ref.strip():
+        errors.append("workflow identity workflow_ref must be non-empty")
+    else:
+        match = WORKFLOW_REF_RE.fullmatch(workflow_ref)
+        if match is None or match.group("path") != path:
+            errors.append("workflow identity workflow_ref has invalid repository, path, or ref")
+    workflow_path = ROOT / path
+    if not workflow_path.is_file():
+        errors.append("workflow identity file is missing")
+    elif re.fullmatch(r"[0-9a-f]{64}", digest) and sha256_file(workflow_path) != digest:
+        errors.append("workflow identity sha256 does not match the checked-out workflow")
+    return errors
+
+
+def load_action_provenance(
+    path: Path,
+    workflow_identity: dict[str, str],
+    expected_context: dict[str, str] | None = None,
+) -> tuple[list[str], dict[str, str] | None, str | None]:
+    errors: list[str] = []
+    try:
+        payload = load_json(path)
+    except (OSError, ValueError) as exc:
+        return [f"action provenance file could not be read: {exc}"], None, None
+    if not isinstance(payload, dict) or set(payload) != {"github_run_id", "github_run_attempt", "workflow_ref", "job", "repository", "event_target_sha", "release_commit", "candidate_base", "workflow_identity", "actions"}:
+        errors.append("runner identity structure is not closed")
+    actions = payload.get("actions") if isinstance(payload, dict) else None
+    if not isinstance(actions, dict) or set(actions) != set(ACTION_PROVENANCE):
+        errors.append("runner identity actions structure is not closed")
+        actions = None
+    elif actions != ACTION_PROVENANCE:
+        errors.append("runner identity action provenance does not match approved SHAs")
+    file_identity = payload.get("workflow_identity") if isinstance(payload, dict) else None
+    expected_file_identity = {
+        "path": workflow_identity.get("path", ""),
+        "sha256": workflow_identity.get("sha256", ""),
+    }
+    file_identity_matches = (
+        isinstance(file_identity, dict)
+        and file_identity.get("path") == expected_file_identity["path"]
+        and file_identity.get("sha256") == expected_file_identity["sha256"]
+        and set(file_identity).issubset({"path", "sha256", "workflow_ref"})
+        and (
+            "workflow_ref" not in file_identity
+            or file_identity["workflow_ref"] == workflow_identity.get("workflow_ref", "")
+        )
+    )
+    if not file_identity_matches:
+        errors.append("runner identity workflow identity mismatch")
+    if isinstance(payload, dict) and expected_context is not None:
+        if payload.get("repository") != EXPECTED_REPOSITORY:
+            errors.append("runner identity repository is not the canonical repository")
+        if payload.get("event_target_sha") != payload.get("release_commit"):
+            errors.append("runner identity event target and release commit differ")
+        for field, expected in expected_context.items():
+            if payload.get(field) != expected:
+                errors.append(f"runner identity {field} does not match current execution")
+        errors.extend(validate_workflow_identity(workflow_identity, expected_context.get("job")))
+    digest = sha256_file(path) if path.is_file() else None
+    return errors, actions, digest
+
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--check-lock", action="store_true")
     mode.add_argument("--verify-acquisition", action="store_true")
     mode.add_argument("--formal", action="store_true")
+    mode.add_argument(
+        "--audit-existing-formal-result",
+        action="store_true",
+        help="Read-only audit of persisted formal evidence; never acquires or writes.",
+    )
     parser.add_argument("--pip-report", type=Path)
     parser.add_argument("--acquisition-result", type=Path)
     parser.add_argument("--evidence-dir", type=Path)
@@ -1749,18 +2027,151 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=os.environ.get("GITHUB_WORKFLOW_REF", ""),
     )
     parser.add_argument("--job-name", default=os.environ.get("GITHUB_JOB", ""))
+    parser.add_argument("--workflow-sha256")
+    parser.add_argument("--workflow-path")
+    parser.add_argument("--action-provenance-file", type=Path)
+    parser.add_argument("--event-target-sha")
+    parser.add_argument("--repository")
     return parser.parse_args(argv)
+
+
+def validate_existing_formal_evidence(
+    *, result_path: Path, acquisition_result_path: Path, evidence_dir: Path,
+    pip_report: Path, identity: dict[str, str], candidate_base: str,
+    workflow_identity: dict[str, str], action_provenance_file: Path,
+    repository: str, event_target_sha: str,
+    expected_context: dict[str, str],
+) -> list[str]:
+    """Perform the complete persisted-evidence audit without side effects."""
+    errors: list[str] = []
+    paths = (result_path, acquisition_result_path, pip_report)
+    for path in paths:
+        if not os.path.lexists(path) or not path.is_file():
+            errors.append(f"audit input is missing or not a regular file: {path}")
+    if not os.path.lexists(evidence_dir) or not evidence_dir.is_dir():
+        errors.append(f"audit evidence directory is missing or not a directory: {evidence_dir}")
+    if errors:
+        return errors
+    try:
+        result = load_json(result_path)
+        receipt = load_json(acquisition_result_path)
+        provenance = load_json(action_provenance_file)
+    except (OSError, ValueError) as exc:
+        return [f"formal evidence audit could not read inputs: {exc}"]
+    action_errors, actions, runner_sha = load_action_provenance(
+        action_provenance_file, workflow_identity, expected_context,
+    )
+    errors.extend(action_errors)
+    if actions is None:
+        return errors
+    validator_errors, expected_result = validate_formal(
+        pip_report, acquisition_result_path, evidence_dir, identity,
+        candidate_base, workflow_identity, actions, runner_sha,
+        repository, event_target_sha, event_target_sha,
+    )
+    errors.extend(validator_errors)
+    if result != expected_result:
+        errors.append("formal result does not match the complete validator-derived payload")
+    if receipt.get("action_provenance") != provenance.get("actions"):
+        errors.append("acquisition receipt action provenance mismatch")
+    return errors
+
+
+def audit_existing_formal_evidence(args: argparse.Namespace) -> list[str]:
+    """Validate persisted receipt/result identity without any producer calls."""
+    required = (args.result, args.acquisition_result, args.evidence_dir, args.pip_report,
+                args.action_provenance_file)
+    if any(value is None for value in required):
+        return ["--audit-existing-formal-result requires result, receipt, evidence-dir, pip-report, and action-provenance-file"]
+    identity = {"run_id": args.run_id, "run_attempt": args.run_attempt,
+                "workflow_ref": args.workflow_ref, "job_name": args.job_name}
+    workflow_identity = {"path": args.workflow_path, "sha256": args.workflow_sha256,
+                         "workflow_ref": args.workflow_ref}
+    expected_context = {
+        "github_run_id": args.run_id, "github_run_attempt": args.run_attempt,
+        "workflow_ref": args.workflow_ref, "job": args.job_name,
+        "repository": args.repository or "", "event_target_sha": args.event_target_sha or "",
+        "release_commit": args.event_target_sha or "", "candidate_base": args.candidate_base or "",
+    }
+    return validate_existing_formal_evidence(
+        result_path=args.result, acquisition_result_path=args.acquisition_result,
+        evidence_dir=args.evidence_dir, pip_report=args.pip_report,
+        identity=identity, candidate_base=args.candidate_base,
+        workflow_identity=workflow_identity,
+        action_provenance_file=args.action_provenance_file,
+        repository=args.repository or "", event_target_sha=args.event_target_sha or "",
+        expected_context=expected_context,
+    )
 
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
+    if args.audit_existing_formal_result:
+        errors = audit_existing_formal_evidence(args)
+        for error in errors:
+            print(f"ERROR: {error}")
+        if errors:
+            return 1
+        print("formal evidence audit passed (read-only)")
+        return 0
     identity = {
         "run_id": args.run_id,
         "run_attempt": args.run_attempt,
         "workflow_ref": args.workflow_ref,
         "job_name": args.job_name,
     }
+    workflow_identity = None
+    if args.workflow_sha256 is not None or args.workflow_path is not None:
+        workflow_identity = {
+            "path": args.workflow_path or "",
+            "sha256": args.workflow_sha256 or "",
+            "workflow_ref": args.workflow_ref,
+        }
+    action_provenance = None
+    runner_identity_sha256 = None
+    expected_context = None
+    if args.action_provenance_file is not None and not args.verify_acquisition:
+        if workflow_identity is None:
+            workflow_identity = {"path": "", "sha256": "", "workflow_ref": args.workflow_ref}
+        head = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        expected_context = {
+            "github_run_id": args.run_id,
+            "github_run_attempt": args.run_attempt,
+            "workflow_ref": args.workflow_ref,
+            "job": args.job_name,
+            "repository": args.repository or "",
+            "event_target_sha": args.event_target_sha or "",
+            "release_commit": head.stdout.strip() if head.returncode == 0 else "",
+            "candidate_base": args.candidate_base or "",
+        }
+        action_errors, action_provenance, runner_identity_sha256 = load_action_provenance(
+            args.action_provenance_file.resolve(), workflow_identity, expected_context
+        )
+    else:
+        action_errors = []
+    if args.verify_acquisition and args.action_provenance_file is not None:
+        head = subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True,
+            text=True, check=False,
+        )
+        expected_context = {
+            "github_run_id": args.run_id,
+            "github_run_attempt": args.run_attempt,
+            "workflow_ref": args.workflow_ref,
+            "job": args.job_name,
+            "repository": args.repository or "",
+            "event_target_sha": args.event_target_sha or "",
+            "release_commit": head.stdout.strip() if head.returncode == 0 else "",
+            "candidate_base": args.candidate_base or "",
+        }
     try:
+        preflight_failed = False
         if args.check_lock:
             errors = validate_lock()
             inventory_errors, schemas = validate_schema_inventory()
@@ -1785,17 +2196,56 @@ def main(argv: list[str] | None = None) -> int:
                 missing.append("--result")
             if args.candidate_base is None:
                 missing.append("--candidate-base")
+            if args.action_provenance_file is None:
+                missing.append("--action-provenance-file")
+            if args.event_target_sha is None:
+                missing.append("--event-target-sha")
+            if args.repository is None:
+                missing.append("--repository")
+            if args.workflow_sha256 is None:
+                missing.append("--workflow-sha256")
+            if args.workflow_path is None:
+                missing.append("--workflow-path")
             if missing:
                 errors = [f"--verify-acquisition requires {' and '.join(missing)}"]
                 payload = {"status": "FAIL", "gate": "formal-acquisition"}
+                preflight_failed = True
             else:
-                errors, payload = acquire_evidence(
-                    args.pip_report.resolve(),
-                    args.evidence_dir.resolve(),
-                    args.result.resolve(),
-                    identity,
-                    args.candidate_base,
+                preflight_errors, verified_context = preflight_acquisition_context(
+                    release_commit=expected_context["release_commit"] if expected_context else "",
+                    candidate_base=args.candidate_base or "",
+                    event_target_sha=args.event_target_sha or "",
+                    repository=args.repository or "",
+                    workflow_sha256=args.workflow_sha256 or "",
+                    workflow_path=args.workflow_path or "",
+                    action_provenance_file=args.action_provenance_file,
+                    runner_identity_file=args.action_provenance_file,
+                    worktree=ROOT,
+                    evidence_dir=args.evidence_dir,
+                    workflow_ref=args.workflow_ref,
+                    run_id=args.run_id,
+                    run_attempt=args.run_attempt,
+                    job_name=args.job_name,
                 )
+                if preflight_errors:
+                    errors = preflight_errors
+                    payload = {"status": "FAIL", "gate": "formal-acquisition"}
+                    preflight_failed = True
+                else:
+                    errors, payload = acquire_evidence(
+                        args.pip_report.resolve(),
+                        args.evidence_dir.resolve(),
+                        args.result.resolve(),
+                        identity,
+                        args.candidate_base,
+                        verified_context["workflow_identity"],
+                        verified_context["action_provenance"],
+                        verified_context["runner_identity_sha256"],
+                        args.repository,
+                        args.event_target_sha,
+                        args.event_target_sha,
+                        verified_context=verified_context,
+                    )
         else:
             missing = []
             if args.pip_report is None:
@@ -1806,6 +2256,16 @@ def main(argv: list[str] | None = None) -> int:
                 missing.append("--evidence-dir")
             if args.candidate_base is None:
                 missing.append("--candidate-base")
+            if args.action_provenance_file is None:
+                missing.append("--action-provenance-file")
+            if args.event_target_sha is None:
+                missing.append("--event-target-sha")
+            if args.repository is None:
+                missing.append("--repository")
+            if args.workflow_sha256 is None:
+                missing.append("--workflow-sha256")
+            if args.workflow_path is None:
+                missing.append("--workflow-path")
             if missing:
                 errors = [f"--formal requires {' and '.join(missing)}"]
                 payload = {"status": "FAIL", "gate": "formal-draft-2020-12"}
@@ -1816,11 +2276,18 @@ def main(argv: list[str] | None = None) -> int:
                     args.evidence_dir.resolve(),
                     identity,
                     args.candidate_base,
+                    workflow_identity,
+                    action_provenance,
+                    runner_identity_sha256,
+                    args.repository,
+                    args.event_target_sha,
+                    expected_context.get("release_commit") if expected_context else None,
                 )
+            errors.extend(action_errors)
     except Exception as exc:
         errors = [f"validator failed closed: {exc}"]
         payload = {"status": "FAIL"}
-    if args.result is not None:
+    if args.result is not None and not (args.verify_acquisition and preflight_failed):
         write_json(args.result.resolve(), payload)
     if errors:
         for error in errors:

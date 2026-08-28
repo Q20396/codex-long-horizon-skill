@@ -1099,6 +1099,125 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.assertEqual(2, workflow.count("scripts/full_skill_validation.py --print-release-state"))
         self.assertNotIn("--pre-tag", workflow)
 
+    def test_manual_formal_release_evidence_workflow_is_fixed_and_fail_closed(self) -> None:
+        workflow = (ROOT / ".github" / "workflows" / "formal-release-gate.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertEqual([], FULL_VALIDATION.formal_release_evidence_workflow_errors(workflow))
+
+    def test_manual_formal_runner_identity_persistence_is_fail_closed(self) -> None:
+        workflow = (ROOT / ".github" / "workflows" / "formal-release-gate.yml").read_text(
+            encoding="utf-8"
+        )
+        writer = "          printf 'RUNNER_IDENTITY=%s\\n' \"$RUNNER_IDENTITY\" >> \"$GITHUB_ENV\"\n"
+        self.assertEqual(workflow.count(writer), 1)
+        self.assertLess(workflow.index('test -s "$RUNNER_IDENTITY"'), workflow.index(writer))
+        mutations = (
+            (writer, ""),
+            (writer, writer + writer),
+            (writer, "          export RUNNER_IDENTITY=\"$RUNNER_IDENTITY\"\n"),
+            ('--action-provenance-file "$RUNNER_IDENTITY"', '--action-provenance-file "$OTHER_IDENTITY"'),
+            ('--formal-schema-action-provenance-file "$RUNNER_IDENTITY"', '--formal-schema-action-provenance-file "$OTHER_IDENTITY"'),
+            (writer, "          printf 'RUNNER_IDENTITY=%s\\n' \"$RUNNER_IDENTITY\" >> \"$GITHUB_ENV\"\n          RUNNER_IDENTITY=\"$RUNNER_TEMP/other.json\"\n"),
+            ('test -s "$RUNNER_IDENTITY"', 'test -f "$RUNNER_IDENTITY"'),
+            (writer, "          printf 'OTHER_IDENTITY=%s\\n' \"$RUNNER_IDENTITY\" >> \"$GITHUB_ENV\"\n"),
+            (writer, "          printf 'RUNNER_IDENTITY=%s\\n' \"${RUNNER_IDENTITY:-fallback}\" >> \"$GITHUB_ENV\"\n"),
+        )
+        for old, new in mutations:
+            with self.subTest(old=old, new=new):
+                broken = workflow.replace(old, new, 1)
+                self.assertTrue(FULL_VALIDATION.formal_release_evidence_workflow_errors(broken))
+
+    def test_both_workflows_are_real_yaml_and_broken_indent_fails(self) -> None:
+        paths = [
+            ROOT / ".github" / "workflows" / "check-skill.yml",
+            ROOT / ".github" / "workflows" / "formal-release-gate.yml",
+        ]
+        command = ["ruby", "-e", 'require "yaml"; ARGV.each { |path| YAML.load_file(path) }']
+        valid = subprocess.run(command + [str(path) for path in paths], capture_output=True, text=True)
+        self.assertEqual(0, valid.returncode, valid.stderr)
+        with tempfile.TemporaryDirectory(prefix="workflow-yaml-") as temp:
+            broken = Path(temp) / "broken.yml"
+            broken.write_text(paths[1].read_text(encoding="utf-8").replace("  RELEASE_TAG:", "    RELEASE_TAG:", 1), encoding="utf-8")
+            invalid = subprocess.run(command + [str(broken)], capture_output=True, text=True)
+            self.assertNotEqual(0, invalid.returncode)
+
+    def test_check_skill_formal_evidence_chain_is_fixed_and_fail_closed(self) -> None:
+        workflow = ROOT / ".github" / "workflows" / "check-skill.yml"
+        text = workflow.read_text(encoding="utf-8")
+        self.assertEqual([], FULL_VALIDATION.check_skill_formal_evidence_workflow_errors(text))
+        mutations = (
+            ("Record formal runner identity", "Remove formal runner identity"),
+            ('--action-provenance-file "$RUNNER_TEMP/formal-schema-runner-identity.json"', "--action-provenance-file \"$RUNNER_TEMP/other.json\""),
+            ('--workflow-sha256 "$WORKFLOW_SHA256"', '--workflow-sha256 "hardcoded"'),
+            ('--workflow-path ".github/workflows/check-skill.yml"', '--workflow-path ".github/workflows/other.yml"'),
+            ('--formal-schema-workflow-sha256 "$WORKFLOW_SHA256"', '--formal-schema-workflow-sha256 ""'),
+            ('--formal-schema-workflow-path ".github/workflows/check-skill.yml"', '--formal-schema-workflow-path ""'),
+            ('"candidate_base": os.environ["FORMAL_CANDIDATE_BASE"]', '"candidate_base": os.environ["GITHUB_SHA"]'),
+            ('actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02', 'actions/upload-artifact@v4'),
+            ("if: always()", "if: success()"),
+            ("retention-days: 90", "retention-days: 1"),
+            ("${{ runner.temp }}/formal-schema-result.json", "${{ runner.temp }}/missing-result.json"),
+            ("--verify-acquisition", "--verify-acquisition\n            --verify-acquisition"),
+            ("--allow-existing-tag", "--pre-tag"),
+            ('"actions": {', '"fake-actions": {'),
+            ('json.dump(payload, handle, indent=2, sort_keys=True)', 'json.dump(other, handle, indent=2, sort_keys=True)'),
+        )
+        prefix, formal = text.split("  formal-schema-gate:", 1)
+        for old, new in mutations:
+            with self.subTest(old=old):
+                broken = prefix + "  formal-schema-gate:" + formal.replace(old, new, 1)
+                self.assertTrue(FULL_VALIDATION.check_skill_formal_evidence_workflow_errors(broken))
+
+    def test_manual_formal_evidence_workflow_rejects_unsafe_mutations(self) -> None:
+        workflow = (ROOT / ".github" / "workflows" / "formal-release-gate.yml").read_text(
+            encoding="utf-8"
+        )
+        mutations = (
+            ("  workflow_dispatch:", "  push:\n    branches: [main]"),
+            ("ref: ${{ github.sha }}", "ref: ${{ inputs.commit }}"),
+            ('test "$GITHUB_REF" = "refs/heads/main"', 'test "$GITHUB_REF" = "refs/heads/release"'),
+            ('release_commit="$GITHUB_SHA"', 'release_commit="$GITHUB_REF"'),
+            ('candidate_base="$2"', 'candidate_base="1888691c462b51dd5a561416a0db9eda1305a517"'),
+            ('--candidate-base "$CANDIDATE_BASE"', '--candidate-base "$GITHUB_SHA"'),
+            ('--formal-schema-candidate-base "$CANDIDATE_BASE"', '--formal-schema-candidate-base "$(git rev-parse HEAD^)"'),
+            ('"candidate_base": os.environ["CANDIDATE_BASE"]', '"candidate_base": os.environ["GITHUB_SHA"]'),
+            ('          EVIDENCE_DIR=', '          CANDIDATE_BASE=0000000000000000000000000000000000000000\n          EVIDENCE_DIR='),
+            ('      - name: Verify immutable runner', '      - name: Override base\n        run: printf "CANDIDATE_BASE=0000000000000000000000000000000000000000\\n" >> "$GITHUB_ENV"\n\n      - name: Verify immutable runner'),
+            ('--candidate-base "$CANDIDATE_BASE"', '--candidate-base "${CANDIDATE_BASE:-fallback}"'),
+            ('--candidate-base "$CANDIDATE_BASE"', '--candidate-base "$CANDIDATE_BASE"\n            --candidate-base "$CANDIDATE_BASE"'),
+            ('--formal-schema-candidate-base "$CANDIDATE_BASE"', '--formal-schema-candidate-base "$CANDIDATE_BASE"\n            --formal-schema-candidate-base "$CANDIDATE_BASE"'),
+            ('test "$#" -eq 2', 'test "$#" -eq 1'),
+            ('test "$(git merge-base "$candidate_base" "$release_commit")" = "$candidate_base"', 'true'),
+            ("--pre-tag", "--allow-existing-tag"),
+            ("--verify-acquisition", "--verify-acquisition\n          --verify-acquisition"),
+            ("retention-days: 90", "retention-days: 1"),
+            ("  contents: read", "  contents: write"),
+            ("actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02", "actions/upload-artifact@v4"),
+            ("if: always()", "if: success()"),
+            ("if-no-files-found: error", "if-no-files-found: warn"),
+            ("runner-identity.json", "runner-identity.txt"),
+            ("--workflow-sha256 \"$WORKFLOW_SHA256\"", "--workflow-sha256 \"$OTHER_SHA\""),
+            ("uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1", "uses: actions/checkout@v4"),
+            ("permissions:\n  contents: read", "permissions:\n  contents: read\n\n    permissions:\n      contents: read"),
+            ("workflow_dispatch:", "workflow_dispatch:\n    inputs:\n      commit: {}"),
+            ('"actions": {', '"disabled-actions": {'),
+            ('"checkout": "3d3c42e5aac5ba805825da76410c181273ba90b1",', '"disabled-checkout": "3d3c42e5aac5ba805825da76410c181273ba90b1",'),
+            ('actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1', 'actions/checkout@1111111111111111111111111111111111111111'),
+            ('"setup-python": "5fda3b95a4ea91299a34e894583c3862153e4b97",\n                  "upload-artifact": "ea165f8d65b6e75b540449e92b4886f43607fa02",', '"setup-python": "ea165f8d65b6e75b540449e92b4886f43607fa02",\n                  "upload-artifact": "5fda3b95a4ea91299a34e894583c3862153e4b97",'),
+            ('"setup-python":', '"python-setup":'),
+            ('"checkout": "3d3c42e5aac5ba805825da76410c181273ba90b1"', '# "checkout": "3d3c42e5aac5ba805825da76410c181273ba90b1"'),
+            ('"upload-artifact": "ea165f8d65b6e75b540449e92b4886f43607fa02",', '"upload-artifact": "ea165f8d65b6e75b540449e92b4886f43607fa02",\n                  "unknown": "2222222222222222222222222222222222222222",'),
+            ('"actions": {', '"actions": {\n                  "extra": "2222222222222222222222222222222222222222",'),
+            ('payload = {', 'other = {'),
+            ('json.dump(payload, handle, indent=2, sort_keys=True)', 'json.dump(other, handle, indent=2, sort_keys=True)'),
+            ('with open(path, "w", encoding="utf-8")', 'with open("/tmp/other.json", "w", encoding="utf-8")'),
+        )
+        for old, new in mutations:
+            with self.subTest(old=old):
+                broken = workflow.replace(old, new, 1)
+                self.assertTrue(FULL_VALIDATION.formal_release_evidence_workflow_errors(broken))
+
     def test_workflow_candidate_gate_cannot_be_changed_to_final(self) -> None:
         workflow = (ROOT / ".github" / "workflows" / "check-skill.yml").read_text(
             encoding="utf-8"
@@ -1679,6 +1798,12 @@ class ReleaseReadinessTests(unittest.TestCase):
             result,
             "--formal-schema-pip-report",
         )
+
+    def test_pre_tag_contract_binds_runner_identity_hash(self) -> None:
+        source = (ROOT / "scripts/check_release_readiness.py").read_text(encoding="utf-8")
+        self.assertIn('"runner_identity_sha256": sha256_file(', source)
+        self.assertIn("args.formal_schema_action_provenance_file.resolve()", source)
+        self.assertIn('if result.get(field) != value:', source)
 
     def test_pre_tag_requires_job_local_evidence_directory(self) -> None:
         repo = self.copy_repo("pre-tag-formal-evidence-dir")
