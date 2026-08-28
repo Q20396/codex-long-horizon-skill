@@ -181,38 +181,55 @@ class FormalSchemaStaticTests(unittest.TestCase):
                 "--event-target-sha", head, "--repository", "Q20396/codex-long-horizon-skill"]
         return argv, evidence, receipt
 
+    def _write_real_ci_fixture(self, temp_root: Path) -> tuple[Path, str, str, Path, Path, Path]:
+        """Build an isolated clean repository and keep runner inputs outside it."""
+        root = temp_root / "repo"
+        inputs = temp_root / "inputs"
+        root.mkdir()
+        base, _parent, _head = self._synthetic_topology(root)
+        workflow_path = ".github/workflows/check-skill.yml"
+        workflow = root / workflow_path
+        workflow.parent.mkdir(parents=True)
+        workflow.write_text((ROOT / workflow_path).read_text(encoding="utf-8"), encoding="utf-8")
+        subprocess.run(["git", "add", workflow_path], cwd=root, check=True)
+        subprocess.run(["git", "commit", "-qm", "workflow"], cwd=root, check=True)
+        head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
+        inputs.mkdir()
+        evidence = inputs / "evidence"
+        report = inputs / "pip-report.json"
+        report.write_text("{}", encoding="utf-8")
+        workflow_ref = f"Q20396/codex-long-horizon-skill/{workflow_path}@refs/heads/main"
+        identity = inputs / "runner-identity.json"
+        identity.write_text(json.dumps({
+            "github_run_id": "12345", "github_run_attempt": "1",
+            "workflow_ref": workflow_ref, "job": "formal-schema-gate",
+            "repository": "Q20396/codex-long-horizon-skill",
+            "event_target_sha": head, "release_commit": head, "candidate_base": base,
+            "workflow_identity": {"path": workflow_path, "sha256": VALIDATOR.sha256_file(workflow), "workflow_ref": workflow_ref},
+            "actions": VALIDATOR.ACTION_PROVENANCE,
+        }), encoding="utf-8")
+        return identity, base, head, evidence, report, workflow
+
     def test_synthetic_ci_ancestor_topology_allows_multi_commit_head(self) -> None:
         with tempfile.TemporaryDirectory(prefix="formal-topology-ci-") as temp:
             root = Path(temp)
-            base, _parent, head = self._synthetic_topology(root)
+            provenance, base, head, evidence, report, workflow = self._write_real_ci_fixture(root)
             workflow_path = ".github/workflows/check-skill.yml"
-            workflow = root / workflow_path
-            workflow.parent.mkdir(parents=True)
-            workflow.write_text((ROOT / workflow_path).read_text(encoding="utf-8"), encoding="utf-8")
-            subprocess.run(["git", "add", workflow_path], cwd=root, check=True)
-            subprocess.run(["git", "commit", "-qm", "workflow"], cwd=root, check=True)
-            head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
-            provenance = root / "identity.json"
-            workflow_ref = f"Q20396/codex-long-horizon-skill/{workflow_path}@refs/heads/main"
-            provenance.write_text(json.dumps({
-                "github_run_id": "12345", "github_run_attempt": "1", "workflow_ref": workflow_ref,
-                "job": "formal-schema-gate", "repository": "Q20396/codex-long-horizon-skill",
-                "event_target_sha": head, "release_commit": head, "candidate_base": base,
-                "workflow_identity": {"path": workflow_path, "sha256": VALIDATOR.sha256_file(workflow), "workflow_ref": workflow_ref},
-                "actions": VALIDATOR.ACTION_PROVENANCE,
-            }), encoding="utf-8")
-            argv, evidence, receipt = self._run_synthetic_verify(root, workflow_path, "formal-schema-gate", base, head, provenance)
-            real_run = VALIDATOR.subprocess.run
-            def clean_status(*args, **kwargs):
-                command = args[0] if args else kwargs.get("args", [])
-                if command[:3] == ["git", "status", "--porcelain=v1"]:
-                    return subprocess.CompletedProcess(command, 0, "", "")
-                return real_run(*args, **kwargs)
-            with mock.patch.object(VALIDATOR, "ROOT", root), mock.patch.object(VALIDATOR.subprocess, "run", side_effect=clean_status), mock.patch.object(VALIDATOR, "acquire_evidence", return_value=([], {"status": "PASS"})) as acquire, mock.patch.object(VALIDATOR, "urlopen") as network:
+            receipt = evidence / "acquisition-receipt.json"
+            argv = ["--verify-acquisition", "--pip-report", str(report), "--evidence-dir", str(evidence),
+                    "--result", str(receipt), "--candidate-base", base, "--run-id", "12345", "--run-attempt", "1",
+                    "--workflow-ref", f"Q20396/codex-long-horizon-skill/{workflow_path}@refs/heads/main",
+                    "--job-name", "formal-schema-gate", "--workflow-sha256", VALIDATOR.sha256_file(workflow),
+                    "--workflow-path", workflow_path, "--action-provenance-file", str(provenance),
+                    "--event-target-sha", head, "--repository", "Q20396/codex-long-horizon-skill"]
+            with mock.patch.object(VALIDATOR, "ROOT", workflow.parent.parent.parent), mock.patch.object(VALIDATOR, "acquire_evidence", return_value=([], {"status": "PASS"})) as acquire, mock.patch.object(VALIDATOR, "urlopen") as network:
                 self.assertEqual(0, VALIDATOR.main(argv))
             acquire.assert_called_once()
             network.assert_not_called()
-            self.assertEqual("ci_ancestor_base", acquire.call_args.kwargs["verified_context"]["topology_mode"])
+            context = acquire.call_args.kwargs["verified_context"]
+            self.assertEqual("ci_ancestor_base", context["topology_mode"])
+            self.assertEqual(base, context["candidate_base_commit"])
+            self.assertEqual(base, context["candidate_merge_base"])
 
     def test_synthetic_release_topology_requires_direct_parent(self) -> None:
         with tempfile.TemporaryDirectory(prefix="formal-topology-release-") as temp:
@@ -243,23 +260,32 @@ class FormalSchemaStaticTests(unittest.TestCase):
     def test_verify_acquisition_hits_merge_base_mismatch_without_other_binding_errors(self) -> None:
         with tempfile.TemporaryDirectory(prefix="formal-merge-base-mismatch-") as temp:
             root = Path(temp)
-            provenance, head, parent = self._write_main_provenance(root)
-            argv, evidence, receipt, result = self._run_verify_acquisition(root, provenance, head, parent)
+            provenance, parent, head, evidence, report, workflow = self._write_real_ci_fixture(root)
+            result = root / "inputs" / "formal-result.json"
+            receipt = evidence / "acquisition-receipt.json"
+            argv = ["--verify-acquisition", "--pip-report", str(report), "--evidence-dir", str(evidence),
+                    "--result", str(receipt), "--candidate-base", parent, "--run-id", "12345", "--run-attempt", "1",
+                    "--workflow-ref", "Q20396/codex-long-horizon-skill/.github/workflows/check-skill.yml@refs/heads/main",
+                    "--job-name", "formal-schema-gate", "--workflow-sha256", VALIDATOR.sha256_file(workflow),
+                    "--workflow-path", ".github/workflows/check-skill.yml", "--action-provenance-file", str(provenance),
+                    "--event-target-sha", head, "--repository", "Q20396/codex-long-horizon-skill"]
             real_run = VALIDATOR.subprocess.run
+            merge_base_calls = []
 
             def merge_base_mismatch(*args, **kwargs):
                 command = args[0] if args else kwargs.get("args", [])
                 if command[:2] == ["git", "merge-base"]:
+                    merge_base_calls.append(command)
                     return subprocess.CompletedProcess(command, 0, "f" * 40, "")
-                if command[:3] == ["git", "status", "--porcelain=v1"]:
-                    return subprocess.CompletedProcess(command, 0, "", "")
                 return real_run(*args, **kwargs)
 
-            with mock.patch.object(VALIDATOR.subprocess, "run", side_effect=merge_base_mismatch), mock.patch.object(VALIDATOR, "acquire_evidence") as acquire, mock.patch.object(VALIDATOR, "urlopen") as network:
+            with mock.patch.object(VALIDATOR, "ROOT", workflow.parent.parent.parent), mock.patch.object(VALIDATOR.subprocess, "run", side_effect=merge_base_mismatch), mock.patch.object(VALIDATOR, "acquire_evidence") as acquire, mock.patch.object(VALIDATOR, "urlopen") as network:
                 output = io.StringIO()
                 with contextlib.redirect_stdout(output), contextlib.redirect_stderr(output):
                     self.assertNotEqual(0, VALIDATOR.main(argv))
             acquire.assert_not_called(); network.assert_not_called()
+            self.assertEqual(1, len(merge_base_calls))
+            self.assertEqual(["git", "merge-base", parent, head], merge_base_calls[0])
             text = output.getvalue()
             self.assertIn("merge-base", text)
             self.assertNotIn("exactly one parent", text)
@@ -267,6 +293,26 @@ class FormalSchemaStaticTests(unittest.TestCase):
             self.assertNotIn("must be a full lowercase commit SHA", text)
             self.assertNotIn("HEAD does not match", text)
             self.assertFalse(evidence.exists()); self.assertFalse(receipt.exists()); self.assertFalse(result.exists())
+
+    def test_verify_acquisition_rejects_real_dirty_worktree_before_acquisition(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="formal-dirty-topology-") as temp:
+            root = Path(temp)
+            provenance, base, head, evidence, report, workflow = self._write_real_ci_fixture(root)
+            (root / "repo" / "dirty-marker").write_text("uncommitted\n", encoding="utf-8")
+            receipt = evidence / "acquisition-receipt.json"
+            argv = ["--verify-acquisition", "--pip-report", str(report), "--evidence-dir", str(evidence),
+                    "--result", str(receipt), "--candidate-base", base, "--run-id", "12345", "--run-attempt", "1",
+                    "--workflow-ref", "Q20396/codex-long-horizon-skill/.github/workflows/check-skill.yml@refs/heads/main",
+                    "--job-name", "formal-schema-gate", "--workflow-sha256", VALIDATOR.sha256_file(workflow),
+                    "--workflow-path", ".github/workflows/check-skill.yml", "--action-provenance-file", str(provenance),
+                    "--event-target-sha", head, "--repository", "Q20396/codex-long-horizon-skill"]
+            with mock.patch.object(VALIDATOR, "ROOT", workflow.parent.parent.parent), mock.patch.object(VALIDATOR, "acquire_evidence") as acquire, mock.patch.object(VALIDATOR, "urlopen") as network:
+                output = io.StringIO()
+                with contextlib.redirect_stdout(output), contextlib.redirect_stderr(output):
+                    self.assertNotEqual(0, VALIDATOR.main(argv))
+            acquire.assert_not_called(); network.assert_not_called()
+            self.assertIn("not clean", output.getvalue())
+            self.assertFalse(evidence.exists()); self.assertFalse(receipt.exists())
 
     def test_real_clean_synthetic_ci_ancestor_worktree_control(self) -> None:
         with tempfile.TemporaryDirectory(prefix="formal-clean-topology-") as temp:
@@ -418,24 +464,25 @@ class FormalSchemaStaticTests(unittest.TestCase):
     def test_verify_acquisition_preflight_success_passes_verified_context(self) -> None:
         with tempfile.TemporaryDirectory(prefix="formal-preflight-success-") as temp:
             root = Path(temp)
-            provenance, head, parent = self._write_main_provenance(root)
-            argv, evidence, receipt, result = self._run_verify_acquisition(root, provenance, head, parent)
-            real_run = subprocess.run
-            def clean_git_run(*args, **kwargs):
-                command = args[0] if args else kwargs.get("args", [])
-                if command[:3] == ["git", "status", "--porcelain=v1"]:
-                    return subprocess.CompletedProcess(command, 0, "", "")
-                return real_run(*args, **kwargs)
-            with mock.patch.object(VALIDATOR.subprocess, "run", side_effect=clean_git_run), mock.patch.object(VALIDATOR, "acquire_evidence", return_value=([], {"status": "PASS"})) as acquire, mock.patch.object(VALIDATOR, "urlopen") as network:
+            provenance, base, head, evidence, report, workflow = self._write_real_ci_fixture(root)
+            workflow_path = ".github/workflows/check-skill.yml"
+            receipt = evidence / "acquisition-receipt.json"
+            argv = ["--verify-acquisition", "--pip-report", str(report), "--evidence-dir", str(evidence),
+                    "--result", str(receipt), "--candidate-base", base, "--run-id", "12345", "--run-attempt", "1",
+                    "--workflow-ref", f"Q20396/codex-long-horizon-skill/{workflow_path}@refs/heads/main",
+                    "--job-name", "formal-schema-gate", "--workflow-sha256", VALIDATOR.sha256_file(workflow),
+                    "--workflow-path", workflow_path, "--action-provenance-file", str(provenance),
+                    "--event-target-sha", head, "--repository", "Q20396/codex-long-horizon-skill"]
+            with mock.patch.object(VALIDATOR, "ROOT", workflow.parent.parent.parent), mock.patch.object(VALIDATOR, "acquire_evidence", return_value=([], {"status": "PASS"})) as acquire, mock.patch.object(VALIDATOR, "urlopen") as network:
                 self.assertEqual(0, VALIDATOR.main(argv))
             acquire.assert_called_once()
             network.assert_not_called()
             context = acquire.call_args.kwargs["verified_context"]
-            self.assertEqual(parent, context["candidate_base"])
-            self.assertEqual(head, context["release_commit"])
-            self.assertEqual(head, context["event_target_sha"])
+            self.assertEqual(base, context["candidate_base_commit"])
+            self.assertEqual(base, context["candidate_merge_base"])
+            self.assertEqual("ci_ancestor_base", context["topology_mode"])
+            self.assertTrue(evidence.exists())
             self.assertTrue(receipt.exists())
-            self.assertFalse(result.exists())
 
     def test_existing_evidence_directory_is_rejected_before_acquisition(self) -> None:
         with tempfile.TemporaryDirectory(prefix="formal-preflight-existing-") as temp:
