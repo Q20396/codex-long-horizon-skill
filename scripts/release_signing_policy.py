@@ -33,7 +33,8 @@ def _validate_registry(registry: dict[str, Any]) -> None:
         raise ValueError("registry must contain exactly one release-tag key")
     key = keys[0]
     required_key = {
-        "fingerprint", "algorithm", "public_key", "purpose", "trust_domain",
+        "fingerprint", "fingerprint_type", "algorithm", "public_key_path", "purpose", "trust_domain",
+        "verification_format",
         "status", "valid_from", "expires", "may_sign_commits",
         "may_sign_release_tags",
     }
@@ -51,12 +52,15 @@ def _validate_registry(registry: dict[str, Any]) -> None:
         raise ValueError("release-tag signer cannot sign commits")
     if not _require_bool(key["may_sign_release_tags"], "may_sign_release_tags"):
         raise ValueError("release-tag signer must sign release tags")
-    if key["status"] != "active" or not isinstance(key["public_key"], str):
+    if key["fingerprint_type"] != "pgp" or key["verification_format"] != "openpgp":
+        raise ValueError("release-tag key verification format is invalid")
+    if key["status"] != "active" or not isinstance(key["public_key_path"], str):
         raise ValueError("release-tag key metadata is invalid")
 
     policy = registry.get("commit_signer_policy")
     required_policy = {
-        "fingerprint", "purpose", "trust_domain", "source",
+        "fingerprint", "fingerprint_type", "purpose", "trust_domain", "source", "source_subject",
+        "public_key_path", "verification_format",
         "independent_verification", "may_sign_commits", "may_sign_release_tags",
     }
     if not isinstance(policy, dict) or set(policy) != required_policy:
@@ -71,6 +75,23 @@ def _validate_registry(registry: dict[str, Any]) -> None:
         raise ValueError("commit trust domain mismatch")
     if policy["source"] != "GitHub account SSH signing key":
         raise ValueError("commit signer source mismatch")
+    if policy["fingerprint_type"] != "ssh" or policy["verification_format"] != "ssh":
+        raise ValueError("commit signer verification format is invalid")
+    if policy["source_subject"] != "107850521+Q20396@users.noreply.github.com":
+        raise ValueError("commit signer subject mismatch")
+    key_path = Path(__file__).resolve().parents[1] / "docs" / "maintainers" / policy["public_key_path"]
+    if not key_path.is_file() or not key_path.read_text(encoding="utf-8").startswith("ssh-"):
+        raise ValueError("commit signer public key is missing or malformed")
+    try:
+        actual = subprocess.check_output(
+            ["ssh-keygen", "-lf", str(key_path), "-E", "sha256"],
+            text=True,
+            stderr=subprocess.STDOUT,
+        )
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise ValueError("commit signer public key fingerprint unavailable") from exc
+    if not re.search(re.escape(COMMIT_FINGERPRINT), actual):
+        raise ValueError("commit signer public key fingerprint mismatch")
     if policy["independent_verification"] != "required":
         raise ValueError("independent verification must be required")
     if not _require_bool(policy["may_sign_commits"], "may_sign_commits"):
@@ -88,6 +109,24 @@ def load_signing_policy(path: Path = REGISTRY_PATH) -> dict[str, Any]:
         raise ValueError("signing policy must be an object")
     _validate_registry(registry)
     return registry
+
+
+def build_verification_material(artifact: str) -> dict[str, Any]:
+    policy = load_signing_policy()
+    if artifact == "commit":
+        entry = policy["commit_signer_policy"]
+        key_path = REGISTRY_PATH.parent / entry["public_key_path"]
+        public_key = key_path.read_text(encoding="utf-8").strip()
+        return {"artifact": artifact, "format": "ssh", "fingerprint_type": "ssh",
+                "fingerprint": entry["fingerprint"], "public_key": public_key,
+                "allowed_signers": f"{entry['source_subject']} namespaces=\"git\" {public_key}"}
+    if artifact == "release_tag":
+        entry = policy["keys"][0]
+        key_path = REGISTRY_PATH.parent / entry["public_key_path"]
+        return {"artifact": artifact, "format": "openpgp", "fingerprint_type": "pgp",
+                "fingerprint": entry["fingerprint"], "public_key_path": str(key_path),
+                "gpg_keyring": "isolated keyring required"}
+    raise ValueError("unknown signing artifact")
 
 
 def validate_signer_for_artifact(fingerprint: str, artifact: str) -> None:

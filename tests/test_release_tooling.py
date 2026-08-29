@@ -941,8 +941,8 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.assertEqual("ed25519", key["algorithm"])
         self.assertEqual("active", key["status"])
         self.assertEqual("2027-08-01", key["expires"])
-        self.assertFalse(Path(key["public_key"]).is_absolute())
-        armored_key = registry_path.parent / key["public_key"]
+        self.assertFalse(Path(key["public_key_path"]).is_absolute())
+        armored_key = registry_path.parent / key["public_key_path"]
         text = armored_key.read_text(encoding="utf-8")
         self.assertTrue(text.startswith("-----BEGIN PGP PUBLIC KEY BLOCK-----"))
         self.assertIn("-----END PGP PUBLIC KEY BLOCK-----", text)
@@ -953,8 +953,17 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.assertEqual("ordinary commit signing", policy["purpose"])
         self.assertEqual("commit", policy["trust_domain"])
         self.assertEqual("GitHub account SSH signing key", policy["source"])
+        self.assertEqual("ssh", policy["fingerprint_type"])
+        self.assertEqual("ssh", policy["verification_format"])
+        self.assertEqual("107850521+Q20396@users.noreply.github.com", policy["source_subject"])
         self.assertEqual("required", policy["independent_verification"])
         self.assertFalse(policy["may_sign_release_tags"])
+        material = SIGNING_POLICY.build_verification_material("commit")
+        self.assertEqual("ssh", material["format"])
+        self.assertIn("allowed_signers", material)
+        release_material = SIGNING_POLICY.build_verification_material("release_tag")
+        self.assertEqual("openpgp", release_material["format"])
+        self.assertNotIn("allowed_signers", release_material)
 
         SIGNING_POLICY.validate_signer_for_artifact(
             policy["fingerprint"], "commit"
@@ -1020,7 +1029,12 @@ class ReleaseReadinessTests(unittest.TestCase):
         )
         tag = subprocess.CompletedProcess(["git"], 0, "tag", "")
         target = subprocess.CompletedProcess(["git"], 0, "abc", "")
-        with mock.patch.object(SIGNING_POLICY.subprocess, "run", side_effect=[tag, target, good]):
+        key = subprocess.CompletedProcess(
+            ["ssh-keygen"], 0,
+            "256 SHA256:TakAONGUVp2o/aQK9cJSncIDOZ3HEr27M6Ctr84LdGY key\n",
+            "",
+        )
+        with mock.patch.object(SIGNING_POLICY.subprocess, "run", side_effect=[tag, target, good, key]):
             self.assertEqual(
                 "1039EC488BE088997C1740D9ED0002B3562F2F59",
                 SIGNING_POLICY.verify_release_tag_signer("v0.6.1", expected_target="abc"),

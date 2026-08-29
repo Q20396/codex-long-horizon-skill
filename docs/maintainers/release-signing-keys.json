@@ -3,8 +3,10 @@
   "keys": [
     {
       "fingerprint": "1039EC488BE088997C1740D9ED0002B3562F2F59",
+      "fingerprint_type": "pgp",
       "algorithm": "ed25519",
-      "public_key": "release-signing-keys/Q20396-LHE-Release-Signing.asc",
+      "public_key_path": "release-signing-keys/Q20396-LHE-Release-Signing.asc",
+      "verification_format": "openpgp",
       "purpose": "annotated LHE release tags",
       "trust_domain": "release_tag",
       "status": "active",
@@ -16,9 +18,13 @@
   ],
   "commit_signer_policy": {
     "fingerprint": "SHA256:TakAONGUVp2o/aQK9cJSncIDOZ3HEr27M6Ctr84LdGY",
+    "fingerprint_type": "ssh",
     "purpose": "ordinary commit signing",
     "trust_domain": "commit",
     "source": "GitHub account SSH signing key",
+    "source_subject": "107850521+Q20396@users.noreply.github.com",
+    "public_key_path": "release-signing-keys/Q20396-Commit-Signing.pub",
+    "verification_format": "ssh",
     "independent_verification": "required",
     "may_sign_commits": true,
     "may_sign_release_tags": false

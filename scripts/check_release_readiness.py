@@ -19,6 +19,7 @@ try:
         RELEASE_TAG_FINGERPRINT,
         validate_signer_for_artifact,
         verify_release_tag_signer,
+        build_verification_material,
     )
 except ModuleNotFoundError:
     _policy_spec = importlib.util.spec_from_file_location(
@@ -31,6 +32,7 @@ except ModuleNotFoundError:
     RELEASE_TAG_FINGERPRINT = _policy_module.RELEASE_TAG_FINGERPRINT
     validate_signer_for_artifact = _policy_module.validate_signer_for_artifact
     verify_release_tag_signer = _policy_module.verify_release_tag_signer
+    build_verification_material = _policy_module.build_verification_material
 
 
 ROOT = Path(__file__).resolve().parents[1]
