@@ -43,6 +43,10 @@ FORMAL_VALIDATOR = load_module(
     "validate_formal_schemas_release_evidence_under_test",
     ROOT / "scripts" / "validate_formal_schemas.py",
 )
+SIGNING_POLICY = load_module(
+    "release_signing_policy_under_test",
+    ROOT / "scripts" / "release_signing_policy.py",
+)
 
 
 def write_fake_codex(bin_dir: Path) -> Path:
@@ -937,12 +941,110 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.assertEqual("ed25519", key["algorithm"])
         self.assertEqual("active", key["status"])
         self.assertEqual("2027-08-01", key["expires"])
-        self.assertFalse(Path(key["public_key"]).is_absolute())
-        armored_key = registry_path.parent / key["public_key"]
+        self.assertFalse(Path(key["public_key_path"]).is_absolute())
+        armored_key = registry_path.parent / key["public_key_path"]
         text = armored_key.read_text(encoding="utf-8")
         self.assertTrue(text.startswith("-----BEGIN PGP PUBLIC KEY BLOCK-----"))
         self.assertIn("-----END PGP PUBLIC KEY BLOCK-----", text)
         self.assertNotIn("PRIVATE KEY", text)
+
+        policy = registry["commit_signer_policy"]
+        self.assertEqual("SHA256:TakAONGUVp2o/aQK9cJSncIDOZ3HEr27M6Ctr84LdGY", policy["fingerprint"])
+        self.assertEqual("ordinary commit signing", policy["purpose"])
+        self.assertEqual("commit", policy["trust_domain"])
+        self.assertEqual("GitHub account SSH signing key", policy["source"])
+        self.assertEqual("ssh", policy["fingerprint_type"])
+        self.assertEqual("ssh", policy["verification_format"])
+        self.assertEqual("107850521+Q20396@users.noreply.github.com", policy["source_subject"])
+        self.assertEqual("required", policy["independent_verification"])
+        self.assertFalse(policy["may_sign_release_tags"])
+        material = SIGNING_POLICY.build_verification_material("commit")
+        self.assertEqual("ssh", material["format"])
+        self.assertIn("allowed_signers", material)
+        release_material = SIGNING_POLICY.build_verification_material("release_tag")
+        self.assertEqual("openpgp", release_material["format"])
+        self.assertNotIn("allowed_signers", release_material)
+
+        SIGNING_POLICY.validate_signer_for_artifact(
+            policy["fingerprint"], "commit"
+        )
+        SIGNING_POLICY.validate_signer_for_artifact(
+            key["fingerprint"], "release_tag"
+        )
+
+    def test_signing_registry_rejects_cross_domain_mutations(self) -> None:
+        registry_path = ROOT / "docs" / "maintainers" / "release-signing-keys.json"
+        registry = json.loads(registry_path.read_text(encoding="utf-8"))
+        original_sha = __import__("hashlib").sha256(
+            registry_path.read_bytes()
+        ).hexdigest()
+
+        def validate(candidate: dict) -> None:
+            with tempfile.TemporaryDirectory() as temp:
+                isolated = Path(temp) / "release-signing-keys.json"
+                isolated.write_text(json.dumps(candidate), encoding="utf-8")
+                with mock.patch.object(SIGNING_POLICY, "REGISTRY_PATH", isolated):
+                    SIGNING_POLICY.load_signing_policy(isolated)
+        mutations = (
+            ("missing purpose", lambda c: c["keys"][0].pop("purpose")),
+            ("wrong release fingerprint", lambda c: c["keys"][0].update(
+                fingerprint="0" * 40
+            )),
+            ("trust-domain swap", lambda c: c["commit_signer_policy"].update(
+                trust_domain="release-tag"
+            )),
+            ("commit key may sign tags", lambda c: c["commit_signer_policy"].update(
+                may_sign_release_tags=True
+            )),
+        )
+        for name, mutate in mutations:
+            with self.subTest(name=name):
+                candidate = json.loads(json.dumps(registry))
+                mutate(candidate)
+                with self.assertRaises(ValueError):
+                    validate(candidate)
+        self.assertEqual(
+            original_sha,
+            __import__("hashlib").sha256(registry_path.read_bytes()).hexdigest(),
+        )
+
+    def test_signing_policy_rejects_cross_domain_signers(self) -> None:
+        with self.assertRaises(ValueError):
+            SIGNING_POLICY.validate_signer_for_artifact(
+                "1039EC488BE088997C1740D9ED0002B3562F2F59", "commit"
+            )
+        with self.assertRaises(ValueError):
+            SIGNING_POLICY.validate_signer_for_artifact(
+                "SHA256:TakAONGUVp2o/aQK9cJSncIDOZ3HEr27M6Ctr84LdGY", "release_tag"
+            )
+
+    def test_pre_tag_readiness_requires_tag_absence_without_fake_signer_pass(self) -> None:
+        errors: list[str] = []
+        RELEASE_READINESS.tag_errors("0.6.1", True, errors)
+        self.assertEqual([], errors)
+
+    def test_release_tag_audit_uses_actual_verified_signer(self) -> None:
+        good = subprocess.CompletedProcess(
+            ["git"], 0, "", "[GNUPG:] VALIDSIG 1039EC488BE088997C1740D9ED0002B3562F2F59\n"
+        )
+        tag = subprocess.CompletedProcess(["git"], 0, "tag", "")
+        target = subprocess.CompletedProcess(["git"], 0, "abc", "")
+        key = subprocess.CompletedProcess(
+            ["ssh-keygen"], 0,
+            "256 SHA256:TakAONGUVp2o/aQK9cJSncIDOZ3HEr27M6Ctr84LdGY key\n",
+            "",
+        )
+        with mock.patch.object(SIGNING_POLICY.subprocess, "run", side_effect=[tag, target, good, key]):
+            self.assertEqual(
+                "1039EC488BE088997C1740D9ED0002B3562F2F59",
+                SIGNING_POLICY.verify_release_tag_signer("v0.6.1", expected_target="abc"),
+            )
+
+    def test_release_tag_audit_rejects_missing_tag(self) -> None:
+        missing = subprocess.CompletedProcess(["git"], 128, "", "")
+        with mock.patch.object(SIGNING_POLICY.subprocess, "run", return_value=missing):
+            with self.assertRaisesRegex(ValueError, "does not exist"):
+                SIGNING_POLICY.verify_release_tag_signer("v0.6.1")
 
     def test_release_docs_record_action_and_security_provenance(self) -> None:
         checklist = (
@@ -1098,6 +1200,130 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.assertEqual(3, workflow.count(dynamic_state))
         self.assertEqual(2, workflow.count("scripts/full_skill_validation.py --print-release-state"))
         self.assertNotIn("--pre-tag", workflow)
+
+    def test_manual_formal_release_evidence_workflow_is_fixed_and_fail_closed(self) -> None:
+        workflow = (ROOT / ".github" / "workflows" / "formal-release-gate.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertEqual([], FULL_VALIDATION.formal_release_evidence_workflow_errors(workflow))
+
+    def test_manual_formal_runner_identity_persistence_is_fail_closed(self) -> None:
+        workflow = (ROOT / ".github" / "workflows" / "formal-release-gate.yml").read_text(
+            encoding="utf-8"
+        )
+        writer = "          printf 'RUNNER_IDENTITY=%s\\n' \"$RUNNER_IDENTITY\" >> \"$GITHUB_ENV\"\n"
+        self.assertEqual(workflow.count(writer), 1)
+        self.assertLess(workflow.index('test -s "$RUNNER_IDENTITY"'), workflow.index(writer))
+        mutations = (
+            (writer, ""),
+            (writer, writer + writer),
+            (writer, "          export RUNNER_IDENTITY=\"$RUNNER_IDENTITY\"\n"),
+            ('--action-provenance-file "$RUNNER_IDENTITY"', '--action-provenance-file "$OTHER_IDENTITY"'),
+            ('--formal-schema-action-provenance-file "$RUNNER_IDENTITY"', '--formal-schema-action-provenance-file "$OTHER_IDENTITY"'),
+            (writer, "          printf 'RUNNER_IDENTITY=%s\\n' \"$RUNNER_IDENTITY\" >> \"$GITHUB_ENV\"\n          RUNNER_IDENTITY=\"$RUNNER_TEMP/other.json\"\n"),
+            ('test -s "$RUNNER_IDENTITY"', 'test -f "$RUNNER_IDENTITY"'),
+            (writer, "          printf 'OTHER_IDENTITY=%s\\n' \"$RUNNER_IDENTITY\" >> \"$GITHUB_ENV\"\n"),
+            (writer, "          printf 'RUNNER_IDENTITY=%s\\n' \"${RUNNER_IDENTITY:-fallback}\" >> \"$GITHUB_ENV\"\n"),
+        )
+        for old, new in mutations:
+            with self.subTest(old=old, new=new):
+                broken = workflow.replace(old, new, 1)
+                self.assertTrue(FULL_VALIDATION.formal_release_evidence_workflow_errors(broken))
+
+    def test_both_workflows_are_real_yaml_and_broken_indent_fails(self) -> None:
+        paths = [
+            ROOT / ".github" / "workflows" / "check-skill.yml",
+            ROOT / ".github" / "workflows" / "formal-release-gate.yml",
+        ]
+        command = ["ruby", "-e", 'require "yaml"; ARGV.each { |path| YAML.load_file(path) }']
+        valid = subprocess.run(command + [str(path) for path in paths], capture_output=True, text=True)
+        self.assertEqual(0, valid.returncode, valid.stderr)
+        with tempfile.TemporaryDirectory(prefix="workflow-yaml-") as temp:
+            broken = Path(temp) / "broken.yml"
+            broken.write_text(paths[1].read_text(encoding="utf-8").replace("  RELEASE_TAG:", "    RELEASE_TAG:", 1), encoding="utf-8")
+            invalid = subprocess.run(command + [str(broken)], capture_output=True, text=True)
+            self.assertNotEqual(0, invalid.returncode)
+
+    def test_check_skill_formal_evidence_chain_is_fixed_and_fail_closed(self) -> None:
+        workflow = ROOT / ".github" / "workflows" / "check-skill.yml"
+        text = workflow.read_text(encoding="utf-8")
+        self.assertEqual([], FULL_VALIDATION.check_skill_formal_evidence_workflow_errors(text))
+        self.assertEqual([], FULL_VALIDATION.formal_release_evidence_workflow_errors(
+            (ROOT / ".github" / "workflows" / "formal-release-gate.yml").read_text(encoding="utf-8")
+        ))
+        mutations = (
+            ("Record formal runner identity", "Remove formal runner identity"),
+            ('--action-provenance-file "$RUNNER_TEMP/formal-schema-runner-identity.json"', "--action-provenance-file \"$RUNNER_TEMP/other.json\""),
+            ('--workflow-sha256 "$WORKFLOW_SHA256"', '--workflow-sha256 "hardcoded"'),
+            ('--workflow-path ".github/workflows/check-skill.yml"', '--workflow-path ".github/workflows/other.yml"'),
+            ('--formal-schema-workflow-sha256 "$WORKFLOW_SHA256"', '--formal-schema-workflow-sha256 ""'),
+            ('--formal-schema-workflow-path ".github/workflows/check-skill.yml"', '--formal-schema-workflow-path ""'),
+            ('"candidate_base": os.environ["FORMAL_CANDIDATE_BASE"]', '"candidate_base": os.environ["GITHUB_SHA"]'),
+            ('actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02', 'actions/upload-artifact@v4'),
+            ("if: always()", "if: success()"),
+            ("retention-days: 90", "retention-days: 1"),
+            ("${{ runner.temp }}/formal-schema-result.json", "${{ runner.temp }}/missing-result.json"),
+            ("--verify-acquisition", "--verify-acquisition\n            --verify-acquisition"),
+            ("--allow-existing-tag", "--pre-tag"),
+            ('"actions": {', '"fake-actions": {'),
+            ('json.dump(payload, handle, indent=2, sort_keys=True)', 'json.dump(other, handle, indent=2, sort_keys=True)'),
+            ('python3 - "$RUNNER_IDENTITY" "$WORKFLOW_SHA256" "$WORKFLOW_PATH" "$RELEASE_COMMIT" <<\'PY\'', 'python3 - "$RUNNER_IDENTITY" "$WORKFLOW_SHA256" "$WORKFLOW_PATH" <<\'PY\''),
+            ('"release_commit": release_commit', '"release_commit": os.environ["RELEASE_COMMIT"]'),
+        )
+        prefix, formal = text.split("  formal-schema-gate:", 1)
+        for old, new in mutations:
+            with self.subTest(old=old):
+                broken = prefix + "  formal-schema-gate:" + formal.replace(old, new, 1)
+                self.assertTrue(FULL_VALIDATION.check_skill_formal_evidence_workflow_errors(broken))
+
+    def test_manual_formal_evidence_workflow_rejects_unsafe_mutations(self) -> None:
+        workflow = (ROOT / ".github" / "workflows" / "formal-release-gate.yml").read_text(
+            encoding="utf-8"
+        )
+        mutations = (
+            ("  workflow_dispatch:", "  push:\n    branches: [main]"),
+            ("ref: ${{ github.sha }}", "ref: ${{ inputs.commit }}"),
+            ('test "$GITHUB_REF" = "refs/heads/main"', 'test "$GITHUB_REF" = "refs/heads/release"'),
+            ('release_commit="$GITHUB_SHA"', 'release_commit="$GITHUB_REF"'),
+            ('candidate_base="$2"', 'candidate_base="1888691c462b51dd5a561416a0db9eda1305a517"'),
+            ('--candidate-base "$CANDIDATE_BASE"', '--candidate-base "$GITHUB_SHA"'),
+            ('--formal-schema-candidate-base "$CANDIDATE_BASE"', '--formal-schema-candidate-base "$(git rev-parse HEAD^)"'),
+            ('"candidate_base": os.environ["CANDIDATE_BASE"]', '"candidate_base": os.environ["GITHUB_SHA"]'),
+            ('          EVIDENCE_DIR=', '          CANDIDATE_BASE=0000000000000000000000000000000000000000\n          EVIDENCE_DIR='),
+            ('      - name: Verify immutable runner', '      - name: Override base\n        run: printf "CANDIDATE_BASE=0000000000000000000000000000000000000000\\n" >> "$GITHUB_ENV"\n\n      - name: Verify immutable runner'),
+            ('--candidate-base "$CANDIDATE_BASE"', '--candidate-base "${CANDIDATE_BASE:-fallback}"'),
+            ('--candidate-base "$CANDIDATE_BASE"', '--candidate-base "$CANDIDATE_BASE"\n            --candidate-base "$CANDIDATE_BASE"'),
+            ('--formal-schema-candidate-base "$CANDIDATE_BASE"', '--formal-schema-candidate-base "$CANDIDATE_BASE"\n            --formal-schema-candidate-base "$CANDIDATE_BASE"'),
+            ('test "$#" -eq 2', 'test "$#" -eq 1'),
+            ('test "$(git merge-base "$candidate_base" "$release_commit")" = "$candidate_base"', 'true'),
+            ("--pre-tag", "--allow-existing-tag"),
+            ("--verify-acquisition", "--verify-acquisition\n          --verify-acquisition"),
+            ("retention-days: 90", "retention-days: 1"),
+            ("  contents: read", "  contents: write"),
+            ("actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02", "actions/upload-artifact@v4"),
+            ("if: always()", "if: success()"),
+            ("if-no-files-found: error", "if-no-files-found: warn"),
+            ("runner-identity.json", "runner-identity.txt"),
+            ("--workflow-sha256 \"$WORKFLOW_SHA256\"", "--workflow-sha256 \"$OTHER_SHA\""),
+            ("uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1", "uses: actions/checkout@v4"),
+            ("permissions:\n  contents: read", "permissions:\n  contents: read\n\n    permissions:\n      contents: read"),
+            ("workflow_dispatch:", "workflow_dispatch:\n    inputs:\n      commit: {}"),
+            ('"actions": {', '"disabled-actions": {'),
+            ('"checkout": "3d3c42e5aac5ba805825da76410c181273ba90b1",', '"disabled-checkout": "3d3c42e5aac5ba805825da76410c181273ba90b1",'),
+            ('actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1', 'actions/checkout@1111111111111111111111111111111111111111'),
+            ('"setup-python": "5fda3b95a4ea91299a34e894583c3862153e4b97",\n                  "upload-artifact": "ea165f8d65b6e75b540449e92b4886f43607fa02",', '"setup-python": "ea165f8d65b6e75b540449e92b4886f43607fa02",\n                  "upload-artifact": "5fda3b95a4ea91299a34e894583c3862153e4b97",'),
+            ('"setup-python":', '"python-setup":'),
+            ('"checkout": "3d3c42e5aac5ba805825da76410c181273ba90b1"', '# "checkout": "3d3c42e5aac5ba805825da76410c181273ba90b1"'),
+            ('"upload-artifact": "ea165f8d65b6e75b540449e92b4886f43607fa02",', '"upload-artifact": "ea165f8d65b6e75b540449e92b4886f43607fa02",\n                  "unknown": "2222222222222222222222222222222222222222",'),
+            ('"actions": {', '"actions": {\n                  "extra": "2222222222222222222222222222222222222222",'),
+            ('payload = {', 'other = {'),
+            ('json.dump(payload, handle, indent=2, sort_keys=True)', 'json.dump(other, handle, indent=2, sort_keys=True)'),
+            ('with open(path, "w", encoding="utf-8")', 'with open("/tmp/other.json", "w", encoding="utf-8")'),
+        )
+        for old, new in mutations:
+            with self.subTest(old=old):
+                broken = workflow.replace(old, new, 1)
+                self.assertTrue(FULL_VALIDATION.formal_release_evidence_workflow_errors(broken))
 
     def test_workflow_candidate_gate_cannot_be_changed_to_final(self) -> None:
         workflow = (ROOT / ".github" / "workflows" / "check-skill.yml").read_text(
@@ -1679,6 +1905,12 @@ class ReleaseReadinessTests(unittest.TestCase):
             result,
             "--formal-schema-pip-report",
         )
+
+    def test_pre_tag_contract_binds_runner_identity_hash(self) -> None:
+        source = (ROOT / "scripts/check_release_readiness.py").read_text(encoding="utf-8")
+        self.assertIn('"runner_identity_sha256": sha256_file(', source)
+        self.assertIn("args.formal_schema_action_provenance_file.resolve()", source)
+        self.assertIn('if result.get(field) != value:', source)
 
     def test_pre_tag_requires_job_local_evidence_directory(self) -> None:
         repo = self.copy_repo("pre-tag-formal-evidence-dir")

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
 import re
@@ -12,6 +13,26 @@ import subprocess
 import sys
 from datetime import date
 from pathlib import Path
+
+try:
+    from scripts.release_signing_policy import (
+        RELEASE_TAG_FINGERPRINT,
+        validate_signer_for_artifact,
+        verify_release_tag_signer,
+        build_verification_material,
+    )
+except ModuleNotFoundError:
+    _policy_spec = importlib.util.spec_from_file_location(
+        "release_signing_policy", Path(__file__).with_name("release_signing_policy.py")
+    )
+    if _policy_spec is None or _policy_spec.loader is None:
+        raise
+    _policy_module = importlib.util.module_from_spec(_policy_spec)
+    _policy_spec.loader.exec_module(_policy_module)
+    RELEASE_TAG_FINGERPRINT = _policy_module.RELEASE_TAG_FINGERPRINT
+    validate_signer_for_artifact = _policy_module.validate_signer_for_artifact
+    verify_release_tag_signer = _policy_module.verify_release_tag_signer
+    build_verification_material = _policy_module.build_verification_material
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -176,6 +197,16 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Routine CI mode; validates artifacts without caring whether the local tag exists.",
     )
+    mode.add_argument(
+        "--audit-existing-formal-result",
+        action="store_true",
+        help="Read-only audit of an existing formal result and acquisition receipt.",
+    )
+    mode.add_argument(
+        "--audit-release-tag",
+        metavar="TAG",
+        help="Read-only verification of an existing annotated release tag.",
+    )
     parser.add_argument(
         "--formal-schema-result",
         type=Path,
@@ -206,6 +237,15 @@ def parse_args() -> argparse.Namespace:
         "--formal-schema-candidate-base",
         help="Full immutable base commit for the current descendant candidate.",
     )
+    parser.add_argument("--formal-schema-workflow-sha256")
+    parser.add_argument("--formal-schema-workflow-path")
+    parser.add_argument("--formal-schema-action-provenance-file", type=Path)
+    parser.add_argument("--formal-schema-repository")
+    parser.add_argument("--formal-schema-event-target-sha")
+    parser.add_argument("--formal-schema-run-id")
+    parser.add_argument("--formal-schema-run-attempt")
+    parser.add_argument("--formal-schema-workflow-ref")
+    parser.add_argument("--formal-schema-job")
     parser.add_argument(
         "--release-hygiene-base",
         help=(
@@ -491,6 +531,10 @@ def tag_errors(version: str, pre_tag: bool, errors: list[str]) -> None:
     if not pre_tag:
         return
     tag = f"v{version}"
+    try:
+        validate_signer_for_artifact(RELEASE_TAG_FINGERPRINT, "release_tag")
+    except ValueError as exc:
+        errors.append(f"release-tag signer policy failed: {exc}")
     tag_result = run(["git", "rev-parse", "-q", "--verify", f"refs/tags/{tag}"])
     if tag_result.returncode == 0:
         errors.append(f"local tag already exists; cannot run pre-tag gate for {tag}")
@@ -582,13 +626,97 @@ def release_hygiene_errors(expected_base: str | None, errors: list[str]) -> None
         errors.append("release hygiene requires an isolated linked worktree")
 
 
+def validate_existing_formal_evidence(
+    *, result_path: Path, receipt_path: Path, evidence_dir: Path,
+    pip_report: Path, candidate_base: str, workflow_sha256: str,
+    workflow_path: str, provenance_file: Path, repository: str,
+    event_target_sha: str, run_id: str, run_attempt: str,
+    workflow_ref: str, job: str,
+) -> list[str]:
+    """Audit persisted formal evidence without invoking its producer."""
+    validator_path = ROOT / "scripts" / "validate_formal_schemas.py"
+    spec = importlib.util.spec_from_file_location("lhe_formal_validator_audit", validator_path)
+    if spec is None or spec.loader is None:
+        return ["formal evidence audit could not load shared validator"]
+    validator = importlib.util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(validator)
+    except (OSError, ImportError, ValueError) as exc:
+        return [f"formal evidence audit could not load shared validator: {exc}"]
+    identity = {"run_id": run_id, "run_attempt": run_attempt,
+                "workflow_ref": workflow_ref, "job_name": job}
+    expected_context = {
+        "github_run_id": run_id, "github_run_attempt": run_attempt,
+        "workflow_ref": workflow_ref, "job": job, "repository": repository,
+        "event_target_sha": event_target_sha, "release_commit": event_target_sha,
+        "candidate_base": candidate_base,
+    }
+    return validator.validate_existing_formal_evidence(
+        result_path=result_path, acquisition_result_path=receipt_path,
+        evidence_dir=evidence_dir, pip_report=pip_report, identity=identity,
+        candidate_base=candidate_base, workflow_identity={
+            "path": workflow_path, "sha256": workflow_sha256,
+            "workflow_ref": workflow_ref,
+        }, action_provenance_file=provenance_file,
+        repository=repository, event_target_sha=event_target_sha,
+        expected_context=expected_context,
+    )
 def formal_schema_errors(args: argparse.Namespace, errors: list[str]) -> None:
+    if args.audit_existing_formal_result:
+        required = {
+            "--formal-schema-result": args.formal_schema_result,
+            "--formal-schema-acquisition-result": args.formal_schema_acquisition_result,
+            "--formal-schema-evidence-dir": args.formal_schema_evidence_dir,
+            "--formal-schema-pip-report": args.formal_schema_pip_report,
+            "--formal-schema-candidate-base": args.formal_schema_candidate_base,
+            "--formal-schema-workflow-sha256": args.formal_schema_workflow_sha256,
+            "--formal-schema-workflow-path": args.formal_schema_workflow_path,
+            "--formal-schema-action-provenance-file": args.formal_schema_action_provenance_file,
+            "--formal-schema-repository": args.formal_schema_repository,
+            "--formal-schema-event-target-sha": args.formal_schema_event_target_sha,
+            "--formal-schema-run-id": args.formal_schema_run_id,
+            "--formal-schema-run-attempt": args.formal_schema_run_attempt,
+            "--formal-schema-workflow-ref": args.formal_schema_workflow_ref,
+            "--formal-schema-job": args.formal_schema_job,
+        }
+        missing = [name for name, value in required.items() if value is None]
+        if missing:
+            errors.append("read-only formal evidence audit requires " + ", ".join(missing))
+            return
+        errors.extend(validate_existing_formal_evidence(
+            result_path=args.formal_schema_result,
+            receipt_path=args.formal_schema_acquisition_result,
+            evidence_dir=args.formal_schema_evidence_dir,
+            pip_report=args.formal_schema_pip_report,
+            candidate_base=args.formal_schema_candidate_base,
+            workflow_sha256=args.formal_schema_workflow_sha256,
+            workflow_path=args.formal_schema_workflow_path,
+            provenance_file=args.formal_schema_action_provenance_file,
+            repository=args.formal_schema_repository,
+            event_target_sha=args.formal_schema_event_target_sha,
+            run_id=args.formal_schema_run_id,
+            run_attempt=args.formal_schema_run_attempt,
+            workflow_ref=args.formal_schema_workflow_ref,
+            job=args.formal_schema_job,
+        ))
+        return
+    if args.audit_release_tag:
+        try:
+            verify_release_tag_signer(args.audit_release_tag)
+        except ValueError as exc:
+            errors.append(f"release-tag audit failed: {exc}")
+        return
     paths = {
         "--formal-schema-result": args.formal_schema_result,
         "--formal-schema-pip-report": args.formal_schema_pip_report,
         "--formal-schema-acquisition-result": args.formal_schema_acquisition_result,
         "--formal-schema-evidence-dir": args.formal_schema_evidence_dir,
         "--formal-schema-candidate-base": args.formal_schema_candidate_base,
+        "--formal-schema-workflow-sha256": args.formal_schema_workflow_sha256,
+        "--formal-schema-workflow-path": args.formal_schema_workflow_path,
+        "--formal-schema-action-provenance-file": args.formal_schema_action_provenance_file,
+        "--formal-schema-repository": args.formal_schema_repository,
+        "--formal-schema-event-target-sha": args.formal_schema_event_target_sha,
     }
     supplied = {name for name, value in paths.items() if value is not None}
     if args.pre_tag_static:
@@ -603,6 +731,12 @@ def formal_schema_errors(args: argparse.Namespace, errors: list[str]) -> None:
             "formal Draft 2020-12 schema gate is UNVERIFIED; "
             f"controlled formal execution requires {', '.join(missing)}"
         )
+        formal_worktree_errors(errors)
+        if args.formal_schema_result is not None and args.formal_schema_result.resolve().exists():
+            errors.append(
+                "formal schema result output already exists; prewritten PASS receipts "
+                "are not accepted"
+            )
         return
     if not re.fullmatch(r"[0-9a-f]{40}", args.formal_schema_candidate_base):
         errors.append("formal schema candidate base must be a full commit SHA")
@@ -640,6 +774,16 @@ def formal_schema_errors(args: argparse.Namespace, errors: list[str]) -> None:
         os.environ.get("GITHUB_WORKFLOW_REF", ""),
         "--job-name",
         os.environ.get("GITHUB_JOB", ""),
+        "--workflow-sha256",
+        args.formal_schema_workflow_sha256,
+        "--workflow-path",
+        args.formal_schema_workflow_path,
+        "--action-provenance-file",
+        str(args.formal_schema_action_provenance_file.resolve()),
+        "--repository",
+        args.formal_schema_repository,
+        "--event-target-sha",
+        args.formal_schema_event_target_sha,
         "--result",
         str(path),
     ]
@@ -665,8 +809,24 @@ def formal_schema_errors(args: argparse.Namespace, errors: list[str]) -> None:
         "candidate_worktree_clean": True,
         "candidate_base_commit": args.formal_schema_candidate_base,
         "candidate_merge_base": args.formal_schema_candidate_base,
+        "repository": args.formal_schema_repository,
+        "event_target_sha": args.formal_schema_event_target_sha,
+        "release_commit": args.formal_schema_event_target_sha,
         "approval_authority": "none",
         "next_stage_authorized": False,
+        "workflow_identity": {
+            "path": args.formal_schema_workflow_path,
+            "sha256": args.formal_schema_workflow_sha256,
+            "workflow_ref": os.environ.get("GITHUB_WORKFLOW_REF", ""),
+        },
+        "action_provenance": {
+            "checkout": "3d3c42e5aac5ba805825da76410c181273ba90b1",
+            "setup-python": "5fda3b95a4ea91299a34e894583c3862153e4b97",
+            "upload-artifact": "ea165f8d65b6e75b540449e92b4886f43607fa02",
+        },
+        "runner_identity_sha256": sha256_file(
+            args.formal_schema_action_provenance_file.resolve()
+        ),
         "bootstrap_identity": {
             "commit": FORMAL_BOOTSTRAP_COMMIT,
             "tree": FORMAL_BOOTSTRAP_TREE,
@@ -682,6 +842,21 @@ def formal_schema_errors(args: argparse.Namespace, errors: list[str]) -> None:
                 f"formal schema result {field} {result.get(field)!r} "
                 f"does not match {value!r}"
             )
+    receipt_path = args.formal_schema_acquisition_result.resolve()
+    try:
+        receipt = load_json(receipt_path)
+    except (OSError, ValueError) as exc:
+        errors.append(f"formal schema acquisition receipt could not be validated: {exc}")
+    else:
+        for field in (
+            "repository", "event_target_sha", "release_commit",
+            "candidate_base_commit", "candidate_merge_base",
+            "workflow_identity", "action_provenance", "runner_identity_sha256",
+        ):
+            if receipt.get(field) != result.get(field):
+                errors.append(f"formal schema receipt/result {field} mismatch")
+        if receipt.get("job_identity") != result.get("job_identity"):
+            errors.append("formal schema receipt/result job identity mismatch")
     python_version = result.get("python_version")
     if not isinstance(python_version, str) or not python_version.startswith("3.11."):
         errors.append("formal schema result must record an exact CPython 3.11 patch")
@@ -876,6 +1051,13 @@ def validate(args: argparse.Namespace) -> list[str]:
     version = args.version
     errors: list[str] = []
 
+    if args.audit_release_tag:
+        try:
+            verify_release_tag_signer(args.audit_release_tag)
+        except ValueError as exc:
+            errors.append(f"release-tag audit failed: {exc}")
+        return errors
+
     if not SEMVER_RE.match(version):
         errors.append("version must be plain semantic version syntax")
         return errors
@@ -903,6 +1085,10 @@ def main() -> int:
         mode = "pre-tag-static"
     elif args.pre_tag:
         mode = "pre-tag"
+    elif args.audit_existing_formal_result:
+        mode = "audit-existing-formal-result"
+    elif args.audit_release_tag:
+        mode = "audit-release-tag"
     else:
         mode = "allow-existing-tag"
     try:
