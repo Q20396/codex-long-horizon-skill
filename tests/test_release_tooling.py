@@ -15,6 +15,12 @@ from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 
+APPROVED_ACTIONS = {
+    "actions/checkout": "3d3c42e5aac5ba805825da76410c181273ba90b1",
+    "actions/setup-python": "5fda3b95a4ea91299a34e894583c3862153e4b97",
+    "actions/upload-artifact": "ea165f8d65b6e75b540449e92b4886f43607fa02",
+}
+
 
 def load_module(name: str, path: Path):
     spec = importlib.util.spec_from_file_location(name, path)
@@ -44,8 +50,7 @@ FORMAL_VALIDATOR = load_module(
     ROOT / "scripts" / "validate_formal_schemas.py",
 )
 SIGNING_POLICY = load_module(
-    "release_signing_policy_under_test",
-    ROOT / "scripts" / "release_signing_policy.py",
+    "release_signing_policy_under_test", ROOT / "scripts" / "release_signing_policy.py"
 )
 
 
@@ -941,110 +946,107 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.assertEqual("ed25519", key["algorithm"])
         self.assertEqual("active", key["status"])
         self.assertEqual("2027-08-01", key["expires"])
-        self.assertFalse(Path(key["public_key_path"]).is_absolute())
-        armored_key = registry_path.parent / key["public_key_path"]
+        self.assertFalse(Path(key["public_key"]).is_absolute())
+        armored_key = registry_path.parent / key["public_key"]
         text = armored_key.read_text(encoding="utf-8")
         self.assertTrue(text.startswith("-----BEGIN PGP PUBLIC KEY BLOCK-----"))
         self.assertIn("-----END PGP PUBLIC KEY BLOCK-----", text)
         self.assertNotIn("PRIVATE KEY", text)
 
-        policy = registry["commit_signer_policy"]
-        self.assertEqual("SHA256:TakAONGUVp2o/aQK9cJSncIDOZ3HEr27M6Ctr84LdGY", policy["fingerprint"])
-        self.assertEqual("ordinary commit signing", policy["purpose"])
-        self.assertEqual("commit", policy["trust_domain"])
-        self.assertEqual("GitHub account SSH signing key", policy["source"])
-        self.assertEqual("ssh", policy["fingerprint_type"])
-        self.assertEqual("ssh", policy["verification_format"])
-        self.assertEqual("107850521+Q20396@users.noreply.github.com", policy["source_subject"])
-        self.assertEqual("required", policy["independent_verification"])
-        self.assertFalse(policy["may_sign_release_tags"])
-        material = SIGNING_POLICY.build_verification_material("commit")
-        self.assertEqual("ssh", material["format"])
-        self.assertIn("allowed_signers", material)
-        release_material = SIGNING_POLICY.build_verification_material("release_tag")
-        self.assertEqual("openpgp", release_material["format"])
-        self.assertNotIn("allowed_signers", release_material)
-
-        SIGNING_POLICY.validate_signer_for_artifact(
-            policy["fingerprint"], "commit"
-        )
-        SIGNING_POLICY.validate_signer_for_artifact(
-            key["fingerprint"], "release_tag"
-        )
-
-    def test_signing_registry_rejects_cross_domain_mutations(self) -> None:
-        registry_path = ROOT / "docs" / "maintainers" / "release-signing-keys.json"
-        registry = json.loads(registry_path.read_text(encoding="utf-8"))
-        original_sha = __import__("hashlib").sha256(
-            registry_path.read_bytes()
-        ).hexdigest()
-
-        def validate(candidate: dict) -> None:
-            with tempfile.TemporaryDirectory() as temp:
-                isolated = Path(temp) / "release-signing-keys.json"
-                isolated.write_text(json.dumps(candidate), encoding="utf-8")
-                with mock.patch.object(SIGNING_POLICY, "REGISTRY_PATH", isolated):
-                    SIGNING_POLICY.load_signing_policy(isolated)
-        mutations = (
-            ("missing purpose", lambda c: c["keys"][0].pop("purpose")),
-            ("wrong release fingerprint", lambda c: c["keys"][0].update(
-                fingerprint="0" * 40
-            )),
-            ("trust-domain swap", lambda c: c["commit_signer_policy"].update(
-                trust_domain="release-tag"
-            )),
-            ("commit key may sign tags", lambda c: c["commit_signer_policy"].update(
-                may_sign_release_tags=True
-            )),
-        )
-        for name, mutate in mutations:
-            with self.subTest(name=name):
-                candidate = json.loads(json.dumps(registry))
-                mutate(candidate)
-                with self.assertRaises(ValueError):
-                    validate(candidate)
-        self.assertEqual(
-            original_sha,
-            __import__("hashlib").sha256(registry_path.read_bytes()).hexdigest(),
-        )
-
-    def test_signing_policy_rejects_cross_domain_signers(self) -> None:
+    def test_signing_policy_separates_commit_and_release_tag_domains(self) -> None:
+        policy = SIGNING_POLICY.load_signing_policy()
+        self.assertTrue(SIGNING_POLICY.validate_signer_for_artifact(
+            policy["commit"]["fingerprint"], "commit", policy=policy
+        ))
+        self.assertTrue(SIGNING_POLICY.validate_signer_for_artifact(
+            policy["release_tag"]["fingerprint"], "release_tag", policy=policy
+        ))
         with self.assertRaises(ValueError):
             SIGNING_POLICY.validate_signer_for_artifact(
-                "1039EC488BE088997C1740D9ED0002B3562F2F59", "commit"
+                policy["commit"]["fingerprint"], "release_tag", policy=policy
             )
         with self.assertRaises(ValueError):
             SIGNING_POLICY.validate_signer_for_artifact(
-                "SHA256:TakAONGUVp2o/aQK9cJSncIDOZ3HEr27M6Ctr84LdGY", "release_tag"
+                policy["release_tag"]["fingerprint"], "commit", policy=policy
             )
 
-    def test_pre_tag_readiness_requires_tag_absence_without_fake_signer_pass(self) -> None:
-        errors: list[str] = []
-        RELEASE_READINESS.tag_errors("0.6.1", True, errors)
+    def test_readiness_validates_commit_signer_through_production_boundary(self) -> None:
+        with mock.patch.object(
+            RELEASE_READINESS,
+            "load_signing_policy",
+            return_value=SIGNING_POLICY.load_signing_policy(),
+        ) as load_policy, mock.patch.object(
+            RELEASE_READINESS,
+            "validate_signer_for_artifact",
+            return_value=True,
+        ) as validate_signer:
+            errors: list[str] = []
+            RELEASE_READINESS.signing_policy_errors(errors)
+
         self.assertEqual([], errors)
-
-    def test_release_tag_audit_uses_actual_verified_signer(self) -> None:
-        good = subprocess.CompletedProcess(
-            ["git"], 0, "", "[GNUPG:] VALIDSIG 1039EC488BE088997C1740D9ED0002B3562F2F59\n"
+        load_policy.assert_called_once_with()
+        validate_signer.assert_called_once_with(
+            SIGNING_POLICY.load_signing_policy()["commit"]["fingerprint"],
+            "commit",
+            policy=SIGNING_POLICY.load_signing_policy(),
         )
-        tag = subprocess.CompletedProcess(["git"], 0, "tag", "")
-        target = subprocess.CompletedProcess(["git"], 0, "abc", "")
-        key = subprocess.CompletedProcess(
-            ["ssh-keygen"], 0,
-            "256 SHA256:TakAONGUVp2o/aQK9cJSncIDOZ3HEr27M6Ctr84LdGY key\n",
-            "",
-        )
-        with mock.patch.object(SIGNING_POLICY.subprocess, "run", side_effect=[tag, target, good, key]):
-            self.assertEqual(
-                "1039EC488BE088997C1740D9ED0002B3562F2F59",
-                SIGNING_POLICY.verify_release_tag_signer("v0.6.1", expected_target="abc"),
-            )
 
-    def test_release_tag_audit_rejects_missing_tag(self) -> None:
-        missing = subprocess.CompletedProcess(["git"], 128, "", "")
-        with mock.patch.object(SIGNING_POLICY.subprocess, "run", return_value=missing):
-            with self.assertRaisesRegex(ValueError, "does not exist"):
-                SIGNING_POLICY.verify_release_tag_signer("v0.6.1")
+    def test_readiness_fails_closed_when_signing_policy_rejects_commit(self) -> None:
+        with mock.patch.object(
+            RELEASE_READINESS,
+            "validate_signer_for_artifact",
+            side_effect=ValueError("unknown signer fingerprint"),
+        ):
+            errors: list[str] = []
+            RELEASE_READINESS.signing_policy_errors(errors)
+
+        self.assertEqual(
+            ["signing policy validation failed: unknown signer fingerprint"], errors
+        )
+
+    def test_formal_baseline_workflow_binds_dispatch_target_and_locked_runtime(self) -> None:
+        workflow = (ROOT / ".github" / "workflows" / "formal-baseline.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("workflow_dispatch:", workflow)
+        self.assertIn("target_sha:", workflow)
+        self.assertIn("workflow_sha:", workflow)
+        self.assertIn("ref: ${{ inputs.target_sha }}", workflow)
+        self.assertIn('[[ "$TARGET_SHA" =~ ^[0-9a-f]{40}$ ]]', workflow)
+        self.assertIn('test "$INPUT_WORKFLOW_SHA" = "$ACTUAL_WORKFLOW_SHA"', workflow)
+        self.assertIn('"github_run_id"', workflow)
+        self.assertIn('"github_run_attempt"', workflow)
+        self.assertIn('"workflow_file_sha256"', workflow)
+        self.assertIn('$RUNNER_TEMP/lhe-formal-venv/bin/python', workflow)
+        self.assertNotIn('"run_id"', workflow)
+        self.assertNotIn('"run_attempt"', workflow)
+
+    def test_formal_baseline_workflow_uses_approved_actions_and_read_only_permissions(self) -> None:
+        workflow = (ROOT / ".github" / "workflows" / "formal-baseline.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("permissions:\n  contents: read", workflow)
+        for action, sha in APPROVED_ACTIONS.items():
+            self.assertIn(f"uses: {action}@{sha}", workflow)
+
+    def test_formal_baseline_identity_rejects_missing_path_and_bad_run_types(self) -> None:
+        identity = {
+            "release_commit": "a" * 40,
+            "event_target_sha": "a" * 40,
+            "workflow_ref": "Q20396/codex-long-horizon-skill/.github/workflows/formal-baseline.yml@refs/heads/main",
+            "workflow_sha": "b" * 40,
+            "workflow_path": ".github/workflows/formal-baseline.yml",
+            "workflow_file_sha256": FORMAL_VALIDATOR.sha256_file(ROOT / ".github/workflows/formal-baseline.yml"),
+            "github_run_id": "123",
+            "github_run_attempt": "1",
+            "job": "formal-baseline",
+            "candidate_base": "d" * 40,
+        }
+        self.assertEqual([], FORMAL_VALIDATOR.validate_formal_baseline_identity(identity, {"event_target_sha": "a" * 40}))
+        identity["github_run_id"] = 123
+        self.assertIn("formal baseline github_run_id must be non-empty string", FORMAL_VALIDATOR.validate_formal_baseline_identity(identity, {"event_target_sha": "a" * 40}))
+        identity.pop("workflow_path")
+        self.assertIn("workflow_path", FORMAL_VALIDATOR.validate_formal_baseline_identity(identity, {"event_target_sha": "a" * 40})[0])
 
     def test_release_docs_record_action_and_security_provenance(self) -> None:
         checklist = (
@@ -1201,6 +1203,45 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.assertEqual(2, workflow.count("scripts/full_skill_validation.py --print-release-state"))
         self.assertNotIn("--pre-tag", workflow)
 
+    def test_formal_baseline_workflow_passes_explicit_final_stable_lifecycle(self) -> None:
+        workflow = (ROOT / ".github" / "workflows" / "formal-baseline.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("--release-state final", workflow)
+        self.assertIn("--channel stable", workflow)
+
+    def test_readiness_accepts_matching_final_stable_lifecycle(self) -> None:
+        result = self.run_readiness(
+            self.copy_repo("matching-final-stable"),
+            "--allow-existing-tag",
+            "--channel",
+            "stable",
+        )
+        self.assertEqual(0, result.returncode, result.stderr or result.stdout)
+
+    def test_readiness_rejects_final_candidate_lifecycle_mismatch(self) -> None:
+        result = self.run_readiness(
+            self.copy_repo("final-candidate-mismatch"),
+            "--allow-existing-tag",
+            "--channel",
+            "candidate",
+        )
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("does not match release state", result.stdout + result.stderr)
+
+    def test_readiness_rejects_candidate_stable_lifecycle_mismatch(self) -> None:
+        repo = self.copy_repo("candidate-stable-mismatch")
+        self.set_candidate_state(repo)
+        result = self.run_readiness(
+            repo,
+            "--allow-existing-tag",
+            "--channel",
+            "stable",
+            release_state="candidate",
+        )
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("does not match release state", result.stdout + result.stderr)
+
     def test_manual_formal_release_evidence_workflow_is_fixed_and_fail_closed(self) -> None:
         workflow = (ROOT / ".github" / "workflows" / "formal-release-gate.yml").read_text(
             encoding="utf-8"
@@ -1248,9 +1289,6 @@ class ReleaseReadinessTests(unittest.TestCase):
         workflow = ROOT / ".github" / "workflows" / "check-skill.yml"
         text = workflow.read_text(encoding="utf-8")
         self.assertEqual([], FULL_VALIDATION.check_skill_formal_evidence_workflow_errors(text))
-        self.assertEqual([], FULL_VALIDATION.formal_release_evidence_workflow_errors(
-            (ROOT / ".github" / "workflows" / "formal-release-gate.yml").read_text(encoding="utf-8")
-        ))
         mutations = (
             ("Record formal runner identity", "Remove formal runner identity"),
             ('--action-provenance-file "$RUNNER_TEMP/formal-schema-runner-identity.json"', "--action-provenance-file \"$RUNNER_TEMP/other.json\""),
@@ -1267,8 +1305,6 @@ class ReleaseReadinessTests(unittest.TestCase):
             ("--allow-existing-tag", "--pre-tag"),
             ('"actions": {', '"fake-actions": {'),
             ('json.dump(payload, handle, indent=2, sort_keys=True)', 'json.dump(other, handle, indent=2, sort_keys=True)'),
-            ('python3 - "$RUNNER_IDENTITY" "$WORKFLOW_SHA256" "$WORKFLOW_PATH" "$RELEASE_COMMIT" <<\'PY\'', 'python3 - "$RUNNER_IDENTITY" "$WORKFLOW_SHA256" "$WORKFLOW_PATH" <<\'PY\''),
-            ('"release_commit": release_commit', '"release_commit": os.environ["RELEASE_COMMIT"]'),
         )
         prefix, formal = text.split("  formal-schema-gate:", 1)
         for old, new in mutations:

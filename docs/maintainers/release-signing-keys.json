@@ -3,30 +3,28 @@
   "keys": [
     {
       "fingerprint": "1039EC488BE088997C1740D9ED0002B3562F2F59",
-      "fingerprint_type": "pgp",
       "algorithm": "ed25519",
-      "public_key_path": "release-signing-keys/Q20396-LHE-Release-Signing.asc",
-      "verification_format": "openpgp",
+      "format": "openpgp",
+      "public_key": "release-signing-keys/Q20396-LHE-Release-Signing.asc",
       "purpose": "annotated LHE release tags",
       "trust_domain": "release_tag",
+      "may_sign_commits": false,
+      "may_sign_release_tags": true,
       "status": "active",
       "valid_from": "2026-08-01",
-      "expires": "2027-08-01",
-      "may_sign_commits": false,
-      "may_sign_release_tags": true
+      "expires": "2027-08-01"
     }
   ],
-  "commit_signer_policy": {
+  "commit": {
     "fingerprint": "SHA256:TakAONGUVp2o/aQK9cJSncIDOZ3HEr27M6Ctr84LdGY",
-    "fingerprint_type": "ssh",
-    "purpose": "ordinary commit signing",
+    "format": "ssh",
+    "public_key_file": "release-signing-keys/Q20396-Commit-Signing.pub",
+    "source": "https://api.github.com/users/Q20396/ssh_signing_keys",
+    "source_response_sha256": "697a47e7b7f44d0643d384688da697078f03adefc93f041faaecfdd5c0466f03",
+    "purpose": "ordinary maintainer commits only",
     "trust_domain": "commit",
-    "source": "GitHub account SSH signing key",
-    "source_subject": "107850521+Q20396@users.noreply.github.com",
-    "public_key_path": "release-signing-keys/Q20396-Commit-Signing.pub",
-    "verification_format": "ssh",
-    "independent_verification": "required",
     "may_sign_commits": true,
-    "may_sign_release_tags": false
+    "may_sign_release_tags": false,
+    "independent_verification": "github_api"
   }
 }

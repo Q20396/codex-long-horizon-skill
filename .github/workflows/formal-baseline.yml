@@ -1,0 +1,159 @@
+name: Controlled formal baseline
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_sha:
+        description: Immutable candidate commit SHA
+        required: true
+        type: string
+      workflow_sha:
+        description: Immutable workflow revision SHA
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  formal-baseline:
+    runs-on: ubuntu-24.04
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - name: Check out immutable candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ inputs.target_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify clean worktree before execution
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "$(git status --porcelain=v1)"
+          test -z "$(find . -type d -name '__pycache__' -print)"
+          test -z "$(find . -type f \( -name '*.pyc' -o -name '*.pyo' \) -print)"
+
+      - name: Set up CPython
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.11.15"
+          architecture: x64
+          check-latest: false
+
+      - name: Validate immutable runtime identity
+        env:
+          TARGET_SHA: ${{ inputs.target_sha }}
+          INPUT_WORKFLOW_SHA: ${{ inputs.workflow_sha }}
+          ACTUAL_WORKFLOW_SHA: ${{ github.workflow_sha }}
+        run: |
+          set -euo pipefail
+          [[ "$TARGET_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$INPUT_WORKFLOW_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$INPUT_WORKFLOW_SHA" = "$ACTUAL_WORKFLOW_SHA"
+          test "$(uname -m)" = "x86_64"
+          test "$(python3 -c 'import sys; print(".".join(map(str, sys.version_info[:2])))')" = "3.11"
+          test "$(git rev-parse HEAD)" = "$TARGET_SHA"
+          test -z "$(git status --porcelain=v1)"
+
+      - name: Create locked validation environment
+        run: |
+          set -euo pipefail
+          python3 -m venv "$RUNNER_TEMP/lhe-formal-venv"
+          "$RUNNER_TEMP/lhe-formal-venv/bin/python" -m pip install \
+            --isolated --index-url https://pypi.org/simple \
+            --only-binary=:all: --require-hashes --no-input --no-cache-dir \
+            --report "$RUNNER_TEMP/pip-report.json" -r requirements-release.txt
+
+      - name: Record runner identity and acquire evidence
+        env:
+          TARGET_SHA: ${{ inputs.target_sha }}
+          INPUT_WORKFLOW_SHA: ${{ inputs.workflow_sha }}
+          ACTUAL_WORKFLOW_SHA: ${{ github.workflow_sha }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          VENV="$RUNNER_TEMP/lhe-formal-venv/bin/python"
+          EVIDENCE="$RUNNER_TEMP/formal-baseline-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          IDENTITY="$RUNNER_TEMP/formal-baseline-runner-identity.json"
+          WORKFLOW_PATH=.github/workflows/formal-baseline.yml
+          WORKFLOW_FILE_SHA256="$(sha256sum "$WORKFLOW_PATH" | awk '{print $1}')"
+          CANDIDATE_BASE="$(git rev-parse HEAD^)"
+          "$VENV" - "$IDENTITY" "$TARGET_SHA" "$TARGET_SHA" "$GITHUB_WORKFLOW_REF" "$ACTUAL_WORKFLOW_SHA" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$GITHUB_JOB" "$WORKFLOW_FILE_SHA256" "$CANDIDATE_BASE" <<'PY'
+          import json, os, sys
+          path, release_commit, target_sha, workflow_ref, workflow_sha, run_id, run_attempt, job, file_sha, base = sys.argv[1:]
+          payload = {
+              "github_run_id": run_id,
+              "github_run_attempt": run_attempt,
+              "workflow_ref": workflow_ref,
+              "job": job,
+              "repository": os.environ["GITHUB_REPOSITORY"],
+              "event_target_sha": target_sha,
+              "release_commit": release_commit,
+              "candidate_base": base,
+              "workflow_identity": {"path": ".github/workflows/formal-baseline.yml", "sha256": file_sha},
+              "workflow_sha": workflow_sha,
+              "workflow_path": ".github/workflows/formal-baseline.yml",
+              "workflow_file_sha256": file_sha,
+              "actions": {
+                  "checkout": "3d3c42e5aac5ba805825da76410c181273ba90b1",
+                  "setup-python": "5fda3b95a4ea91299a34e894583c3862153e4b97",
+                  "upload-artifact": "ea165f8d65b6e75b540449e92b4886f43607fa02",
+              },
+          }
+          with open(path, "w", encoding="utf-8") as handle:
+              json.dump(payload, handle, indent=2, sort_keys=True)
+              handle.write("\n")
+          PY
+          printf 'RUNNER_IDENTITY=%s\n' "$IDENTITY" >> "$GITHUB_ENV"
+          "$VENV" scripts/validate_formal_schemas.py --check-lock
+          "$VENV" scripts/validate_formal_schemas.py --verify-acquisition \
+            --pip-report "$RUNNER_TEMP/pip-report.json" --evidence-dir "$EVIDENCE" \
+            --result "$EVIDENCE/acquisition-receipt.json" --candidate-base "$CANDIDATE_BASE" \
+            --run-id "$GITHUB_RUN_ID" --run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --workflow-ref "$GITHUB_WORKFLOW_REF" --job-name "$GITHUB_JOB" \
+            --workflow-sha256 "$WORKFLOW_FILE_SHA256" --workflow-path "$WORKFLOW_PATH" \
+            --action-provenance-file "$IDENTITY" --event-target-sha "$TARGET_SHA" \
+            --repository "$GITHUB_REPOSITORY"
+
+      - name: Offline formal replay and readiness audit
+        env:
+          TARGET_SHA: ${{ inputs.target_sha }}
+        run: |
+          set -euo pipefail
+          VENV="$RUNNER_TEMP/lhe-formal-venv/bin/python"
+          EVIDENCE="$RUNNER_TEMP/formal-baseline-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          WORKFLOW_SHA256="$(sha256sum .github/workflows/formal-baseline.yml | awk '{print $1}')"
+          "$VENV" scripts/check_release_readiness.py --version 0.6.1 --pre-tag \
+            --release-state final --channel stable \
+            --formal-schema-pip-report "$RUNNER_TEMP/pip-report.json" \
+            --formal-schema-acquisition-result "$EVIDENCE/acquisition-receipt.json" \
+            --formal-schema-evidence-dir "$EVIDENCE" --formal-schema-candidate-base "$(git rev-parse HEAD^)" \
+            --formal-schema-workflow-sha256 "$WORKFLOW_SHA256" \
+            --formal-schema-workflow-path .github/workflows/formal-baseline.yml \
+            --formal-schema-action-provenance-file "$RUNNER_IDENTITY" \
+            --formal-schema-event-target-sha "$TARGET_SHA" --formal-schema-repository "$GITHUB_REPOSITORY" \
+            --formal-schema-result "$EVIDENCE/formal-result.json"
+
+      - name: Upload formal evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: formal-baseline-${{ inputs.target_sha }}-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/formal-baseline-runner-identity.json
+            ${{ runner.temp }}/pip-report.json
+            ${{ runner.temp }}/formal-baseline-${{ github.run_id }}-${{ github.run_attempt }}
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Verify clean worktree after execution
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "$(git status --porcelain=v1)"
+          test -z "$(find . -type d -name '__pycache__' -print -quit)"
+          test -z "$(find . -type f \( -name '*.pyc' -o -name '*.pyo' \) -print -quit)"

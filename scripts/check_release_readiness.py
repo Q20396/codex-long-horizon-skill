@@ -11,28 +11,16 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 from datetime import date
 from pathlib import Path
 
-try:
-    from scripts.release_signing_policy import (
-        RELEASE_TAG_FINGERPRINT,
-        validate_signer_for_artifact,
-        verify_release_tag_signer,
-        build_verification_material,
-    )
-except ModuleNotFoundError:
-    _policy_spec = importlib.util.spec_from_file_location(
-        "release_signing_policy", Path(__file__).with_name("release_signing_policy.py")
-    )
-    if _policy_spec is None or _policy_spec.loader is None:
-        raise
-    _policy_module = importlib.util.module_from_spec(_policy_spec)
-    _policy_spec.loader.exec_module(_policy_module)
-    RELEASE_TAG_FINGERPRINT = _policy_module.RELEASE_TAG_FINGERPRINT
-    validate_signer_for_artifact = _policy_module.validate_signer_for_artifact
-    verify_release_tag_signer = _policy_module.verify_release_tag_signer
-    build_verification_material = _policy_module.build_verification_material
+# Keep direct execution and dynamic test loading on the same import path.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from release_signing_policy import load_signing_policy, validate_signer_for_artifact
+
+
+_SIGNER_RE = re.compile(r"(?:key SHA256:|ED25519 key SHA256:)([A-Za-z0-9+/=]+)")
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -175,6 +163,11 @@ def parse_args() -> argparse.Namespace:
             "unless controlled formal inputs are also supplied."
         ),
     )
+    parser.add_argument(
+        "--channel",
+        choices=("candidate", "stable"),
+        help="Explicit lifecycle channel; it must match --release-state when supplied.",
+    )
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument(
         "--pre-tag-static",
@@ -201,11 +194,6 @@ def parse_args() -> argparse.Namespace:
         "--audit-existing-formal-result",
         action="store_true",
         help="Read-only audit of an existing formal result and acquisition receipt.",
-    )
-    mode.add_argument(
-        "--audit-release-tag",
-        metavar="TAG",
-        help="Read-only verification of an existing annotated release tag.",
     )
     parser.add_argument(
         "--formal-schema-result",
@@ -531,13 +519,59 @@ def tag_errors(version: str, pre_tag: bool, errors: list[str]) -> None:
     if not pre_tag:
         return
     tag = f"v{version}"
-    try:
-        validate_signer_for_artifact(RELEASE_TAG_FINGERPRINT, "release_tag")
-    except ValueError as exc:
-        errors.append(f"release-tag signer policy failed: {exc}")
     tag_result = run(["git", "rev-parse", "-q", "--verify", f"refs/tags/{tag}"])
     if tag_result.returncode == 0:
         errors.append(f"local tag already exists; cannot run pre-tag gate for {tag}")
+
+
+def extract_commit_signer_fingerprint(
+    commit: str, *, allowed_signers: Path
+) -> str:
+    """Verify a commit and return the fingerprint of its actual SSH signer."""
+    result = subprocess.run(
+        [
+            "git",
+            "-c",
+            "gpg.format=ssh",
+            f"-c",
+            f"gpg.ssh.allowedSignersFile={allowed_signers}",
+            "verify-commit",
+            "--raw",
+            commit,
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if result.returncode != 0:
+        raise ValueError("commit signature verification failed")
+    match = _SIGNER_RE.search(result.stdout + "\n" + result.stderr)
+    if match is None:
+        raise ValueError("verified commit signer fingerprint not found")
+    return f"SHA256:{match.group(1)}"
+
+
+def signing_policy_errors(errors: list[str]) -> None:
+    """Verify the current HEAD signer at the readiness boundary."""
+    try:
+        policy = load_signing_policy()
+        commit_policy = policy["commit"]
+        public_key = ROOT / "docs/maintainers" / commit_policy["public_key_file"]
+        principal = "107850521+Q20396@users.noreply.github.com"
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8") as signers:
+            signers.write(f"{principal} namespaces=\"git\" {public_key.read_text(encoding='utf-8').strip()}\n")
+            signers.flush()
+            actual_fingerprint = extract_commit_signer_fingerprint(
+                run(["git", "rev-parse", "HEAD"]).stdout.strip(),
+                allowed_signers=Path(signers.name),
+            )
+        validate_signer_for_artifact(
+            actual_fingerprint, "commit", policy=policy
+        )
+    except (KeyError, TypeError, ValueError, OSError) as exc:
+        errors.append(f"signing policy validation failed: {exc}")
 
 
 def formal_worktree_errors(errors: list[str]) -> None:
@@ -699,12 +733,6 @@ def formal_schema_errors(args: argparse.Namespace, errors: list[str]) -> None:
             workflow_ref=args.formal_schema_workflow_ref,
             job=args.formal_schema_job,
         ))
-        return
-    if args.audit_release_tag:
-        try:
-            verify_release_tag_signer(args.audit_release_tag)
-        except ValueError as exc:
-            errors.append(f"release-tag audit failed: {exc}")
         return
     paths = {
         "--formal-schema-result": args.formal_schema_result,
@@ -1051,20 +1079,20 @@ def validate(args: argparse.Namespace) -> list[str]:
     version = args.version
     errors: list[str] = []
 
-    if args.audit_release_tag:
-        try:
-            verify_release_tag_signer(args.audit_release_tag)
-        except ValueError as exc:
-            errors.append(f"release-tag audit failed: {exc}")
-        return errors
-
     if not SEMVER_RE.match(version):
         errors.append("version must be plain semantic version syntax")
         return errors
 
     release_date = release_notes_errors(version, args.release_state, errors)
+    channel = getattr(args, "channel", None)
+    if channel is not None and channel != RELEASE_STATE_CONTRACTS[args.release_state]["channel"]:
+        errors.append(
+            f"channel {channel!r} does not match release state {args.release_state!r}"
+        )
     package_errors(version, release_date, args.release_state, errors)
     changelog_errors(version, release_date, errors)
+    if args.pre_tag:
+        signing_policy_errors(errors)
     tag_errors(version, args.pre_tag, errors)
     if args.release_state == "final" and args.pre_tag_static:
         errors.append(
@@ -1087,8 +1115,6 @@ def main() -> int:
         mode = "pre-tag"
     elif args.audit_existing_formal_result:
         mode = "audit-existing-formal-result"
-    elif args.audit_release_tag:
-        mode = "audit-release-tag"
     else:
         mode = "allow-existing-tag"
     try:

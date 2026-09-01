@@ -40,11 +40,16 @@ FORMAL_WORKFLOW_CONTRACTS = {
         "job": "formal-schema-gate",
         "actions": ACTION_PROVENANCE,
     },
+    ".github/workflows/formal-baseline.yml": {
+        "job": "formal-baseline",
+        "actions": ACTION_PROVENANCE,
+        "topology": "ci_ancestor_base",
+    },
 }
 EXPECTED_REPOSITORY = "Q20396/codex-long-horizon-skill"
 WORKFLOW_REF_RE = re.compile(
     r"^(?P<repository>Q20396/codex-long-horizon-skill)/"
-    r"(?P<path>\.github/workflows/(?:check-skill|formal-release-gate)\.yml)@"
+    r"(?P<path>\.github/workflows/(?:check-skill|formal-release-gate|formal-baseline)\.yml)@"
     r"(?P<ref>refs/(?:heads/[^\s]+|pull/[1-9][0-9]*/merge))$"
 )
 BOOTSTRAP_PARENT = "6f1f48381f465b460a9390643fc835b666604207"
@@ -455,6 +460,7 @@ def preflight_acquisition_context(
     topology_mode = {
         (".github/workflows/formal-release-gate.yml", "formal-release-gate"): "release_direct_parent",
         (".github/workflows/check-skill.yml", "formal-schema-gate"): "ci_ancestor_base",
+        (".github/workflows/formal-baseline.yml", "formal-baseline"): "ci_ancestor_base",
     }.get((workflow_path, job_name))
     if topology_mode is None:
         errors.append("preflight workflow/job has no approved topology mode")
@@ -1950,6 +1956,43 @@ def validate_workflow_identity(identity: dict[str, str], job_name: str | None = 
     return errors
 
 
+def validate_formal_baseline_identity(
+    identity: dict[str, Any], expected_context: dict[str, str] | None,
+) -> list[str]:
+    errors: list[str] = []
+    required = {
+        "release_commit", "event_target_sha", "workflow_ref", "workflow_sha",
+        "workflow_path", "workflow_file_sha256", "github_run_id",
+        "github_run_attempt", "job", "candidate_base",
+    }
+    missing = sorted(required - set(identity))
+    if missing:
+        errors.append("formal baseline runner identity missing: " + ", ".join(missing))
+        return errors
+    if identity["release_commit"] != identity["event_target_sha"]:
+        errors.append("formal baseline release commit and target SHA differ")
+    if expected_context:
+        target = expected_context.get("event_target_sha", "")
+        if identity["release_commit"] != target:
+            errors.append("formal baseline release commit does not match target SHA")
+    if not re.fullmatch(r"[0-9a-f]{40}", identity["workflow_sha"]):
+        errors.append("formal baseline workflow SHA must be immutable")
+    if identity["workflow_path"] != ".github/workflows/formal-baseline.yml":
+        errors.append("formal baseline workflow path mismatch")
+    if not re.fullmatch(r"[0-9a-f]{64}", identity["workflow_file_sha256"]):
+        errors.append("formal baseline workflow file SHA must be 64 lowercase hex")
+    workflow_file = ROOT / identity["workflow_path"]
+    if workflow_file.is_file() and sha256_file(workflow_file) != identity["workflow_file_sha256"]:
+        errors.append("workflow file hash mismatch")
+    if not isinstance(identity["github_run_id"], str) or not identity["github_run_id"]:
+        errors.append("formal baseline github_run_id must be non-empty string")
+    if not isinstance(identity["github_run_attempt"], str) or not identity["github_run_attempt"]:
+        errors.append("formal baseline github_run_attempt must be non-empty string")
+    if identity["job"] != "formal-baseline":
+        errors.append("formal baseline job mismatch")
+    return errors
+
+
 def load_action_provenance(
     path: Path,
     workflow_identity: dict[str, str],
@@ -1960,7 +2003,14 @@ def load_action_provenance(
         payload = load_json(path)
     except (OSError, ValueError) as exc:
         return [f"action provenance file could not be read: {exc}"], None, None
-    if not isinstance(payload, dict) or set(payload) != {"github_run_id", "github_run_attempt", "workflow_ref", "job", "repository", "event_target_sha", "release_commit", "candidate_base", "workflow_identity", "actions"}:
+    baseline_fields = {"github_run_id", "github_run_attempt", "workflow_ref", "job", "repository", "event_target_sha", "release_commit", "candidate_base", "workflow_identity", "workflow_sha", "workflow_path", "workflow_file_sha256", "actions"}
+    legacy_fields = {"github_run_id", "github_run_attempt", "workflow_ref", "job", "repository", "event_target_sha", "release_commit", "candidate_base", "workflow_identity", "actions"}
+    identity_path = payload.get("workflow_path") if isinstance(payload, dict) else None
+    expected_path = workflow_identity.get("path", "")
+    if expected_path == ".github/workflows/formal-baseline.yml" and identity_path != expected_path:
+        errors.append("workflow_path is required")
+    accepted_fields = baseline_fields if identity_path == ".github/workflows/formal-baseline.yml" else legacy_fields
+    if not isinstance(payload, dict) or set(payload) != accepted_fields:
         errors.append("runner identity structure is not closed")
     actions = payload.get("actions") if isinstance(payload, dict) else None
     if not isinstance(actions, dict) or set(actions) != set(ACTION_PROVENANCE):
@@ -1968,6 +2018,8 @@ def load_action_provenance(
         actions = None
     elif actions != ACTION_PROVENANCE:
         errors.append("runner identity action provenance does not match approved SHAs")
+    if identity_path == ".github/workflows/formal-baseline.yml":
+        errors.extend(validate_formal_baseline_identity(payload, expected_context))
     file_identity = payload.get("workflow_identity") if isinstance(payload, dict) else None
     expected_file_identity = {
         "path": workflow_identity.get("path", ""),
