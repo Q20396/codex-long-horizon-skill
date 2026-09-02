@@ -395,13 +395,22 @@ class FrontMatterParserTests(unittest.TestCase):
         shutil.copytree(ROOT, repo, ignore=shutil.ignore_patterns(".git", "__pycache__"))
         skill = repo / ".agents" / "skills" / "long-horizon-engineering" / "SKILL.md"
         skill.write_text("name: broken\n---\nBody\n", encoding="utf-8")
-        result = subprocess.run(
-            [sys.executable, "scripts/validate_plugin_package.py"],
-            cwd=repo,
-            text=True,
-            capture_output=True,
-            check=False,
-        )
+        try:
+            result = subprocess.run(
+                [sys.executable, "scripts/validate_plugin_package.py"],
+                cwd=repo,
+                text=True,
+                capture_output=True,
+                check=False,
+                stdin=subprocess.DEVNULL,
+                timeout=30,
+            )
+        except subprocess.TimeoutExpired as exc:
+            self.fail(
+                "validate_plugin_package.py timed out after 30s\n"
+                f"stdout={exc.stdout!r}\n"
+                f"stderr={exc.stderr!r}"
+            )
         output = result.stdout + result.stderr
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("ERROR:", output)
