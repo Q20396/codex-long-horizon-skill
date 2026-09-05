@@ -1935,6 +1935,8 @@ def validate_workflow_identity(identity: dict[str, str], job_name: str | None = 
     path = identity.get("path", "")
     digest = identity.get("sha256", "")
     workflow_ref = identity.get("workflow_ref", "")
+    if not isinstance(path, str) or not isinstance(digest, str):
+        return ["workflow identity path and sha256 must be strings"]
     contract = FORMAL_WORKFLOW_CONTRACTS.get(path)
     if contract is None:
         errors.append("workflow identity path is not an approved formal workflow")
@@ -1956,6 +1958,31 @@ def validate_workflow_identity(identity: dict[str, str], job_name: str | None = 
     return errors
 
 
+def execution_workflow_blob_sha256(revision: str, path: str) -> str:
+    """Hash a locally available execution blob; never fetch missing objects."""
+    if not isinstance(revision, str) or not re.fullmatch(r"[0-9a-f]{40}", revision):
+        raise ValueError("execution workflow SHA must be a full immutable commit SHA")
+    if not isinstance(path, str) or path not in FORMAL_WORKFLOW_CONTRACTS:
+        raise ValueError("execution workflow path is not approved")
+    env = dict(os.environ, GIT_NO_LAZY_FETCH="1", GIT_TERMINAL_PROMPT="0",
+               GIT_OPTIONAL_LOCKS="0", GIT_ALLOW_PROTOCOL="")
+    def git(*args: str) -> bytes:
+        try:
+            return subprocess.run(
+                ["git", "--no-replace-objects", *args], cwd=ROOT, env=env,
+                stdin=subprocess.DEVNULL, capture_output=True, check=True,
+                timeout=10,
+            ).stdout
+        except (OSError, subprocess.SubprocessError) as exc:
+            raise ValueError("execution workflow object unavailable locally") from exc
+    if git("cat-file", "-t", revision).strip() != b"commit":
+        raise ValueError("execution workflow revision is not a commit")
+    object_name = f"{revision}:{path}"
+    if git("cat-file", "-t", object_name).strip() != b"blob":
+        raise ValueError("execution workflow path is not a blob")
+    return hashlib.sha256(git("cat-file", "blob", object_name)).hexdigest()
+
+
 def validate_formal_baseline_identity(
     identity: dict[str, Any], expected_context: dict[str, str] | None,
 ) -> list[str]:
@@ -1975,15 +2002,26 @@ def validate_formal_baseline_identity(
         target = expected_context.get("event_target_sha", "")
         if identity["release_commit"] != target:
             errors.append("formal baseline release commit does not match target SHA")
-    if not re.fullmatch(r"[0-9a-f]{40}", identity["workflow_sha"]):
+    expected_sha = (expected_context or {}).get("workflow_sha")
+    if not isinstance(expected_sha, str) or not re.fullmatch(r"[0-9a-f]{40}", expected_sha):
+        errors.append("formal baseline expected workflow SHA is required from execution context")
+    if identity["workflow_sha"] != expected_sha:
+        errors.append("formal baseline workflow SHA does not match current execution")
+    if not isinstance(identity["workflow_sha"], str) or not re.fullmatch(r"[0-9a-f]{40}", identity["workflow_sha"]):
         errors.append("formal baseline workflow SHA must be immutable")
     if identity["workflow_path"] != ".github/workflows/formal-baseline.yml":
         errors.append("formal baseline workflow path mismatch")
-    if not re.fullmatch(r"[0-9a-f]{64}", identity["workflow_file_sha256"]):
+    if not isinstance(identity["workflow_file_sha256"], str) or not re.fullmatch(r"[0-9a-f]{64}", identity["workflow_file_sha256"]):
         errors.append("formal baseline workflow file SHA must be 64 lowercase hex")
-    workflow_file = ROOT / identity["workflow_path"]
-    if workflow_file.is_file() and sha256_file(workflow_file) != identity["workflow_file_sha256"]:
-        errors.append("workflow file hash mismatch")
+    try:
+        blob_sha = execution_workflow_blob_sha256(expected_sha, identity["workflow_path"])
+        if blob_sha != identity["workflow_file_sha256"]:
+            errors.append("workflow file hash mismatch with execution revision blob")
+        workflow_file = ROOT / identity["workflow_path"]
+        if not workflow_file.is_file() or sha256_file(workflow_file) != blob_sha:
+            errors.append("execution workflow blob does not match the checked-out workflow")
+    except ValueError as exc:
+        errors.append(str(exc))
     if not isinstance(identity["github_run_id"], str) or not identity["github_run_id"]:
         errors.append("formal baseline github_run_id must be non-empty string")
     if not isinstance(identity["github_run_attempt"], str) or not identity["github_run_attempt"]:
@@ -2007,7 +2045,10 @@ def load_action_provenance(
     legacy_fields = {"github_run_id", "github_run_attempt", "workflow_ref", "job", "repository", "event_target_sha", "release_commit", "candidate_base", "workflow_identity", "actions"}
     identity_path = payload.get("workflow_path") if isinstance(payload, dict) else None
     expected_path = workflow_identity.get("path", "")
-    if expected_path == ".github/workflows/formal-baseline.yml" and identity_path != expected_path:
+    is_baseline = (expected_path == ".github/workflows/formal-baseline.yml"
+                   or (expected_context or {}).get("job") == "formal-baseline"
+                   or identity_path == ".github/workflows/formal-baseline.yml")
+    if is_baseline and identity_path != ".github/workflows/formal-baseline.yml":
         errors.append("workflow_path is required")
     accepted_fields = baseline_fields if identity_path == ".github/workflows/formal-baseline.yml" else legacy_fields
     if not isinstance(payload, dict) or set(payload) != accepted_fields:
@@ -2018,7 +2059,11 @@ def load_action_provenance(
         actions = None
     elif actions != ACTION_PROVENANCE:
         errors.append("runner identity action provenance does not match approved SHAs")
-    if identity_path == ".github/workflows/formal-baseline.yml":
+    if is_baseline and isinstance(payload, dict):
+        # This is the independently supplied process execution context, not payload data.
+        if expected_context is not None:
+            expected_context = dict(expected_context)
+            expected_context.setdefault("workflow_sha", os.environ.get("GITHUB_WORKFLOW_SHA", ""))
         errors.extend(validate_formal_baseline_identity(payload, expected_context))
     file_identity = payload.get("workflow_identity") if isinstance(payload, dict) else None
     expected_file_identity = {

@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -14,6 +15,57 @@ from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+class SameStepIdentityTests(unittest.TestCase):
+    def test_real_ci_producer_ignores_inherited_release_commit(self):
+        text = (ROOT / ".github/workflows/check-skill.yml").read_text()
+        step = next(s for s in FULL_VALIDATION._workflow_steps(text)
+                    if s.strip().startswith("- name: Record formal runner identity"))
+        script = textwrap.dedent(step.split("run: |\n", 1)[1])
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+            workflow = repo / ".github/workflows/check-skill.yml"
+            workflow.parent.mkdir(parents=True)
+            workflow.write_text(text)
+            # A synthetic commit object avoids signing hooks and user configuration.
+            def git(*args, input=None):
+                return subprocess.run(["git", *args], cwd=repo, input=input,
+                                      text=True, capture_output=True, check=True,
+                                      timeout=10).stdout.strip()
+            git("init", "-q")
+            tree = git("mktree", input="")
+            env = dict(os.environ, GIT_AUTHOR_NAME="Fixture", GIT_COMMITTER_NAME="Fixture",
+                       GIT_AUTHOR_EMAIL="fixture@example.invalid", GIT_COMMITTER_EMAIL="fixture@example.invalid")
+            head = subprocess.run(["git", "-c", "commit.gpgsign=false", "commit-tree", tree],
+                                  cwd=repo, env=env, input="fixture\n", text=True,
+                                  capture_output=True, check=True, timeout=10).stdout.strip()
+            git("update-ref", "HEAD", head)
+            env.update(RUNNER_TEMP=tmp, GITHUB_ENV=str(repo / "env"),
+                       GITHUB_RUN_ID="1", GITHUB_RUN_ATTEMPT="1", GITHUB_JOB="formal-schema-gate",
+                       GITHUB_WORKFLOW_REF="fixture", FORMAL_REPOSITORY="fixture",
+                       FORMAL_EVENT_TARGET_SHA=head, FORMAL_CANDIDATE_BASE=head)
+            # Select the current test interpreter without altering producer code.
+            bindir = repo / "bin"
+            bindir.mkdir()
+            (bindir / "python3").symlink_to(sys.executable)
+            env["PATH"] = str(bindir) + os.pathsep + env["PATH"]
+            for inherited in (None, "0" * 40):
+                env.pop("RELEASE_COMMIT", None)
+                if inherited is not None:
+                    env["RELEASE_COMMIT"] = inherited
+                result = subprocess.run(["bash", "-c", script], cwd=repo, env=env,
+                                        stdin=subprocess.DEVNULL, capture_output=True,
+                                        text=True, timeout=20)
+                self.assertEqual(0, result.returncode, result.stderr)
+                identity = json.loads((repo / "formal-schema-runner-identity.json").read_text())
+                self.assertEqual(head, identity["release_commit"])
+
+    def test_checker_rejects_old_same_step_environment_read(self):
+        text = (ROOT / ".github/workflows/check-skill.yml").read_text()
+        broken = text.replace('"release_commit": release_commit',
+                              '"release_commit": os.environ["RELEASE_COMMIT"]')
+        self.assertTrue(FULL_VALIDATION.check_skill_formal_evidence_workflow_errors(broken))
 
 APPROVED_ACTIONS = {
     "actions/checkout": "3d3c42e5aac5ba805825da76410c181273ba90b1",
@@ -1051,7 +1103,8 @@ class ReleaseReadinessTests(unittest.TestCase):
             "job": "formal-baseline",
             "candidate_base": "d" * 40,
         }
-        self.assertEqual([], FORMAL_VALIDATOR.validate_formal_baseline_identity(identity, {"event_target_sha": "a" * 40}))
+        with mock.patch.object(FORMAL_VALIDATOR, "execution_workflow_blob_sha256", return_value=identity["workflow_file_sha256"]):
+            self.assertEqual([], FORMAL_VALIDATOR.validate_formal_baseline_identity(identity, {"event_target_sha": "a" * 40, "workflow_sha": "b" * 40}))
         identity["github_run_id"] = 123
         self.assertIn("formal baseline github_run_id must be non-empty string", FORMAL_VALIDATOR.validate_formal_baseline_identity(identity, {"event_target_sha": "a" * 40}))
         identity.pop("workflow_path")

@@ -4,6 +4,10 @@ import importlib.util
 import contextlib
 import io
 import json
+import os
+import re
+import shutil
+import textwrap
 from datetime import timedelta
 from pathlib import Path
 import platform
@@ -40,6 +44,118 @@ def load_module():
 
 
 VALIDATOR = load_module()
+
+
+class ExecutionWorkflowBindingTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.repo = Path(self.temp.name)
+        self.path = ".github/workflows/formal-baseline.yml"
+        self.content = (ROOT / self.path).read_bytes()
+        self.env = dict(os.environ, GIT_AUTHOR_NAME="Fixture", GIT_COMMITTER_NAME="Fixture",
+                        GIT_AUTHOR_EMAIL="fixture@example.invalid", GIT_COMMITTER_EMAIL="fixture@example.invalid")
+        self.git("init", "-q")
+        self.base = self.revision(self.content)
+        self.head = self.revision(self.content, self.base)
+        self.git("update-ref", "HEAD", self.head)
+        (self.repo / self.path).parent.mkdir(parents=True)
+        (self.repo / self.path).write_bytes(self.content)
+        self.patch = mock.patch.object(VALIDATOR, "ROOT", self.repo)
+        self.patch.start()
+        self.addCleanup(self.patch.stop)
+
+    def git(self, *args, input=None):
+        return subprocess.run(["git", "-c", "commit.gpgsign=false", *args], cwd=self.repo,
+                              env=self.env, input=input, text=True, capture_output=True,
+                              check=True, timeout=10).stdout.strip()
+
+    def revision(self, content, parent=None):
+        blob = self.git("hash-object", "-w", "--stdin", input=content.decode())
+        tree = self.git("mktree", input=f"100644 blob {blob}\tformal-baseline.yml\n")
+        tree = self.git("mktree", input=f"040000 tree {tree}\tworkflows\n")
+        tree = self.git("mktree", input=f"040000 tree {tree}\t.github\n")
+        return self.git("commit-tree", tree, *(["-p", parent] if parent else []), input="fixture\n")
+
+    def produce(self, revision):
+        # Execute the checked-in producer, stopping before acquisition begins.
+        text = self.content.decode()
+        step = text.split("      - name: Record runner identity and acquire evidence", 1)[1]
+        script = textwrap.dedent(step.split("        run: |\n", 1)[1].split("          PY\n", 1)[0] + "          PY\n")
+        (self.repo / "scripts").mkdir(exist_ok=True)
+        shutil.copyfile(SCRIPT_PATH, self.repo / "scripts/validate_formal_schemas.py")
+        interpreter = self.repo / "lhe-formal-venv/bin/python"
+        interpreter.parent.mkdir(parents=True, exist_ok=True)
+        if not interpreter.exists():
+            interpreter.symlink_to(sys.executable)
+        env = dict(self.env, RUNNER_TEMP=str(self.repo), TARGET_SHA=self.head,
+                   ACTUAL_WORKFLOW_SHA=revision, GITHUB_WORKFLOW_SHA=revision,
+                   GITHUB_RUN_ID="1", GITHUB_RUN_ATTEMPT="1", GITHUB_JOB="formal-baseline",
+                   GITHUB_REPOSITORY=VALIDATOR.EXPECTED_REPOSITORY,
+                   GITHUB_WORKFLOW_REF=f"{VALIDATOR.EXPECTED_REPOSITORY}/{self.path}@refs/heads/main")
+        result = subprocess.run(["bash", "-c", script], cwd=self.repo, env=env,
+                                stdin=subprocess.DEVNULL, text=True, capture_output=True, timeout=20)
+        self.assertEqual(0, result.returncode, result.stderr)
+        return json.loads((self.repo / "formal-baseline-runner-identity.json").read_text())
+
+    def consume(self, payload, revision):
+        path = self.repo / "identity.json"
+        path.write_text(json.dumps(payload))
+        context = {key: payload[key] for key in ("github_run_id", "github_run_attempt", "workflow_ref", "job", "repository", "event_target_sha", "release_commit", "candidate_base")}
+        context["workflow_sha"] = revision
+        workflow = dict(payload["workflow_identity"], workflow_ref=payload["workflow_ref"])
+        return VALIDATOR.load_action_provenance(path, workflow, context)[0]
+
+    def test_real_producer_same_revision(self):
+        self.assertEqual([], self.consume(self.produce(self.head), self.head))
+
+    def test_real_producer_distinct_revision_same_blob(self):
+        self.assertNotEqual(self.base, self.head)
+        self.assertEqual([], self.consume(self.produce(self.base), self.base))
+
+    def test_wrong_execution_blob_is_rejected(self):
+        changed = self.revision(self.content + b"\n# different execution\n", self.head)
+        payload = self.produce(self.head)
+        payload["workflow_sha"] = changed
+        self.assertTrue(self.consume(payload, changed))
+
+    def test_payload_mutations_fail_closed(self):
+        original = self.produce(self.head)
+        for key, value in (("workflow_sha", "a" * 40), ("workflow_sha", None),
+                           ("workflow_path", None), ("workflow_path", "../bad"),
+                           ("workflow_file_sha256", None), ("workflow_file_sha256", "0" * 64),
+                           ("release_commit", "a" * 40), ("github_run_id", 1)):
+            with self.subTest(key=key, value=value):
+                self.assertTrue(self.consume(dict(original, **{key: value}), self.head))
+        payload = dict(original)
+        del payload["workflow_sha"]
+        self.assertTrue(self.consume(payload, self.head))
+        self.assertTrue(self.consume(original, ""))
+        self.assertTrue(self.consume(original, "a" * 40))
+
+    def test_missing_blob_and_wrong_object_types(self):
+        tree = self.git("mktree", input="")
+        empty = self.git("commit-tree", tree, input="empty\n")
+        blob = self.git("hash-object", "-w", "--stdin", input="blob")
+        for sha, path in ((empty, self.path), (tree, self.path), (blob, self.path),
+                          (self.head, ".github/workflows/absent.yml")):
+            with self.subTest(sha=sha, path=path), self.assertRaises(ValueError):
+                VALIDATOR.execution_workflow_blob_sha256(sha, path)
+
+    def test_baseline_cannot_fall_back_to_legacy(self):
+        payload = self.produce(self.head)
+        for key in ("workflow_sha", "workflow_path", "workflow_file_sha256"):
+            payload.pop(key)
+        self.assertTrue(self.consume(payload, self.head))
+
+    def test_execution_git_has_bounded_offline_io(self):
+        with mock.patch.object(VALIDATOR.subprocess, "run", side_effect=subprocess.TimeoutExpired("git", 10)) as run:
+            with self.assertRaises(ValueError):
+                VALIDATOR.execution_workflow_blob_sha256(self.head, self.path)
+            self.assertEqual(10, run.call_args.kwargs["timeout"])
+            self.assertEqual(subprocess.DEVNULL, run.call_args.kwargs["stdin"])
+            self.assertEqual("1", run.call_args.kwargs["env"]["GIT_NO_LAZY_FETCH"])
+            self.assertEqual("", run.call_args.kwargs["env"]["GIT_ALLOW_PROTOCOL"])
 
 
 def synthetic_pip_report() -> dict:

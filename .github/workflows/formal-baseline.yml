@@ -79,7 +79,7 @@ jobs:
           EVIDENCE="$RUNNER_TEMP/formal-baseline-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
           IDENTITY="$RUNNER_TEMP/formal-baseline-runner-identity.json"
           WORKFLOW_PATH=.github/workflows/formal-baseline.yml
-          WORKFLOW_FILE_SHA256="$(sha256sum "$WORKFLOW_PATH" | awk '{print $1}')"
+          WORKFLOW_FILE_SHA256="$(PYTHONPATH=scripts "$VENV" -c 'import os; from validate_formal_schemas import execution_workflow_blob_sha256; print(execution_workflow_blob_sha256(os.environ["GITHUB_WORKFLOW_SHA"], ".github/workflows/formal-baseline.yml"))')"
           CANDIDATE_BASE="$(git rev-parse HEAD^)"
           "$VENV" - "$IDENTITY" "$TARGET_SHA" "$TARGET_SHA" "$GITHUB_WORKFLOW_REF" "$ACTUAL_WORKFLOW_SHA" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$GITHUB_JOB" "$WORKFLOW_FILE_SHA256" "$CANDIDATE_BASE" <<'PY'
           import json, os, sys
@@ -125,7 +125,7 @@ jobs:
           set -euo pipefail
           VENV="$RUNNER_TEMP/lhe-formal-venv/bin/python"
           EVIDENCE="$RUNNER_TEMP/formal-baseline-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
-          WORKFLOW_SHA256="$(sha256sum .github/workflows/formal-baseline.yml | awk '{print $1}')"
+          WORKFLOW_SHA256="$(PYTHONPATH=scripts "$VENV" -c 'import os; from validate_formal_schemas import execution_workflow_blob_sha256; print(execution_workflow_blob_sha256(os.environ["GITHUB_WORKFLOW_SHA"], ".github/workflows/formal-baseline.yml"))')"
           "$VENV" scripts/check_release_readiness.py --version 0.6.1 --pre-tag \
             --release-state final --channel stable \
             --formal-schema-pip-report "$RUNNER_TEMP/pip-report.json" \
