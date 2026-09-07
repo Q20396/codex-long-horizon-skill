@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import contextlib
 import json
 import os
 import re
@@ -567,6 +568,84 @@ class FrontMatterParserTests(unittest.TestCase):
 
 
 class ReleaseReadinessTests(unittest.TestCase):
+    @contextlib.contextmanager
+    def _signer_fixture(self):
+        git_bin, ssh_keygen = shutil.which("git"), shutil.which("ssh-keygen")
+        if not git_bin or not ssh_keygen:
+            self.fail("BLOCKED: git and ssh-keygen are required for signer fixtures")
+        with tempfile.TemporaryDirectory(prefix="readiness-signer-fixture-") as temp:
+            root = Path(temp)
+            repo = root / "repo"
+            repo.mkdir()
+            env = {key: value for key, value in os.environ.items()
+                   if not key.startswith("GIT_") and key not in {"SSH_AUTH_SOCK", "SSH_AGENT_PID"}}
+            env.update(GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=os.devnull,
+                       GIT_TERMINAL_PROMPT="0", GIT_ALLOW_PROTOCOL="",
+                       GIT_AUTHOR_NAME="Fixture", GIT_COMMITTER_NAME="Fixture",
+                       GIT_AUTHOR_EMAIL="fixture@example.invalid",
+                       GIT_COMMITTER_EMAIL="fixture@example.invalid")
+            real_run = subprocess.run
+
+            def command(args, input=None):
+                return real_run(args, cwd=repo, env=env, input=input, text=True,
+                                capture_output=True, check=True, timeout=15).stdout.strip()
+
+            def git(*args, input=None):
+                return command([git_bin, "-c", "core.hooksPath=/dev/null",
+                                "-c", "commit.gpgsign=false", *args], input)
+
+            key = root / "test-key"
+            wrong = root / "wrong-key"
+            for path in (key, wrong):
+                command([ssh_keygen, "-q", "-t", "ed25519", "-N", "", "-f", str(path)])
+            fingerprint = command([ssh_keygen, "-lf", str(key) + ".pub", "-E", "sha256"]).split()[1]
+            git("init", "-q")
+            git("config", "core.hooksPath", os.devnull)
+            git("config", "gpg.ssh.program", ssh_keygen)
+            git("config", "commit.gpgsign", "false")
+            public_dir = repo / "docs/maintainers"
+            public_dir.mkdir(parents=True)
+            public = public_dir / "test.pub"
+            public.write_bytes(Path(str(key) + ".pub").read_bytes())
+            blob = git("hash-object", "-w", "--stdin", input=public.read_text())
+            tree = git("mktree", input=f"100644 blob {blob}\ttest.pub\n")
+            tree = git("mktree", input=f"040000 tree {tree}\tmaintainers\n")
+            tree = git("mktree", input=f"040000 tree {tree}\tdocs\n")
+            unsigned = git("commit-tree", tree, input="unsigned fixture\n")
+            signed = git("-c", "gpg.format=ssh", "-c", f"user.signingkey={key}",
+                         "commit-tree", "-S", tree, "-p", unsigned, input="signed fixture\n")
+            git("update-ref", "HEAD", signed)
+            git("read-tree", "HEAD")
+            self.assertEqual("", git("status", "--porcelain=v1"))
+            policy_path = root / "policy.json"
+            policy_path.write_text(json.dumps({
+                "keys": [{"fingerprint": "fixture-release-key", "format": "openpgp",
+                          "trust_domain": "release_tag", "may_sign_commits": False,
+                          "may_sign_release_tags": True}],
+                "commit": {"fingerprint": fingerprint, "format": "ssh",
+                           "trust_domain": "commit", "may_sign_commits": True,
+                           "may_sign_release_tags": False, "public_key_file": "test.pub"},
+            }))
+            allowed = root / "allowed-signers"
+            wrong_allowed = root / "wrong-allowed-signers"
+            for dest, pub in ((allowed, public), (wrong_allowed, Path(str(wrong) + ".pub"))):
+                dest.write_text('107850521+Q20396@users.noreply.github.com namespaces="git" '
+                                + pub.read_text().strip() + "\n")
+
+            # Preserve real subprocess results; only bound and isolate fixture child I/O.
+            def bounded_run(*args, **kwargs):
+                kwargs.update(env=env, timeout=15, stdin=subprocess.DEVNULL)
+                return real_run(*args, **kwargs)
+
+            loader = RELEASE_READINESS.load_signing_policy
+            with mock.patch.object(RELEASE_READINESS, "ROOT", repo), \
+                 mock.patch.object(RELEASE_READINESS.subprocess, "run", side_effect=bounded_run), \
+                 mock.patch.object(RELEASE_READINESS, "load_signing_policy",
+                                   wraps=lambda: loader(policy_path)) as load_policy:
+                yield {"fingerprint": fingerprint, "policy": loader(policy_path),
+                       "signed": signed, "unsigned": unsigned, "allowed": allowed,
+                       "wrong_allowed": wrong_allowed, "load_policy": load_policy}
+
     FINAL_VERSION = "0.6.1"
     CANDIDATE_VERSION = "0.6.2-dev"
 
@@ -1032,38 +1111,58 @@ class ReleaseReadinessTests(unittest.TestCase):
             )
 
     def test_readiness_validates_commit_signer_through_production_boundary(self) -> None:
-        with mock.patch.object(
-            RELEASE_READINESS,
-            "load_signing_policy",
-            return_value=SIGNING_POLICY.load_signing_policy(),
-        ) as load_policy, mock.patch.object(
-            RELEASE_READINESS,
-            "validate_signer_for_artifact",
-            return_value=True,
+        with self._signer_fixture() as fixture, mock.patch.object(
+            RELEASE_READINESS, "extract_commit_signer_fingerprint",
+            return_value=fixture["fingerprint"],
+        ) as extract, mock.patch.object(
+            RELEASE_READINESS, "validate_signer_for_artifact",
+            wraps=RELEASE_READINESS.validate_signer_for_artifact,
         ) as validate_signer:
             errors: list[str] = []
             RELEASE_READINESS.signing_policy_errors(errors)
-
-        self.assertEqual([], errors)
-        load_policy.assert_called_once_with()
-        validate_signer.assert_called_once_with(
-            SIGNING_POLICY.load_signing_policy()["commit"]["fingerprint"],
-            "commit",
-            policy=SIGNING_POLICY.load_signing_policy(),
-        )
+            self.assertEqual([], errors)
+            fixture["load_policy"].assert_called_once_with()
+            self.assertEqual(fixture["signed"], extract.call_args.args[0])
+            validate_signer.assert_called_once_with(fixture["fingerprint"], "commit", policy=fixture["policy"])
 
     def test_readiness_fails_closed_when_signing_policy_rejects_commit(self) -> None:
-        with mock.patch.object(
-            RELEASE_READINESS,
-            "validate_signer_for_artifact",
-            side_effect=ValueError("unknown signer fingerprint"),
-        ):
+        with self._signer_fixture() as fixture, mock.patch.object(
+            RELEASE_READINESS, "extract_commit_signer_fingerprint", return_value="SHA256:untrusted-fixture",
+        ), mock.patch.object(RELEASE_READINESS, "validate_signer_for_artifact",
+                             wraps=RELEASE_READINESS.validate_signer_for_artifact) as consumer:
             errors: list[str] = []
             RELEASE_READINESS.signing_policy_errors(errors)
+            self.assertEqual(["signing policy validation failed: unknown signer fingerprint"], errors)
+            consumer.assert_called_once_with("SHA256:untrusted-fixture", "commit", policy=fixture["policy"])
 
-        self.assertEqual(
-            ["signing policy validation failed: unknown signer fingerprint"], errors
-        )
+    def test_readiness_signature_extraction_failure_does_not_call_policy(self) -> None:
+        with self._signer_fixture(), mock.patch.object(
+            RELEASE_READINESS, "extract_commit_signer_fingerprint",
+            side_effect=ValueError("commit signature verification failed"),
+        ), mock.patch.object(RELEASE_READINESS, "validate_signer_for_artifact",
+                             wraps=RELEASE_READINESS.validate_signer_for_artifact) as consumer:
+            errors: list[str] = []
+            RELEASE_READINESS.signing_policy_errors(errors)
+            self.assertEqual(["signing policy validation failed: commit signature verification failed"], errors)
+            consumer.assert_not_called()
+
+    def test_readiness_real_ssh_signature_accepts_fixture_key(self) -> None:
+        with self._signer_fixture() as fixture:
+            self.assertEqual(fixture["fingerprint"], RELEASE_READINESS.extract_commit_signer_fingerprint(
+                fixture["signed"], allowed_signers=fixture["allowed"]))
+            errors: list[str] = []
+            RELEASE_READINESS.signing_policy_errors(errors)
+            self.assertEqual([], errors)
+
+    def test_readiness_real_ssh_signature_rejects_wrong_key(self) -> None:
+        with self._signer_fixture() as fixture, self.assertRaisesRegex(ValueError, "signature verification failed"):
+            RELEASE_READINESS.extract_commit_signer_fingerprint(
+                fixture["signed"], allowed_signers=fixture["wrong_allowed"])
+
+    def test_readiness_real_ssh_signature_rejects_unsigned_commit(self) -> None:
+        with self._signer_fixture() as fixture, self.assertRaisesRegex(ValueError, "signature verification failed"):
+            RELEASE_READINESS.extract_commit_signer_fingerprint(
+                fixture["unsigned"], allowed_signers=fixture["allowed"])
 
     def test_formal_baseline_workflow_binds_dispatch_target_and_locked_runtime(self) -> None:
         workflow = (ROOT / ".github" / "workflows" / "formal-baseline.yml").read_text(

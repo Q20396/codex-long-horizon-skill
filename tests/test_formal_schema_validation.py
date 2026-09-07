@@ -269,6 +269,49 @@ def write_synthetic_evidence(
 
 
 class FormalSchemaStaticTests(unittest.TestCase):
+    def _isolated_acquisition_fixture(self, root: Path, *, mismatch: bool = False):
+        if shutil.which("git") is None:
+            self.fail("BLOCKED: git is required for the topology fixture")
+        repo = root / "repo"
+        repo.mkdir()
+        env = {key: value for key, value in os.environ.items()
+               if not key.startswith("GIT_") and key not in {"SSH_AUTH_SOCK", "SSH_AGENT_PID"}}
+        env.update(GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=os.devnull,
+                   GIT_TERMINAL_PROMPT="0", GIT_ALLOW_PROTOCOL="",
+                   GIT_AUTHOR_NAME="Fixture", GIT_COMMITTER_NAME="Fixture",
+                   GIT_AUTHOR_EMAIL="fixture@example.invalid",
+                   GIT_COMMITTER_EMAIL="fixture@example.invalid")
+
+        def git(*args, input=None):
+            return subprocess.run(
+                ["git", "-c", "commit.gpgsign=false", "-c", "core.hooksPath=/dev/null", *args],
+                cwd=repo, env=env, input=input, text=True, capture_output=True,
+                check=True, timeout=15,
+            ).stdout.strip()
+
+        git("init", "-q")
+        git("config", "commit.gpgsign", "false")
+        git("config", "core.hooksPath", os.devnull)
+        workflow_path = ".github/workflows/check-skill.yml"
+        content = WORKFLOW.read_text(encoding="utf-8")
+        blob = git("hash-object", "-w", "--stdin", input=content)
+        tree = git("mktree", input=f"100644 blob {blob}\tcheck-skill.yml\n")
+        tree = git("mktree", input=f"040000 tree {tree}\tworkflows\n")
+        tree = git("mktree", input=f"040000 tree {tree}\t.github\n")
+        base = git("commit-tree", tree, input="base\n")
+        head = git("commit-tree", tree, "-p", base, input="head\n")
+        candidate_base = git("commit-tree", tree, "-p", base, input="sibling\n") if mismatch else base
+        git("update-ref", "HEAD", head)
+        git("read-tree", "HEAD")
+        workflow = repo / workflow_path
+        workflow.parent.mkdir(parents=True)
+        workflow.write_text(content, encoding="utf-8")
+        self.assertEqual("", git("status", "--porcelain=v1"))
+        self.assertEqual([head, base], git("rev-list", "--parents", "-n", "1", head).split())
+        provenance, _, _ = self._write_main_provenance(root, fixture_repo=repo,
+                                                       candidate_base=candidate_base)
+        return repo, provenance, head, candidate_base
+
     def _synthetic_topology(self, root: Path) -> tuple[str, str, str]:
         subprocess.run(["git", "init", "-q"], cwd=root, check=True)
         subprocess.run(["git", "config", "user.email", "test@example.invalid"], cwd=root, check=True)
@@ -359,25 +402,16 @@ class FormalSchemaStaticTests(unittest.TestCase):
     def test_verify_acquisition_hits_merge_base_mismatch_without_other_binding_errors(self) -> None:
         with tempfile.TemporaryDirectory(prefix="formal-merge-base-mismatch-") as temp:
             root = Path(temp)
-            provenance, head, parent = self._write_main_provenance(root)
+            repo, provenance, head, parent = self._isolated_acquisition_fixture(root, mismatch=True)
             argv, evidence, receipt, result = self._run_verify_acquisition(root, provenance, head, parent)
-            real_run = VALIDATOR.subprocess.run
-
-            def merge_base_mismatch(*args, **kwargs):
-                command = args[0] if args else kwargs.get("args", [])
-                if command[:2] == ["git", "merge-base"]:
-                    return subprocess.CompletedProcess(command, 0, "f" * 40, "")
-                if command[:3] == ["git", "status", "--porcelain=v1"]:
-                    return subprocess.CompletedProcess(command, 0, "", "")
-                return real_run(*args, **kwargs)
-
-            with mock.patch.object(VALIDATOR.subprocess, "run", side_effect=merge_base_mismatch), mock.patch.object(VALIDATOR, "acquire_evidence") as acquire, mock.patch.object(VALIDATOR, "urlopen") as network:
+            with mock.patch.object(VALIDATOR, "ROOT", repo), mock.patch.object(VALIDATOR, "acquire_evidence") as acquire, mock.patch.object(VALIDATOR, "urlopen") as network:
                 output = io.StringIO()
                 with contextlib.redirect_stdout(output), contextlib.redirect_stderr(output):
                     self.assertNotEqual(0, VALIDATOR.main(argv))
             acquire.assert_not_called(); network.assert_not_called()
             text = output.getvalue()
             self.assertIn("merge-base", text)
+            self.assertEqual(["ERROR: preflight merge-base does not match candidate_base"], text.strip().splitlines())
             self.assertNotIn("exactly one parent", text)
             self.assertNotIn("unique parent", text)
             self.assertNotIn("must be a full lowercase commit SHA", text)
@@ -418,9 +452,9 @@ class FormalSchemaStaticTests(unittest.TestCase):
                 self.assertEqual("ci_ancestor_base", context["topology_mode"])
                 self.assertEqual(base, context["candidate_base_commit"])
                 self.assertEqual(base, context["candidate_merge_base"])
-    def _write_main_provenance(self, root: Path, **changes: object) -> tuple[Path, str, str]:
-        head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
-        parent = subprocess.check_output(["git", "rev-parse", "HEAD^"], cwd=ROOT, text=True).strip()
+    def _write_main_provenance(self, root: Path, *, fixture_repo: Path = ROOT, **changes: object) -> tuple[Path, str, str]:
+        head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=fixture_repo, text=True, timeout=15).strip()
+        parent = subprocess.check_output(["git", "rev-parse", "HEAD^"], cwd=fixture_repo, text=True, timeout=15).strip()
         workflow_path = ".github/workflows/check-skill.yml"
         workflow_ref = f"Q20396/codex-long-horizon-skill/{workflow_path}@refs/heads/main"
         payload = {
@@ -534,15 +568,9 @@ class FormalSchemaStaticTests(unittest.TestCase):
     def test_verify_acquisition_preflight_success_passes_verified_context(self) -> None:
         with tempfile.TemporaryDirectory(prefix="formal-preflight-success-") as temp:
             root = Path(temp)
-            provenance, head, parent = self._write_main_provenance(root)
+            repo, provenance, head, parent = self._isolated_acquisition_fixture(root)
             argv, evidence, receipt, result = self._run_verify_acquisition(root, provenance, head, parent)
-            real_run = subprocess.run
-            def clean_git_run(*args, **kwargs):
-                command = args[0] if args else kwargs.get("args", [])
-                if command[:3] == ["git", "status", "--porcelain=v1"]:
-                    return subprocess.CompletedProcess(command, 0, "", "")
-                return real_run(*args, **kwargs)
-            with mock.patch.object(VALIDATOR.subprocess, "run", side_effect=clean_git_run), mock.patch.object(VALIDATOR, "acquire_evidence", return_value=([], {"status": "PASS"})) as acquire, mock.patch.object(VALIDATOR, "urlopen") as network:
+            with mock.patch.object(VALIDATOR, "ROOT", repo), mock.patch.object(VALIDATOR, "acquire_evidence", return_value=([], {"status": "PASS"})) as acquire, mock.patch.object(VALIDATOR, "urlopen") as network:
                 self.assertEqual(0, VALIDATOR.main(argv))
             acquire.assert_called_once()
             network.assert_not_called()
