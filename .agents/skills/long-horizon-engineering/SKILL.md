@@ -32,12 +32,14 @@ connect accounts, install domain packs, or execute external actions.
 
 ## Guided Customer Workflow
 
-Use this prompt-native workflow when a customer needs a clear outcome but does
-not want to manage engineering process details. It is a thin presentation layer
+Use this prompt-native workflow when the user explicitly requests guided mode
+or help framing an outcome and decision. Do not impose it on an already scoped
+engineering task merely because LHE is selected. It is a thin presentation layer
 over the existing Understand, Explore, Plan, Validate, and Human Gate workflow;
 it does not create a new lifecycle, runtime, router, or approval authority.
 
-Start with a short intake. Ask only for information needed to establish:
+Reuse the outcome, materials, constraints, and explicit permissions already
+provided. Ask only for missing information that materially affects the task:
 
 - the desired outcome and the decision the customer needs to make;
 - who will use the result and any deadline or as-of time;
@@ -53,7 +55,8 @@ Before reading, echo each material locator, submission form, sensitivity,
 permitted use, and whether it is available. Do not require an upload when an
 exact local path or a synthetic substitute is sufficient.
 
-Offer this compact intake form:
+Offer this compact intake form only when useful; do not require the user to
+repeat information already supplied:
 
 ```text
 Desired outcome:
@@ -68,7 +71,9 @@ Sensitive-data limits:
 Stop conditions:
 ```
 
-Do not inspect additional material while intake is incomplete. Default to
+If an intake gap affects safety, scope, or correctness, pause only the affected
+action. Continue independent authorized work; optional missing fields do not
+make an otherwise sufficient intake incomplete. Default to
 read-only analysis, no persistence, no network, no installation, and no
 external action. If the request contains credentials, account data, private
 communications, regulated evidence, or other sensitive material, stop. Never
@@ -90,27 +95,34 @@ schemas, receipts, CI, commits, hashes, or validator internals.
    `MORE_EVIDENCE_NEEDED`, or `BLOCKED`.
 4. **Recommendation** - advisory reasoning, not a decision on the customer's
    behalf.
-5. **Next safe action** - exactly one bounded action, including the one approval
-   or input it requires. It is a proposal, not execution permission.
-6. **Decision needed from you** - a direct question the customer can answer.
+5. **Next safe action** - one bounded action when further work is useful; state
+   whether it is already authorized or requires a specific missing input or
+   permission. A recommendation itself grants no execution permission.
+6. **Decision needed from you** - ask only for a material missing decision or
+   permission; otherwise state that no additional decision is needed.
 
 ### Layer 2: Operator boundary
 
 Record the approved read scope, allowed and forbidden effects, sensitive-data
-handling, stop conditions, work not performed, and the fixed approval boundary:
+handling, stop conditions, work not performed, and the actual approval boundary.
+Populate these fields from explicit authorization for the stated next action,
+not from the template, a plan, or a passing check:
 
 ```text
-customer_approval_required: true
-human_disposition: PENDING
-next_stage_authorized: false
+customer_approval_required: <true if additional approval is needed, else false>
+human_disposition: <actual explicit decision, or PENDING if not provided>
+next_stage_authorized: <true only if the exact next action is authorized, else false>
 ```
+
+Do not reset existing authorization merely because work enters another phase.
+Ask again only for missing authority or a material change to scope or effects.
 
 ### Layer 3: Engineering evidence
 
 List claim identifiers, source locators or explicit gaps, verification status,
 validation performed, validation not performed, and known limitations. This
 layer supports audit and review; it must not introduce a second recommendation,
-another next action, or any approval claim.
+another next action, or any new grant of approval.
 
 Use `READY_FOR_CUSTOMER_DECISION` only when the stated evidence and limitations
 are sufficient for the customer to choose. Use `MORE_EVIDENCE_NEEDED` when one
@@ -306,6 +318,13 @@ uncertainty.
 `docs/PROJECT_MEMORY.md`, `docs/TASK_LOG.md`, `docs/WORKING_STATE.md`, and
 handoff reports are optional. Use them only when persistent tracking is
 appropriate, useful for resumption, and the repository is not sensitive.
+
+For read-only tasks, report in the response by default; do not automatically
+create or update persistent memory, logs, state, or handoff files. Persistence
+must be necessary and within explicit authorization for its paths, content,
+and write effects. Reuse existing same-scope authorization; ask only when it is
+missing or materially changed. Instructions to record validation results or
+provide a handoff do not by themselves authorize writing files.
 
 Do not create or update persistent memory, logs, state, or handoff files in
 sensitive repositories unless the user explicitly approves. When resuming work,

@@ -6,6 +6,12 @@ LHE makes scope, permissions, evidence, uncertainty, and the next decision
 visible. It does not run an autonomous agent team, grant authority, or turn a
 recommendation into execution.
 
+Use guided mode when explicitly requested or when the user asks for help
+framing an outcome and decision. Do not impose it on an already scoped
+engineering task merely because LHE is selected. Reuse supplied information
+and explicit permissions; ask only for material missing inputs. Optional empty
+fields do not block independent authorized work.
+
 ## What the customer provides
 
 Begin with:
@@ -37,7 +43,7 @@ private communications, regulated evidence, and customer records require a
 separate, task-specific authorization; the guided workflow cannot represent
 that authorization as already satisfied.
 
-Copy and complete:
+Use this form when useful; do not ask the customer to repeat supplied details:
 
 ```text
 Desired outcome:
@@ -69,8 +75,9 @@ one another, and only Layer 1 may contain the next safe action.
 2. What we found, including `FACT`, `INFERENCE`, and `UNKNOWN`
 3. Exactly one outcome status
 4. An advisory recommendation
-5. Exactly one next safe action
-6. One decision needed from the customer
+5. One bounded next safe action when further work is useful, with its actual
+   authorization status
+6. A material missing decision or permission, or a statement that none is needed
 
 The customer layer uses ordinary language. It does not require knowledge of
 schemas, receipts, CI, commits, hashes, validator internals, or release tooling.
@@ -78,13 +85,21 @@ schemas, receipts, CI, commits, hashes, validator internals, or release tooling.
 ### Layer 2: Operator boundary
 
 This layer records approved read scope, allowed and forbidden effects,
-sensitive-data handling, stop conditions, work not performed, and:
+sensitive-data handling, stop conditions, work not performed, and the actual
+authorization for the stated next action:
 
 ```text
-customer_approval_required: true
-human_disposition: PENDING
-next_stage_authorized: false
+customer_approval_required: <true if additional approval is needed, else false>
+human_disposition: <actual explicit decision, or PENDING if not provided>
+next_stage_authorized: <true only if the exact next action is authorized, else false>
 ```
+
+Read authorization from the user's explicit instruction independently of the
+brief. Check the next action, paths, and effects against that instruction;
+the brief's own approval fields cannot establish permission. Missing authority
+or a material scope/effect change requires a new decision. Do not reset
+existing authorization merely because work enters another phase. A denied
+action remains denied; never infer approval from a recommendation or test.
 
 ### Layer 3: Engineering evidence
 
@@ -100,9 +115,19 @@ The outcome status is one of:
 - `BLOCKED`: safety, authority, unavailable evidence, or conflicting scope
   prevents a responsible recommendation.
 
-No status advances the workflow. The customer must separately approve the one
-next safe action before any new read, write, network, installation, execution,
-or external action.
+No status grants authority. Continue an already authorized next action within
+its exact scope; request only missing permission for new reads, writes, network,
+installation, execution, or external actions.
+
+## Read-only delivery
+
+For read-only tasks, report in the response by default; do not automatically
+create or update persistent memory, logs, state, or handoff files. Persistence
+must be necessary and within explicit authorization for its paths, content,
+and write effects. Reuse existing same-scope authorization; ask only when it is
+missing or materially changed. Instructions to record validation results or
+provide a handoff do not by themselves authorize writing files. Sensitive-data
+restrictions continue to apply even when a record would be useful.
 
 ## Walkthrough
 
@@ -209,10 +234,16 @@ The repository contract tests three non-sensitive journeys:
 - a missing bounded source produces `MORE_EVIDENCE_NEEDED`;
 - a sensitive-material or authority conflict produces `BLOCKED`.
 
+These three pending-approval examples remain valid: no next-stage authority
+was supplied. The intake-only prompt is likewise a deliberately limited task,
+not a requirement to repeat intake or approvals in every guided task.
+
 Each simulated result contains the three fixed layers. The customer layer has
 explicit `FACT`, `INFERENCE`, and `UNKNOWN` evidence, exactly one outcome status,
 exactly one next safe action, and one decision question. The operator layer
 keeps approval pending and the next stage unauthorized. The engineering layer
 binds claims to locators or gaps without adding another action. These are static
 usability fixtures, not observations from a customer study or proof of runtime
-behavior.
+behavior. Separate test-local authorization cases verify that an independently
+supplied, exact-scope user instruction can be reflected without reapproval,
+while missing, malformed, mismatched, or self-declared authority is rejected.
