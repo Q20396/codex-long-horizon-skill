@@ -77,7 +77,9 @@ def collect_keys(value: object) -> list[str]:
     return keys
 
 
-def outcome_contract_errors(brief: object) -> list[str]:
+def outcome_contract_errors(
+    brief: object, *, user_authorization: object = None
+) -> list[str]:
     errors: list[str] = []
     if not isinstance(brief, dict) or set(brief) != OUTCOME_LAYERS:
         return ["outcome brief must contain exactly the three declared layers"]
@@ -129,14 +131,43 @@ def outcome_contract_errors(brief: object) -> list[str]:
         not isinstance(customer["decision_needed"], str)
         or not customer["decision_needed"].strip()
     ):
-        errors.append("customer decision question is required")
+        errors.append("customer decision or no-additional-decision statement is required")
 
-    if operator["customer_approval_required"] is not True:
-        errors.append("customer approval must remain required")
-    if operator["human_disposition"] != "PENDING":
-        errors.append("human disposition must remain pending")
-    if operator["next_stage_authorized"] is not False:
-        errors.append("next stage must remain unauthorized")
+    # This is a test-local, separately supplied user instruction, not authority
+    # extracted from the brief or a production permission-enforcement engine.
+    authorized = False
+    if user_authorization is not None:
+        fields = {"decision", "next_safe_action", "approved_read_scope",
+                  "allowed_effects", "forbidden_effects"}
+        valid = isinstance(user_authorization, dict) and set(user_authorization) == fields
+        if valid:
+            valid = (
+                user_authorization["decision"] == "APPROVED"
+                and isinstance(user_authorization["next_safe_action"], str)
+                and bool(user_authorization["next_safe_action"].strip())
+                and all(
+                    isinstance(user_authorization[field], list)
+                    and all(isinstance(item, str) and item.strip()
+                            for item in user_authorization[field])
+                    for field in ("approved_read_scope", "allowed_effects", "forbidden_effects")
+                )
+            )
+        if valid:
+            authorized = (
+                customer["next_safe_action"] == user_authorization["next_safe_action"]
+                and all(operator[field] == user_authorization[field]
+                        for field in ("approved_read_scope", "allowed_effects", "forbidden_effects"))
+                and not set(user_authorization["allowed_effects"]) & set(user_authorization["forbidden_effects"])
+                and customer["status"] != "BLOCKED"
+            )
+        if not authorized:
+            errors.append("independent user authorization is invalid or mismatched")
+    if operator["customer_approval_required"] is not (not authorized):
+        errors.append("additional approval flag contradicts independent authority")
+    if operator["human_disposition"] != ("APPROVED" if authorized else "PENDING"):
+        errors.append("human disposition contradicts independent authority")
+    if operator["next_stage_authorized"] is not authorized:
+        errors.append("next-stage authorization contradicts independent authority")
     for field in (
         "approved_read_scope",
         "allowed_effects",
@@ -209,14 +240,15 @@ class CustomerGuidedWorkflowContractTests(unittest.TestCase):
         text = normalized(SKILL)
         self.assertIn("## Guided Customer Workflow", text)
         self.assertIn("guided customer mode", text)
-        self.assertIn("Start with a short intake", text)
+        self.assertIn("Reuse the outcome, materials, constraints, and explicit permissions already provided", text)
         self.assertIn("Customer Outcome Brief", text)
         self.assertIn("### Layer 1: Customer outcome", text)
         self.assertIn("### Layer 2: Operator boundary", text)
         self.assertIn("### Layer 3: Engineering evidence", text)
-        self.assertIn("customer_approval_required: true", text)
-        self.assertIn("human_disposition: PENDING", text)
-        self.assertIn("next_stage_authorized: false", text)
+        self.assertIn("customer_approval_required: <true if additional approval is needed, else false>", text)
+        self.assertIn("human_disposition: <actual explicit decision, or PENDING if not provided>", text)
+        self.assertIn("next_stage_authorized: <true only if the exact next action is authorized, else false>", text)
+        self.assertIn("not from the template, a plan, or a passing check", text)
         self.assertIn("not a required installed dependency", text)
         self.assertIn("MORE_EVIDENCE_NEEDED", text)
 
@@ -228,15 +260,121 @@ class CustomerGuidedWorkflowContractTests(unittest.TestCase):
         self.assertIn("READY_FOR_CUSTOMER_DECISION", customer_text)
         self.assertIn("MORE_EVIDENCE_NEEDED", customer_text)
         self.assertIn("BLOCKED", customer_text)
-        self.assertIn("exactly one bounded action", customer_text)
+        self.assertIn("one bounded action when further work is useful", customer_text)
         self.assertIn(
-            "It is a proposal, not execution permission",
+            "A recommendation itself grants no execution permission",
             text,
         )
         self.assertIn(
             "Never translate any status into a write, execution, merge, release",
             text,
         )
+
+    def test_guided_scope_and_existing_authority_are_explicit(self) -> None:
+        skill = normalized(SKILL)
+        self.assertIn("when the user explicitly requests guided mode", skill)
+        self.assertIn("Do not impose it on an already scoped engineering task", skill)
+        self.assertIn("optional missing fields do not make an otherwise sufficient intake incomplete", skill)
+        for path in (SKILL, WALKTHROUGH):
+            with self.subTest(path=path):
+                text = normalized(path)
+                self.assertIn("Do not reset existing authorization merely because work enters another phase", text)
+        self.assertIn("the brief's own approval fields cannot establish permission", normalized(WALKTHROUGH))
+
+    def test_read_only_persistence_requires_explicit_scope(self) -> None:
+        for path in (SKILL, WALKTHROUGH):
+            with self.subTest(path=path):
+                text = normalized(path)
+                self.assertIn("For read-only tasks, report in the response by default", text)
+                self.assertIn("do not automatically create or update persistent memory, logs, state, or handoff files", text)
+                self.assertIn("explicit authorization for its paths, content, and write effects", text)
+                self.assertIn("do not by themselves authorize writing files", text)
+
+    def authorized_case(self) -> tuple[dict, dict]:
+        brief = deepcopy(json.loads(CASES.read_text(encoding="utf-8"))["cases"][0]["outcome_brief"])
+        # Define authority first and separately; never derive it from the output.
+        authorization = {
+            "decision": "APPROVED",
+            "next_safe_action": "Inspect docs/import-process.md without writing files.",
+            "approved_read_scope": ["docs/import-process.md"],
+            "allowed_effects": ["read"],
+            "forbidden_effects": ["write", "network", "install", "external_action"],
+        }
+        brief["customer_layer"].update(
+            next_safe_action=authorization["next_safe_action"],
+            decision_needed="No additional decision is needed for this authorized read.",
+        )
+        brief["operator_layer"].update(
+            approved_read_scope=list(authorization["approved_read_scope"]),
+            allowed_effects=list(authorization["allowed_effects"]),
+            forbidden_effects=list(authorization["forbidden_effects"]),
+            customer_approval_required=False,
+            human_disposition="APPROVED",
+            next_stage_authorized=True,
+        )
+        return brief, authorization
+
+    def test_independent_same_scope_authority_needs_no_reapproval(self) -> None:
+        brief, authorization = self.authorized_case()
+        self.assertEqual(outcome_contract_errors(brief, user_authorization=authorization), [])
+        self.assertFalse(brief["operator_layer"]["customer_approval_required"])
+        self.assertNotIn("?", brief["customer_layer"]["decision_needed"])
+
+    def test_all_approval_fields_without_external_authority_are_rejected(self) -> None:
+        brief, _ = self.authorized_case()
+        self.assertTrue(outcome_contract_errors(brief))
+        brief["customer_layer"]["status"] = "READY_FOR_CUSTOMER_DECISION"
+        brief["engineering_evidence_layer"]["validation_performed"] = ["All checks passed."]
+        self.assertTrue(outcome_contract_errors(brief))
+
+    def test_authority_embedded_in_brief_does_not_grant_permission(self) -> None:
+        brief, authorization = self.authorized_case()
+        brief["operator_layer"]["user_authorization"] = authorization
+        self.assertTrue(outcome_contract_errors(brief))
+
+    def test_material_scope_and_effect_changes_require_new_authority(self) -> None:
+        brief, authorization = self.authorized_case()
+        changes = [
+            ("customer_layer", "next_safe_action", "Read private/data.json."),
+            ("operator_layer", "approved_read_scope", ["private/data.json"]),
+            ("operator_layer", "allowed_effects", ["read", "write"]),
+            ("operator_layer", "forbidden_effects", []),
+        ]
+        for layer, field, value in changes:
+            with self.subTest(field=field):
+                changed = deepcopy(brief)
+                changed[layer][field] = value
+                self.assertTrue(outcome_contract_errors(changed, user_authorization=authorization))
+
+    def test_malformed_or_denied_authority_fails_closed(self) -> None:
+        brief, authorization = self.authorized_case()
+        variants = [None, {}, True, [], {**authorization, "decision": "DENIED"},
+                    {**authorization, "allowed_effects": "read"},
+                    {**authorization, "approved_read_scope": [[]]}]
+        for value in variants:
+            with self.subTest(value=value):
+                self.assertTrue(outcome_contract_errors(brief, user_authorization=value))
+
+    def test_blocked_or_forbidden_effect_is_not_authorized(self) -> None:
+        brief, authorization = self.authorized_case()
+        brief["customer_layer"]["status"] = "BLOCKED"
+        self.assertTrue(outcome_contract_errors(brief, user_authorization=authorization))
+        brief, authorization = self.authorized_case()
+        brief["operator_layer"]["forbidden_effects"].append("read")
+        authorization["forbidden_effects"].append("read")
+        self.assertTrue(outcome_contract_errors(brief, user_authorization=authorization))
+
+    def test_reapproval_and_boolean_lookalikes_are_rejected(self) -> None:
+        brief, authorization = self.authorized_case()
+        for field, value in (("customer_approval_required", True),
+                             ("next_stage_authorized", False),
+                             ("human_disposition", "PENDING"),
+                             ("customer_approval_required", 0),
+                             ("next_stage_authorized", 1)):
+            with self.subTest(field=field, value=value):
+                changed = deepcopy(brief)
+                changed["operator_layer"][field] = value
+                self.assertTrue(outcome_contract_errors(changed, user_authorization=authorization))
 
     def test_required_inputs_and_default_effects_are_visible(self) -> None:
         text = normalized(SKILL)
