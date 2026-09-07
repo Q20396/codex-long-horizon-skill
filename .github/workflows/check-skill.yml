@@ -155,6 +155,8 @@ jobs:
       PIP_NO_CACHE_DIR: "1"
       PIP_DISABLE_PIP_VERSION_CHECK: "1"
       FORMAL_CANDIDATE_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+      FORMAL_EVENT_TARGET_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      FORMAL_REPOSITORY: ${{ github.repository }}
     steps:
       - name: Check out candidate without persisted credentials
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -182,7 +184,42 @@ jobs:
           uname -a
           printf 'ImageOS=%s\nImageVersion=%s\n' "$ImageOS" "$ImageVersion"
           git rev-parse HEAD
+          test "$FORMAL_EVENT_TARGET_SHA" != ""
+          test "$(git rev-parse HEAD)" = "$FORMAL_EVENT_TARGET_SHA"
           git show -s --format=%T HEAD
+
+      - name: Record formal runner identity
+        run: |
+          set -euo pipefail
+          RUNNER_IDENTITY="$RUNNER_TEMP/formal-schema-runner-identity.json"
+          WORKFLOW_PATH=.github/workflows/check-skill.yml
+          WORKFLOW_SHA256="$(sha256sum "$WORKFLOW_PATH" | awk '{print $1}')"
+          RELEASE_COMMIT="$(git rev-parse HEAD)"
+          printf 'WORKFLOW_SHA256=%s\n' "$WORKFLOW_SHA256" >> "$GITHUB_ENV"
+          printf 'RELEASE_COMMIT=%s\n' "$RELEASE_COMMIT" >> "$GITHUB_ENV"
+          python3 - "$RUNNER_IDENTITY" "$WORKFLOW_SHA256" "$WORKFLOW_PATH" "$RELEASE_COMMIT" <<'PY'
+          import json, os, sys
+          path, workflow_sha, workflow_path, release_commit = sys.argv[1:]
+          payload = {
+              "github_run_id": os.environ["GITHUB_RUN_ID"],
+              "github_run_attempt": os.environ["GITHUB_RUN_ATTEMPT"],
+              "workflow_ref": os.environ["GITHUB_WORKFLOW_REF"],
+              "job": os.environ["GITHUB_JOB"],
+              "repository": os.environ["FORMAL_REPOSITORY"],
+              "event_target_sha": os.environ["FORMAL_EVENT_TARGET_SHA"],
+              "release_commit": release_commit,
+              "candidate_base": os.environ["FORMAL_CANDIDATE_BASE"],
+              "workflow_identity": {"path": workflow_path, "sha256": workflow_sha},
+              "actions": {
+                  "checkout": "3d3c42e5aac5ba805825da76410c181273ba90b1",
+                  "setup-python": "5fda3b95a4ea91299a34e894583c3862153e4b97",
+                  "upload-artifact": "ea165f8d65b6e75b540449e92b4886f43607fa02",
+              },
+          }
+          with open(path, "w", encoding="utf-8") as handle:
+              json.dump(payload, handle, indent=2, sort_keys=True)
+              handle.write("\n")
+          PY
 
       - name: Validate lock and dependency-free fallback
         run: |
@@ -215,7 +252,12 @@ jobs:
             --run-id "$GITHUB_RUN_ID" \
             --run-attempt "$GITHUB_RUN_ATTEMPT" \
             --workflow-ref "$GITHUB_WORKFLOW_REF" \
-            --job-name "$GITHUB_JOB"
+            --job-name "$GITHUB_JOB" \
+            --workflow-sha256 "$WORKFLOW_SHA256" \
+            --workflow-path ".github/workflows/check-skill.yml" \
+            --action-provenance-file "$RUNNER_TEMP/formal-schema-runner-identity.json" \
+            --event-target-sha "$FORMAL_EVENT_TARGET_SHA" \
+            --repository "$FORMAL_REPOSITORY" \
 
       - name: Run formal Draft 2020-12 gate for pull request
         if: github.event_name == 'pull_request'
@@ -231,6 +273,11 @@ jobs:
             --formal-schema-acquisition-result "$RUNNER_TEMP/formal-schema-evidence/acquisition-receipt.json" \
             --formal-schema-evidence-dir "$RUNNER_TEMP/formal-schema-evidence" \
             --formal-schema-candidate-base "$FORMAL_CANDIDATE_BASE" \
+            --formal-schema-action-provenance-file "$RUNNER_TEMP/formal-schema-runner-identity.json" \
+            --formal-schema-event-target-sha "$FORMAL_EVENT_TARGET_SHA" \
+            --formal-schema-repository "$FORMAL_REPOSITORY" \
+            --formal-schema-workflow-sha256 "$WORKFLOW_SHA256" \
+            --formal-schema-workflow-path ".github/workflows/check-skill.yml" \
             --formal-schema-result "$RUNNER_TEMP/formal-schema-result.json"
 
       - name: Validate formal evidence for main final state
@@ -247,7 +294,25 @@ jobs:
             --formal-schema-acquisition-result "$RUNNER_TEMP/formal-schema-evidence/acquisition-receipt.json" \
             --formal-schema-evidence-dir "$RUNNER_TEMP/formal-schema-evidence" \
             --formal-schema-candidate-base "${FORMAL_CANDIDATE_BASE}" \
+            --formal-schema-action-provenance-file "$RUNNER_TEMP/formal-schema-runner-identity.json" \
+            --formal-schema-event-target-sha "$FORMAL_EVENT_TARGET_SHA" \
+            --formal-schema-repository "$FORMAL_REPOSITORY" \
+            --formal-schema-workflow-sha256 "$WORKFLOW_SHA256" \
+            --formal-schema-workflow-path ".github/workflows/check-skill.yml" \
             --formal-schema-result "$RUNNER_TEMP/formal-schema-result.json"
+
+      - name: Upload formal schema CI evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: formal-schema-ci-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/formal-schema-runner-identity.json
+            ${{ runner.temp }}/formal-schema-result.json
+            ${{ runner.temp }}/formal-schema-evidence
+            ${{ runner.temp }}/formal-schema-pip-report.json
+          if-no-files-found: error
+          retention-days: 90
 
       - name: Report checkout status paths after formal gate failure
         if: failure()

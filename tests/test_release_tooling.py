@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import importlib.util
+import contextlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -14,6 +16,63 @@ from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+class SameStepIdentityTests(unittest.TestCase):
+    def test_real_ci_producer_ignores_inherited_release_commit(self):
+        text = (ROOT / ".github/workflows/check-skill.yml").read_text()
+        step = next(s for s in FULL_VALIDATION._workflow_steps(text)
+                    if s.strip().startswith("- name: Record formal runner identity"))
+        script = textwrap.dedent(step.split("run: |\n", 1)[1])
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+            workflow = repo / ".github/workflows/check-skill.yml"
+            workflow.parent.mkdir(parents=True)
+            workflow.write_text(text)
+            # A synthetic commit object avoids signing hooks and user configuration.
+            def git(*args, input=None):
+                return subprocess.run(["git", *args], cwd=repo, input=input,
+                                      text=True, capture_output=True, check=True,
+                                      timeout=10).stdout.strip()
+            git("init", "-q")
+            tree = git("mktree", input="")
+            env = dict(os.environ, GIT_AUTHOR_NAME="Fixture", GIT_COMMITTER_NAME="Fixture",
+                       GIT_AUTHOR_EMAIL="fixture@example.invalid", GIT_COMMITTER_EMAIL="fixture@example.invalid")
+            head = subprocess.run(["git", "-c", "commit.gpgsign=false", "commit-tree", tree],
+                                  cwd=repo, env=env, input="fixture\n", text=True,
+                                  capture_output=True, check=True, timeout=10).stdout.strip()
+            git("update-ref", "HEAD", head)
+            env.update(RUNNER_TEMP=tmp, GITHUB_ENV=str(repo / "env"),
+                       GITHUB_RUN_ID="1", GITHUB_RUN_ATTEMPT="1", GITHUB_JOB="formal-schema-gate",
+                       GITHUB_WORKFLOW_REF="fixture", FORMAL_REPOSITORY="fixture",
+                       FORMAL_EVENT_TARGET_SHA=head, FORMAL_CANDIDATE_BASE=head)
+            # Select the current test interpreter without altering producer code.
+            bindir = repo / "bin"
+            bindir.mkdir()
+            (bindir / "python3").symlink_to(sys.executable)
+            env["PATH"] = str(bindir) + os.pathsep + env["PATH"]
+            for inherited in (None, "0" * 40):
+                env.pop("RELEASE_COMMIT", None)
+                if inherited is not None:
+                    env["RELEASE_COMMIT"] = inherited
+                result = subprocess.run(["bash", "-c", script], cwd=repo, env=env,
+                                        stdin=subprocess.DEVNULL, capture_output=True,
+                                        text=True, timeout=20)
+                self.assertEqual(0, result.returncode, result.stderr)
+                identity = json.loads((repo / "formal-schema-runner-identity.json").read_text())
+                self.assertEqual(head, identity["release_commit"])
+
+    def test_checker_rejects_old_same_step_environment_read(self):
+        text = (ROOT / ".github/workflows/check-skill.yml").read_text()
+        broken = text.replace('"release_commit": release_commit',
+                              '"release_commit": os.environ["RELEASE_COMMIT"]')
+        self.assertTrue(FULL_VALIDATION.check_skill_formal_evidence_workflow_errors(broken))
+
+APPROVED_ACTIONS = {
+    "actions/checkout": "3d3c42e5aac5ba805825da76410c181273ba90b1",
+    "actions/setup-python": "5fda3b95a4ea91299a34e894583c3862153e4b97",
+    "actions/upload-artifact": "ea165f8d65b6e75b540449e92b4886f43607fa02",
+}
 
 
 def load_module(name: str, path: Path):
@@ -42,6 +101,9 @@ RELEASE_READINESS = load_module(
 FORMAL_VALIDATOR = load_module(
     "validate_formal_schemas_release_evidence_under_test",
     ROOT / "scripts" / "validate_formal_schemas.py",
+)
+SIGNING_POLICY = load_module(
+    "release_signing_policy_under_test", ROOT / "scripts" / "release_signing_policy.py"
 )
 
 
@@ -386,13 +448,22 @@ class FrontMatterParserTests(unittest.TestCase):
         shutil.copytree(ROOT, repo, ignore=shutil.ignore_patterns(".git", "__pycache__"))
         skill = repo / ".agents" / "skills" / "long-horizon-engineering" / "SKILL.md"
         skill.write_text("name: broken\n---\nBody\n", encoding="utf-8")
-        result = subprocess.run(
-            [sys.executable, "scripts/validate_plugin_package.py"],
-            cwd=repo,
-            text=True,
-            capture_output=True,
-            check=False,
-        )
+        try:
+            result = subprocess.run(
+                [sys.executable, "scripts/validate_plugin_package.py"],
+                cwd=repo,
+                text=True,
+                capture_output=True,
+                check=False,
+                stdin=subprocess.DEVNULL,
+                timeout=30,
+            )
+        except subprocess.TimeoutExpired as exc:
+            self.fail(
+                "validate_plugin_package.py timed out after 30s\n"
+                f"stdout={exc.stdout!r}\n"
+                f"stderr={exc.stderr!r}"
+            )
         output = result.stdout + result.stderr
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("ERROR:", output)
@@ -497,6 +568,84 @@ class FrontMatterParserTests(unittest.TestCase):
 
 
 class ReleaseReadinessTests(unittest.TestCase):
+    @contextlib.contextmanager
+    def _signer_fixture(self):
+        git_bin, ssh_keygen = shutil.which("git"), shutil.which("ssh-keygen")
+        if not git_bin or not ssh_keygen:
+            self.fail("BLOCKED: git and ssh-keygen are required for signer fixtures")
+        with tempfile.TemporaryDirectory(prefix="readiness-signer-fixture-") as temp:
+            root = Path(temp)
+            repo = root / "repo"
+            repo.mkdir()
+            env = {key: value for key, value in os.environ.items()
+                   if not key.startswith("GIT_") and key not in {"SSH_AUTH_SOCK", "SSH_AGENT_PID"}}
+            env.update(GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=os.devnull,
+                       GIT_TERMINAL_PROMPT="0", GIT_ALLOW_PROTOCOL="",
+                       GIT_AUTHOR_NAME="Fixture", GIT_COMMITTER_NAME="Fixture",
+                       GIT_AUTHOR_EMAIL="fixture@example.invalid",
+                       GIT_COMMITTER_EMAIL="fixture@example.invalid")
+            real_run = subprocess.run
+
+            def command(args, input=None):
+                return real_run(args, cwd=repo, env=env, input=input, text=True,
+                                capture_output=True, check=True, timeout=15).stdout.strip()
+
+            def git(*args, input=None):
+                return command([git_bin, "-c", "core.hooksPath=/dev/null",
+                                "-c", "commit.gpgsign=false", *args], input)
+
+            key = root / "test-key"
+            wrong = root / "wrong-key"
+            for path in (key, wrong):
+                command([ssh_keygen, "-q", "-t", "ed25519", "-N", "", "-f", str(path)])
+            fingerprint = command([ssh_keygen, "-lf", str(key) + ".pub", "-E", "sha256"]).split()[1]
+            git("init", "-q")
+            git("config", "core.hooksPath", os.devnull)
+            git("config", "gpg.ssh.program", ssh_keygen)
+            git("config", "commit.gpgsign", "false")
+            public_dir = repo / "docs/maintainers"
+            public_dir.mkdir(parents=True)
+            public = public_dir / "test.pub"
+            public.write_bytes(Path(str(key) + ".pub").read_bytes())
+            blob = git("hash-object", "-w", "--stdin", input=public.read_text())
+            tree = git("mktree", input=f"100644 blob {blob}\ttest.pub\n")
+            tree = git("mktree", input=f"040000 tree {tree}\tmaintainers\n")
+            tree = git("mktree", input=f"040000 tree {tree}\tdocs\n")
+            unsigned = git("commit-tree", tree, input="unsigned fixture\n")
+            signed = git("-c", "gpg.format=ssh", "-c", f"user.signingkey={key}",
+                         "commit-tree", "-S", tree, "-p", unsigned, input="signed fixture\n")
+            git("update-ref", "HEAD", signed)
+            git("read-tree", "HEAD")
+            self.assertEqual("", git("status", "--porcelain=v1"))
+            policy_path = root / "policy.json"
+            policy_path.write_text(json.dumps({
+                "keys": [{"fingerprint": "fixture-release-key", "format": "openpgp",
+                          "trust_domain": "release_tag", "may_sign_commits": False,
+                          "may_sign_release_tags": True}],
+                "commit": {"fingerprint": fingerprint, "format": "ssh",
+                           "trust_domain": "commit", "may_sign_commits": True,
+                           "may_sign_release_tags": False, "public_key_file": "test.pub"},
+            }))
+            allowed = root / "allowed-signers"
+            wrong_allowed = root / "wrong-allowed-signers"
+            for dest, pub in ((allowed, public), (wrong_allowed, Path(str(wrong) + ".pub"))):
+                dest.write_text('107850521+Q20396@users.noreply.github.com namespaces="git" '
+                                + pub.read_text().strip() + "\n")
+
+            # Preserve real subprocess results; only bound and isolate fixture child I/O.
+            def bounded_run(*args, **kwargs):
+                kwargs.update(env=env, timeout=15, stdin=subprocess.DEVNULL)
+                return real_run(*args, **kwargs)
+
+            loader = RELEASE_READINESS.load_signing_policy
+            with mock.patch.object(RELEASE_READINESS, "ROOT", repo), \
+                 mock.patch.object(RELEASE_READINESS.subprocess, "run", side_effect=bounded_run), \
+                 mock.patch.object(RELEASE_READINESS, "load_signing_policy",
+                                   wraps=lambda: loader(policy_path)) as load_policy:
+                yield {"fingerprint": fingerprint, "policy": loader(policy_path),
+                       "signed": signed, "unsigned": unsigned, "allowed": allowed,
+                       "wrong_allowed": wrong_allowed, "load_policy": load_policy}
+
     FINAL_VERSION = "0.6.1"
     CANDIDATE_VERSION = "0.6.2-dev"
 
@@ -944,6 +1093,122 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.assertIn("-----END PGP PUBLIC KEY BLOCK-----", text)
         self.assertNotIn("PRIVATE KEY", text)
 
+    def test_signing_policy_separates_commit_and_release_tag_domains(self) -> None:
+        policy = SIGNING_POLICY.load_signing_policy()
+        self.assertTrue(SIGNING_POLICY.validate_signer_for_artifact(
+            policy["commit"]["fingerprint"], "commit", policy=policy
+        ))
+        self.assertTrue(SIGNING_POLICY.validate_signer_for_artifact(
+            policy["release_tag"]["fingerprint"], "release_tag", policy=policy
+        ))
+        with self.assertRaises(ValueError):
+            SIGNING_POLICY.validate_signer_for_artifact(
+                policy["commit"]["fingerprint"], "release_tag", policy=policy
+            )
+        with self.assertRaises(ValueError):
+            SIGNING_POLICY.validate_signer_for_artifact(
+                policy["release_tag"]["fingerprint"], "commit", policy=policy
+            )
+
+    def test_readiness_validates_commit_signer_through_production_boundary(self) -> None:
+        with self._signer_fixture() as fixture, mock.patch.object(
+            RELEASE_READINESS, "extract_commit_signer_fingerprint",
+            return_value=fixture["fingerprint"],
+        ) as extract, mock.patch.object(
+            RELEASE_READINESS, "validate_signer_for_artifact",
+            wraps=RELEASE_READINESS.validate_signer_for_artifact,
+        ) as validate_signer:
+            errors: list[str] = []
+            RELEASE_READINESS.signing_policy_errors(errors)
+            self.assertEqual([], errors)
+            fixture["load_policy"].assert_called_once_with()
+            self.assertEqual(fixture["signed"], extract.call_args.args[0])
+            validate_signer.assert_called_once_with(fixture["fingerprint"], "commit", policy=fixture["policy"])
+
+    def test_readiness_fails_closed_when_signing_policy_rejects_commit(self) -> None:
+        with self._signer_fixture() as fixture, mock.patch.object(
+            RELEASE_READINESS, "extract_commit_signer_fingerprint", return_value="SHA256:untrusted-fixture",
+        ), mock.patch.object(RELEASE_READINESS, "validate_signer_for_artifact",
+                             wraps=RELEASE_READINESS.validate_signer_for_artifact) as consumer:
+            errors: list[str] = []
+            RELEASE_READINESS.signing_policy_errors(errors)
+            self.assertEqual(["signing policy validation failed: unknown signer fingerprint"], errors)
+            consumer.assert_called_once_with("SHA256:untrusted-fixture", "commit", policy=fixture["policy"])
+
+    def test_readiness_signature_extraction_failure_does_not_call_policy(self) -> None:
+        with self._signer_fixture(), mock.patch.object(
+            RELEASE_READINESS, "extract_commit_signer_fingerprint",
+            side_effect=ValueError("commit signature verification failed"),
+        ), mock.patch.object(RELEASE_READINESS, "validate_signer_for_artifact",
+                             wraps=RELEASE_READINESS.validate_signer_for_artifact) as consumer:
+            errors: list[str] = []
+            RELEASE_READINESS.signing_policy_errors(errors)
+            self.assertEqual(["signing policy validation failed: commit signature verification failed"], errors)
+            consumer.assert_not_called()
+
+    def test_readiness_real_ssh_signature_accepts_fixture_key(self) -> None:
+        with self._signer_fixture() as fixture:
+            self.assertEqual(fixture["fingerprint"], RELEASE_READINESS.extract_commit_signer_fingerprint(
+                fixture["signed"], allowed_signers=fixture["allowed"]))
+            errors: list[str] = []
+            RELEASE_READINESS.signing_policy_errors(errors)
+            self.assertEqual([], errors)
+
+    def test_readiness_real_ssh_signature_rejects_wrong_key(self) -> None:
+        with self._signer_fixture() as fixture, self.assertRaisesRegex(ValueError, "signature verification failed"):
+            RELEASE_READINESS.extract_commit_signer_fingerprint(
+                fixture["signed"], allowed_signers=fixture["wrong_allowed"])
+
+    def test_readiness_real_ssh_signature_rejects_unsigned_commit(self) -> None:
+        with self._signer_fixture() as fixture, self.assertRaisesRegex(ValueError, "signature verification failed"):
+            RELEASE_READINESS.extract_commit_signer_fingerprint(
+                fixture["unsigned"], allowed_signers=fixture["allowed"])
+
+    def test_formal_baseline_workflow_binds_dispatch_target_and_locked_runtime(self) -> None:
+        workflow = (ROOT / ".github" / "workflows" / "formal-baseline.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("workflow_dispatch:", workflow)
+        self.assertIn("target_sha:", workflow)
+        self.assertIn("workflow_sha:", workflow)
+        self.assertIn("ref: ${{ inputs.target_sha }}", workflow)
+        self.assertIn('[[ "$TARGET_SHA" =~ ^[0-9a-f]{40}$ ]]', workflow)
+        self.assertIn('test "$INPUT_WORKFLOW_SHA" = "$ACTUAL_WORKFLOW_SHA"', workflow)
+        self.assertIn('"github_run_id"', workflow)
+        self.assertIn('"github_run_attempt"', workflow)
+        self.assertIn('"workflow_file_sha256"', workflow)
+        self.assertIn('$RUNNER_TEMP/lhe-formal-venv/bin/python', workflow)
+        self.assertNotIn('"run_id"', workflow)
+        self.assertNotIn('"run_attempt"', workflow)
+
+    def test_formal_baseline_workflow_uses_approved_actions_and_read_only_permissions(self) -> None:
+        workflow = (ROOT / ".github" / "workflows" / "formal-baseline.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("permissions:\n  contents: read", workflow)
+        for action, sha in APPROVED_ACTIONS.items():
+            self.assertIn(f"uses: {action}@{sha}", workflow)
+
+    def test_formal_baseline_identity_rejects_missing_path_and_bad_run_types(self) -> None:
+        identity = {
+            "release_commit": "a" * 40,
+            "event_target_sha": "a" * 40,
+            "workflow_ref": "Q20396/codex-long-horizon-skill/.github/workflows/formal-baseline.yml@refs/heads/main",
+            "workflow_sha": "b" * 40,
+            "workflow_path": ".github/workflows/formal-baseline.yml",
+            "workflow_file_sha256": FORMAL_VALIDATOR.sha256_file(ROOT / ".github/workflows/formal-baseline.yml"),
+            "github_run_id": "123",
+            "github_run_attempt": "1",
+            "job": "formal-baseline",
+            "candidate_base": "d" * 40,
+        }
+        with mock.patch.object(FORMAL_VALIDATOR, "execution_workflow_blob_sha256", return_value=identity["workflow_file_sha256"]):
+            self.assertEqual([], FORMAL_VALIDATOR.validate_formal_baseline_identity(identity, {"event_target_sha": "a" * 40, "workflow_sha": "b" * 40}))
+        identity["github_run_id"] = 123
+        self.assertIn("formal baseline github_run_id must be non-empty string", FORMAL_VALIDATOR.validate_formal_baseline_identity(identity, {"event_target_sha": "a" * 40}))
+        identity.pop("workflow_path")
+        self.assertIn("workflow_path", FORMAL_VALIDATOR.validate_formal_baseline_identity(identity, {"event_target_sha": "a" * 40})[0])
+
     def test_release_docs_record_action_and_security_provenance(self) -> None:
         checklist = (
             ROOT / "docs" / "maintainers" / "release-checklist.md"
@@ -1098,6 +1363,164 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.assertEqual(3, workflow.count(dynamic_state))
         self.assertEqual(2, workflow.count("scripts/full_skill_validation.py --print-release-state"))
         self.assertNotIn("--pre-tag", workflow)
+
+    def test_formal_baseline_workflow_passes_explicit_final_stable_lifecycle(self) -> None:
+        workflow = (ROOT / ".github" / "workflows" / "formal-baseline.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("--release-state final", workflow)
+        self.assertIn("--channel stable", workflow)
+
+    def test_readiness_accepts_matching_final_stable_lifecycle(self) -> None:
+        result = self.run_readiness(
+            self.copy_repo("matching-final-stable"),
+            "--allow-existing-tag",
+            "--channel",
+            "stable",
+        )
+        self.assertEqual(0, result.returncode, result.stderr or result.stdout)
+
+    def test_readiness_rejects_final_candidate_lifecycle_mismatch(self) -> None:
+        result = self.run_readiness(
+            self.copy_repo("final-candidate-mismatch"),
+            "--allow-existing-tag",
+            "--channel",
+            "candidate",
+        )
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("does not match release state", result.stdout + result.stderr)
+
+    def test_readiness_rejects_candidate_stable_lifecycle_mismatch(self) -> None:
+        repo = self.copy_repo("candidate-stable-mismatch")
+        self.set_candidate_state(repo)
+        result = self.run_readiness(
+            repo,
+            "--allow-existing-tag",
+            "--channel",
+            "stable",
+            release_state="candidate",
+        )
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("does not match release state", result.stdout + result.stderr)
+
+    def test_manual_formal_release_evidence_workflow_is_fixed_and_fail_closed(self) -> None:
+        workflow = (ROOT / ".github" / "workflows" / "formal-release-gate.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertEqual([], FULL_VALIDATION.formal_release_evidence_workflow_errors(workflow))
+
+    def test_manual_formal_runner_identity_persistence_is_fail_closed(self) -> None:
+        workflow = (ROOT / ".github" / "workflows" / "formal-release-gate.yml").read_text(
+            encoding="utf-8"
+        )
+        writer = "          printf 'RUNNER_IDENTITY=%s\\n' \"$RUNNER_IDENTITY\" >> \"$GITHUB_ENV\"\n"
+        self.assertEqual(workflow.count(writer), 1)
+        self.assertLess(workflow.index('test -s "$RUNNER_IDENTITY"'), workflow.index(writer))
+        mutations = (
+            (writer, ""),
+            (writer, writer + writer),
+            (writer, "          export RUNNER_IDENTITY=\"$RUNNER_IDENTITY\"\n"),
+            ('--action-provenance-file "$RUNNER_IDENTITY"', '--action-provenance-file "$OTHER_IDENTITY"'),
+            ('--formal-schema-action-provenance-file "$RUNNER_IDENTITY"', '--formal-schema-action-provenance-file "$OTHER_IDENTITY"'),
+            (writer, "          printf 'RUNNER_IDENTITY=%s\\n' \"$RUNNER_IDENTITY\" >> \"$GITHUB_ENV\"\n          RUNNER_IDENTITY=\"$RUNNER_TEMP/other.json\"\n"),
+            ('test -s "$RUNNER_IDENTITY"', 'test -f "$RUNNER_IDENTITY"'),
+            (writer, "          printf 'OTHER_IDENTITY=%s\\n' \"$RUNNER_IDENTITY\" >> \"$GITHUB_ENV\"\n"),
+            (writer, "          printf 'RUNNER_IDENTITY=%s\\n' \"${RUNNER_IDENTITY:-fallback}\" >> \"$GITHUB_ENV\"\n"),
+        )
+        for old, new in mutations:
+            with self.subTest(old=old, new=new):
+                broken = workflow.replace(old, new, 1)
+                self.assertTrue(FULL_VALIDATION.formal_release_evidence_workflow_errors(broken))
+
+    def test_both_workflows_are_real_yaml_and_broken_indent_fails(self) -> None:
+        paths = [
+            ROOT / ".github" / "workflows" / "check-skill.yml",
+            ROOT / ".github" / "workflows" / "formal-release-gate.yml",
+        ]
+        command = ["ruby", "-e", 'require "yaml"; ARGV.each { |path| YAML.load_file(path) }']
+        valid = subprocess.run(command + [str(path) for path in paths], capture_output=True, text=True)
+        self.assertEqual(0, valid.returncode, valid.stderr)
+        with tempfile.TemporaryDirectory(prefix="workflow-yaml-") as temp:
+            broken = Path(temp) / "broken.yml"
+            broken.write_text(paths[1].read_text(encoding="utf-8").replace("  RELEASE_TAG:", "    RELEASE_TAG:", 1), encoding="utf-8")
+            invalid = subprocess.run(command + [str(broken)], capture_output=True, text=True)
+            self.assertNotEqual(0, invalid.returncode)
+
+    def test_check_skill_formal_evidence_chain_is_fixed_and_fail_closed(self) -> None:
+        workflow = ROOT / ".github" / "workflows" / "check-skill.yml"
+        text = workflow.read_text(encoding="utf-8")
+        self.assertEqual([], FULL_VALIDATION.check_skill_formal_evidence_workflow_errors(text))
+        mutations = (
+            ("Record formal runner identity", "Remove formal runner identity"),
+            ('--action-provenance-file "$RUNNER_TEMP/formal-schema-runner-identity.json"', "--action-provenance-file \"$RUNNER_TEMP/other.json\""),
+            ('--workflow-sha256 "$WORKFLOW_SHA256"', '--workflow-sha256 "hardcoded"'),
+            ('--workflow-path ".github/workflows/check-skill.yml"', '--workflow-path ".github/workflows/other.yml"'),
+            ('--formal-schema-workflow-sha256 "$WORKFLOW_SHA256"', '--formal-schema-workflow-sha256 ""'),
+            ('--formal-schema-workflow-path ".github/workflows/check-skill.yml"', '--formal-schema-workflow-path ""'),
+            ('"candidate_base": os.environ["FORMAL_CANDIDATE_BASE"]', '"candidate_base": os.environ["GITHUB_SHA"]'),
+            ('actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02', 'actions/upload-artifact@v4'),
+            ("if: always()", "if: success()"),
+            ("retention-days: 90", "retention-days: 1"),
+            ("${{ runner.temp }}/formal-schema-result.json", "${{ runner.temp }}/missing-result.json"),
+            ("--verify-acquisition", "--verify-acquisition\n            --verify-acquisition"),
+            ("--allow-existing-tag", "--pre-tag"),
+            ('"actions": {', '"fake-actions": {'),
+            ('json.dump(payload, handle, indent=2, sort_keys=True)', 'json.dump(other, handle, indent=2, sort_keys=True)'),
+        )
+        prefix, formal = text.split("  formal-schema-gate:", 1)
+        for old, new in mutations:
+            with self.subTest(old=old):
+                broken = prefix + "  formal-schema-gate:" + formal.replace(old, new, 1)
+                self.assertTrue(FULL_VALIDATION.check_skill_formal_evidence_workflow_errors(broken))
+
+    def test_manual_formal_evidence_workflow_rejects_unsafe_mutations(self) -> None:
+        workflow = (ROOT / ".github" / "workflows" / "formal-release-gate.yml").read_text(
+            encoding="utf-8"
+        )
+        mutations = (
+            ("  workflow_dispatch:", "  push:\n    branches: [main]"),
+            ("ref: ${{ github.sha }}", "ref: ${{ inputs.commit }}"),
+            ('test "$GITHUB_REF" = "refs/heads/main"', 'test "$GITHUB_REF" = "refs/heads/release"'),
+            ('release_commit="$GITHUB_SHA"', 'release_commit="$GITHUB_REF"'),
+            ('candidate_base="$2"', 'candidate_base="1888691c462b51dd5a561416a0db9eda1305a517"'),
+            ('--candidate-base "$CANDIDATE_BASE"', '--candidate-base "$GITHUB_SHA"'),
+            ('--formal-schema-candidate-base "$CANDIDATE_BASE"', '--formal-schema-candidate-base "$(git rev-parse HEAD^)"'),
+            ('"candidate_base": os.environ["CANDIDATE_BASE"]', '"candidate_base": os.environ["GITHUB_SHA"]'),
+            ('          EVIDENCE_DIR=', '          CANDIDATE_BASE=0000000000000000000000000000000000000000\n          EVIDENCE_DIR='),
+            ('      - name: Verify immutable runner', '      - name: Override base\n        run: printf "CANDIDATE_BASE=0000000000000000000000000000000000000000\\n" >> "$GITHUB_ENV"\n\n      - name: Verify immutable runner'),
+            ('--candidate-base "$CANDIDATE_BASE"', '--candidate-base "${CANDIDATE_BASE:-fallback}"'),
+            ('--candidate-base "$CANDIDATE_BASE"', '--candidate-base "$CANDIDATE_BASE"\n            --candidate-base "$CANDIDATE_BASE"'),
+            ('--formal-schema-candidate-base "$CANDIDATE_BASE"', '--formal-schema-candidate-base "$CANDIDATE_BASE"\n            --formal-schema-candidate-base "$CANDIDATE_BASE"'),
+            ('test "$#" -eq 2', 'test "$#" -eq 1'),
+            ('test "$(git merge-base "$candidate_base" "$release_commit")" = "$candidate_base"', 'true'),
+            ("--pre-tag", "--allow-existing-tag"),
+            ("--verify-acquisition", "--verify-acquisition\n          --verify-acquisition"),
+            ("retention-days: 90", "retention-days: 1"),
+            ("  contents: read", "  contents: write"),
+            ("actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02", "actions/upload-artifact@v4"),
+            ("if: always()", "if: success()"),
+            ("if-no-files-found: error", "if-no-files-found: warn"),
+            ("runner-identity.json", "runner-identity.txt"),
+            ("--workflow-sha256 \"$WORKFLOW_SHA256\"", "--workflow-sha256 \"$OTHER_SHA\""),
+            ("uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1", "uses: actions/checkout@v4"),
+            ("permissions:\n  contents: read", "permissions:\n  contents: read\n\n    permissions:\n      contents: read"),
+            ("workflow_dispatch:", "workflow_dispatch:\n    inputs:\n      commit: {}"),
+            ('"actions": {', '"disabled-actions": {'),
+            ('"checkout": "3d3c42e5aac5ba805825da76410c181273ba90b1",', '"disabled-checkout": "3d3c42e5aac5ba805825da76410c181273ba90b1",'),
+            ('actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1', 'actions/checkout@1111111111111111111111111111111111111111'),
+            ('"setup-python": "5fda3b95a4ea91299a34e894583c3862153e4b97",\n                  "upload-artifact": "ea165f8d65b6e75b540449e92b4886f43607fa02",', '"setup-python": "ea165f8d65b6e75b540449e92b4886f43607fa02",\n                  "upload-artifact": "5fda3b95a4ea91299a34e894583c3862153e4b97",'),
+            ('"setup-python":', '"python-setup":'),
+            ('"checkout": "3d3c42e5aac5ba805825da76410c181273ba90b1"', '# "checkout": "3d3c42e5aac5ba805825da76410c181273ba90b1"'),
+            ('"upload-artifact": "ea165f8d65b6e75b540449e92b4886f43607fa02",', '"upload-artifact": "ea165f8d65b6e75b540449e92b4886f43607fa02",\n                  "unknown": "2222222222222222222222222222222222222222",'),
+            ('"actions": {', '"actions": {\n                  "extra": "2222222222222222222222222222222222222222",'),
+            ('payload = {', 'other = {'),
+            ('json.dump(payload, handle, indent=2, sort_keys=True)', 'json.dump(other, handle, indent=2, sort_keys=True)'),
+            ('with open(path, "w", encoding="utf-8")', 'with open("/tmp/other.json", "w", encoding="utf-8")'),
+        )
+        for old, new in mutations:
+            with self.subTest(old=old):
+                broken = workflow.replace(old, new, 1)
+                self.assertTrue(FULL_VALIDATION.formal_release_evidence_workflow_errors(broken))
 
     def test_workflow_candidate_gate_cannot_be_changed_to_final(self) -> None:
         workflow = (ROOT / ".github" / "workflows" / "check-skill.yml").read_text(
@@ -1679,6 +2102,12 @@ class ReleaseReadinessTests(unittest.TestCase):
             result,
             "--formal-schema-pip-report",
         )
+
+    def test_pre_tag_contract_binds_runner_identity_hash(self) -> None:
+        source = (ROOT / "scripts/check_release_readiness.py").read_text(encoding="utf-8")
+        self.assertIn('"runner_identity_sha256": sha256_file(', source)
+        self.assertIn("args.formal_schema_action_provenance_file.resolve()", source)
+        self.assertIn('if result.get(field) != value:', source)
 
     def test_pre_tag_requires_job_local_evidence_directory(self) -> None:
         repo = self.copy_repo("pre-tag-formal-evidence-dir")
