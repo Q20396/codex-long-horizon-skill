@@ -268,6 +268,119 @@ def write_synthetic_evidence(
     return evidence_dir, receipt_path, receipt
 
 
+class FormalBaselineArchiveLayoutTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory(prefix="formal-layout-fixture-")
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name).resolve()
+        self.report = self.root / "pip-report.json"
+        self.report.write_text(json.dumps(synthetic_pip_report()), encoding="utf-8")
+        evidence, _, self.receipt = write_synthetic_evidence(self.root, self.report)
+        self.raw = self.root / "formal-baseline-123-1"
+        evidence.rename(self.raw)
+        self.receipt_path = self.raw / "acquisition-receipt.json"
+        response = self.raw / "responses/fixture.json"
+        response.parent.mkdir()
+        response.write_text('{"fixture_only": true}', encoding="utf-8")
+        manifest = {
+            "schema_version": 1, "source_hosts": ["pypi.org"],
+            "entries": [{
+                "method": "GET", "url": "https://pypi.org/pypi/fixture/json",
+                "final_url": "https://pypi.org/pypi/fixture/json",
+                "source_host": "pypi.org", "status": 200,
+                "request_sha256": VALIDATOR.sha256_bytes(b""),
+                "response_path": "responses/fixture.json",
+                "response_sha256": VALIDATOR.sha256_file(response),
+            }],
+        }
+        (self.raw / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+        self.receipt["raw_evidence_manifest_sha256"] = VALIDATOR.sha256_file(self.raw / "manifest.json")
+        self.receipt["raw_evidence_count"] = 1
+        self.receipt["source_hosts"] = ["pypi.org"]
+        self.receipt_path.write_text(json.dumps(self.receipt), encoding="utf-8")
+
+    def inventory_errors(self, raw=None):
+        raw = raw or self.raw
+        return VALIDATOR.validate_raw_manifest(
+            raw, raw / "acquisition-receipt.json",
+            self.receipt["raw_evidence_manifest_sha256"],
+        )[0]
+
+    def test_legal_raw_fixture_passes_real_inventory(self):
+        self.assertEqual(self.inventory_errors(), [])
+
+    def test_workflow_output_and_upload_preserve_raw_inventory(self):
+        workflow = (ROOT / ".github/workflows/formal-baseline.yml").read_text()
+        step = workflow.split("      - name: Offline formal replay and readiness audit\n", 1)[1]
+        script = textwrap.dedent(step.split("        run: |\n", 1)[1].split("\n      - name:", 1)[0])
+        # Exercise the actual shell routing without formal execution or acquisition.
+        # Only the CLI producer is a fixture; inventory checks use production code.
+        python = self.root / "lhe-formal-venv/bin/python"
+        python.parent.mkdir(parents=True)
+        python.write_text(
+            f"#!{sys.executable}\n" + textwrap.dedent('''\
+            import json, os, sys
+            from pathlib import Path
+            if sys.argv[1] == "-c":
+                print("0" * 64)
+            else:
+                args = sys.argv[1:]
+                assert args[0] == "scripts/check_release_readiness.py"
+                Path(os.environ["FIXTURE_ARGS"]).write_text(json.dumps(args))
+                output = Path(args[args.index("--formal-schema-result") + 1])
+                output.write_text(json.dumps({"fixture_only": True}))
+            '''), encoding="utf-8",
+        )
+        python.chmod(0o700)
+        identity = self.root / "formal-baseline-runner-identity.json"
+        identity.write_text('{"fixture_only": true}', encoding="utf-8")
+        env = dict(os.environ, RUNNER_TEMP=str(self.root), GITHUB_RUN_ID="123",
+                   GITHUB_RUN_ATTEMPT="1", TARGET_SHA="a" * 40,
+                   GITHUB_REPOSITORY="Q20396/codex-long-horizon-skill",
+                   GITHUB_WORKFLOW_SHA="a" * 40, RUNNER_IDENTITY=str(identity),
+                   FIXTURE_ARGS=str(self.root / "args.json"),
+                   PYTHONDONTWRITEBYTECODE="1")
+        completed = subprocess.run(
+            ["bash", "-c", script], cwd=ROOT, env=env,
+            stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=30,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        args = json.loads((self.root / "args.json").read_text())
+        value = lambda flag: args[args.index(flag) + 1]
+        output = Path(value("--formal-schema-result"))
+        self.assertTrue(output.is_file())
+        self.assertFalse(output.is_relative_to(self.raw))
+        self.assertEqual(Path(value("--formal-schema-evidence-dir")), self.raw)
+        self.assertEqual(Path(value("--formal-schema-acquisition-result")), self.receipt_path)
+        self.assertEqual(Path(value("--formal-schema-pip-report")), self.report)
+        self.assertEqual(Path(value("--formal-schema-action-provenance-file")), identity)
+        self.assertEqual(value("--formal-schema-event-target-sha"), "a" * 40)
+        self.assertEqual(self.inventory_errors(), [])
+
+        upload = workflow.split("      - name: Upload formal evidence\n", 1)[1]
+        paths = upload.split("          path: |\n", 1)[1].split("          if-no-files-found:", 1)[0]
+        archive = self.root / "archive"
+        archive.mkdir()
+        for line in paths.strip().splitlines():
+            source = Path(line.strip().replace("${{ runner.temp }}", str(self.root))
+                          .replace("${{ github.run_id }}", "123")
+                          .replace("${{ github.run_attempt }}", "1"))
+            destination = archive / source.relative_to(self.root)
+            if source.is_dir():
+                shutil.copytree(source, destination)
+            else:
+                shutil.copy2(source, destination)
+        for source in (output, self.report, identity, self.receipt_path):
+            self.assertEqual((archive / source.relative_to(self.root)).read_bytes(), source.read_bytes())
+        self.assertEqual(self.inventory_errors(archive / self.raw.name), [])
+
+    def test_result_inside_raw_fixture_is_rejected(self):
+        (self.raw / "formal-result.json").write_text('{"fixture_only": true}', encoding="utf-8")
+        errors = self.inventory_errors()
+        self.assertTrue(any("file inventory mismatch" in error and "formal-result.json" in error
+                            for error in errors), errors)
+
+
 class FormalSchemaStaticTests(unittest.TestCase):
     def _isolated_acquisition_fixture(self, root: Path, *, mismatch: bool = False):
         if shutil.which("git") is None:
