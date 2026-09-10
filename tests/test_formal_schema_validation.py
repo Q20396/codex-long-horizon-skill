@@ -269,14 +269,22 @@ def write_synthetic_evidence(
 
 
 class FormalBaselineArchiveLayoutTests(unittest.TestCase):
+    workflow_name = "formal-baseline.yml"
+    replay_step = "Offline formal replay and readiness audit"
+    upload_step = "Upload formal evidence"
+    raw_name = "formal-baseline-123-1"
+    report_name = "pip-report.json"
+    venv_name = "lhe-formal-venv"
+    identity_name = "formal-baseline-runner-identity.json"
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="formal-layout-fixture-")
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name).resolve()
-        self.report = self.root / "pip-report.json"
+        self.report = self.root / self.report_name
         self.report.write_text(json.dumps(synthetic_pip_report()), encoding="utf-8")
         evidence, _, self.receipt = write_synthetic_evidence(self.root, self.report)
-        self.raw = self.root / "formal-baseline-123-1"
+        self.raw = self.root / self.raw_name
         evidence.rename(self.raw)
         self.receipt_path = self.raw / "acquisition-receipt.json"
         response = self.raw / "responses/fixture.json"
@@ -310,12 +318,12 @@ class FormalBaselineArchiveLayoutTests(unittest.TestCase):
         self.assertEqual(self.inventory_errors(), [])
 
     def test_workflow_output_and_upload_preserve_raw_inventory(self):
-        workflow = (ROOT / ".github/workflows/formal-baseline.yml").read_text()
-        step = workflow.split("      - name: Offline formal replay and readiness audit\n", 1)[1]
+        workflow = (ROOT / ".github/workflows" / self.workflow_name).read_text()
+        step = workflow.split(f"      - name: {self.replay_step}\n", 1)[1]
         script = textwrap.dedent(step.split("        run: |\n", 1)[1].split("\n      - name:", 1)[0])
         # Exercise the actual shell routing without formal execution or acquisition.
         # Only the CLI producer is a fixture; inventory checks use production code.
-        python = self.root / "lhe-formal-venv/bin/python"
+        python = self.root / self.venv_name / "bin/python"
         python.parent.mkdir(parents=True)
         python.write_text(
             f"#!{sys.executable}\n" + textwrap.dedent('''\
@@ -323,6 +331,9 @@ class FormalBaselineArchiveLayoutTests(unittest.TestCase):
             from pathlib import Path
             if sys.argv[1] == "-c":
                 print("0" * 64)
+            elif sys.argv[1] == "-m":
+                assert sys.argv[1:] == ["-m", "unittest", "tests.test_formal_schema_validation", "-v"]
+                Path(os.environ["FIXTURE_UNITTEST"]).write_text(json.dumps(sys.argv[1:]))
             else:
                 args = sys.argv[1:]
                 assert args[0] == "scripts/check_release_readiness.py"
@@ -332,13 +343,17 @@ class FormalBaselineArchiveLayoutTests(unittest.TestCase):
             '''), encoding="utf-8",
         )
         python.chmod(0o700)
-        identity = self.root / "formal-baseline-runner-identity.json"
+        identity = self.root / self.identity_name
         identity.write_text('{"fixture_only": true}', encoding="utf-8")
         env = dict(os.environ, RUNNER_TEMP=str(self.root), GITHUB_RUN_ID="123",
                    GITHUB_RUN_ATTEMPT="1", TARGET_SHA="a" * 40,
                    GITHUB_REPOSITORY="Q20396/codex-long-horizon-skill",
                    GITHUB_WORKFLOW_SHA="a" * 40, RUNNER_IDENTITY=str(identity),
                    FIXTURE_ARGS=str(self.root / "args.json"),
+                   FIXTURE_UNITTEST=str(self.root / "unittest.json"),
+                   RELEASE_VERSION="0.6.1", CANDIDATE_BASE="b" * 40,
+                   FORMAL_EVENT_TARGET_SHA="a" * 40,
+                   FORMAL_REPOSITORY="Q20396/codex-long-horizon-skill",
                    PYTHONDONTWRITEBYTECODE="1")
         completed = subprocess.run(
             ["bash", "-c", script], cwd=ROOT, env=env,
@@ -349,15 +364,21 @@ class FormalBaselineArchiveLayoutTests(unittest.TestCase):
         value = lambda flag: args[args.index(flag) + 1]
         output = Path(value("--formal-schema-result"))
         self.assertTrue(output.is_file())
+        self.assertEqual(self.inventory_errors(), [])
         self.assertFalse(output.is_relative_to(self.raw))
         self.assertEqual(Path(value("--formal-schema-evidence-dir")), self.raw)
         self.assertEqual(Path(value("--formal-schema-acquisition-result")), self.receipt_path)
         self.assertEqual(Path(value("--formal-schema-pip-report")), self.report)
         self.assertEqual(Path(value("--formal-schema-action-provenance-file")), identity)
         self.assertEqual(value("--formal-schema-event-target-sha"), "a" * 40)
-        self.assertEqual(self.inventory_errors(), [])
+        if self.workflow_name == "formal-release-gate.yml":
+            self.assertEqual(value("--formal-schema-candidate-base"), "b" * 40)
+            self.assertEqual(value("--formal-schema-workflow-path"), ".github/workflows/formal-release-gate.yml")
+            self.assertEqual(value("--release-state"), "final")
+            self.assertIn("--pre-tag", args)
+            self.assertTrue((self.root / "unittest.json").is_file())
 
-        upload = workflow.split("      - name: Upload formal evidence\n", 1)[1]
+        upload = workflow.split(f"      - name: {self.upload_step}\n", 1)[1]
         paths = upload.split("          path: |\n", 1)[1].split("          if-no-files-found:", 1)[0]
         archive = self.root / "archive"
         archive.mkdir()
@@ -379,6 +400,16 @@ class FormalBaselineArchiveLayoutTests(unittest.TestCase):
         errors = self.inventory_errors()
         self.assertTrue(any("file inventory mismatch" in error and "formal-result.json" in error
                             for error in errors), errors)
+
+
+class FormalReleaseGateArchiveLayoutTests(FormalBaselineArchiveLayoutTests):
+    workflow_name = "formal-release-gate.yml"
+    replay_step = "Run offline final formal replay"
+    upload_step = "Upload retained formal evidence"
+    raw_name = "formal-schema-evidence-123-1"
+    report_name = "lhe-v0.6.1-formal-schema-pip-report.json"
+    venv_name = "lhe-v0.6.1-formal-venv"
+    identity_name = "lhe-v0.6.1-runner-identity.json"
 
 
 class FormalSchemaStaticTests(unittest.TestCase):

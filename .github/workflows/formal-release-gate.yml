@@ -54,7 +54,7 @@ jobs:
           WORKFLOW_PATH=.github/workflows/formal-release-gate.yml
           WORKFLOW_SHA256="$(sha256sum "$WORKFLOW_PATH" | awk '{print $1}')"
           test ! -e "$EVIDENCE_DIR"
-          python3 - "$RUNNER_IDENTITY" "$WORKFLOW_SHA256" "$WORKFLOW_PATH" "$release_commit" <<'PY'
+          env CANDIDATE_BASE="$candidate_base" python3 - "$RUNNER_IDENTITY" "$WORKFLOW_SHA256" "$WORKFLOW_PATH" "$release_commit" <<'PY'
           import json, os, sys
           path, workflow_sha, workflow_path, release_commit = sys.argv[1:]
           payload = {
@@ -176,7 +176,7 @@ jobs:
             --formal-schema-action-provenance-file "$RUNNER_IDENTITY" \
             --formal-schema-event-target-sha "$FORMAL_EVENT_TARGET_SHA" \
             --formal-schema-repository "$FORMAL_REPOSITORY" \
-            --formal-schema-result "$EVIDENCE/formal-result.json"
+            --formal-schema-result "$RUNNER_TEMP/lhe-v0.6.1-formal-result.json"
 
       - name: Upload retained formal evidence
         if: always()
@@ -186,6 +186,7 @@ jobs:
           path: |
             ${{ runner.temp }}/lhe-v0.6.1-runner-identity.json
             ${{ runner.temp }}/lhe-v0.6.1-formal-schema-pip-report.json
+            ${{ runner.temp }}/lhe-v0.6.1-formal-result.json
             ${{ runner.temp }}/formal-schema-evidence-${{ github.run_id }}-${{ github.run_attempt }}
           if-no-files-found: error
           retention-days: 90

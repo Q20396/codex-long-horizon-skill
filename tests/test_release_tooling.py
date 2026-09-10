@@ -19,6 +19,60 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class SameStepIdentityTests(unittest.TestCase):
+    def test_release_gate_producer_uses_current_step_candidate_base(self):
+        text = (ROOT / ".github/workflows/formal-release-gate.yml").read_text()
+        step = next(s for s in FULL_VALIDATION._workflow_steps(text)
+                    if s.strip().startswith("- name: Record runner identity and initialize retained evidence paths"))
+        script = textwrap.dedent(step.split("run: |\n", 1)[1])
+        with tempfile.TemporaryDirectory(prefix="release-identity-fixture-") as tmp:
+            repo = Path(tmp)
+            workflow = repo / ".github/workflows/formal-release-gate.yml"
+            workflow.parent.mkdir(parents=True)
+            workflow.write_text(text)
+            env = dict(os.environ, GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=os.devnull,
+                       GIT_AUTHOR_NAME="Fixture", GIT_COMMITTER_NAME="Fixture",
+                       GIT_AUTHOR_EMAIL="fixture@example.invalid", GIT_COMMITTER_EMAIL="fixture@example.invalid")
+            for key in list(env):
+                if key.startswith("GIT_CONFIG_") and key not in ("GIT_CONFIG_NOSYSTEM", "GIT_CONFIG_GLOBAL"):
+                    env.pop(key)
+            for key in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "SSH_AUTH_SOCK"):
+                env.pop(key, None)
+
+            def git(*args, input=None):
+                return subprocess.run(
+                    ["git", "-c", "core.hooksPath=/dev/null", "-c", "commit.gpgsign=false", *args],
+                    cwd=repo, env=env, input=input, text=True, capture_output=True,
+                    check=True, timeout=10,
+                ).stdout.strip()
+
+            git("init", "-q")
+            tree = git("mktree", input="")
+            base = git("commit-tree", tree, input="fixture base\n")
+            head = git("commit-tree", tree, "-p", base, input="fixture candidate\n")
+            git("update-ref", "HEAD", head)
+            bindir = repo / "bin"
+            bindir.mkdir()
+            (bindir / "python3").symlink_to(sys.executable)
+            env.update(PATH=str(bindir) + os.pathsep + env["PATH"], RUNNER_TEMP=tmp,
+                       GITHUB_ENV=str(repo / "env"), GITHUB_REF="refs/heads/main", GITHUB_SHA=head,
+                       GITHUB_RUN_ID="1", GITHUB_RUN_ATTEMPT="1", GITHUB_JOB="formal-release-gate",
+                       GITHUB_WORKFLOW_REF="fixture", FORMAL_REPOSITORY="fixture",
+                       FORMAL_EVENT_TARGET_SHA=head)
+            for inherited in (None, "0" * 40):
+                with self.subTest(inherited=inherited):
+                    env.pop("CANDIDATE_BASE", None)
+                    if inherited is not None:
+                        env["CANDIDATE_BASE"] = inherited
+                    result = subprocess.run(
+                        ["bash", "-c", script], cwd=repo, env=env, stdin=subprocess.DEVNULL,
+                        capture_output=True, text=True, timeout=20,
+                    )
+                    self.assertEqual(0, result.returncode, result.stderr)
+                    identity = json.loads((repo / "lhe-v0.6.1-runner-identity.json").read_text())
+                    self.assertEqual(base, identity["candidate_base"])
+                    self.assertEqual(head, identity["release_commit"])
+                    self.assertEqual(head, identity["event_target_sha"])
+
     def test_real_ci_producer_ignores_inherited_release_commit(self):
         text = (ROOT / ".github/workflows/check-skill.yml").read_text()
         step = next(s for s in FULL_VALIDATION._workflow_steps(text)
