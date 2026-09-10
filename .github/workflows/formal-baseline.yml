@@ -135,7 +135,7 @@ jobs:
             --formal-schema-workflow-path .github/workflows/formal-baseline.yml \
             --formal-schema-action-provenance-file "$RUNNER_IDENTITY" \
             --formal-schema-event-target-sha "$TARGET_SHA" --formal-schema-repository "$GITHUB_REPOSITORY" \
-            --formal-schema-result "$EVIDENCE/formal-result.json"
+            --formal-schema-result "$RUNNER_TEMP/formal-baseline-result.json"
 
       - name: Upload formal evidence
         if: always()
@@ -145,6 +145,7 @@ jobs:
           path: |
             ${{ runner.temp }}/formal-baseline-runner-identity.json
             ${{ runner.temp }}/pip-report.json
+            ${{ runner.temp }}/formal-baseline-result.json
             ${{ runner.temp }}/formal-baseline-${{ github.run_id }}-${{ github.run_attempt }}
           if-no-files-found: error
           retention-days: 90

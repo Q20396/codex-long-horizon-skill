@@ -4,11 +4,27 @@
     {
       "fingerprint": "1039EC488BE088997C1740D9ED0002B3562F2F59",
       "algorithm": "ed25519",
+      "format": "openpgp",
       "public_key": "release-signing-keys/Q20396-LHE-Release-Signing.asc",
       "purpose": "annotated LHE release tags",
+      "trust_domain": "release_tag",
+      "may_sign_commits": false,
+      "may_sign_release_tags": true,
       "status": "active",
       "valid_from": "2026-08-01",
       "expires": "2027-08-01"
     }
-  ]
+  ],
+  "commit": {
+    "fingerprint": "SHA256:TakAONGUVp2o/aQK9cJSncIDOZ3HEr27M6Ctr84LdGY",
+    "format": "ssh",
+    "public_key_file": "release-signing-keys/Q20396-Commit-Signing.pub",
+    "source": "https://api.github.com/users/Q20396/ssh_signing_keys",
+    "source_response_sha256": "697a47e7b7f44d0643d384688da697078f03adefc93f041faaecfdd5c0466f03",
+    "purpose": "ordinary maintainer commits only",
+    "trust_domain": "commit",
+    "may_sign_commits": true,
+    "may_sign_release_tags": false,
+    "independent_verification": "github_api"
+  }
 }
