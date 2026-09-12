@@ -327,9 +327,9 @@ def release_gate_workflow_errors(text: str) -> list[str]:
         if "if: github.event_name == 'push'" in step and "refs/heads/main" in step
     ]
     if not formal_main_steps:
-        errors.append("formal main readiness gate must be scoped to push on main")
+        errors.append("schema integration readiness gate must be scoped to push on main")
     elif dynamic_state not in formal_main_steps[0]:
-        errors.append("formal main gate must use the shared dynamic Release state")
+        errors.append("schema integration gate must use the shared dynamic Release state")
 
     for job_name, job_text in jobs.items():
         for step in readiness_steps(job_text):
@@ -349,7 +349,7 @@ def release_gate_workflow_errors(text: str) -> list[str]:
 
 
 def check_skill_formal_evidence_workflow_errors(text: str) -> list[str]:
-    """Validate the ordinary CI formal evidence path and its retained artifact."""
+    """Validate main schema integration separately from retained PR formal evidence."""
     errors: list[str] = []
     executable = "\n".join(line.split("#", 1)[0].rstrip() for line in text.splitlines())
     match = re.search(r"(?ms)^  formal-schema-gate:\n(?P<body>.*?)(?=^  [A-Za-z0-9_-]+:|\Z)", executable)
@@ -361,6 +361,60 @@ def check_skill_formal_evidence_workflow_errors(text: str) -> list[str]:
     identity = [step for step in steps if step.strip().startswith("- name: Record formal runner identity")]
     acquire = [step for step in steps if "--verify-acquisition" in step]
     upload = [step for step in steps if "actions/upload-artifact@" in step]
+    pr_condition = "github.event_name == 'pull_request'"
+    main_condition = "github.event_name == 'push' && github.ref == 'refs/heads/main'"
+
+    def condition(step: str) -> str:
+        values = re.findall(r"^        if: (.+)$", step, re.M)
+        return values[0] if len(values) == 1 else ""
+
+    def run_body(step: str) -> str:
+        if "        run: |\n" not in step:
+            return ""
+        return textwrap.dedent(step.split("        run: |\n", 1)[1]).strip()
+
+    routes = [step for step in steps if step.strip().startswith("- name: Validate CI event route\n")]
+    expected_route = '''set -euo pipefail
+case "$GITHUB_EVENT_NAME:$GITHUB_REF" in
+  push:refs/heads/main) printf 'schema integration; controlled_formal_evidence: NOT_GENERATED\\n' ;;
+  pull_request:refs/pull/*) printf 'PR formal validation required\\n' ;;
+  *) printf 'Unsupported CI event/ref\\n' >&2; exit 1 ;;
+esac'''
+    if (len(routes) != 1 or steps[0] != routes[0] or condition(routes[0])
+            or run_body(routes[0]) != expected_route):
+        errors.append("CI event route must explicitly reject unsupported event/ref contexts")
+
+    main_steps = [step for step in steps if condition(step) == main_condition]
+    expected_main_commands = [
+        "set -euo pipefail",
+        '"$RUNNER_TEMP/lhe-formal-schema-venv/bin/python" scripts/validate_formal_schemas.py --schema-only',
+        '"$RUNNER_TEMP/lhe-formal-schema-venv/bin/python" scripts/check_release_readiness.py --version 0.6.1 '
+        '--release-state "${{ steps.release-state.outputs.state }}" --allow-existing-tag',
+    ]
+    commands = [] if len(main_steps) != 1 else [
+        " ".join(line.split())
+        for line in run_body(main_steps[0]).replace("\\\n", " ").splitlines()
+        if line.strip()
+    ]
+    if commands != expected_main_commands:
+        errors.append("main schema integration must run schema-only and dynamic static readiness, without formal output or error suppression")
+    for step in identity + acquire:
+        if condition(step) != pr_condition:
+            errors.append("formal identity and acquisition must be restricted to pull_request")
+    for step in steps:
+        if "--schema-only" in step and condition(step) != main_condition:
+            errors.append("schema-only must be restricted to push/main")
+        if "--formal-schema-" in step and condition(step) != pr_condition:
+            errors.append("formal readiness must be restricted to pull_request")
+    if "continue-on-error:" in job:
+        errors.append("schema/formal checks must not suppress step failures")
+    installs = [step for step in steps if "-m pip install" in step]
+    if len(installs) != 1 or condition(installs[0]) or any(
+        fragment not in installs[0]
+        for fragment in ('"$RUNNER_TEMP/lhe-formal-schema-venv/bin/python" -m pip install',
+                         "--require-hashes", "--only-binary=:all:", "-r requirements-release.txt")
+    ):
+        errors.append("both CI routes must retain the locked schema engine installation")
     if len(identity) != 1:
         errors.append("formal-schema-gate must have exactly one formal runner identity step")
     if len(acquire) != 1 or job.count("--verify-acquisition") != 1:
@@ -441,7 +495,7 @@ def check_skill_formal_evidence_workflow_errors(text: str) -> list[str]:
         for fragment in ('--action-provenance-file "$RUNNER_TEMP/formal-schema-runner-identity.json"', '--workflow-sha256 "$WORKFLOW_SHA256"', '--workflow-path ".github/workflows/check-skill.yml"', '--candidate-base "$FORMAL_CANDIDATE_BASE"'):
             if fragment not in step:
                 errors.append(f"acquisition missing required fragment: {fragment}")
-    for context in ("if: github.event_name == 'pull_request'", "if: github.event_name == 'push' && github.ref == 'refs/heads/main'"):
+    for context in ("if: github.event_name == 'pull_request'",):
         paths = [step for step in steps if context in step and "check_release_readiness.py" in step]
         required = (
             '--formal-schema-action-provenance-file "$RUNNER_TEMP/formal-schema-runner-identity.json"',
@@ -454,6 +508,8 @@ def check_skill_formal_evidence_workflow_errors(text: str) -> list[str]:
             errors.append(f"readiness path missing action provenance for context: {context}")
     if upload:
         step = upload[0]
+        if condition(step) != "always() && " + pr_condition:
+            errors.append("formal evidence upload must be restricted to pull_request, including failures")
         for fragment in ("if: always()", "retention-days: 90", "if-no-files-found: error", "formal-schema-runner-identity.json", "formal-schema-result.json", "formal-schema-evidence", "formal-schema-pip-report.json"):
             if fragment not in step:
                 errors.append(f"formal evidence upload missing required fragment: {fragment}")

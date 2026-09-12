@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import importlib.util
+import builtins
 import contextlib
 import io
 import json
 import os
 import re
+import shlex
 import shutil
 import textwrap
 from datetime import timedelta
@@ -44,6 +46,239 @@ def load_module():
 
 
 VALIDATOR = load_module()
+
+
+class SchemaIntegrationTests(unittest.TestCase):
+    def step(self, name):
+        text = WORKFLOW.read_text().split("  formal-schema-gate:", 1)[1]
+        block = text.split("      - name: " + name + "\n", 1)[1].split("      - name:", 1)[0]
+        return textwrap.dedent(block.split("        run: |\n", 1)[1])
+
+    def require_engine(self):
+        errors = VALIDATOR.verify_runtime_versions()
+        if errors:
+            self.skipTest("BLOCKED_REAL_ENGINE: " + "; ".join(errors))
+
+    def invoke(self, argv):
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output), contextlib.redirect_stderr(output):
+            rc = VALIDATOR.main(argv)
+        return rc, output.getvalue()
+
+    def test_event_route_executes_real_shell(self):
+        for event, ref, expected in [
+            ("push", "refs/heads/main", 0),
+            ("pull_request", "refs/pull/149/merge", 0),
+            ("push", "refs/heads/other", 1),
+            ("workflow_dispatch", "refs/heads/main", 1),
+            ("", "", 1),
+        ]:
+            with self.subTest(event=event, ref=ref):
+                p = subprocess.run(["bash", "-c", self.step("Validate CI event route")],
+                                   env=dict(os.environ, GITHUB_EVENT_NAME=event, GITHUB_REF=ref),
+                                   capture_output=True, text=True, timeout=10)
+                self.assertEqual(expected, p.returncode, p.stderr)
+                if event == "push" and expected == 0:
+                    self.assertIn("controlled_formal_evidence: NOT_GENERATED", p.stdout)
+
+    def test_schema_only_rejects_formal_or_unknown_arguments(self):
+        for argv in [["--schema-only", "--formal"], ["--unknown-mode"],
+                     ["--schema-only", "--result", "must-not-exist.json"],
+                     ["--schema-only", "--event-target-sha", "f" * 40],
+                     ["--schema-only", "--pip-report", "report.json"]]:
+            with self.subTest(argv=argv), contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as error:
+                VALIDATOR.main(argv)
+            self.assertNotEqual(0, error.exception.code)
+
+    def test_missing_engine_fails_without_acquisition_or_output(self):
+        real_import = builtins.__import__
+        def blocked(name, *args, **kwargs):
+            if name == "jsonschema":
+                raise ImportError("test: engine unavailable")
+            return real_import(name, *args, **kwargs)
+        # Isolate package metadata only; the real engine import must fail closed.
+        with mock.patch.object(VALIDATOR, "verify_runtime_versions", return_value=[]), \
+             mock.patch("builtins.__import__", side_effect=blocked), \
+             mock.patch.object(VALIDATOR, "acquire_evidence") as acquire, \
+             mock.patch.object(VALIDATOR, "write_json") as write:
+            rc, output = self.invoke(["--schema-only"])
+        self.assertNotEqual(0, rc)
+        self.assertIn("engine unavailable", output)
+        self.assertIn('"controlled_formal_evidence": "NOT_GENERATED"', output)
+        acquire.assert_not_called()
+        write.assert_not_called()
+
+    def test_real_engine_positive(self):
+        self.require_engine()
+        with mock.patch.object(VALIDATOR, "acquire_evidence") as acquire:
+            rc, output = self.invoke(["--schema-only"])
+        self.assertEqual(0, rc, output)
+        self.assertGreater(json.loads(output)["positive_fixture_count"], 0)
+        self.assertGreater(json.loads(output)["negative_fixture_count"], 0)
+        acquire.assert_not_called()
+
+    def test_real_engine_rejects_invalid_schema(self):
+        self.require_engine()
+        with mock.patch.object(VALIDATOR, "validate_schema_inventory", return_value=([], {"bad": {"$id": "urn:bad", "type": "not-a-type"}})):
+            rc, output = self.invoke(["--schema-only"])
+        self.assertNotEqual(0, rc, output)
+
+    def test_real_engine_rejects_bad_positive_fixture(self):
+        self.require_engine()
+        positives, negatives = VALIDATOR.materialized_fixture_cases()
+        name, case, _ = positives[0]
+        with mock.patch.object(VALIDATOR, "materialized_fixture_cases", return_value=([(name, case, None), *positives[1:]], negatives)):
+            rc, output = self.invoke(["--schema-only"])
+        self.assertNotEqual(0, rc, output)
+
+    def test_main_merge_shell_runs_schema_and_static_checks(self):
+        self.require_engine()
+        with tempfile.TemporaryDirectory(prefix="schema-main-") as temp:
+            root = Path(temp)
+            repo = root / "repo"
+            shutil.copytree(ROOT, repo, ignore=shutil.ignore_patterns(".git", "__pycache__", "*.pyc"))
+            env = dict(os.environ, GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=os.devnull,
+                       GIT_AUTHOR_NAME="Fixture", GIT_COMMITTER_NAME="Fixture",
+                       GIT_AUTHOR_EMAIL="fixture@example.invalid", GIT_COMMITTER_EMAIL="fixture@example.invalid",
+                       RUNNER_TEMP=str(root), PYTHONDONTWRITEBYTECODE="1", SSH_AUTH_SOCK="")
+            def git(*args, input=None):
+                return subprocess.run(["git", "-c", "commit.gpgsign=false", "-c", "core.hooksPath=/dev/null", *args],
+                                      cwd=repo, env=env, input=input, text=True, capture_output=True, check=True, timeout=30).stdout.strip()
+            git("init", "-q")
+            git("add", "--all")  # Test-only fixture, never the project candidate.
+            tree = git("write-tree")
+            base = git("commit-tree", tree, input="fixture base\n")
+            side = git("commit-tree", tree, "-p", base, input="fixture side\n")
+            merge = git("commit-tree", tree, "-p", base, "-p", side, input="fixture merge\n")
+            git("update-ref", "HEAD", merge)
+            self.assertEqual(3, len(git("rev-list", "--parents", "-n", "1", "HEAD").split()))
+            # A symlink outside a venv loses pyvenv.cfg discovery; keep the original executable path.
+            interpreter = sys.executable
+            identity_code = (
+                "import importlib.metadata as m,json,sys; "
+                "print(json.dumps({'executable':sys.executable,'prefix':sys.prefix,"
+                "'base_prefix':sys.base_prefix,'packages':"
+                "{n:{'version':m.version(n),'location':str(m.distribution(n).locate_file(''))} "
+                "for n in sys.argv[1:]}}))"
+            )
+            probe = subprocess.run([interpreter, "-B", "-c", identity_code,
+                                    *[item.name for item in VALIDATOR.DISTRIBUTIONS]],
+                                   cwd=repo, env=env, capture_output=True, text=True, check=True, timeout=30)
+            child_identity = json.loads(probe.stdout)
+            self.assertEqual(sys.executable, child_identity["executable"])
+            self.assertEqual(sys.prefix, child_identity["prefix"])
+            self.assertEqual(sys.base_prefix, child_identity["base_prefix"])
+            self.assertEqual({item.name: item.version for item in VALIDATOR.DISTRIBUTIONS},
+                             {name: value["version"] for name, value in child_identity["packages"].items()})
+            print("MAIN_FIXTURE_CHILD_IDENTITY=" + json.dumps(child_identity, sort_keys=True))
+            state = subprocess.run([sys.executable, "scripts/full_skill_validation.py", "--print-release-state"],
+                                   cwd=repo, env=env, capture_output=True, text=True, check=True, timeout=30).stdout.strip()
+            script = self.step("Validate schema integration on main (not controlled evidence)").replace(
+                "${{ steps.release-state.outputs.state }}", state)
+            self.assertEqual(2, script.count('"$RUNNER_TEMP/lhe-formal-schema-venv/bin/python"'))
+            script = script.replace('"$RUNNER_TEMP/lhe-formal-schema-venv/bin/python"', shlex.quote(interpreter))
+            p = subprocess.run(["bash", "-x", "-c", script],
+                               cwd=repo, env=env, capture_output=True, text=True, timeout=90)
+            print("MAIN_FIXTURE_COMMAND=" + json.dumps({"cwd": str(repo), "command": ["bash", "-x", "-c", script]}))
+            print(p.stderr)
+            self.assertEqual(0, p.returncode, p.stdout + p.stderr)
+            self.assertIn('"gate": "schema-integration"', p.stdout)
+            self.assertIn("Final release-state consistency passed", p.stdout)
+            self.assertFalse((root / "formal-schema-evidence").exists())
+            self.assertFalse((root / "formal-schema-result.json").exists())
+
+    def test_pr_route_keeps_formal_acquisition_and_readiness(self):
+        text = WORKFLOW.read_text().split("  formal-schema-gate:", 1)[1]
+        for name in ("Record formal runner identity", "Acquire official evidence once",
+                     "Run formal Draft 2020-12 gate for pull request"):
+            block = text.split("      - name: " + name + "\n", 1)[1].split("      - name:", 1)[0]
+            self.assertIn("if: github.event_name == 'pull_request'", block)
+        self.assertIn("--verify-acquisition", self.step("Acquire official evidence once"))
+        self.assertIn("--formal-schema-result", self.step("Run formal Draft 2020-12 gate for pull request"))
+
+
+class SchemaWorkflowContractTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        spec = importlib.util.spec_from_file_location(
+            "schema_workflow_checker_under_test", ROOT / "scripts/full_skill_validation.py")
+        cls.checker = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = cls.checker
+        spec.loader.exec_module(cls.checker)
+
+    def setUp(self):
+        self.text = WORKFLOW.read_text(encoding="utf-8")
+
+    def errors(self, text):
+        return (self.checker.release_gate_workflow_errors(text)
+                + self.checker.check_skill_formal_evidence_workflow_errors(text))
+
+    def replace_step(self, name, old, new):
+        prefix, block = self.text.split("      - name: " + name + "\n", 1)
+        step, separator, suffix = block.partition("      - name:")
+        self.assertIn(old, step)
+        return prefix + "      - name: " + name + "\n" + step.replace(old, new, 1) + separator + suffix
+
+    def test_main_integration_and_pr_formal_contract_accepted(self):
+        self.assertEqual([], self.errors(self.text))
+
+    def test_main_rejects_missing_engine_static_gate_or_wrong_mode(self):
+        mutations = [
+            ("--schema-only", "--check-lock"),
+            ("--schema-only", "--unknown-mode"),
+            ("scripts/validate_formal_schemas.py --schema-only", "-c 'print(0)'"),
+            ("scripts/check_release_readiness.py", "scripts/other.py"),
+            ('--release-state "${{ steps.release-state.outputs.state }}"', "--release-state final"),
+            ("--allow-existing-tag", ""),
+            ("--schema-only", "--schema-only || true"),
+            ("set -euo pipefail", "set +e"),
+            ("--schema-only", "--schema-only --result /tmp/formal-result.json"),
+        ]
+        for old, new in mutations:
+            with self.subTest(old=old, new=new):
+                text = self.replace_step("Validate schema integration on main (not controlled evidence)", old, new)
+                self.assertTrue(self.errors(text))
+
+    def test_pr_provenance_remains_required(self):
+        for fragment in (
+            '--formal-schema-action-provenance-file "$RUNNER_TEMP/formal-schema-runner-identity.json"',
+            '--formal-schema-workflow-sha256 "$WORKFLOW_SHA256"',
+            '--formal-schema-event-target-sha "$FORMAL_EVENT_TARGET_SHA"',
+        ):
+            with self.subTest(fragment=fragment):
+                self.assertTrue(self.errors(self.replace_step(
+                    "Run formal Draft 2020-12 gate for pull request", fragment, "")))
+
+    def test_formal_effects_cannot_leak_into_main(self):
+        for name in ("Record formal runner identity", "Acquire official evidence once",
+                     "Run formal Draft 2020-12 gate for pull request", "Upload formal schema CI evidence"):
+            with self.subTest(name=name):
+                self.assertTrue(self.errors(self.replace_step(name, "github.event_name == 'pull_request'", "true")))
+
+    def test_event_route_must_fail_closed(self):
+        for old, new in (("exit 1", "exit 0"), ("push:refs/heads/main)", "push:*)"),
+                         ("controlled_formal_evidence: NOT_GENERATED", "controlled_formal_evidence: PASS")):
+            with self.subTest(old=old):
+                self.assertTrue(self.errors(self.replace_step("Validate CI event route", old, new)))
+        self.assertTrue(self.errors(self.replace_step(
+            "Validate schema integration on main (not controlled evidence)",
+            "github.event_name == 'push' && github.ref == 'refs/heads/main'",
+            "github.event_name == 'workflow_dispatch'")))
+
+    def test_engine_installation_and_failure_propagation_remain_required(self):
+        for old, new in (("--require-hashes", ""), ("-r requirements-release.txt", "jsonschema")):
+            with self.subTest(old=old):
+                self.assertTrue(self.errors(self.replace_step("Install exact wheels in a temporary virtual environment", old, new)))
+        self.assertTrue(self.errors(self.replace_step("Validate CI event route", "shell: bash", "shell: bash\n        continue-on-error: true")))
+
+    def test_explicit_release_gate_still_rejects_missing_production_contract(self):
+        text = FORMAL_RELEASE_WORKFLOW.read_text(encoding="utf-8")
+        self.assertEqual([], self.checker.formal_release_evidence_workflow_errors(text))
+        for old in ('--candidate-base "$CANDIDATE_BASE"', '--formal-schema-candidate-base "$CANDIDATE_BASE"',
+                    'test "$(git merge-base "$candidate_base" "$release_commit")" = "$candidate_base"'):
+            with self.subTest(old=old):
+                self.assertIn(old, text)
+                self.assertTrue(self.checker.formal_release_evidence_workflow_errors(text.replace(old, "", 1)))
 
 
 class ExecutionWorkflowBindingTests(unittest.TestCase):
@@ -724,6 +959,70 @@ class FormalSchemaStaticTests(unittest.TestCase):
             self.assertEqual(head, context["event_target_sha"])
             self.assertTrue(receipt.exists())
             self.assertFalse(result.exists())
+
+    def test_real_merge_formal_target_rejected_before_acquisition(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="formal-merge-refusal-") as temp:
+            root = Path(temp)
+            repo, provenance, head, parent = self._isolated_acquisition_fixture(root)
+            env = dict(os.environ, GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=os.devnull,
+                       GIT_AUTHOR_NAME="Fixture", GIT_COMMITTER_NAME="Fixture",
+                       GIT_AUTHOR_EMAIL="fixture@example.invalid", GIT_COMMITTER_EMAIL="fixture@example.invalid")
+            def git(*args, input=None):
+                return subprocess.run(["git", "-c", "commit.gpgsign=false", *args], cwd=repo,
+                                      env=env, input=input, text=True, capture_output=True, check=True, timeout=10).stdout.strip()
+            merge = git("commit-tree", git("rev-parse", "HEAD^{tree}"), "-p", parent, "-p", head, input="fixture merge\n")
+            git("update-ref", "HEAD", merge)
+            payload = json.loads(provenance.read_text())
+            payload.update(event_target_sha=merge, release_commit=merge)
+            provenance.write_text(json.dumps(payload))
+            argv, evidence, receipt, _ = self._run_verify_acquisition(root, provenance, merge, parent)
+            with mock.patch.object(VALIDATOR, "ROOT", repo), mock.patch.object(VALIDATOR, "acquire_evidence") as acquire:
+                output = io.StringIO()
+                with contextlib.redirect_stdout(output):
+                    self.assertNotEqual(0, VALIDATOR.main(argv))
+            self.assertIn("exactly one parent", output.getvalue())
+            acquire.assert_not_called()
+            self.assertFalse(evidence.exists())
+            self.assertFalse(receipt.exists())
+
+    def test_pr_acquisition_actual_shell_passes_fixture_context(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="formal-pr-shell-") as temp:
+            root = Path(temp)
+            repo, provenance, head, parent = self._isolated_acquisition_fixture(root)
+            shutil.copyfile(provenance, root / "formal-schema-runner-identity.json")
+            report = root / "formal-schema-pip-report.json"
+            report.write_text("{}")
+            bridge = root / "bin/python3"
+            bridge.parent.mkdir()
+            # Only acquisition is replaced; execute the real CLI and Git preflight.
+            bridge.write_text(f"#!{sys.executable}\n" + textwrap.dedent(f"""
+                import importlib.util, json, sys
+                from pathlib import Path
+                spec = importlib.util.spec_from_file_location('validator_fixture', {str(SCRIPT_PATH)!r})
+                module = importlib.util.module_from_spec(spec)
+                sys.modules[spec.name] = module
+                spec.loader.exec_module(module)
+                module.ROOT = Path({str(repo)!r})
+                def acquire(*args, **kwargs):
+                    Path({str(root / 'acquired.json')!r}).write_text(json.dumps(kwargs['verified_context']))
+                    return [], {{'status':'PASS', 'fixture_only':True}}
+                module.acquire_evidence = acquire
+                raise SystemExit(module.main(sys.argv[2:]))
+            """))
+            bridge.chmod(0o700)
+            env = dict(os.environ, PATH=str(bridge.parent) + os.pathsep + os.environ['PATH'],
+                       RUNNER_TEMP=str(root), FORMAL_CANDIDATE_BASE=parent,
+                       FORMAL_EVENT_TARGET_SHA=head, FORMAL_REPOSITORY=VALIDATOR.EXPECTED_REPOSITORY,
+                       GITHUB_RUN_ID="12345", GITHUB_RUN_ATTEMPT="1", GITHUB_JOB="formal-schema-gate",
+                       GITHUB_WORKFLOW_REF=VALIDATOR.EXPECTED_REPOSITORY + "/.github/workflows/check-skill.yml@refs/heads/main",
+                       WORKFLOW_SHA256=VALIDATOR.sha256_file(WORKFLOW), PYTHONDONTWRITEBYTECODE="1")
+            script = SchemaIntegrationTests().step("Acquire official evidence once")
+            p = subprocess.run(["bash", "-e", "-c", script], cwd=repo, env=env,
+                               capture_output=True, text=True, timeout=30)
+            self.assertEqual(0, p.returncode, p.stdout + p.stderr)
+            acquired = json.loads((root / "acquired.json").read_text())
+            self.assertEqual(head, acquired['release_commit'])
+            self.assertEqual(parent, acquired['candidate_base'])
 
     def test_existing_evidence_directory_is_rejected_before_acquisition(self) -> None:
         with tempfile.TemporaryDirectory(prefix="formal-preflight-existing-") as temp:
@@ -1760,26 +2059,65 @@ class FormalSchemaEngineTests(unittest.TestCase):
             self.skipTest("installed formal dependency versions do not match the lock")
         with tempfile.TemporaryDirectory(prefix="formal-schema-test-") as temp:
             root = Path(temp)
+            repo = root / "repo"
+            env = {key: value for key, value in os.environ.items()
+                   if not key.startswith("GIT_") and key not in {"SSH_AUTH_SOCK", "SSH_AGENT_PID"}}
+            env.update(GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=os.devnull,
+                       GIT_ALLOW_PROTOCOL="file", GIT_TERMINAL_PROMPT="0",
+                       GIT_AUTHOR_NAME="Fixture", GIT_COMMITTER_NAME="Fixture",
+                       GIT_AUTHOR_EMAIL="fixture@example.invalid", GIT_COMMITTER_EMAIL="fixture@example.invalid")
+
+            def git(*args, input=None):
+                return subprocess.run(
+                    ["git", "-c", "commit.gpgsign=false", "-c", "core.hooksPath=/dev/null",
+                     "-c", f"safe.directory={ROOT}", *args],
+                    cwd=repo if repo.exists() else root, env=env, input=input,
+                    capture_output=True, text=True, check=True, timeout=30,
+                ).stdout.strip()
+
+            # Retain bootstrap objects, but commit current bytes only in this test-owned clone.
+            git("clone", "--no-local", str(ROOT), str(repo))
+            base = git("rev-parse", "HEAD")
+            shutil.copytree(ROOT, repo, dirs_exist_ok=True,
+                            ignore=shutil.ignore_patterns(".git", "__pycache__", "*.pyc", "*.pyo"))
+            (repo / "fixture-marker.txt").write_text("test-only schema fixture\n", encoding="utf-8")
+            git("add", "--all")
+            tree = git("write-tree")
+            head = git("commit-tree", tree, "-p", base, input="test-only clean schema fixture\n")
+            git("update-ref", "HEAD", head)
+            self.assertEqual("", git("status", "--porcelain=v1"))
+            self.assertEqual([head, base], git("rev-list", "--parents", "-n", "1", "HEAD").split())
             report = root / "pip-report.json"
             report.write_text(json.dumps(synthetic_pip_report()), encoding="utf-8")
-            evidence_dir, acquisition, _ = write_synthetic_evidence(root, report)
             with (
-                mock.patch.object(
-                    VALIDATOR, "candidate_binding", return_value=([], synthetic_candidate())
-                ),
+                mock.patch.object(VALIDATOR, "ROOT", repo),
+                mock.patch.object(VALIDATOR, "LOCK_PATH", repo / "requirements-release.txt"),
                 mock.patch.object(
                     VALIDATOR,
                     "verify_acquisition",
                     return_value=([], {"packages": synthetic_packages()}),
                 ),
             ):
+                evidence_dir, acquisition, receipt = write_synthetic_evidence(root, report)
+                binding_errors, binding = VALIDATOR.candidate_binding(base)
+                self.assertEqual([], binding_errors)
+                self.assertEqual(head, binding["commit"])
+                receipt["candidate"] = binding
+                acquisition.write_text(json.dumps(receipt), encoding="utf-8")
                 errors, result = VALIDATOR.validate_formal(
                     report,
                     acquisition,
                     evidence_dir,
                     JOB_IDENTITY,
-                    CANDIDATE_BASE,
+                    base,
                 )
+                self.assertEqual([], errors)
+                self.assertEqual(head, result["candidate_commit"])
+                self.assertTrue(result["candidate_worktree_clean"])
+                self.assertEqual("", git("status", "--porcelain=v1"))
+                print("FORMAL_ENGINE_CLEAN_FIXTURE=" + json.dumps({"head": head, "parent": base, "tree": tree, "clean": True}))
+                (repo / "untracked-negative.txt").write_text("test-only dirty negative\n", encoding="utf-8")
+                self.assertTrue(VALIDATOR.validate_clean_worktree())
             self.assertEqual(
                 VALIDATOR.sha256_file(report), result["pip_report_sha256"]
             )

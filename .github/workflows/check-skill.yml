@@ -158,6 +158,16 @@ jobs:
       FORMAL_EVENT_TARGET_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       FORMAL_REPOSITORY: ${{ github.repository }}
     steps:
+      - name: Validate CI event route
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$GITHUB_EVENT_NAME:$GITHUB_REF" in
+            push:refs/heads/main) printf 'schema integration; controlled_formal_evidence: NOT_GENERATED\n' ;;
+            pull_request:refs/pull/*) printf 'PR formal validation required\n' ;;
+            *) printf 'Unsupported CI event/ref\n' >&2; exit 1 ;;
+          esac
+
       - name: Check out candidate without persisted credentials
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -189,6 +199,7 @@ jobs:
           git show -s --format=%T HEAD
 
       - name: Record formal runner identity
+        if: github.event_name == 'pull_request'
         run: |
           set -euo pipefail
           RUNNER_IDENTITY="$RUNNER_TEMP/formal-schema-runner-identity.json"
@@ -240,6 +251,7 @@ jobs:
             -r requirements-release.txt
 
       - name: Acquire official evidence once
+        if: github.event_name == 'pull_request'
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
@@ -280,29 +292,18 @@ jobs:
             --formal-schema-workflow-path ".github/workflows/check-skill.yml" \
             --formal-schema-result "$RUNNER_TEMP/formal-schema-result.json"
 
-      - name: Validate formal evidence for main final state
+      - name: Validate schema integration on main (not controlled evidence)
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
+          set -euo pipefail
           "$RUNNER_TEMP/lhe-formal-schema-venv/bin/python" \
-            -m unittest tests.test_formal_schema_validation -v
+            scripts/validate_formal_schemas.py --schema-only
           "$RUNNER_TEMP/lhe-formal-schema-venv/bin/python" \
-            scripts/check_release_readiness.py \
-            --version 0.6.1 \
-            --release-state "${{ steps.release-state.outputs.state }}" \
-            --allow-existing-tag \
-            --formal-schema-pip-report "$RUNNER_TEMP/formal-schema-pip-report.json" \
-            --formal-schema-acquisition-result "$RUNNER_TEMP/formal-schema-evidence/acquisition-receipt.json" \
-            --formal-schema-evidence-dir "$RUNNER_TEMP/formal-schema-evidence" \
-            --formal-schema-candidate-base "${FORMAL_CANDIDATE_BASE}" \
-            --formal-schema-action-provenance-file "$RUNNER_TEMP/formal-schema-runner-identity.json" \
-            --formal-schema-event-target-sha "$FORMAL_EVENT_TARGET_SHA" \
-            --formal-schema-repository "$FORMAL_REPOSITORY" \
-            --formal-schema-workflow-sha256 "$WORKFLOW_SHA256" \
-            --formal-schema-workflow-path ".github/workflows/check-skill.yml" \
-            --formal-schema-result "$RUNNER_TEMP/formal-schema-result.json"
+            scripts/check_release_readiness.py --version 0.6.1 \
+            --release-state "${{ steps.release-state.outputs.state }}" --allow-existing-tag
 
       - name: Upload formal schema CI evidence
-        if: always()
+        if: always() && github.event_name == 'pull_request'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: formal-schema-ci-evidence-${{ github.run_id }}-${{ github.run_attempt }}

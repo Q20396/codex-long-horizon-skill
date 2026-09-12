@@ -1758,6 +1758,78 @@ def verify_runtime_versions() -> list[str]:
     return errors
 
 
+def validate_schema_cases(
+    schemas: dict[str, dict[str, Any]],
+) -> tuple[list[str], int, int]:
+    """Shared real engine checks; no acquisition or formal evidence production."""
+    errors: list[str] = []
+    positive_count = 0
+    negative_count = 0
+    try:
+        from jsonschema import Draft202012Validator, FormatChecker
+        from referencing import Registry, Resource
+
+        for name, schema in schemas.items():
+            try:
+                Draft202012Validator.check_schema(schema)
+            except Exception as exc:
+                errors.append(f"{name}: schema check failed: {exc}")
+        registry = Registry().with_resources(
+            (schema["$id"], Resource.from_contents(schema))
+            for schema in schemas.values()
+        )
+        positives, negatives = materialized_fixture_cases()
+        errors.extend(validate_fixture_coverage(positives, negatives))
+        for schema_name, case_id, record in positives:
+            validator = Draft202012Validator(
+                schemas[schema_name],
+                registry=registry,
+                format_checker=FormatChecker(),
+            )
+            found = sorted(
+                validator.iter_errors(record),
+                key=lambda error: list(error.absolute_path),
+            )
+            if found:
+                errors.append(
+                    f"{case_id}: positive fixture failed at "
+                    f"{dotted_path(found[0].absolute_path)}: {found[0].message}"
+                )
+            elif schema_name == "public-equity-research-governance.schema.json":
+                timestamp_errors = validate_public_equity_timestamp_gate(
+                    schemas[schema_name], record
+                )
+                if timestamp_errors:
+                    errors.append(
+                        f"{case_id}: public-equity timestamp gate failed: "
+                        f"{','.join(timestamp_errors)}"
+                    )
+            positive_count += 1
+        for schema_name, case_id, record, expected_path in negatives:
+            validator = Draft202012Validator(
+                schemas[schema_name],
+                registry=registry,
+                format_checker=FormatChecker(),
+            )
+            found = sorted(
+                validator.iter_errors(record),
+                key=lambda error: list(error.absolute_path),
+            )
+            actual_paths = {dotted_path(error.absolute_path) for error in found}
+            if expected_path not in actual_paths:
+                errors.append(
+                    f"{case_id}: expected formal error path {expected_path!r}; "
+                    f"got {sorted(actual_paths)}"
+                )
+            negative_count += 1
+    except ImportError as exc:
+        errors.append(f"formal Draft 2020-12 engine import failed: {exc}")
+    except Exception as exc:
+        errors.append(f"formal Draft 2020-12 validation raised an exception: {exc}")
+
+    return errors, positive_count, negative_count
+
+
 def validate_formal(
     pip_report: Path,
     acquisition_result: Path,
@@ -1807,70 +1879,10 @@ def validate_formal(
     errors.extend(candidate_errors)
     inventory_binding = schema_inventory_binding(schemas)
 
-    positive_count = 0
-    negative_count = 0
+    positive_count = negative_count = 0
     if not errors:
-        try:
-            from jsonschema import Draft202012Validator, FormatChecker
-            from referencing import Registry, Resource
-
-            for name, schema in schemas.items():
-                try:
-                    Draft202012Validator.check_schema(schema)
-                except Exception as exc:
-                    errors.append(f"{name}: schema check failed: {exc}")
-            registry = Registry().with_resources(
-                (schema["$id"], Resource.from_contents(schema))
-                for schema in schemas.values()
-            )
-            positives, negatives = materialized_fixture_cases()
-            errors.extend(validate_fixture_coverage(positives, negatives))
-            for schema_name, case_id, record in positives:
-                validator = Draft202012Validator(
-                    schemas[schema_name],
-                    registry=registry,
-                    format_checker=FormatChecker(),
-                )
-                found = sorted(
-                    validator.iter_errors(record),
-                    key=lambda error: list(error.absolute_path),
-                )
-                if found:
-                    errors.append(
-                        f"{case_id}: positive fixture failed at "
-                        f"{dotted_path(found[0].absolute_path)}: {found[0].message}"
-                    )
-                elif schema_name == "public-equity-research-governance.schema.json":
-                    timestamp_errors = validate_public_equity_timestamp_gate(
-                        schemas[schema_name], record
-                    )
-                    if timestamp_errors:
-                        errors.append(
-                            f"{case_id}: public-equity timestamp gate failed: "
-                            f"{','.join(timestamp_errors)}"
-                        )
-                positive_count += 1
-            for schema_name, case_id, record, expected_path in negatives:
-                validator = Draft202012Validator(
-                    schemas[schema_name],
-                    registry=registry,
-                    format_checker=FormatChecker(),
-                )
-                found = sorted(
-                    validator.iter_errors(record),
-                    key=lambda error: list(error.absolute_path),
-                )
-                actual_paths = {dotted_path(error.absolute_path) for error in found}
-                if expected_path not in actual_paths:
-                    errors.append(
-                        f"{case_id}: expected formal error path {expected_path!r}; "
-                        f"got {sorted(actual_paths)}"
-                    )
-                negative_count += 1
-        except ImportError as exc:
-            errors.append(f"formal Draft 2020-12 engine import failed: {exc}")
-        except Exception as exc:
-            errors.append(f"formal Draft 2020-12 validation raised an exception: {exc}")
+        schema_errors, positive_count, negative_count = validate_schema_cases(schemas)
+        errors.extend(schema_errors)
 
     result = {
         "status": "PASS" if not errors else "FAIL",
@@ -2099,6 +2111,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--check-lock", action="store_true")
+    mode.add_argument(
+        "--schema-only", action="store_true",
+        help="Run integration schema/fixture checks without producing controlled evidence.",
+    )
     mode.add_argument("--verify-acquisition", action="store_true")
     mode.add_argument("--formal", action="store_true")
     mode.add_argument(
@@ -2129,7 +2145,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--action-provenance-file", type=Path)
     parser.add_argument("--event-target-sha")
     parser.add_argument("--repository")
-    return parser.parse_args(argv)
+    args = parser.parse_args(argv)
+    if args.schema_only and (argv if argv is not None else sys.argv[1:]) != ["--schema-only"]:
+        parser.error("--schema-only accepts no formal inputs or output paths")
+    return args
 
 
 def validate_existing_formal_evidence(
@@ -2203,6 +2222,28 @@ def audit_existing_formal_evidence(args: argparse.Namespace) -> list[str]:
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
+    if args.schema_only:
+        try:
+            errors = validate_lock()
+            inventory_errors, schemas = validate_schema_inventory()
+            errors.extend(inventory_errors)
+            errors.extend(verify_runtime_versions())
+            positive_count = negative_count = 0
+            if not errors:
+                engine_errors, positive_count, negative_count = validate_schema_cases(schemas)
+                errors.extend(engine_errors)
+        except Exception as exc:
+            errors = [f"schema integration check failed closed: {exc}"]
+            positive_count = negative_count = 0
+        print(json.dumps({
+            "status": "FAIL" if errors else "PASS",
+            "gate": "schema-integration",
+            "controlled_formal_evidence": "NOT_GENERATED",
+            "positive_fixture_count": positive_count,
+            "negative_fixture_count": negative_count,
+            "errors": errors,
+        }, sort_keys=True))
+        return 1 if errors else 0
     if args.audit_existing_formal_result:
         errors = audit_existing_formal_evidence(args)
         for error in errors:
