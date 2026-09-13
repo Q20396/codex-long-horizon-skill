@@ -40,6 +40,30 @@
 - Moderation or safety status:
 - Reviewer:
 
+## Optional Generative Clip Workflow
+
+Use for a generated video asset, not every project. Repeat per asset or link a
+shared settings record. Mark unavailable values UNKNOWN and irrelevant fields
+N/A; a planned setting is not an observed execution result.
+
+- Asset ID and status (planned / generated / reviewed):
+- Workflow file, format, revision, and content hash when available:
+- Runtime version; execution environment and hardware if actually observed:
+- Model components: source, exact revision or file hash, and licence reference:
+- Custom nodes: none / unknown / sources and pinned revisions:
+- Input asset IDs and content hashes when available:
+- Prompt record and applicable settings (seed, sampler, steps, guidance):
+- Generated clip dimensions, frame count, and FPS:
+- Processing location; local nodes versus external API nodes:
+- Output asset location and hash after generation:
+- Final composition/export settings: link to render handoff:
+- Missing reproducibility information and known limits:
+
+Record settings relevant to the selected workflow, not invented defaults.
+Matching seeds alone does not guarantee identical output across environments.
+Use approved local locators internally; minimise or redact private information
+before sharing, and never include credentials in an exported workflow.
+
 ## Replacement Notes
 
 - Assets needing replacement:

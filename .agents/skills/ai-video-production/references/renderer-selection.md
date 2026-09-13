@@ -39,6 +39,25 @@ Compare each candidate against:
 - **Placeholder-only:** the safest path when assets, rights, source facts, or
   rendering approval are incomplete.
 
+### Generative Shots Versus Composition
+
+For a still image with a simple pan, crop, or zoom, consider ordinary composition
+before generative video. Propose generative shots when the brief needs new scene
+motion, parallax, or changing occlusion; generated details still need review.
+A hybrid can generate a source clip and then add captions, logos, timing, and
+an end card with a composition tool. Keep source-clip settings separate from
+final export settings; matching them is not guaranteed.
+
+A local node workflow such as ComfyUI is a planning candidate, not an approved
+runtime. Identify the selected model and any custom nodes before judging
+hardware fit, licensing, or whether processing stays local. Open source does
+not establish zero cost or offline execution; do not silently fall back to an
+API. Record applicable workflow settings in the asset manifest and inspect
+temporal quality using the render evidence template. No adapter is required
+to prepare this handoff.
+If the model or execution environment is unselected, keep the handoff at
+planning or placeholder-only status; do not imply readiness to generate.
+
 These are planning categories, not endorsements of a particular product or
 license. Verify current licensing and provider terms before use.
 
