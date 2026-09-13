@@ -42,6 +42,21 @@ record, not a command to render.
 - License review:
 - Known limitations or missing evidence:
 
+## Optional Generated-Clip Review
+
+For generated video, record the asset ID, reviewed preview/version, affected
+time ranges, and observations. Unwatched output is NOT_REVIEWED, not PASS.
+
+- Subject identity, product geometry, and reference-image consistency:
+- Temporal flicker, deformation, motion continuity, and occlusion:
+- Text or logo distortion; whether these should instead be composited:
+- Continuity with adjacent shots and any frame-rate conversion artifacts:
+- Whether fictional/generated imagery could be mistaken for factual footage:
+- Disposition: accepted / revision needed / not reviewed, with limitations:
+
+Inspect the clip in motion as well as representative frames. These checks
+support the existing preview review; they do not establish perfect fidelity.
+
 ## Human Gate
 
 - Ready to request render approval: No / Yes
