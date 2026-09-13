@@ -23,6 +23,23 @@ and customer-facing claims.
 5. Flag gaps.
 6. Rewrite unsupported claims.
 
+## Drafting From Product Material
+
+Keep a small working claim map: claim, supporting source or user-supplied
+experience, and any qualification that changes its meaning. This is drafting
+support, not a requirement to create a file or expose an evidence table in copy.
+
+- Separate documented capability, inferred convenience, and reported experience.
+  Manufacturer material supports attributed specifications, not independent
+  proof of superiority, taste, reliability, or time saved.
+- Preserve model, region, accessory, and compatibility limits. Do not silently
+  transfer a feature from another variant or turn an optional setup into a
+  standard capability. Verify changing prices or availability before using them.
+- Unknown facts remain unknown: omit a nonessential claim, qualify an inference,
+  or request a necessary fact. A fluent rewrite cannot fill an evidence gap.
+- Use the same boundaries in headlines, captions, and summaries as in the body.
+  Keep essential conditions near the claim, not only in a distant disclaimer.
+
 ## Reviewer Mindset
 
 Ask:
