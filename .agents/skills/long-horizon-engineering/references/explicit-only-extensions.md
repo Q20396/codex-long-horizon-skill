@@ -42,8 +42,8 @@ because the files exist.
 
 ## Research, Writing, And Analysis
 
-- `writing-humanization-protocol.md` for audience-aware rewriting that preserves
-  meaning and evidence.
+- `writing-humanization-protocol.md` for audience-aware drafting, product posts,
+  and targeted rewriting that preserve meaning and evidence.
 - `evidence-backed-writing.md` for claim-evidence alignment.
 - `ideation-to-plan-protocol.md` for options and tradeoffs before execution.
 - `notebook-analysis-protocol.md` for stateful exploratory analysis.
