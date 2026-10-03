@@ -56,7 +56,8 @@ is performed by reading this page.
 
 **Version boundary:** this README describes current source, not a promise that
 every reference ships in v0.6.0. Later v0.6.1 security-patch metadata exists in
-source, but its public tag and Release were not found. The published v0.6.0 does
+source, but its public tag and Release were not found. `AVAILABLE` metadata alone
+does not prove publication. The published v0.6.0 does
 not include those later changes. Do not substitute mutable `main`, or run the
 unpublished `--ref v0.6.1` examples in linked installation docs.
 
