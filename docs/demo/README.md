@@ -1,59 +1,66 @@
-# Demo Recording Guide
+# Interruption and Recovery Walkthrough
 
-This directory describes demo assets to record later. Do not commit generated
-GIFs, videos, or screenshots unless they are intentionally reviewed.
+**ILLUSTRATIVE WALKTHROUGH — not an executed run, benchmark, screenshot or reliability claim.**
 
-## Suggested GIF Workflow
+This fictional example shows what to inspect in a long task. It does not prove
+automatic continuation, host wake-up, crash recovery or cross-model reliability.
 
-1. Install the skills into a small demo repository.
-2. Start Codex.
-3. Run a copy-paste prompt from `prompts/`.
-4. Capture Codex exploring, planning, validating, and summarizing.
-5. Keep the GIF short: show the workflow shape, not every command.
+## Example: resume a migration
 
-## Suggested Terminal Recording Workflow
+Goal: replace an old parser API in a disposable, non-sensitive demo repository
+while preserving accepted input/output behavior.
 
-Suggested tools include terminal screen recording, asciinema-style recorders, or
-your operating system's built-in recorder. No specific commercial tool is
-required.
+| Point in the task | Evidence to inspect | What can be concluded |
+| --- | --- | --- |
+| Plan | Approved file scope and acceptance cases | A plan exists, not completed work |
+| Before interruption | Changed paths, exact commit/diff and recorded test command/results | Only the checks actually run support verified progress |
+| Resume | Current branch, commit, staged/unstaged diff compared with the prior handoff | Old evidence may be stale; drift needs a revised bounded plan |
+| Continue | Remaining approved change plus current regression checks | Work may progress; missing acceptance evidence stays open |
+| Handoff | Acceptance criteria mapped to current evidence and named gaps | Human disposition, not automatic merge/release authority |
 
-Record:
+For example, a fictional handoff records 12 of 19 required items verified.
+Resume at item 13 only after checking that the first 12 and their evidence still
+apply to the current repository. Otherwise reconcile drift first. These counts
+are illustrative, not recorded test results.
 
-1. Clone or open the repository.
-2. Copy `.agents/skills` into a demo project.
-3. Run `check_skill_package.py --installed`.
-4. Ask Codex to perform a small safe task.
-5. Show validation output and the draft PR handoff.
+Illustrative unfinished state:
 
-## Screenshots To Capture
+```text
+Completed work: parser adapter edited.
+Verified: only the targeted compatibility cases that actually ran.
+Remaining: integration cases and final scope review.
+Unknown: whether the current branch still matches the handoff.
+Next: inspect current state before editing or repeating tests.
+```
 
-- README skill catalog.
-- Copy-paste prompt library.
-- Codex implementation plan.
-- Validation evidence.
-- Draft PR summary.
+Illustrative final state **only if the required checks have actually been run**:
 
-## Recording Checklist
+```text
+Each required criterion: linked to its current command/result and reviewed diff.
+Unverified: list any missing evidence; do not mark those criteria complete.
+Human decision: accept or request a bounded correction.
+Remote actions: Draft PR only if authorized, then audit the agreed objective.
+Merge/release: separate actions; never inferred from passing tests.
+```
 
-- Use a disposable demo repository.
-- Remove secrets, tokens, usernames, private paths, and private client content.
-- Keep terminal font readable.
-- Show commands that viewers can copy.
-- Do not include generated credentials or private logs.
+These are reporting templates, not fabricated test outputs. Replace them with
+actual evidence in a real run; a pass label without evidence is insufficient.
+See the [resume example](../../examples/resume-work/) and
+[resume protocol](../../.agents/skills/long-horizon-engineering/references/resume-protocol.md).
 
-## Recommended Demo Narrative
+## Recording a real demo later
 
-1. Install the skill.
-2. Start Codex.
-3. Run a copy-paste prompt.
-4. Inspect the plan.
-5. Generate changes.
-6. Validate the result.
-7. Open a draft PR.
+No recorded demo is supplied here. A future recording should show the original
+request, approved plan, real interruption, current-state recovery, continuation,
+and acceptance evidence. Use a disposable repository and non-sensitive synthetic
+code. Record exact commands and results, including failures and missing proof.
 
-## Cleanup Instructions
+Installation, persistent state, branch operations, PR creation and publication
+each need applicable approval. Do not imply a demo plan authorizes them.
+Do not include credentials, private paths, personal identifiers or client content.
+Keep the terminal legible and label any edited or omitted portion.
 
-- Delete temporary demo repositories.
-- Remove generated local branches if they are not needed.
-- Confirm no private files were staged or committed.
-- Re-run validation before publishing demo assets.
+Use existing recording tools and the [current installation checks](../../README.md#installation-status),
+not legacy recording commands. Review generated assets before approved publication.
+Remove temporary resources only with exact-target authorization; do not delete
+branches by default.
