@@ -169,6 +169,41 @@ The Local Case Evidence Provider pilot is fixture-only, with no network,
 accounts, credentials, persistence or encryption.
 AI video remains an **optional bundled sibling skill**, not LHE's primary identity.
 
+## Local Compute Orchestration (Beta)
+
+LHE includes an optional experimental local-compute orchestration layer as
+[repository-level Python APIs](scripts/local_compute_pool.py), not an
+automatically enabled feature or part of the installed Skill package.
+
+> **Beta:** Validation is synthetic/injected-worker based. Real provider
+> installation, local-model deployment, hardware-specific tuning and
+> multi-device execution have not been validated. This is not production-ready.
+
+The current implementation provides node-specific qualification identity checks,
+consent and privacy policy checks, bounded concurrent task-pool dispatch,
+load-aware scheduling, migration hints with trust reset, and OpenAI fallback
+through an injected callback when both input and output policy permit it.
+`LOCAL_ONLY` data cannot use that cloud fallback path. Caller-supplied evidence
+and worker adapters are trusted boundaries, not remote-host authentication or
+operating-system isolation.
+
+The [deployment API](scripts/local_compute_deployment.py) provides exact approved
+effect handling, conservative budgets and POSIX journal recovery. Concrete
+provider/model setup, measured auto-tuning and the full zero-touch flow are
+**not fully implemented**, not merely awaiting hardware tests.
+
+Distributed single-model inference across machines is **not implemented**;
+topology planning can only recommend a candidate. There is no model sharding,
+automatic LAN discovery or silent cluster creation.
+
+Real single-node, multi-node, distributed, provider-install and model-tuning
+validation are **NOT_RUN**. Cloud-usage reduction is **UNMEASURED**. Once a local
+path is validated, suitable workloads **may reduce OpenAI/Codex cloud-model
+usage**; no token savings or hardware compatibility is guaranteed.
+
+See the [implementation report and claim evidence](LOCAL_COMPUTE_ORCHESTRATION_IMPLEMENTATION_REPORT.md)
+for synthetic coverage, adapter requirements and remaining work.
+
 ## Design references
 
 LHE is independently designed and maintained. External comparisons include

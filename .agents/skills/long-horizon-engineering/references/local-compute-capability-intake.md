@@ -2,7 +2,51 @@
 
 Use this optional, explicit-only protocol when a user wants help choosing a
 local compute or model execution approach. It is a manual requirements intake,
-not a device-management, device-discovery, or distributed-inference feature.
+not an automatic device-discovery or distributed-inference feature.
+
+## Local Compute Orchestration (Beta)
+
+**Maturity: BETA.** Partial repository-level implementation, not production-ready.
+Real provider installation, model deployment/tuning and multi-device execution
+have not been validated. The full zero-touch setup flow is not implemented.
+
+The source repository includes development APIs at `scripts/local_compute_pool.py`
+and `scripts/local_compute_deployment.py` (repository root, not installed Skill
+scripts). They are explicitly invoked Python APIs,
+not automatically activated hooks, a daemon, a network scanner, or a cluster
+manager. Default installation and existing workflow semantics do not change.
+
+`TaskPool` accepts independent node records, exact node/model/config worker
+bindings, an authorized node set and concurrency ceilings. Qualification belongs
+to a node/provider/model/config/task tuple, not a task class globally. A trusted
+caller supplies evidence and consent; constructing an object or importing JSON
+does not prove human authorization or authenticate a remote host.
+
+The caller and adapters must run within the task's approved data boundary.
+LOCAL_ONLY inputs and outputs must never be uploaded to cloud Main. Cloud
+fallback requires permission for both input and output. A node being local does
+not grant it access to every project's data. Worker results remain candidates,
+not final verified conclusions.
+
+Deployment effects are separately authorized, exact-target operations with
+conservative resource reservations. Model selection operates only on supplied
+approved candidates; it does not discover or download a model catalog. A smoke
+test is not task qualification. Unknown outcomes require actual-state
+reconciliation before any retry. Provider-specific installation, model identity,
+endpoint binding, measured resource enforcement and recovery must be verified at
+the integration boundary, not inferred from synthetic adapter success.
+
+Migration creates an untrusted replacement node with hints only: consent,
+runtime validation and qualifications must be obtained afresh. Never transfer
+credentials or treat combined device memory as one machine's memory.
+
+Distributed topology decisions are candidates only. No model sharding or
+distributed runtime is supplied. Real node deployment, cross-node transport and
+distributed experiments require separate exact authorization, including hosts,
+ports, authentication, data scope, resource ceilings and rollback.
+
+Synthetic tests exercise orchestration logic only; no real local-model quality,
+multi-device throughput or cloud-usage saving is established by them.
 
 ## Ask Only For User-Supplied Information
 
