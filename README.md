@@ -1,4 +1,4 @@
-# 20396 / LHE
+# 20396
 
 **Long-Horizon Engineering for Codex**
 
@@ -11,10 +11,18 @@ PRs. It keeps **goal, verified progress, evidence, required remaining work and
 authority** explicit, so resumption starts with what can actually be verified.
 
 Long-running coding tasks can lose their goal, repeat checked work, mistake
-progress for completion, or resume from stale state. LHE provides instructions
+progress for completion, or resume from stale state. 20396 provides instructions
 for avoiding these failures—not an autonomous runtime or a reliability guarantee.
-Recovery needs approved persisted state and a fresh repository check; LHE cannot
+Recovery needs approved persisted state and a fresh repository check; 20396 cannot
 wake Codex or guarantee crash recovery.
+
+> **New — [Local Compute Orchestration (Beta)](#local-compute-orchestration-beta)**
+>
+> 20396 includes executable foundations for routing bounded work to qualified
+> local-model workers and coordinating independently qualified device identities
+> for task-level execution. Current validation uses injected workers, not real
+> models or networked devices; provider deployment remains partial.
+> Validated local execution may reduce OpenAI/Codex cloud-model usage.
 
 [Try it](#customer-quick-start) · [Published release](#installation-status) ·
 [Recovery walkthrough](#from-interruption-to-verified-results)
@@ -63,13 +71,13 @@ does not prove publication. The published v0.6.0 does
 not include those later changes. Do not substitute mutable `main`, or run the
 unpublished `--ref v0.6.1` examples in linked installation docs.
 
-## When to use LHE
+## When to use 20396
 
 Use it for multi-session work, dependent milestones, staged migration/refactor
 checks, or costly interruption/recovery. Skip it for a typo, a few obvious lines,
 or when ordinary Codex already supplies enough structure.
 
-LHE adds a reusable scope, recovery and evidence checklist—not exclusive Codex
+20396 adds a reusable scope, recovery and evidence checklist—not exclusive Codex
 capabilities, automatic memory, or proof of unattended reliability.
 
 ## Three tasks to try
@@ -129,7 +137,7 @@ See the [walkthrough and recording plan](docs/demo/README.md) and
 
 ## Safety Model
 
-LHE's instructions require bounded scope, least privilege, explicit authority,
+20396's instructions require bounded scope, least privilege, explicit authority,
 and evidence-linked claims. Do not place secrets, credentials, customer-sensitive
 information, legal evidence, family information, financial account details,
 identity documents, confidential content or private correspondence in reusable
@@ -169,11 +177,59 @@ None of these references authorize accounts, trading, filing, publishing or
 contacting others; they are not autonomous financial or legal agents.
 The Local Case Evidence Provider pilot is fixture-only, with no network,
 accounts, credentials, persistence or encryption.
-AI video remains an **optional bundled sibling skill**, not LHE's primary identity.
+AI video remains an **optional bundled sibling skill**, not 20396's primary identity.
+
+## Local Compute Orchestration (Beta)
+
+20396 includes an optional experimental local-compute orchestration layer as
+[repository-level Python APIs](scripts/local_compute_pool.py), not an
+automatically enabled feature or part of the installed Skill package.
+
+> **Beta:** Validation is synthetic/injected-worker based. Real provider
+> installation, local-model deployment, hardware-specific tuning and
+> multi-device execution have not been validated. This is not production-ready.
+
+The current implementation provides node-specific qualification identity checks,
+consent and privacy policy checks, bounded concurrent task-pool dispatch,
+load-aware scheduling, migration hints with trust reset, and OpenAI fallback
+through an injected callback when both input and output policy permit it.
+`LOCAL_ONLY` data cannot use that cloud fallback path. Caller-supplied evidence
+and worker adapters are trusted boundaries, not remote-host authentication or
+operating-system isolation.
+
+The intended local-model workloads are selected, low-risk first passes such as
+diff classification, log analysis and test-failure summaries, with independently
+verifiable results. These are use cases, not claims of model qualification.
+Multiple nodes are independent workers for separate tasks, not pooled memory
+or one larger machine. Different provider/model configurations have separate
+qualification identities; replacement nodes require fresh consent, probe,
+deployment authorization, runtime validation and task qualification.
+
+Local compute complements OpenAI: fallback or stronger reasoning/final synthesis
+may use OpenAI only where input and derived-output policy allow it. LOCAL_ONLY
+summaries, patches and findings must instead remain within authorized local or
+human verification, or stop.
+
+The [deployment API](scripts/local_compute_deployment.py) provides exact approved
+effect handling, conservative budgets and POSIX journal recovery. Concrete
+provider/model setup, measured auto-tuning and the full zero-touch flow are
+**not fully implemented**, not merely awaiting hardware tests.
+
+Distributed single-model inference across machines is **not implemented**;
+topology planning can only recommend a candidate. There is no model sharding,
+automatic LAN discovery or silent cluster creation.
+
+Real single-node, multi-node, distributed, provider-install and model-tuning
+validation are **NOT_RUN**. Cloud-usage reduction is **UNMEASURED**. Once a local
+path is validated, suitable workloads **may reduce OpenAI/Codex cloud-model
+usage**; no token savings or hardware compatibility is guaranteed.
+
+See the [implementation report and claim evidence](LOCAL_COMPUTE_ORCHESTRATION_IMPLEMENTATION_REPORT.md)
+for synthetic coverage, adapter requirements and remaining work.
 
 ## Design references
 
-LHE is independently designed and maintained. External comparisons include
+20396 is independently designed and maintained. External comparisons include
 [GitHub Spec Kit](https://github.com/github/spec-kit) (spec-driven development),
 [obra/superpowers](https://github.com/obra/superpowers) (engineering workflows),
 [Matt Pocock's skills](https://github.com/mattpocock/skills) (task-focused skills),
