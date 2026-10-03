@@ -13,7 +13,9 @@ inference is a separately gated recommendation, not a sharding runtime.
 
 **Spec:** Design Authority execution directive v1.2 supplied in this conversation.
 No real device installation, downloads, network discovery or inference is allowed
-in this implementation run. No modification to the independent brand PR #155.
+in this implementation run. Subsequent integration directive v2.0 authorizes
+bringing merged brand PR #155 into the existing Beta PR #156 and consolidating
+public prose to 20396. Internal identity and runtime behavior remain unchanged.
 
 ## Files and execution sequence
 

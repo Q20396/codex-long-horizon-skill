@@ -10,9 +10,14 @@ full-implementation prerequisite for that Beta delivery only. Production
 completeness is not claimed. Merge, release and real-device deployment remain
 outside this delivery scope.
 
-Beta branch: `codex/local-compute-orchestration-beta`, based on current `main`
-`7a5355af11afcc1e830595e0f951d852345c5639`. The separate branding PR is not
-included. Pre-existing historical-decision examples were not changed.
+Beta branch: `codex/local-compute-orchestration-beta`. Integration directive
+v2.0 authorizes integrating merged brand PR #155 from current `main`
+`fda979b89d6d7d240d4e1ff40913dd7556f00e40` into PR #156. A merge-from-main
+preserves the previous signed Beta head
+`a3300e06ebcee70d0b4805be1ca1bdb59f3801b7` without rewriting history.
+The public brand is **20396**, described as **Long-Horizon Engineering for Codex**;
+internal stable identity remains `long-horizon-engineering`.
+Pre-existing historical-decision examples were not changed.
 
 ## Implemented surface
 
@@ -94,6 +99,14 @@ unchanged from the reviewed partial implementation. These results authorize no
 claim of real provider or hardware validation.
 
 ### Coverage
+
+Integration v2.0 rerun: **45 targeted passed; 766 full-suite total, 16 skipped,
+0 failures/errors** (105.369 seconds). Brand/early-callout assertions,
+catalog/documentation, package, plugin and whitespace checks passed. Formal
+schema lock validation passed locally; schema-only execution could not run
+because the six locked distributions are absent. No dependencies were installed
+locally. New-head CI must provide the formal-schema-gate result; previous-head
+CI is not evidence for this integration. Runtime/test code remains unchanged.
 
 | Requested cases | Evidence and limit |
 | --- | --- |
@@ -184,8 +197,10 @@ Added:
 - `docs/superpowers/plans/2026-10-03-local-compute-orchestration.md`
 - `LOCAL_COMPUTE_ORCHESTRATION_IMPLEMENTATION_REPORT.md`
 
-Package manifest, effect manifest, installed user Skill, independent
-branding work and the three pre-existing historical-decision files are unchanged.
+Package manifest, effect manifest, installed user Skill and the three
+pre-existing historical-decision files are unchanged. The merged branding work
+is integrated; README public aliases are consolidated to 20396 without an
+internal identifier migration. Runtime and test code are unchanged.
 The remote delivery receipt and CI state belong to the Draft PR and final
 handoff. Feature production remaining work is nonzero even after Beta delivery.
 

@@ -48,6 +48,23 @@ ports, authentication, data scope, resource ceilings and rollback.
 Synthetic tests exercise orchestration logic only; no real local-model quality,
 multi-device throughput or cloud-usage saving is established by them.
 
+### Target architecture, not the current end-to-end implementation
+
+20396's intended sequence is consent, read-only probe, capability/value
+evaluation, deployment plan, bounded authorization, provider/model selection,
+installation/download, tuning, runtime validation, task qualification, then
+local/hybrid execution. Customers retain control of inspection, installation,
+storage/download budgets, network/privacy scope and material model/provider
+changes. Selection and tuning may be automated only within those approved
+limits; this complete flow is not implemented in the current Beta.
+
+Task-level aggregation comes first: independent workers produce candidate
+results for policy-permitted verification and synthesis. Different devices and
+models retain separate qualifications. Distributed execution remains future
+work requiring insufficient single-node and task-pool capability, material
+model benefit, compatible nodes/interconnect/runtime, and explicit topology
+authorization. No memory-summing or automatic cluster claim is implied.
+
 ## Ask Only For User-Supplied Information
 
 Request only information the user chooses to provide, such as:
