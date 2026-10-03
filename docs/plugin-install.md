@@ -7,9 +7,9 @@ This repository can be used in two ways:
 
 ## Plugin Installation
 
-**v0.7.0 release candidate:** the selector below is reserved for publication.
-Check the README's latest verified published release before attempting it.
-The v0.7.0 candidate packages Local Compute Orchestration (Beta); v0.6.0 does not.
+**Published stable: v0.7.0.** The selector below targets its immutable release tag.
+The v0.7.0 package includes Local Compute Orchestration (Beta); v0.6.0 does not.
+Publication does not establish successful installation in a customer's Codex.
 
 After a verified installation, locate the installed `long-horizon-engineering`
 Skill root. Its `scripts/local_compute_deployment.py` and

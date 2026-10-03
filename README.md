@@ -51,12 +51,12 @@ version and target checks below; reading the [examples](examples/) needs no inst
 
 ## Installation Status
 
-**Latest published stable: [v0.6.0](https://github.com/Q20396/codex-long-horizon-skill/releases/tag/v0.6.0)**,
+**Latest published stable: [v0.7.0](https://github.com/Q20396/codex-long-horizon-skill/releases/tag/v0.7.0)**,
 verified 2026-10-03. After approving installation and completing the
 [verification checklist below](#install-verify-update), register its marketplace:
 
 ```bash
-codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.6.0
+codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.7.0
 ```
 
 Registration is **not plugin installation**. With a compatible CLI, install
@@ -64,12 +64,11 @@ Registration is **not plugin installation**. With a compatible CLI, install
 then verify discovery and loading. Check `codex plugin --help`; no installation
 is performed by reading this page.
 
-**Version boundary:** this README describes current source, not a promise that
-every reference ships in v0.6.0. The v0.7.0 release candidate includes the packaged
-Local Compute Beta; its tag and Release are pending. `AVAILABLE` metadata alone
-does not prove publication. The published v0.6.0 does
-not include those later changes. Do not substitute mutable `main`, or run the
-unpublished `--ref v0.7.0` examples in linked installation docs.
+**Version boundary:** v0.7.0 is the published stable release and includes
+Local Compute Orchestration (Beta). Beta does not mean production-ready local
+model deployment: real provider/model and hardware validation remain incomplete.
+The historical v0.6.0 package does not include this capability. Publication is
+not customer installation verification; do not substitute mutable `main`.
 
 ## When to use 20396
 
@@ -183,7 +182,7 @@ AI video remains an **optional bundled sibling skill**, not 20396's primary iden
 
 20396 includes an optional experimental local-compute orchestration layer as
 [packaged Python APIs](.agents/skills/long-horizon-engineering/scripts/local_compute_pool.py)
-in the v0.7.0 release candidate's default Skill inventory. It is not automatically
+in the published v0.7.0 default Skill inventory. It is not automatically
 enabled. The published v0.6.0 does not contain this capability.
 
 > **Beta:** Validation is synthetic/injected-worker based. Real provider
@@ -462,13 +461,13 @@ installed skill, or prior approval never grants a later permission.
 ## Install, Verify, Update
 
 Before installation, verify the official marketplace identity and the public
-Release/tag: v0.6.0's annotated tag object is
-`7c3f79ecc2aaf0128d782761a7bc2c524f368702`, and its peeled commit is
-`1606bd21b91980c265fea82718e7d2cca12d3495`. They are different Git objects.
+Release/tag: v0.7.0's annotated tag object is
+`4a3f94c0ae2d05848a3ce9accd6f38382bd08f1a`, and its peeled commit is
+`69d8001d86bd40e11c3e95416d8a678102ce6504`. They are different Git objects.
 Stop on missing or mismatched identity. Review the exact destination, selected
 skill and backup/rollback before approved writes; never overwrite an existing
 installation as a shortcut. Follow [INSTALL.md](INSTALL.md) and
-[plugin verification](docs/plugin-install.md), subject to the publication warning above.
+[plugin verification](docs/plugin-install.md).
 Project skills use `.agents/skills/<skill_id>`; user-level skills use
 `~/.codex/skills/<skill_id>`. Verify installed files, discovery and loading separately.
 
