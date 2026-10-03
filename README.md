@@ -1,4 +1,6 @@
-# Long-Horizon Engineering
+# 20396 / LHE
+
+**Long-Horizon Engineering for Codex**
 
 **Long tasks survive the chat.**
 
