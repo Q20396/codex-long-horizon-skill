@@ -69,6 +69,8 @@ Local Compute Orchestration (Beta). Beta does not mean production-ready local
 model deployment: real provider/model and hardware validation remain incomplete.
 The historical v0.6.0 package does not include this capability. Publication is
 not customer installation verification; do not substitute mutable `main`.
+The marketplace metadata is `AVAILABLE`; registration and installation remain
+separate verified steps.
 
 ## When to use 20396
 
