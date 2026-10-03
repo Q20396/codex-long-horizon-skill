@@ -100,6 +100,20 @@ claim of real provider or hardware validation.
 
 ### Coverage
 
+#### Integration topology correction
+
+The initial main-integration merge commit
+`caa47e40dfbc705501edb611f54d2ab1b93f73f2` failed CI run `37100088806`
+at formal evidence acquisition: the candidate HEAD must have exactly one parent.
+The existing `ci_ancestor_base` policy permits the base to be an older ancestor,
+but not a merge commit as the candidate itself. A normal signed documentation
+commit records this evidence on top of the integrated history; no validator,
+workflow, runtime or threshold is changed. Both CI gates must pass again on
+that new single-parent candidate. The original failed run remains recorded.
+Pre-push rerun after this documentation correction: 45 targeted passed;
+766 full-suite tests, 16 skipped, 0 failures/errors (104.778 seconds).
+Documentation, package, plugin, schema-lock and diff checks passed again.
+
 Integration v2.0 rerun: **45 targeted passed; 766 full-suite total, 16 skipped,
 0 failures/errors** (105.369 seconds). Brand/early-callout assertions,
 catalog/documentation, package, plugin and whitespace checks passed. Formal
