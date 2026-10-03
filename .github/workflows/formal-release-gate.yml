@@ -7,8 +7,8 @@ permissions:
   contents: read
 
 env:
-  RELEASE_VERSION: "0.6.1"
-  RELEASE_TAG: "v0.6.1"
+  RELEASE_VERSION: "0.7.0"
+  RELEASE_TAG: "v0.7.0"
   FORMAL_EVENT_TARGET_SHA: ${{ github.sha }}
   FORMAL_REPOSITORY: ${{ github.repository }}
   PYTHONDONTWRITEBYTECODE: "1"
@@ -50,7 +50,7 @@ jobs:
           printf 'RELEASE_COMMIT=%s\n' "$release_commit" >> "$GITHUB_ENV"
           printf 'CANDIDATE_BASE=%s\n' "$candidate_base" >> "$GITHUB_ENV"
           EVIDENCE_DIR="$RUNNER_TEMP/formal-schema-evidence-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
-          RUNNER_IDENTITY="$RUNNER_TEMP/lhe-v0.6.1-runner-identity.json"
+          RUNNER_IDENTITY="$RUNNER_TEMP/lhe-v0.7.0-runner-identity.json"
           WORKFLOW_PATH=.github/workflows/formal-release-gate.yml
           WORKFLOW_SHA256="$(sha256sum "$WORKFLOW_PATH" | awk '{print $1}')"
           test ! -e "$EVIDENCE_DIR"
@@ -120,15 +120,15 @@ jobs:
 
       - name: Create exact-wheel virtual environment
         run: |
-          python3 -m venv "$RUNNER_TEMP/lhe-v0.6.1-formal-venv"
-          "$RUNNER_TEMP/lhe-v0.6.1-formal-venv/bin/python" -m pip install \
+          python3 -m venv "$RUNNER_TEMP/lhe-v0.7.0-formal-venv"
+          "$RUNNER_TEMP/lhe-v0.7.0-formal-venv/bin/python" -m pip install \
             --isolated \
             --index-url https://pypi.org/simple \
             --only-binary=:all: \
             --require-hashes \
             --no-input \
             --no-cache-dir \
-            --report "$RUNNER_TEMP/lhe-v0.6.1-formal-schema-pip-report.json" \
+            --report "$RUNNER_TEMP/lhe-v0.7.0-formal-schema-pip-report.json" \
             -r requirements-release.txt
 
       - name: Acquire official evidence exactly once
@@ -136,13 +136,13 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          VENV="$RUNNER_TEMP/lhe-v0.6.1-formal-venv/bin/python"
+          VENV="$RUNNER_TEMP/lhe-v0.7.0-formal-venv/bin/python"
           EVIDENCE="$RUNNER_TEMP/formal-schema-evidence-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
           WORKFLOW_SHA256="$(sha256sum .github/workflows/formal-release-gate.yml | awk '{print $1}')"
           "$VENV" scripts/validate_formal_schemas.py --check-lock
           "$VENV" scripts/validate_formal_schemas.py \
             --verify-acquisition \
-            --pip-report "$RUNNER_TEMP/lhe-v0.6.1-formal-schema-pip-report.json" \
+            --pip-report "$RUNNER_TEMP/lhe-v0.7.0-formal-schema-pip-report.json" \
             --evidence-dir "$EVIDENCE" \
             --result "$EVIDENCE/acquisition-receipt.json" \
             --candidate-base "$CANDIDATE_BASE" \
@@ -159,7 +159,7 @@ jobs:
       - name: Run offline final formal replay
         run: |
           set -euo pipefail
-          VENV="$RUNNER_TEMP/lhe-v0.6.1-formal-venv/bin/python"
+          VENV="$RUNNER_TEMP/lhe-v0.7.0-formal-venv/bin/python"
           EVIDENCE="$RUNNER_TEMP/formal-schema-evidence-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
           WORKFLOW_SHA256="$(sha256sum .github/workflows/formal-release-gate.yml | awk '{print $1}')"
           "$VENV" -m unittest tests.test_formal_schema_validation -v
@@ -167,7 +167,7 @@ jobs:
             --version "$RELEASE_VERSION" \
             --release-state final \
             --pre-tag \
-            --formal-schema-pip-report "$RUNNER_TEMP/lhe-v0.6.1-formal-schema-pip-report.json" \
+            --formal-schema-pip-report "$RUNNER_TEMP/lhe-v0.7.0-formal-schema-pip-report.json" \
             --formal-schema-acquisition-result "$EVIDENCE/acquisition-receipt.json" \
             --formal-schema-evidence-dir "$EVIDENCE" \
             --formal-schema-candidate-base "$CANDIDATE_BASE" \
@@ -176,17 +176,17 @@ jobs:
             --formal-schema-action-provenance-file "$RUNNER_IDENTITY" \
             --formal-schema-event-target-sha "$FORMAL_EVENT_TARGET_SHA" \
             --formal-schema-repository "$FORMAL_REPOSITORY" \
-            --formal-schema-result "$RUNNER_TEMP/lhe-v0.6.1-formal-result.json"
+            --formal-schema-result "$RUNNER_TEMP/lhe-v0.7.0-formal-result.json"
 
       - name: Upload retained formal evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: lhe-v0.6.1-formal-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          name: lhe-v0.7.0-formal-evidence-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
-            ${{ runner.temp }}/lhe-v0.6.1-runner-identity.json
-            ${{ runner.temp }}/lhe-v0.6.1-formal-schema-pip-report.json
-            ${{ runner.temp }}/lhe-v0.6.1-formal-result.json
+            ${{ runner.temp }}/lhe-v0.7.0-runner-identity.json
+            ${{ runner.temp }}/lhe-v0.7.0-formal-schema-pip-report.json
+            ${{ runner.temp }}/lhe-v0.7.0-formal-result.json
             ${{ runner.temp }}/formal-schema-evidence-${{ github.run_id }}-${{ github.run_attempt }}
           if-no-files-found: error
           retention-days: 90

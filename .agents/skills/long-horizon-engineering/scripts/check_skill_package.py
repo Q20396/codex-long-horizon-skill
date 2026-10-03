@@ -233,6 +233,8 @@ INSTALLED_REQUIRED_FILES = [
     ".agents/skills/long-horizon-engineering/scripts/update_installed_skill.py",
     ".agents/skills/long-horizon-engineering/scripts/test_expected_triggers.py",
     ".agents/skills/long-horizon-engineering/scripts/audit_skill_descriptions.py",
+    ".agents/skills/long-horizon-engineering/scripts/local_compute_deployment.py",
+    ".agents/skills/long-horizon-engineering/scripts/local_compute_pool.py",
     ".agents/skills/long-horizon-engineering/scripts/validate_json_canvas.py",
     ".agents/skills/long-horizon-engineering/schemas/decision-map.schema.json",
     ".agents/skills/long-horizon-engineering/schemas/frontier.schema.json",
@@ -658,7 +660,7 @@ def check_skill_front_matter(skill_dir: Path, expected_name: str) -> list[str]:
     if "description:" not in front_matter:
         errors.append(f"{display_path} front matter must include description.")
     required_metadata = {
-        "version": "0.6.1",
+        "version": "0.7.0",
         "repo": "https://github.com/Q20396/codex-long-horizon-skill",
         "skill_id": expected_name,
         "update_channel": None,

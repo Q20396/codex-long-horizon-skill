@@ -7,11 +7,31 @@ This repository can be used in two ways:
 
 ## Plugin Installation
 
-The stable release-state contract names the immutable `v0.6.1` marketplace
+**v0.7.0 release candidate:** the selector below is reserved for publication.
+Check the README's latest verified published release before attempting it.
+The v0.7.0 candidate packages Local Compute Orchestration (Beta); v0.6.0 does not.
+
+After a verified installation, locate the installed `long-horizon-engineering`
+Skill root. Its `scripts/local_compute_deployment.py` and
+`scripts/local_compute_pool.py` are the only implementation copies. For an
+explicitly authorized Python caller, add that exact installed `scripts` path to
+`sys.path` in the caller process, then import `local_compute_deployment` or
+`local_compute_pool`. No clone, provider, model or new dependency is needed merely
+to import these modules. A compatible existing Python 3.10+ runtime is required;
+the POSIX journal also requires supported filesystem primitives.
+
+Imports are inert. Invoking a probe needs exact node consent and an approved
+read-only reader; invoking workers needs separate authorization and adapters.
+Missing adapters are a stop condition, not permission to install a provider.
+OpenAI-only remains the normal path. These APIs do not establish host Skill
+discovery or model compliance; isolated package tests and real Codex discovery
+are separate evidence.
+
+The stable release-state contract names the immutable `v0.7.0` marketplace
 reference and sets `policy.installation: AVAILABLE`:
 
 ```bash
-codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.6.1
+codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.7.0
 ```
 
 Before running it, verify the remote annotated tag and peeled commit/tree, the

@@ -1,4 +1,4 @@
-"""Repository development API; no provider installation recipe bundled.
+"""Packaged opt-in Beta API; no provider installation recipe bundled.
 
 Readers and effect adapters are trusted, explicitly supplied integration boundaries.
 No discovery, network, installs, configuration writes or inference occurs on import.

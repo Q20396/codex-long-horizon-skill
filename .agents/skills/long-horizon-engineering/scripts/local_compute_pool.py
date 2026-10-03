@@ -1,4 +1,4 @@
-"""Repository development API; no discovery, network or model runtime.
+"""Packaged opt-in Beta API; no discovery, network or model runtime.
 
 Callers supply explicit node snapshots and BoundWorker adapters. An adapter is
 trusted executable code, not a sandbox: it must enforce its actual endpoint,

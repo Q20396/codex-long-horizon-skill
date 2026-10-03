@@ -6,15 +6,15 @@ not an automatic device-discovery or distributed-inference feature.
 
 ## Local Compute Orchestration (Beta)
 
-**Maturity: BETA.** Partial repository-level implementation, not production-ready.
+**Maturity: BETA.** Partial packaged implementation, not production-ready.
 Real provider installation, model deployment/tuning and multi-device execution
 have not been validated. The full zero-touch setup flow is not implemented.
 
-The source repository includes development APIs at `scripts/local_compute_pool.py`
-and `scripts/local_compute_deployment.py` (repository root, not installed Skill
-scripts). They are explicitly invoked Python APIs,
+The v0.7.0 candidate includes APIs at `scripts/local_compute_pool.py`
+and `scripts/local_compute_deployment.py` relative to the installed Skill root.
+These are the single implementation source. They are explicitly invoked Python APIs,
 not automatically activated hooks, a daemon, a network scanner, or a cluster
-manager. Default installation and existing workflow semantics do not change.
+manager. Packaging does not activate them; existing workflow semantics do not change.
 
 `TaskPool` accepts independent node records, exact node/model/config worker
 bindings, an authorized node set and concurrency ceilings. Qualification belongs

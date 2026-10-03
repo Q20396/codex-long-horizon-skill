@@ -65,11 +65,11 @@ then verify discovery and loading. Check `codex plugin --help`; no installation
 is performed by reading this page.
 
 **Version boundary:** this README describes current source, not a promise that
-every reference ships in v0.6.0. Later v0.6.1 security-patch metadata exists in
-source, but its public tag and Release were not found. `AVAILABLE` metadata alone
+every reference ships in v0.6.0. The v0.7.0 release candidate includes the packaged
+Local Compute Beta; its tag and Release are pending. `AVAILABLE` metadata alone
 does not prove publication. The published v0.6.0 does
 not include those later changes. Do not substitute mutable `main`, or run the
-unpublished `--ref v0.6.1` examples in linked installation docs.
+unpublished `--ref v0.7.0` examples in linked installation docs.
 
 ## When to use 20396
 
@@ -182,8 +182,9 @@ AI video remains an **optional bundled sibling skill**, not 20396's primary iden
 ## Local Compute Orchestration (Beta)
 
 20396 includes an optional experimental local-compute orchestration layer as
-[repository-level Python APIs](scripts/local_compute_pool.py), not an
-automatically enabled feature or part of the installed Skill package.
+[packaged Python APIs](.agents/skills/long-horizon-engineering/scripts/local_compute_pool.py)
+in the v0.7.0 release candidate's default Skill inventory. It is not automatically
+enabled. The published v0.6.0 does not contain this capability.
 
 > **Beta:** Validation is synthetic/injected-worker based. Real provider
 > installation, local-model deployment, hardware-specific tuning and
@@ -210,7 +211,7 @@ may use OpenAI only where input and derived-output policy allow it. LOCAL_ONLY
 summaries, patches and findings must instead remain within authorized local or
 human verification, or stop.
 
-The [deployment API](scripts/local_compute_deployment.py) provides exact approved
+The [deployment API](.agents/skills/long-horizon-engineering/scripts/local_compute_deployment.py) provides exact approved
 effect handling, conservative budgets and POSIX journal recovery. Concrete
 provider/model setup, measured auto-tuning and the full zero-touch flow are
 **not fully implemented**, not merely awaiting hardware tests.

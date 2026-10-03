@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from concurrent.futures import ThreadPoolExecutor
 
-PATH = Path(__file__).resolve().parents[1] / 'scripts/local_compute_deployment.py'
+PATH = Path(__file__).resolve().parents[1] / '.agents/skills/long-horizon-engineering/scripts/local_compute_deployment.py'
 
 
 class SyntheticJournal:

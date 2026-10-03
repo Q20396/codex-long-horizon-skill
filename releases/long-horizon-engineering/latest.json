@@ -1,14 +1,14 @@
 {
   "skill_id": "long-horizon-engineering",
-  "version": "0.6.1",
+  "version": "0.7.0",
   "repo": "https://github.com/Q20396/codex-long-horizon-skill",
   "path": ".agents/skills/long-horizon-engineering",
   "channel": "stable",
   "released": true,
-  "release_date": "2026-08-25",
+  "release_date": "2026-10-03",
   "risk": "reviewed",
   "summary": [
-    "Hardened updater filesystem cleanup with no-replace rename, retained artifacts, FD anchoring, and receipt/recovery evidence.",
+    "Packaged opt-in Local Compute Orchestration (Beta) from a single implementation source; real provider/model/multi-node validation remains NOT_RUN.",
     "Kept research data access, account access, credentials, grants, valuation runtime, orders, trading, persistence, and external actions unimplemented.",
     "Added independent-review and release-boundary documentation without representing static contracts as host enforcement."
   ],

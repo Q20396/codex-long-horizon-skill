@@ -63,6 +63,8 @@
         ".agents/skills/long-horizon-engineering/schemas/package-manifest.schema.json",
         ".agents/skills/long-horizon-engineering/schemas/skill-routing-decision.schema.json",
         ".agents/skills/long-horizon-engineering/scripts/audit_skill_descriptions.py",
+        ".agents/skills/long-horizon-engineering/scripts/local_compute_deployment.py",
+        ".agents/skills/long-horizon-engineering/scripts/local_compute_pool.py",
         ".agents/skills/long-horizon-engineering/scripts/audit_skill_safety.py",
         ".agents/skills/long-horizon-engineering/scripts/check_skill_package.py",
         ".agents/skills/long-horizon-engineering/scripts/doctor.py",
