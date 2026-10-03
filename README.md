@@ -1,21 +1,202 @@
 # Long-Horizon Engineering
 
-Long-Horizon Engineering (LHE) is a local-first governance and evidence kernel
-for complex, high-stakes work. It turns a plain-language request into bounded
-scope, source-linked `FACT` / `INFERENCE` / `UNKNOWN`, a visible authority
-boundary, and exactly one next safe action for the customer to decide.
+**Long tasks survive the chat.**
 
-The public package supports long-running software engineering and static
-discovery of descriptor-only capability cards for Australian legal-evidence
-organization, family and office document governance, and Australian/US
-public-equity research. Those cards are suggestions. They are not installed
-domain skills, advice, account connections, storage services, or execution
-authority.
+Resume the work. Verify the evidence.
 
-LHE never uploads customer-sensitive information, keeps no model memory or
-telemetry, and does not autonomously read accounts, install code, route to
-uninstalled skills, persist customer records, publish, trade, file, contact, or
-advance a workflow stage.
+A Codex skill for migrations, large refactors, difficult debugging and multi-step
+PRs. It keeps **goal, verified progress, evidence, required remaining work and
+authority** explicit, so resumption starts with what can actually be verified.
+
+Long-running coding tasks can lose their goal, repeat checked work, mistake
+progress for completion, or resume from stale state. LHE provides instructions
+for avoiding these failures—not an autonomous runtime or a reliability guarantee.
+Recovery needs approved persisted state and a fresh repository check; LHE cannot
+wake Codex or guarantee crash recovery.
+
+[Try it](#customer-quick-start) · [Published release](#installation-status) ·
+[Recovery walkthrough](#from-interruption-to-verified-results)
+
+## Customer Quick Start
+
+**Already installed?** Start with a non-sensitive repository and a bounded task:
+
+```text
+Use the long-horizon-engineering skill.
+My desired outcome is: migrate <module> from <old API> to <new API>.
+The material I can provide is: <exact approved repository path>.
+Inspect that approved repository read-only, define acceptance checks,
+and propose the smallest plan. Do not edit or make external calls.
+```
+
+Expect a plain-language customer outcome, the proposed scope and permissions,
+and the checks that would demonstrate success. Then authorize only the work
+you want performed. A plan or a passing check is not approval to push or merge.
+After approval, ask Codex to continue required authorized work against those
+criteria; changed scope or effects need a new decision, unchanged authority does not.
+
+For guided decision support, say “Start with intake only” using the [customer prompt](prompts/customer-guided-decision.md)
+and [walkthrough](docs/customer-guided-workflow.md). New installation needs the
+version and target checks below; reading the [examples](examples/) needs no installation.
+
+## Installation Status
+
+**Latest published stable: [v0.6.0](https://github.com/Q20396/codex-long-horizon-skill/releases/tag/v0.6.0)**,
+verified 2026-10-03. After approving installation and completing the
+[verification checklist below](#install-verify-update), register its marketplace:
+
+```bash
+codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.6.0
+```
+
+Registration is **not plugin installation**. With a compatible CLI, install
+`codex-long-horizon-skill@codex-long-horizon-skills` through its plugin interface,
+then verify discovery and loading. Check `codex plugin --help`; no installation
+is performed by reading this page.
+
+**Version boundary:** this README describes current source, not a promise that
+every reference ships in v0.6.0. Later v0.6.1 security-patch metadata exists in
+source, but its public tag and Release were not found. The published v0.6.0 does
+not include those later changes. Do not substitute mutable `main`, or run the
+unpublished `--ref v0.6.1` examples in linked installation docs.
+
+## When to use LHE
+
+Use it for multi-session work, dependent milestones, staged migration/refactor
+checks, or costly interruption/recovery. Skip it for a typo, a few obvious lines,
+or when ordinary Codex already supplies enough structure.
+
+LHE adds a reusable scope, recovery and evidence checklist—not exclusive Codex
+capabilities, automatic memory, or proof of unattended reliability.
+
+## Three tasks to try
+
+Start with read-only planning; approve implementation separately.
+
+**Migration**
+```text
+Use long-horizon-engineering. Plan migrating <module> to <new API> in this
+approved repository. Identify compatibility risks and acceptance tests.
+Do not edit or make external calls yet.
+```
+
+**Large refactor**
+```text
+Use long-horizon-engineering. Plan a behavior-preserving refactor of <area>.
+Inspect the approved files, propose small steps and regression checks,
+and identify what evidence would establish completion. No edits yet.
+```
+
+**Interrupted bug investigation**
+```text
+Use long-horizon-engineering. Resume <bug> using the approved repository and
+existing non-sensitive handoff. Re-check branch, diff and prior test evidence.
+Report what is verified, stale or still unknown, then propose the next step.
+Do not repeat verified work without a reason or change files yet.
+```
+
+More examples: [migration](examples/repository-migration/),
+[refactor](examples/large-refactor/), [bug investigation](examples/bug-investigation/),
+[resume](examples/resume-work/), and the [prompt library](prompts/).
+
+## How it works
+
+1. Fix the objective and acceptance criteria.
+2. Work in bounded, authorized steps.
+3. Verify claims against actual evidence.
+4. Track required work still missing—not every possible improvement.
+5. On resumption, reconcile saved state with the current repository.
+6. Finish only when required acceptance evidence is complete.
+
+## From interruption to verified results
+
+**Illustrative walkthrough—not a recorded execution or benchmark.**
+
+A fictional API migration has **12 of 19 required items verified** when a session
+ends. In a new session, provide the approved handoff. Re-check its objective,
+branch, commit, diff and evidence: if the first 12 remain valid, continue with
+item 13; if not, correct the affected assumptions before continuing.
+
+Required tests → current validation evidence → Draft PR **if authorized** →
+completion audit against the agreed objective. Missing evidence stays open;
+a Draft PR is not a merge, release or proof of all possible delivery work.
+
+See the [walkthrough and recording plan](docs/demo/README.md) and
+[resume protocol](.agents/skills/long-horizon-engineering/references/resume-protocol.md).
+
+## Safety Model
+
+LHE's instructions require bounded scope, least privilege, explicit authority,
+and evidence-linked claims. Do not place secrets, credentials, customer-sensitive
+information, legal evidence, family information, financial account details,
+identity documents, confidential content or private correspondence in reusable
+prompts, state, logs, commits, examples or public reports. Do not upload such
+material. Sensitive repositories default to plan-only until exact access and
+actions are approved; use explicit-path staging.
+
+The package does not add a background service or telemetry collector.
+This is not a guarantee about the Codex host, model provider or connected tools.
+Plans, recommendations and green checks do not authorize external effects.
+See [safety policy](.agents/skills/long-horizon-engineering/references/safety-policy.md),
+[client privacy](.agents/skills/long-horizon-engineering/references/client-privacy.md)
+and [security reporting](SECURITY.md).
+
+## Early project — real workloads wanted
+
+Report interrupted migrations, repeated work or missing completion evidence in
+[Issues](https://github.com/Q20396/codex-long-horizon-skill/issues): include a public-safe
+minimal reproduction, expected/observed behavior and recovery result. No production
+reliability or adoption claim is implied. See [contributing](CONTRIBUTING.md),
+[first contribution](docs/first-contribution.md) and [conduct](CODE_OF_CONDUCT.md).
+
+## Optional domain capabilities
+
+Engineering remains the primary workflow. Optional descriptors and references
+also cover [public-equity research](.agents/skills/long-horizon-engineering/references/multi-perspective-financial-research.md),
+legal-evidence organization and document governance; see the
+[capability catalog](.agents/skills/long-horizon-engineering/catalog/local-capability-catalog.json).
+Descriptors suggest bounded work; they are not installed domain skills.
+
+The public-equity reference specifies source provenance, facts vs. assumptions,
+dated valuation inputs, counterevidence and explicit evidence gaps. These are
+review instructions, not proven investment performance or a tax/reconciliation
+service. Professional decisions remain with the human.
+
+None of these references authorize accounts, trading, filing, publishing or
+contacting others; they are not autonomous financial or legal agents.
+The Local Case Evidence Provider pilot is fixture-only, with no network,
+accounts, credentials, persistence or encryption.
+AI video remains an **optional bundled sibling skill**, not LHE's primary identity.
+
+## Design references
+
+LHE is independently designed and maintained. External comparisons include
+[GitHub Spec Kit](https://github.com/github/spec-kit) (spec-driven development),
+[obra/superpowers](https://github.com/obra/superpowers) (engineering workflows),
+[Matt Pocock's skills](https://github.com/mattpocock/skills) (task-focused skills),
+[affaan-m/ECC](https://github.com/affaan-m/ECC) (agent configuration and workflows),
+[Cloudflare security-audit-skill](https://github.com/cloudflare/security-audit-skill)
+(security review), and [Multica's Karpathy-inspired guidelines](https://github.com/multica-ai/andrej-karpathy-skills)
+(third-party minimal engineering practices—not an official Andrej Karpathy framework).
+
+These are design references and review lenses, not product foundations, bundled
+dependencies, endorsements or collaborations.
+
+**Comparison, not accumulation:** compare an idea against the current workflow,
+test when necessary, and adopt only demonstrated incremental value with applicable
+approval. `NO_CHANGE` is a valid outcome—not every evaluation creates a feature.
+The [independent review checklist](sandbox/skill-incubator/architecture/independent-lhe-upgrade-review-checklist.md)
+is a proposal-only methodology reference, not execution authority.
+
+## Documentation
+
+[Install](INSTALL.md) · [Upgrade](UPGRADE_GUIDE.md) · [Changelog](CHANGELOG.md) ·
+[Examples](examples/) · [Templates](templates/) · [Community skills](COMMUNITY_SKILLS.md) ·
+[Skill entrypoint](.agents/skills/long-horizon-engineering/SKILL.md) ·
+[Optional reference index](.agents/skills/long-horizon-engineering/references/explicit-only-extensions.md)
+
+<details>
+<summary>Skill catalog and package profiles</summary>
 
 ## Skill Catalog
 
@@ -25,44 +206,6 @@ advance a workflow stage.
 | [`ai-video-production`](.agents/skills/ai-video-production/SKILL.md) | Use for AI-assisted video or animation planning: video briefs, scripts, storyboards, shot lists, visual prompts, asset manifests, preview plans, and render handoffs. Do not use for general repository engineering or automatic rendering, uploading, publishing, or posting. | Video briefs, scripts, storyboards, visual prompts, asset manifests, and render handoffs. |
 | [`long-horizon-engineering`](.agents/skills/long-horizon-engineering/SKILL.md) | Use for long-running software engineering and local static capability discovery. It may suggest descriptor-only legal-evidence, document-governance, or public-equity packs; keywords never authorize, install, load, or execute them. Do not use for simple edits, legal or financial advice, media, or automatic external actions. | Large refactors, migrations, debugging, PR workflows, resumable tasks, and validation-heavy engineering. |
 <!-- skill-catalog:end -->
-
-## Customer Quick Start
-
-LHE helps a customer turn a plain-language outcome
-into a bounded plan, evidence-backed recommendation, and one next safe action.
-It is not an autonomous engineering runtime and does not grant itself permission
-to read extra files, write code, use the network, install tools, or make the
-customer's decision.
-
-Start in Codex with:
-
-```text
-Use the long-horizon-engineering skill in guided customer mode.
-My desired outcome is: <plain-language outcome>.
-The decision I need to make is: <decision>.
-The material I can provide is: <non-sensitive excerpt, synthetic attachment,
-exact approved local path, or not provided>.
-Start with intake only. Show the files and permissions you need before reading
-or changing anything. End with a Customer Outcome Brief and one next safe action.
-```
-
-The response will make required inputs, evidence quality, limits, permissions,
-and the pending customer decision visible. It presents the plain-language
-customer outcome first, then a separate operator boundary and engineering
-evidence appendix. Customers do not need to understand schemas, receipts, CI,
-commits, or hashes. Use the
-[copy-paste customer prompt](prompts/customer-guided-decision.md) or see the
-[guided customer walkthrough](docs/customer-guided-workflow.md) for a realistic
-intake-to-evidence-to-decision example.
-
-For sensitive legal, family, office, or financial material, do not paste or
-upload the content. LHE can first suggest the relevant descriptor card and
-identify the exact local capability or provider approval that would be needed.
-The future Local Case Evidence Provider remains a sandbox-only,
-`declared-disabled` interface; no Dropbox, Gmail, Outlook, Google Drive, or
-storage runtime is included. Its local pilot is `fixture-only` and exercises
-synthetic contracts without network, accounts, credentials, persistence, or
-encryption. Passing that pilot does not validate a production connector.
 
 ## Package Profiles
 
@@ -87,226 +230,10 @@ For a local, no-upload first result, use the
 [Local Governance Work Packet](docs/local-governance-work-packet.md). It is a
 copy-paste intake and review format, not a connector, database, or runtime.
 
-## Installation Status
+</details>
 
-The release-state contract targets the immutable stable ref `v0.6.1` with
-marketplace policy `AVAILABLE`. Before using it, independently verify the
-remote annotated tag, its peeled commit and tree, the published GitHub Release,
-and an isolated Codex marketplace resolution. Repository metadata alone is not
-proof that those external stages completed.
-
-```bash
-codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.6.1
-```
-
-Run the command only in a separately approved isolated workflow after the
-tag/Release checks above. It is not permission to modify real Codex
-configuration or an installed Skill. A `main` reference is mutable repository
-state and is not a stable installation channel:
-
-```bash
-codex plugin marketplace add Q20396/codex-long-horizon-skill --ref main
-```
-
-See
-[Plugin installation](docs/plugin-install.md) for verification, upgrade, and
-removal notes.
-
-For source review or local development, clone the repository:
-
-```bash
-git clone https://github.com/Q20396/codex-long-horizon-skill.git
-cd codex-long-horizon-skill
-```
-
-Copying skills into a target project is a separate, explicit local installation
-decision. Review the selected profile and exact paths first:
-
-```bash
-mkdir -p /path/to/project/.agents
-cp -R .agents/skills /path/to/project/.agents/
-```
-
-Verify the installed skills from the target project:
-
-```bash
-cd /path/to/project
-python3 .agents/skills/long-horizon-engineering/scripts/check_skill_package.py --installed
-```
-
-Ask Codex to use a skill:
-
-```text
-Use the long-horizon-engineering skill.
-Explore the codebase first, make a plan, then implement the change in a new branch and open a draft pull request for review.
-```
-
-## Copy-Paste Prompt Library
-
-These prompts are also available as files under [prompts/](prompts/).
-
-### Large Refactor
-
-Use the long-horizon-engineering skill.
-
-Perform a repository-wide refactor.
-
-Requirements:
-
-- Explore first
-- Produce implementation plan
-- Work incrementally
-- Validate after each phase
-- Open draft PR
-
-### Bug Investigation
-
-Use the long-horizon-engineering skill.
-
-Investigate root cause before changing code.
-
-Deliver:
-
-- Findings
-- Proposed fix
-- Validation evidence
-- Risk assessment
-
-### Resume Interrupted Work
-
-Use the long-horizon-engineering skill.
-
-Resume previously interrupted work.
-
-Recover:
-
-- Current state
-- Completed tasks
-- Remaining tasks
-- Blockers
-- Next actions
-
-### PR Review
-
-Use the long-horizon-engineering skill.
-
-Review this pull request.
-
-Deliver:
-
-- Findings
-- Risks
-- Validation gaps
-- Merge recommendation
-
-### Repository Migration
-
-Use the long-horizon-engineering skill.
-
-Migrate this repository.
-
-Requirements:
-
-- Explore existing architecture
-- Preserve behavior
-- Validate functionality
-- Produce migration report
-
-## Why This Exists
-
-Long-running coding-agent sessions can break down when they lose context, skip
-validation, rely on unverified assumptions, or cannot recover cleanly after
-interruption.
-
-These skills provide structured workflows that improve reliability and
-reproducibility.
-
-## What Is Included
-
-- `.agents/skills/long-horizon-engineering/` for multi-step engineering,
-  planning, validation, debugging, PR workflows, migrations, resumable work,
-  privacy-first evidence tracking, review-gated skill improvement, and
-  optional exact-path-authorized Obsidian knowledge artifacts.
-- `.agents/skills/ai-video-production/` for AI video briefs, scripts,
-  storyboards, shot lists, visual prompts, asset manifests, and render handoffs.
-- [prompts/](prompts/) for copy-paste task prompts.
-- [templates/](templates/) for reusable project, validation, findings, and
-  migration reports.
-- [examples/](examples/) for sample prompt and smoke-test artifacts.
-- [scripts/generate_skill_catalog.py](scripts/generate_skill_catalog.py) for
-  README catalog generation and product-documentation checks.
-- [INSTALL.md](INSTALL.md), [UPGRADE_GUIDE.md](UPGRADE_GUIDE.md),
-  [CHANGELOG.md](CHANGELOG.md), and [CONTRIBUTING.md](CONTRIBUTING.md) for
-  installation, updates, release history, and contribution workflow.
-
-## Awesome Codex Skills Ecosystem
-
-- [Official skill catalog](#skill-catalog)
-- [Prompt library](prompts/)
-- [Examples](examples/)
-- [Templates](templates/)
-- [Plugin installation](docs/plugin-install.md)
-- [Demo recording guide](docs/demo/README.md)
-- [Contribution guide](CONTRIBUTING.md)
-- [First contribution guide](docs/first-contribution.md)
-- [Community skills registry](COMMUNITY_SKILLS.md)
-- [Security policy](SECURITY.md)
-- [Code of conduct](CODE_OF_CONDUCT.md)
-
-## Official Codex Skill Structure
-
-Codex skills are the workflow authoring format. A skill is a directory
-containing a required `SKILL.md` file and optional supporting folders such as
-`scripts`, `references`, `templates`, and `assets`. Codex first reads skill
-metadata to decide whether the skill is relevant. If selected, Codex then reads
-the full `SKILL.md` instructions.
-
-Codex plugins are the installable distribution unit. This repository now
-includes `.codex-plugin/plugin.json` and a repo marketplace at
-`.agents/plugins/marketplace.json` so the canonical skills can be distributed
-without duplicating the skill directories.
-
-Release checks distinguish static plugin package validation, direct skill
-installation, marketplace registration, and actual plugin installation. Actual
-plugin installation is claimed only when the installed Codex CLI exposes and
-passes `codex plugin add`.
-
-Recommended installation path:
-
-```text
-.agents/skills/<skill-name>/
-```
-
-## Skill Quality Standard
-
-Every skill must contain:
-
-- `SKILL.md`
-- Usage guidance
-- Validation workflow
-- Safety boundaries
-- Failure recovery strategy
-- Example prompts
-
-Optional:
-
-- `references/`
-- `templates/`
-- `scripts/`
-- `assets/`
-
-## Industrial Skill Design Principles
-
-Industrial skills should trigger accurately, run with least privilege, use
-progressive disclosure, match workflow depth to task risk, and maintain an
-evaluation loop. `SKILL.md` should stay concise; long protocols, templates,
-scripts, and assets should live in their supporting folders.
-
-For larger skill systems, this repository favors router patterns, invocation
-permission layers, and shared design vocabulary while keeping external ideas
-review-gated instead of copied or auto-installed.
-
-Keywords: router patterns, invocation permission layers, shared design vocabulary.
+<details>
+<summary>Advanced workflow contracts and optional capabilities</summary>
 
 ## Role-Based Engineering Loop
 
@@ -320,6 +247,19 @@ These are serial working roles, not autonomous sub-agents. They do not grant
 new permissions or enable automatic edits, installs, pushes, merges, deploys,
 or releases. Optional working state supports safe resumption only after current
 branch, diff, and validation state have been re-checked.
+
+## Industrial Skill Design Principles
+
+Industrial skills should trigger accurately, run with least privilege, use
+progressive disclosure, match workflow depth to task risk, and maintain an
+evaluation loop. `SKILL.md` should stay concise; long protocols, templates,
+scripts, and assets should live in their supporting folders.
+
+For larger skill systems, this repository favors router patterns, invocation
+permission layers, and shared design vocabulary while keeping external ideas
+review-gated instead of copied or auto-installed.
+
+Keywords: router patterns, invocation permission layers, shared design vocabulary.
 
 ## Optional Obsidian Knowledge Workflow
 
@@ -391,163 +331,6 @@ A customer may use a weekly reminder to request a new decision, but the
 reminder never accesses the network. Each week begins with no approval and
 requires a fresh, source-scoped decision before any online comparison.
 
-## Manual Update Check
-
-Customers can ask Codex to check for an approved skill update, but the check is
-manual, read-only, and network-gated. It does not run in the background, install
-files, overwrite local skills, or update from mutable sources such as `main`,
-`master`, `latest`, or branch names.
-
-In tag mode, the checker accepts public HTTPS remotes only, blocks obvious local
-or private destinations, checks DNS results before the Git lookup, disables Git
-HTTP redirects and proxy inheritance, and verifies that the tag resolves to the
-expected exact commit SHA. This reduces accidental unsafe lookups, but it is not
-a complete SSRF defense against DNS rebinding or a compromised remote host.
-
-Example prompt:
-
-```text
-Use the long-horizon-engineering skill.
-Check whether my installed codex-long-horizon-skill package has an approved update.
-Ask before using network access, compare only against tag vX.Y.Z and expected commit <reviewed-40-character-sha>, and do not apply the update.
-```
-
-From this package repository, the read-only check can be run after explicit
-network approval:
-
-```bash
-python3 .agents/skills/long-horizon-engineering/scripts/check_for_updates.py \
-  --allow-network \
-  --source-tag vX.Y.Z \
-  --expected-commit REVIEWED_40_CHARACTER_SHA
-```
-
-For an exact commit already supplied by the user, compare locally without a
-remote lookup:
-
-```bash
-python3 .agents/skills/long-horizon-engineering/scripts/check_for_updates.py \
-  --source-commit REVIEWED_40_CHARACTER_SHA
-```
-
-Treat the result as advice only. Applying an update remains a separate
-backup-first action with `update_installed_skill.py`.
-
-For a customer-facing copy-paste prompt that compares installed skills with the
-published `v0.6.1` release, see [UPGRADE_GUIDE.md](UPGRADE_GUIDE.md).
-
-## Safe skill update self-check
-
-This GitHub repository is the source of truth for the latest published skills.
-Project-level installations use `.agents/skills/<skill_id>` below the approved
-project root. Codex user-level installations use
-`~/.codex/skills/<skill_id>`. The legacy self-check script below is for the
-legacy/project-style `.agents/skills` layout; use the direct
-`--target-skill-dir` updater flow for a Codex user-level installation. The
-self-check is comparison-only: it creates no backup, prints no executable
-rollback command, and never replaces an installed skill. A separately approved
-replacement uses `update_installed_skill.py`, which has its own backup and
-rollback contract.
-
-Customer prompt:
-
-```text
-Use the skill-installer skill.
-
-Compare my installed Codex skills with:
-https://github.com/Q20396/codex-long-horizon-skill
-
-Check long-horizon-engineering and ai-video-production.
-Do not install or replace automatically.
-Summarize differences, risks, and upgrade recommendation.
-Ask me before making changes.
-```
-
-Check the current Codex user-level installation against the immutable release:
-
-```bash
-python3 scripts/skill_update_selfcheck.py \
-  --installed-root ~/.codex/skills \
-  --ref v0.6.1
-```
-
-`--skills` is restricted to the bundled supported skills:
-`long-horizon-engineering` and `ai-video-production`. For release-grade
-comparison, prefer an immutable tag or exact commit with `--ref`.
-
-For replacement, use the manifest-verified `update_installed_skill.py`
-`--target-skill-dir` flow below. The legacy self-check is comparison-only and
-always requires an explicit `--installed-root`; it cannot replace or modify an
-installed skill. This keeps all real replacement behind the explicit target,
-backup, validation, and rollback flow.
-
-The comparison-only self-check has no backup or rollback operation. For an
-approved replacement, use the updater's documented target, backup, validation,
-and rollback plan instead.
-
-## Install, Verify, Update
-
-Validate this source package:
-
-```bash
-python3 scripts/generate_skill_catalog.py --check
-python3 .agents/skills/long-horizon-engineering/scripts/check_skill_package.py
-python3 .agents/skills/long-horizon-engineering/scripts/doctor.py
-python3 .agents/skills/long-horizon-engineering/scripts/test_expected_triggers.py
-```
-
-Run the broader local validation suite:
-
-```bash
-python3 scripts/full_skill_validation.py
-```
-
-`scripts/full_skill_validation.py` uses the system temp directory by default.
-Override it when needed:
-
-```bash
-CODEX_SKILL_TMP_ROOT=/path/to/tmp python3 scripts/full_skill_validation.py
-```
-
-Preview an update into another project:
-
-```bash
-python3 .agents/skills/long-horizon-engineering/scripts/update_installed_skill.py \
-  --target-root /path/to/project \
-  --skill long-horizon-engineering
-```
-
-Apply to a project-level `.agents/skills/<skill>` installation only after
-review:
-
-```bash
-python3 .agents/skills/long-horizon-engineering/scripts/update_installed_skill.py \
-  --target-root /path/to/project \
-  --skill long-horizon-engineering \
-  --apply
-```
-
-For an existing Codex user-level installation, point directly at the skill
-directory instead of using `~/.codex` as `--target-root`:
-
-```bash
-python3 .agents/skills/long-horizon-engineering/scripts/update_installed_skill.py \
-  --target-skill-dir ~/.codex/skills/long-horizon-engineering \
-  --skill long-horizon-engineering
-```
-
-```bash
-python3 .agents/skills/long-horizon-engineering/scripts/update_installed_skill.py \
-  --target-skill-dir ~/.codex/skills/long-horizon-engineering \
-  --skill long-horizon-engineering \
-  --apply
-```
-
-The update flow is dry-run by default and backup-first when `--apply` is used.
-`--apply` requires exactly one explicit `--skill` and either `--target-root` or
-`--target-skill-dir`. A direct skill directory must use a `skills/<skill>`
-layout and the final directory name must match the selected skill.
-
 ## Personal Workflow Review (Explicit Only)
 
 The optional personal-workflow review protocol can turn only user-supplied,
@@ -566,17 +349,6 @@ Any durable personal operating manual is private, user-controlled, outside a
 public repository, and created only after exact-path approval. It is not loaded
 automatically in future conversations and cannot override current user,
 repository, safety, or higher-priority instructions.
-
-## Safety Model
-
-Do not store secrets, API keys, legal evidence, family information, private
-client data, financial account information, confidential documents, identity
-documents, or private correspondence in reusable prompts, templates, memory,
-logs, state files, commits, public PRs, or examples.
-
-Sensitive repositories should default to plan-only mode until the user approves
-specific files and actions. Use explicit path staging; do not use broad
-`git add .` for confidential work.
 
 ## Approved External Tool Contracts
 
@@ -622,58 +394,55 @@ fallbacks, CSP/CORS changes, telemetry, and publication. The protocol stores
 review-only public candidate commands without executing them; a public source,
 installed skill, or prior approval never grants a later permission.
 
-## Community Skills
+</details>
 
-Community skills are welcome when they are original, reviewable, and safe by
-default.
+<details>
+<summary>Verification, update boundaries and maintainer notes</summary>
 
-Contribution workflow:
+## Install, Verify, Update
 
-1. Create a branch.
-2. Add or update a skill under `.agents/skills/`.
-3. Include examples, validation guidance, safety boundaries, and recovery notes.
-4. Run the validation commands in [CONTRIBUTING.md](CONTRIBUTING.md).
-5. Open a draft PR with the problem, design, risks, and validation evidence.
+Before installation, verify the official marketplace identity and the public
+Release/tag: v0.6.0's annotated tag object is
+`7c3f79ecc2aaf0128d782761a7bc2c524f368702`, and its peeled commit is
+`1606bd21b91980c265fea82718e7d2cca12d3495`. They are different Git objects.
+Stop on missing or mismatched identity. Review the exact destination, selected
+skill and backup/rollback before approved writes; never overwrite an existing
+installation as a shortcut. Follow [INSTALL.md](INSTALL.md) and
+[plugin verification](docs/plugin-install.md), subject to the publication warning above.
+Project skills use `.agents/skills/<skill_id>`; user-level skills use
+`~/.codex/skills/<skill_id>`. Verify installed files, discovery and loading separately.
 
-Do not copy external repository code or prose into this repository. Learn from
-patterns, then write original implementation and documentation.
+Updates are manual, comparison-only first, and require separate approval for
+backup-first replacement. No automatic background update or mutable-ref upgrade.
+See [UPGRADE_GUIDE.md](UPGRADE_GUIDE.md) for current release checks.
 
-## Repository Map
+The legacy self-check is for the legacy/project-style `.agents/skills` layout;
+use the `--target-skill-dir` updater flow for Codex user-level replacement.
+For example, `--target-skill-dir ~/.codex/skills/long-horizon-engineering`
+selects the installed skill directory; `--installed-root ~/.codex/skills`
+selects the comparison root. Neither option grants permission to write.
+Do not apply an update before reviewing the exact target, backup and rollback plan.
 
-```text
-.agents/skills/
-  ai-video-production/
-  long-horizon-engineering/
-.agents/plugins/
-  marketplace.json
-.codex-plugin/
-  plugin.json
-docs/
-examples/
-prompts/
-scripts/
-templates/
-tests/
-```
-
-## Maintainer Notes
-
-Regenerate the README catalog after adding, renaming, or changing a skill
-description:
-
-```bash
-python3 scripts/generate_skill_catalog.py
-```
-
-Check that generated docs, skill quality, and internal links are still valid:
+Validate this source package:
 
 ```bash
 python3 scripts/generate_skill_catalog.py --check
+python3 .agents/skills/long-horizon-engineering/scripts/check_skill_package.py
+python3 .agents/skills/long-horizon-engineering/scripts/doctor.py
+python3 .agents/skills/long-horizon-engineering/scripts/test_expected_triggers.py
 ```
 
-The canonical trigger fixture is [tests/expected-triggers.json](tests/expected-triggers.json).
-Skill-local response styles remain under each skill's `prompt-styles/`
-directory; root [prompts/](prompts/) contains copy-paste task prompts for users.
+Broader validation and contribution instructions are in
+[CONTRIBUTING.md](CONTRIBUTING.md). Passing static checks is not runtime proof.
+
+## Maintainer Notes
+
+Regenerate the catalog with `python3 scripts/generate_skill_catalog.py` after
+skill metadata changes; then rerun the checks above. Canonical trigger fixtures:
+[tests/expected-triggers.json](tests/expected-triggers.json). Skill-local styles
+live in each skill's `prompt-styles/`; [prompts/](prompts/) holds user task prompts.
+
+</details>
 
 ## License
 
