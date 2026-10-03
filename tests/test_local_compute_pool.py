@@ -6,7 +6,7 @@ import threading
 import unittest
 from unittest.mock import patch
 
-PATH = Path(__file__).resolve().parents[1] / 'scripts/local_compute_pool.py'
+PATH = Path(__file__).resolve().parents[1] / '.agents/skills/long-horizon-engineering/scripts/local_compute_pool.py'
 spec = importlib.util.spec_from_file_location('local_compute_pool', PATH)
 pool = importlib.util.module_from_spec(spec)
 sys.modules[spec.name] = pool

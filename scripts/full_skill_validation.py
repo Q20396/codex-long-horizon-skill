@@ -178,7 +178,7 @@ CORE_COMMANDS = [
         PYTHON,
         "scripts/check_release_readiness.py",
         "--version",
-        "0.6.1",
+        "0.7.0",
         "--release-state",
         "__RELEASE_STATE__",
         "--allow-existing-tag",
@@ -388,7 +388,7 @@ esac'''
     expected_main_commands = [
         "set -euo pipefail",
         '"$RUNNER_TEMP/lhe-formal-schema-venv/bin/python" scripts/validate_formal_schemas.py --schema-only',
-        '"$RUNNER_TEMP/lhe-formal-schema-venv/bin/python" scripts/check_release_readiness.py --version 0.6.1 '
+        '"$RUNNER_TEMP/lhe-formal-schema-venv/bin/python" scripts/check_release_readiness.py --version 0.7.0 '
         '--release-state "${{ steps.release-state.outputs.state }}" --allow-existing-tag',
     ]
     commands = [] if len(main_steps) != 1 else [
@@ -603,7 +603,7 @@ def formal_release_evidence_workflow_errors(text: str) -> list[str]:
                 errors.append(f"runner identity heredoc is not valid Python: {exc}")
         if 'python3 - "$RUNNER_IDENTITY"' not in identity_step or 'with open(path, "w"' not in identity_step:
             errors.append("runner identity step must write the declared runner identity path")
-        identity_assignment = 'RUNNER_IDENTITY="$RUNNER_TEMP/lhe-v0.6.1-runner-identity.json"'
+        identity_assignment = 'RUNNER_IDENTITY="$RUNNER_TEMP/lhe-v0.7.0-runner-identity.json"'
         persistence = "printf 'RUNNER_IDENTITY=%s\\n' \"$RUNNER_IDENTITY\" >> \"$GITHUB_ENV\""
         if identity_step.count(identity_assignment) != 1:
             errors.append("RUNNER_IDENTITY must have exactly one definition")
@@ -622,7 +622,7 @@ def formal_release_evidence_workflow_errors(text: str) -> list[str]:
         errors.append("runner identity must have exactly one writer")
     if executable.count("printf 'RUNNER_IDENTITY=%s\\n'") != 1:
         errors.append("formal evidence workflow must have exactly one RUNNER_IDENTITY GITHUB_ENV writer")
-    if 'RUNNER_IDENTITY="$RUNNER_TEMP/lhe-v0.6.1-runner-identity.json"' in executable:
+    if 'RUNNER_IDENTITY="$RUNNER_TEMP/lhe-v0.7.0-runner-identity.json"' in executable:
         consumers = [
             line for line in lines
             if '--action-provenance-file "$RUNNER_IDENTITY"' in line
@@ -630,7 +630,7 @@ def formal_release_evidence_workflow_errors(text: str) -> list[str]:
         ]
         if len(consumers) != 2:
             errors.append("acquisition and replay must consume the persisted RUNNER_IDENTITY")
-        if '${{ runner.temp }}/lhe-v0.6.1-runner-identity.json' not in executable:
+        if '${{ runner.temp }}/lhe-v0.7.0-runner-identity.json' not in executable:
             errors.append("artifact must include the persisted runner identity")
     if executable.count("  workflow_dispatch:") != 1 or any(
         f"  {event}:" in executable
@@ -664,8 +664,8 @@ def formal_release_evidence_workflow_errors(text: str) -> list[str]:
         "fetch-depth: 0",
         "persist-credentials: false",
         "ref: ${{ github.sha }}",
-        'RELEASE_VERSION: "0.6.1"',
-        'RELEASE_TAG: "v0.6.1"',
+        'RELEASE_VERSION: "0.7.0"',
+        'RELEASE_TAG: "v0.7.0"',
         "--verify-acquisition",
         "--pre-tag",
         "--workflow-sha256",
@@ -680,7 +680,7 @@ def formal_release_evidence_workflow_errors(text: str) -> list[str]:
         "test ! -e \"$EVIDENCE_DIR\"",
         "sha256sum .github/workflows/formal-release-gate.yml",
         'WORKFLOW_SHA256="$(sha256sum .github/workflows/formal-release-gate.yml | awk',
-        'RUNNER_IDENTITY="$RUNNER_TEMP/lhe-v0.6.1-runner-identity.json"',
+        'RUNNER_IDENTITY="$RUNNER_TEMP/lhe-v0.7.0-runner-identity.json"',
         'test "$GITHUB_REF" = "refs/heads/main"',
         'release_commit="$GITHUB_SHA"',
         'parent_line="$(git rev-list --parents -n 1 "$release_commit")"',
@@ -688,7 +688,7 @@ def formal_release_evidence_workflow_errors(text: str) -> list[str]:
         'candidate_base="$2"',
         'test "$(git merge-base "$candidate_base" "$release_commit")" = "$candidate_base"',
         '--workflow-sha256 "$WORKFLOW_SHA256"',
-        '${{ runner.temp }}/lhe-v0.6.1-runner-identity.json',
+        '${{ runner.temp }}/lhe-v0.7.0-runner-identity.json',
     ):
         if fragment not in text:
             errors.append(f"formal evidence workflow missing required fragment: {fragment}")
@@ -1053,7 +1053,7 @@ def check_optional_group(report: Report, name: str, files: list[Path], required_
 
 def release_state_for_validation() -> str:
     """Read exactly one supported release state from the active release note."""
-    notes = ROOT / "docs/releases/v0.6.1.md"
+    notes = ROOT / "docs/releases/v0.7.0.md"
     try:
         text = notes.read_text(encoding="utf-8")
     except OSError as exc:

@@ -1,5 +1,49 @@
 # Local Compute Orchestration (Beta) — implementation report
 
+## v0.7.0 package integration supersedes repository-only placement
+
+The release candidate moves the two implementations (no logic fork) to
+`.agents/skills/long-horizon-engineering/scripts/` and includes them in the
+default exact inventory. Tests load that single source. Isolated assembly/import
+tests exercise the installed path and reject network/process/write effects on
+import. No provider recipe, runtime dependency or automatic activation is added.
+The sections below preserve the PR #156 implementation and evidence history;
+their repository-root paths describe that historical state, not current placement.
+Publication and real hardware validation remain separate gates.
+
+Package integration verification (2026-10-03):
+
+- Baseline: `51be04a54575e463da872eb23a2ad3d25887ff66` (merged PR #156).
+- TDD baseline: isolated default-profile test failed because the deployment
+  module was absent. After moving both modules and synchronizing both inventories,
+  imports succeeded. A stale checker version initially rejected the new version;
+  that release expectation and exact-inventory/effect contracts were updated.
+- 47 targeted tests passed, including default profile assembly and direct
+  project-scoped installation, installed-origin imports, import effect audit,
+  denied probe without consent and installed package validation.
+- Final full repository run: 768 tests in 105.214 seconds, 16 skipped,
+  zero failures/errors. Skip counts are not passes. Expected negative-fixture
+  preflight diagnostics do not represent a failed unittest result.
+- Existing fresh-install tooling passed deterministic plugin validation,
+  project-scoped installation and isolated user-scoped update. Actual Codex CLI
+  marketplace/plugin operations were explicitly skipped, not reported as passed.
+- Full skill validation: PASS_WITH_WARNINGS, exactly the existing 11 documented
+  optional omissions; no new optional omission was introduced.
+- Catalog/docs, plugin, schema-lock and static final release-state consistency
+  passed. Local formal schema execution was NOT_EXECUTED: six locked distributions
+  were absent; none was installed. Fresh candidate CI remains required.
+- Read-only agent code review found the stale checker version; a follow-up
+  reproduced its fix and found no additional material packaging/path issue.
+  This is not a qualifying human GitHub approval.
+- The two runtime modules are unchanged except for their location and opening
+  docstring. Workflow v2.0 and D2D-1.2 semantics are unchanged.
+
+Containment: work is isolated on `codex/release-v0.7.0`; no installed user Skill,
+provider, model, hardware, old tag or Release is modified. Revert this packaging
+commit to undo source changes. Do not move an immutable tag. Stable release
+metadata in this candidate is not publication evidence; README retains v0.6.0
+as the verified published stable until the release gates complete.
+
 ## Decision and authority
 
 Design Authority implementation directive v1.2 authorizes implementation and

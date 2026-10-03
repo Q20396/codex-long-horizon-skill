@@ -2,6 +2,14 @@
 
 All notable changes to this project are summarized here.
 
+## 0.7.0 - 2026-10-03
+
+- Consolidated public brand as 20396; internal identifiers remain unchanged.
+- Packaged Local Compute Orchestration (Beta) in the default Skill inventory,
+  using one implementation source without automatic provider or network effects.
+- Added isolated package discovery/import and consent-boundary checks.
+- Retained synthetic-only validation, partial deployment, and unmeasured savings.
+
 ## 0.6.1 - 2026-08-25
 
 - Hardened updater filesystem cleanup with no-replace rename and directory FD

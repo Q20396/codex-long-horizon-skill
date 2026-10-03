@@ -126,7 +126,7 @@ jobs:
           VENV="$RUNNER_TEMP/lhe-formal-venv/bin/python"
           EVIDENCE="$RUNNER_TEMP/formal-baseline-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
           WORKFLOW_SHA256="$(PYTHONPATH=scripts "$VENV" -c 'import os; from validate_formal_schemas import execution_workflow_blob_sha256; print(execution_workflow_blob_sha256(os.environ["GITHUB_WORKFLOW_SHA"], ".github/workflows/formal-baseline.yml"))')"
-          "$VENV" scripts/check_release_readiness.py --version 0.6.1 --pre-tag \
+          "$VENV" scripts/check_release_readiness.py --version 0.7.0 --pre-tag \
             --release-state final --channel stable \
             --formal-schema-pip-report "$RUNNER_TEMP/pip-report.json" \
             --formal-schema-acquisition-result "$EVIDENCE/acquisition-receipt.json" \

@@ -1,7 +1,7 @@
 ---
 name: long-horizon-engineering
 description: Use for long-running software engineering and local static capability discovery. It may suggest descriptor-only legal-evidence, document-governance, or public-equity packs; keywords never authorize, install, load, or execute them. Do not use for simple edits, legal or financial advice, media, or automatic external actions.
-version: 0.6.1
+version: 0.7.0
 repo: https://github.com/Q20396/codex-long-horizon-skill
 skill_id: long-horizon-engineering
 update_channel: stable
@@ -199,6 +199,29 @@ catalog keyword may invoke discovery mode only; it must not invoke the domain
 workflow. If the user explicitly invokes this skill for a safe unusual
 workflow, follow the explicit request while preserving the safety boundaries
 below.
+
+## Local Compute Orchestration (Beta, opt-in)
+
+The default v0.7.0 package includes `scripts/local_compute_deployment.py` and
+`scripts/local_compute_pool.py`. They are the single implementation source,
+available relative to this installed SKILL.md; no repository clone is needed.
+Use the existing Python runtime and explicitly add this Skill's `scripts`
+directory to the invoking process's import path to import
+`local_compute_deployment` and `local_compute_pool`. Do not install Python or
+dependencies automatically if the runtime is unavailable.
+
+Normal workflow remains OPENAI_ONLY. Do not import or invoke these APIs unless
+local compute is relevant and requested. Installation/import does not authorize
+hardware inspection, provider installation, model download, inference, network
+access or a node pool. `collect_probe(node_id, consent, reader)` requires explicit
+node inspection consent and a caller-supplied read-only reader. No reader or
+provider recipe ships here. Stop if an approved adapter is unavailable.
+
+These are synthetic-tested Beta foundations, not production-ready deployment.
+Workers and evidence are trusted caller inputs, not a remote authentication or
+sandbox guarantee. LOCAL_ONLY inputs and derived outputs cannot use cloud
+fallback. Real provider/model/multi-node validation is NOT_RUN; cloud savings
+are UNMEASURED. Distributed inference and model sharding are not implemented.
 
 ## Failure Recovery
 
