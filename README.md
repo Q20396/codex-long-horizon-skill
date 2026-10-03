@@ -327,8 +327,13 @@ Keywords: router patterns, invocation permission layers, shared design vocabular
 The long-horizon skill can create a proposal for an Obsidian-compatible
 Markdown note, JSON Canvas, or Base when the user explicitly asks. It begins
 with user-supplied content or a narrowly approved file, requires exact vault
-and target paths before any read or write, and keeps all vault changes
-proposal-only until separately approved.
+paths and approved read scope before analysis, and keeps all vault changes
+proposal-only until separately approved with an exact target path.
+
+The bundled-optional [protocol](.agents/skills/long-horizon-engineering/references/obsidian-knowledge-workflow.md)
+defines bounded read-only RETRIEVE / SURFACE / COLLIDE intents over approved
+Markdown scopes. These are documentation contracts, not a retrieval runtime;
+real retrieval quality, surfacing value and collision accuracy remain unvalidated.
 
 It never scans a whole vault, indexes private notes, follows vault symlinks,
 syncs cloud content, installs or invokes Obsidian CLI, or treats a vault as
