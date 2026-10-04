@@ -30,6 +30,8 @@ class AuthorityRole(str, Enum):
 
 
 class ManagementAction(str, Enum):
+    CHECKPOINT_CREATE = 'CHECKPOINT_CREATE'
+    ANCHOR_PUBLISH = 'ANCHOR_PUBLISH'
     INSTALLATION_POLICY_CHANGE = 'INSTALLATION_POLICY_CHANGE'
     ORGANIZATION_POLICY_CHANGE = 'ORGANIZATION_POLICY_CHANGE'
     PROJECT_POLICY_CHANGE = 'PROJECT_POLICY_CHANGE'
@@ -268,7 +270,8 @@ def authorize_management_change(actor, action, *, installation_id, now, project_
                   ManagementAction.BREAK_GLASS_EXPIRE):
         if role not in (AuthorityRole.ROOT_OWNER, AuthorityRole.INSTALLATION_ADMIN):
             return deny('BREAK_GLASS_NOT_ALLOWED')
-    if action in (ManagementAction.INSTALLATION_POLICY_CHANGE, ManagementAction.ORGANIZATION_POLICY_CHANGE):
+    if action in (ManagementAction.INSTALLATION_POLICY_CHANGE, ManagementAction.ORGANIZATION_POLICY_CHANGE,
+                  ManagementAction.CHECKPOINT_CREATE, ManagementAction.ANCHOR_PUBLISH):
         if role not in (AuthorityRole.ROOT_OWNER, AuthorityRole.INSTALLATION_ADMIN) or project_id or task_id:
             return deny('CHANGE_OUT_OF_SCOPE')
     if action == ManagementAction.PROJECT_POLICY_CHANGE:
