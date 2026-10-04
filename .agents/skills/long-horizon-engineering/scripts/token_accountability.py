@@ -154,12 +154,17 @@ class BudgetDecision:
     state: str
     budget_digests: tuple
     usage_digest: str
+    budget_states: tuple = ()
 
     def __post_init__(self):
         _require(self.state in ('WITHIN_BUDGET','WARNING','EXCEEDED','UNKNOWN'))
         object.__setattr__(self,'budget_digests',tuple(self.budget_digests))
         _require(len(self.budget_digests) <= 4 and all(_hash(v) for v in self.budget_digests)
                  and _hash(self.usage_digest))
+        object.__setattr__(self,'budget_states',tuple(tuple(v) for v in self.budget_states))
+        _require(len(self.budget_states) == len(self.budget_digests)
+                 and all(len(v) == 2 and v[1] in ('WITHIN_BUDGET','WARNING','EXCEEDED','UNKNOWN') for v in self.budget_states)
+                 and tuple(v[0] for v in self.budget_states) == self.budget_digests)
 
 
 @dataclass(frozen=True)
@@ -299,7 +304,9 @@ def evaluate_budget(usage_history, budget_stack, proposed_or_observed_usage=None
     records = _history(tuple(usage_history) + (() if proposed_or_observed_usage is None else (proposed_or_observed_usage,)))
     budgets = validate_budget_stack(budget_stack, now=now)
     states = []
+    budget_states = []
     for b in budgets:
+        local_states = []
         selected = tuple(r for r in records if _matches(b,r))
         ambiguous = any(r.installation_id == b.installation_id and not _attributed(r) for r in records)
         for metric,cap in (('total_tokens',b.max_total_tokens),('cost_micros',b.max_cost_micros)):
@@ -309,10 +316,14 @@ def evaluate_budget(usage_history, budget_stack, proposed_or_observed_usage=None
                         and (metric != 'cost_micros' or (r.currency == b.currency and r.cost_source == CostSource.PROVIDER_REPORTED)))
             unknown = ambiguous or any(getattr(r,metric) is None or
                        (metric == 'cost_micros' and (r.currency != b.currency or r.cost_source != CostSource.PROVIDER_REPORTED)) for r in selected)
-            states.append('EXCEEDED' if known > cap else 'UNKNOWN' if unknown else
+            local_states.append('EXCEEDED' if known > cap else 'UNKNOWN' if unknown else
                           'WARNING' if known*10000 >= cap*b.warning_threshold_bps else 'WITHIN_BUDGET')
+        local_state = next((s for s in ('EXCEEDED','UNKNOWN','WARNING') if s in local_states),
+                           'WITHIN_BUDGET' if local_states else 'UNKNOWN')
+        states.extend(local_states)
+        budget_states.append((sc.artifact_digest(b),local_state))
     state = next((s for s in ('EXCEEDED','UNKNOWN','WARNING') if s in states), 'WITHIN_BUDGET' if states else 'UNKNOWN')
-    return BudgetDecision(state, tuple(sc.artifact_digest(b) for b in budgets), _digest_many(records))
+    return BudgetDecision(state, tuple(sc.artifact_digest(b) for b in budgets), _digest_many(records),tuple(budget_states))
 
 
 def detect_anomalies(usage_records, snapshot, rules):
@@ -321,7 +332,7 @@ def detect_anomalies(usage_records, snapshot, rules):
     found = []
 
     def add(kind, subset):
-        subset = tuple(subset)
+        subset = _history(subset)
         first = subset[0]
         rule = sc.artifact_digest((kind,rules))
         evidence = (_digest_many(subset),sc.artifact_digest(snapshot),rule)
@@ -387,9 +398,10 @@ class TokenAccountabilityReport:
     unknown_cost_records: int
     budget_state: str
     anomaly_counts: tuple
+    anomaly_coverage: str
 
 
-def summarize(records, *, budget_decision=None, anomalies=()):
+def summarize(records, *, budget_decision=None, anomalies=None):
     records = _history(records)
     _require(budget_decision is None or (type(budget_decision) is BudgetDecision
                                        and budget_decision.usage_digest == _digest_many(records)))
@@ -401,8 +413,17 @@ def summarize(records, *, budget_decision=None, anomalies=()):
             if r.cost_source == source:
                 values[r.currency] = values.get(r.currency,0) + r.cost_micros
         return tuple(sorted(values.items()))
-    anomalies = tuple(anomalies)
+    supplied = anomalies is not None
+    anomalies = () if anomalies is None else tuple(anomalies)
     _require(all(type(a) is TokenAnomaly for a in anomalies))
+    _require(len({a.anomaly_id for a in anomalies}) == len(anomalies))
+    for a in anomalies:
+        # Match immutable usage evidence, not only reused IDs. Large findings
+        # require their complete scoped set; ambiguous supersets fail closed.
+        subset = tuple(r for r in records if all(getattr(r,k) == getattr(a,k)
+                       for k in ('installation_id','project_id','task_id','run_id'))
+                       and (a.usage_count > 128 or r.usage_id in a.usage_ids))
+        _require(len(subset) == a.usage_count and _digest_many(subset) == a.evidence_refs[0])
     orphan_ids = {(a.installation_id,uid) for a in anomalies if a.anomaly_type == TokenAnomalyType.ORPHAN_USAGE
                   for uid in a.usage_ids}
     attributed = sum(_attributed(r) and (r.installation_id,r.usage_id) not in orphan_ids for r in records)
@@ -410,7 +431,8 @@ def summarize(records, *, budget_decision=None, anomalies=()):
         dict(known)['total_tokens'],dict(unknown)['total_tokens'],known,unknown,
         costs(CostSource.PROVIDER_REPORTED),costs(CostSource.EXPLICIT_RATE_DERIVED),
         sum(r.cost_micros is None for r in records), 'UNKNOWN' if budget_decision is None else budget_decision.state,
-        tuple((k.value,sum(a.anomaly_type == k for a in anomalies)) for k in TokenAnomalyType))
+        tuple((k.value,sum(a.anomaly_type == k for a in anomalies) if supplied else None) for k in TokenAnomalyType),
+        'SUPPLIED_FINDINGS' if supplied else 'NOT_PROVIDED')
 
 
 def _group(records, fields):
@@ -515,10 +537,11 @@ def request_budget_extension(chain, actor, budget, *, request_id, now):
 
 def record_budget_decision(chain, actor, budget, decision, *, now):
     _require(type(budget) is TokenBudget and type(decision) is BudgetDecision)
-    _require(sc.artifact_digest(budget) in decision.budget_digests and decision.state in ('WARNING','EXCEEDED'))
+    state = dict(decision.budget_states).get(sc.artifact_digest(budget))
+    _require(state in ('WARNING','EXCEEDED'))
     # Stable per-budget state: repeated queries cannot append duplicate warnings.
-    return _append(chain,actor,budget,sc.EventType['TOKEN_BUDGET_'+decision.state],
-                   'budget-state:'+budget.budget_id+':'+decision.state,now,artifact=decision)
+    return _append(chain,actor,budget,sc.EventType['TOKEN_BUDGET_'+state],
+                   'budget-state:'+budget.budget_id+':'+state,now,artifact=decision)
 
 
 def record_anomaly(chain, actor, anomaly, *, now):

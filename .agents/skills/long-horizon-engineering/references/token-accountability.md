@@ -60,6 +60,10 @@ separately. A known exceeded cap dominates; otherwise any required unknown
 metric or ambiguous attribution prevents a within-budget claim. No cap means
 UNKNOWN, not unlimited. Default warning threshold is 8000 basis points and is
 explicitly configurable in each budget. Evaluations are not provider blocking.
+`BudgetDecision.budget_states` retains each budget digest and its own state.
+The overall state can reflect an ancestor restriction while a child's own
+usage remains within its cap. Recording a warning/exceeded event checks the
+selected budget's own state, never copies the overall state onto a child.
 
 `record_budget` reuses `authorize_management_change`: installation/project/task/
 run policy actions, not a new role system. RUNTIME cannot create or increase a
@@ -198,6 +202,102 @@ Supply matching anomalies to `summarize` to incorporate trusted invalid-parent
 findings into orphan counts. Without these, attribution counts only reflect field
 completeness, not independently authenticated relationships. A supplied budget
 decision must match the exact usage-history digest or the report is rejected.
+
+Anomaly coverage is explicit: omitting `anomalies` gives `NOT_PROVIDED` and
+`None` counts, not zero findings. Passing a collection gives `SUPPLIED_FINDINGS`;
+an empty collection means zero supplied findings, not proof of complete detection.
+Grouped helpers aggregate usage only and always report `NOT_PROVIDED`. To inspect
+a group's findings, call `detect_anomalies` with the appropriate trusted snapshot
+and `summarize` on that group's records. Each supplied finding must match its
+usage-set digest and scope; unrelated, changed or duplicate findings are rejected.
+For findings larger than 128 records, supply the exact full scoped usage set;
+ambiguous supersets are rejected. The caller remains responsible for detector
+coverage across snapshots, rules and time intervals.
+
+### Complete Synthetic Operator Walkthrough
+
+This runs entirely in memory, with no provider, filesystem writes or live budget
+enforcement. All identifiers, times, money and authority objects below are
+synthetic. In a real integration the host authenticates and retains artifacts;
+the dictionaries here demonstrate digest lookup, not a new storage system.
+
+```python
+from dataclasses import replace
+import security_authority_chain as sc
+import token_accountability as ta
+
+root = sc.SecurityAuthority('owner-demo', sc.AuthorityRole.ROOT_OWNER, 'i')
+runtime = sc.SecurityAuthority('runtime-demo', sc.AuthorityRole.RUNTIME, 'i', 'p', 't')
+chain = sc.InMemorySecurityChain('demo', 'i')
+u = ta.TokenUsageRecord('u1', 'i', 'c1', 'vendor-demo', 'model-demo',
+    ta.UsagePurpose.REVIEW, 10, 11, project_id='p', task_id='t', run_id='r',
+    agent_id='a', total_tokens=100, metric_source=ta.MetricSource.PROVIDER_REPORTED,
+    cost_micros=20, currency='USD', cost_source=ta.CostSource.PROVIDER_REPORTED)
+v = replace(u, usage_id='u2', call_id='c2', started_at=20, finished_at=21,
+    total_tokens=None, cost_micros=30, cost_source=ta.CostSource.EXPLICIT_RATE_DERIVED,
+    pricing_snapshot_ref='synthetic-rates')
+records = (u, v)
+for usage in records:
+    ta.record_model_usage(chain, runtime, usage, now=22)
+report = ta.summarize(records)
+assert (report.known_total_tokens, report.unknown_total_token_records) == (100, 1)
+assert report.known_reported_cost_micros == (('USD', 20),)
+assert report.known_estimated_cost_micros == (('USD', 30),)
+assert report.anomaly_coverage == 'NOT_PROVIDED'
+assert ta.by_project(records)[0][0] == ('i', 'p')
+assert ta.by_task(records)[0][0] == ('i', 'p', 't')
+assert ta.by_run(records)[0][0] == ('i', 'p', 't', 'r')
+assert [(x.agent_id, x.call_id) for x in records] == [('a', 'c1'), ('a', 'c2')]
+
+old = ta.TokenBudget('b1', ta.TokenBudgetLevel.PROJECT, 'i', 1,
+    project_id='p', max_total_tokens=150)
+ta.record_budget(chain, root, old, now=22)
+assert ta.evaluate_budget(records, (old,), now=22).state == 'UNKNOWN'
+request = ta.request_budget_extension(chain, runtime, old, request_id='req1', now=23)
+assert request.event_type == 'TOKEN_BUDGET_EXTENSION_REQUESTED'
+assert old.max_total_tokens == 150  # Request is not approval.
+new = replace(old, budget_id='b2', issued_at=24, max_total_tokens=300,
+              supersedes_budget_id='b1')
+grant = ta.record_budget(chain, root, new, previous=old,
+                        extension_request_id='req1', now=24)
+assert grant.event_type == 'TOKEN_BUDGET_EXTENSION_GRANTED'
+authorities = {sc.artifact_digest(x): x for x in (root, runtime)}
+assert authorities[request.authority_digest].authority_id == 'runtime-demo'
+assert authorities[grant.authority_digest].authority_id == 'owner-demo'
+budgets = {sc.artifact_digest(x): x for x in (old, new)}
+assert budgets[grant.previous_artifact_digest].max_total_tokens == 150
+assert budgets[grant.artifact_digest].max_total_tokens == 300
+
+snapshot = ta.ExecutionAccountabilitySnapshot('i', 'p', 't', 'r',
+                                               task_verified_complete_at=15)
+rules = ta.TokenAnomalyRules(3, 20000, 20000, 200)
+findings = ta.detect_anomalies(records, snapshot, rules)
+assert len(findings) == 1
+finding = findings[0]
+assert finding.anomaly_type == ta.TokenAnomalyType.POST_COMPLETION_USAGE
+assert finding.usage_ids == ('u2',)
+snapshots = {sc.artifact_digest(snapshot): snapshot}
+rule_artifacts = {sc.artifact_digest((finding.anomaly_type, rules)): rules}
+trusted = snapshots[finding.evidence_refs[1]]
+configured = rule_artifacts[finding.rule_id]
+assert v.started_at == 20 and trusted.task_verified_complete_at == 15
+assert v.started_at > trusted.task_verified_complete_at  # Strict time threshold.
+assert configured.retry_attempt_threshold == 3
+assert configured.context_growth_bps == 20000  # 2x, not an accusation.
+event = ta.record_anomaly(chain, runtime, finding, now=25)
+artifacts = {sc.artifact_digest(finding): finding}
+assert artifacts[event.artifact_digest] == finding
+checked = ta.summarize(records, anomalies=findings)
+assert checked.anomaly_coverage == 'SUPPLIED_FINDINGS'
+assert dict(checked.anomaly_counts)['POST_COMPLETION_USAGE'] == 1
+assert chain.verify().valid
+print('synthetic operator walkthrough: PASS')
+```
+
+Expected output: `synthetic operator walkthrough: PASS`. The assertions expose
+who used tokens, which total remains unknown, separate REPORTED/ESTIMATED money,
+who requested versus approved the new cap, and the exact `20 > 15` anomaly basis.
+No `TOKEN_THEFT` or intent conclusion follows from that observation.
 
 ## Privacy Boundary
 

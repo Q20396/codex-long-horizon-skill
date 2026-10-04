@@ -278,6 +278,41 @@ class TokenTests(unittest.TestCase):
         self.assertEqual(r.record_hash,'4d315ef290e844dcd7a7f751d1d5af017d74c15c33f07ae8a192ea916e2b6b30')
         self.assertTrue(self.chain.verify().valid)
 
+    def test_ancestor_exceedance_not_recorded_as_child_exceedance(self):
+        parent = self.budget()
+        child = self.budget(budget_id='child',level=self.m.TokenBudgetLevel.TASK,task_id='t',max_total_tokens=400)
+        records = (self.usage(total_tokens=100),self.usage(usage_id='v',call_id='d',task_id='sibling',total_tokens=450))
+        d = self.m.evaluate_budget(records,(parent,child),now=20)
+        self.assertEqual(d.state,'EXCEEDED')
+        with self.assertRaises(ValueError):
+            self.m.record_budget_decision(self.chain,self.root,child,d,now=20)
+        self.m.record_budget_decision(self.chain,self.root,parent,d,now=20)
+
+    def test_r4_anomaly_coverage_unknown_not_zero(self):
+        u = self.usage()
+        report = self.m.summarize((u,))
+        self.assertEqual(report.anomaly_coverage,'NOT_PROVIDED')
+        self.assertTrue(all(v is None for _,v in report.anomaly_counts))
+        supplied = self.m.summarize((u,),anomalies=())
+        self.assertEqual(supplied.anomaly_coverage,'SUPPLIED_FINDINGS')
+        self.assertTrue(all(v == 0 for _,v in supplied.anomaly_counts))
+        self.assertEqual(self.m.by_project((u,))[0][1].anomaly_coverage,'NOT_PROVIDED')
+
+    def test_r4_reject_unrelated_or_changed_anomaly_usage(self):
+        u = self.usage()
+        findings = self.anomalies((u,),task_verified_complete_at=9)
+        for records in ((),(replace(u,total_tokens=101),),(replace(u,project_id='other'),)):
+            with self.assertRaises(ValueError):
+                self.m.summarize(records,anomalies=findings)
+        self.assertEqual(dict(self.m.summarize((u,),anomalies=findings).anomaly_counts)['POST_COMPLETION_USAGE'],1)
+        with self.assertRaises(ValueError):
+            self.m.summarize((u,),anomalies=findings+findings)
+
+    def test_operator_documentation_examples_execute(self):
+        doc = (SCRIPTS.parent / 'references/token-accountability.md').read_text()
+        for block in doc.split('```python\n')[1:]:
+            exec(compile(block.split('```')[0],'operator-example','exec'),{})
+
 
 if __name__ == '__main__':
     unittest.main()
