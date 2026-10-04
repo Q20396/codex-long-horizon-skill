@@ -563,11 +563,12 @@ class LocalGitAdapter:
         env = dict(self.env)
         env.update(GIT_CONFIG_NOSYSTEM='1', GIT_CONFIG_GLOBAL='/dev/null', GIT_TERMINAL_PROMPT='0',
             GIT_PAGER='', GIT_EDITOR='/usr/bin/false', GIT_SEQUENCE_EDITOR='/usr/bin/false',
-            GIT_LITERAL_PATHSPECS='1', GIT_OPTIONAL_LOCKS='0', GIT_NO_REPLACE_OBJECTS='1', LC_ALL='C')
+            GIT_LITERAL_PATHSPECS='1', GIT_OPTIONAL_LOCKS='0', GIT_NO_REPLACE_OBJECTS='1',
+            GIT_NO_LAZY_FETCH='1', GIT_ALLOW_PROTOCOL='', GIT_PROTOCOL_FROM_USER='0', LC_ALL='C')
         argv = (self.git, '--no-pager', '-c', 'core.hooksPath=/dev/null', '-c', 'commit.gpgSign=false',
             '-c', 'tag.gpgSign=false', '-c', 'credential.helper=', '-c', 'core.fsmonitor=false',
             '-c', 'core.untrackedCache=false', '-c', 'maintenance.auto=false', '-c', 'gc.auto=0',
-            '-c', 'core.pager=', '-c', 'core.editor=/usr/bin/false', *args)
+            '-c', 'core.pager=', '-c', 'core.editor=/usr/bin/false', '-c', 'protocol.allow=never', *args)
         with _directory(self.root) as cwd_fd:
             return _capture(argv, self.root, env, 30, MAX_OUTPUT_BYTES, MAX_OUTPUT_BYTES,
                 cwd_fd=cwd_fd, launcher=self.launcher, target_pin=self.pin)
@@ -584,6 +585,7 @@ class LocalGitAdapter:
             key, _, value = row.partition('\n')
             key = key.lower()
             _require(not key.startswith(('include.', 'includeif.', 'filter.', 'diff.', 'credential.', 'alias.'))
+                and not (key.startswith('remote.') and key.endswith(('.promisor', '.uploadpack', '.receivepack')))
                 and key not in ('core.sshcommand', 'core.gitproxy', 'core.worktree')
                 and (not key.startswith('extensions.') or
                      (key == 'extensions.objectformat' and value in ('sha1', 'sha256'))), 'UNSAFE_GIT_CONFIG')
@@ -690,6 +692,9 @@ class LocalGitAdapter:
                 RuntimeOperationEvidence(payload.digest(), 'COMPLETED', commit_sha=commit_sha,
                     tree_sha=tree_sha, parent_sha=parent_sha), events)
         except (OSError, ValueError, UnicodeError, subprocess.SubprocessError, _LaunchUncertain) as error:
+            # A precheck Git process may have started before its capture failed.
+            # An empty adapter event list is not proof of no effects.
+            attempted = attempted or isinstance(error, _LaunchUncertain)
             reason = 'GIT_UNCERTAIN' if attempted else 'GIT_REJECTED'
             if not attempted and type(error) is ValueError and str(error) in (
                     'GIT_PARENT_BINDING_MISMATCH', 'GIT_TREE_BINDING_MISMATCH', 'GIT_OBJECT_FORMAT_MISMATCH',

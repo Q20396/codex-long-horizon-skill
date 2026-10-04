@@ -208,6 +208,65 @@ class RuntimeTests(unittest.TestCase):
         return self.m.RuntimePayload(ident, commit_message=message,
             expected_git_tree=tree, expected_git_parent=parent)
 
+    def test_git_promisor_configuration_denied_before_object_reads(self):
+        self.setup_git()
+        (self.root / 'a').write_text('parent'); self.git('add', '--', 'a')
+        self.git('commit', '-q', '-m', 'parent')
+        (self.root / 'a').write_text('approved'); self.git('add', '--', 'a')
+        payload = self.commit_payload('candidate')
+        head = self.git('rev-parse', 'HEAD').stdout
+        self.git('config', 'remote.origin.promisor', 'true')
+        self.git('config', 'remote.origin.url', str(self.root / 'absent-local-source'))
+        adapter = self.broker.get('git.commit'); original = adapter._call; calls = []
+        def observed(args):
+            calls.append(args[0])
+            return original(args)
+        with patch.object(adapter, '_call', side_effect=observed):
+            out = self.execute(self.action('GIT_COMMIT', self.root, 'candidate'), payload)
+        self.assertEqual(out.receipt.execution_state, 'KNOWN_FAILURE')
+        self.assertEqual(calls, ['config'])
+        self.assertEqual(self.git('rev-parse', 'HEAD').stdout, head)
+
+    def test_git_transport_disabled_even_for_local_source_and_config_override(self):
+        self.setup_git()
+        self.git('config', 'protocol.file.allow', 'always')
+        adapter = self.broker.get('git.commit')
+        code, _, _, _, _ = adapter._call(('ls-remote', str(self.root)))
+        self.assertNotEqual(code, 0)
+
+    def test_git_missing_promisor_object_never_runs_local_helper_on_retry(self):
+        self.setup_git()
+        (self.root / 'a').write_text('parent'); self.git('add', '--', 'a')
+        self.git('commit', '-q', '-m', 'parent')
+        (self.root / 'a').write_text('approved'); self.git('add', '--', 'a')
+        payload = self.commit_payload('candidate'); parent = payload.expected_git_parent
+        # Only a loose object in this test-owned temporary repository is removed.
+        (self.root / '.git' / 'objects' / parent[:2] / parent[2:]).unlink()
+        self.git('config', 'remote.origin.promisor', 'true')
+        self.git('config', 'remote.origin.url', str(self.root / 'absent-local-source'))
+        self.git('config', 'remote.origin.uploadpack', 'printf x >> helper-marker; false')
+        action = self.action('GIT_COMMIT', self.root, 'candidate')
+        for _ in range(2):
+            out = self.execute(action, payload)
+            self.assertEqual(out.receipt.execution_state, 'KNOWN_FAILURE')
+            self.assertFalse((self.root / 'helper-marker').exists())
+        # Even a direct object read cannot open a transport if validation is
+        # accidentally bypassed; do not rely only on GIT_NO_LAZY_FETCH support.
+        adapter = self.broker.get('git.commit')
+        code, _, _, _, _ = adapter._call(('cat-file', '-e', parent))
+        self.assertNotEqual(code, 0)
+        self.assertFalse((self.root / 'helper-marker').exists())
+
+    def test_git_precheck_launch_uncertainty_blocks_retry(self):
+        self.setup_git(); (self.root / 'a').write_text('a'); self.git('add', '--', 'a')
+        payload = self.commit_payload('candidate')
+        action = self.action('GIT_COMMIT', self.root, 'candidate')
+        adapter = self.broker.get('git.commit')
+        with patch.object(adapter, '_call', side_effect=self.m._LaunchUncertain('synthetic')):
+            out = self.execute(action, payload)
+        self.assertEqual(out.receipt.execution_state, 'UNKNOWN_OUTCOME')
+        self.assertEqual(self.execute(action, payload).receipt.policy_reason, 'UNKNOWN_OUTCOME_PENDING')
+
     def test_git_preauthorized_tree_mutation_denied(self):
         self.setup_git()
         (self.root / 'a').write_text('before'); self.git('add', '--', 'a')

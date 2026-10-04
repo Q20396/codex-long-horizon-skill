@@ -134,3 +134,19 @@ three untracked files remain outside the write scope.
   no commit invocation, not that Git performed no metadata writes at all.
 - Final Main validation and the three designated independent verdicts are still
   required. No finding is closed by this implementation evidence alone.
+
+## Reviewer 3 F1 bounded correction
+
+- Reviewer 3 independently blocked ff41f5b: promisor lazy fetch could invoke a
+  local upload helper during an object-read precheck, then return KNOWN_FAILURE.
+- Main captured three RED failures: promisor configuration accepted, local
+  transport allowed despite the local-only adapter contract, and precheck launch
+  uncertainty misclassified. All three pass after the minimum correction.
+- Reject promisor/uploadpack/receivepack configuration before object reads;
+  all Git calls deny every transport through an empty allowlist and protocol
+  policy. Lazy-fetch disabling is additional protection, not the sole guard.
+- A real missing-object temporary fixture verifies no helper marker on initial
+  execution or retry, including a direct object read below configuration checks.
+- Preserve UNKNOWN and retry blocking for precheck launch uncertainty.
+- Main targeted result: 65 tests OK with ResourceWarning treated as an error.
+  Full/package/formal checks and independent final-SHA re-review remain gates.

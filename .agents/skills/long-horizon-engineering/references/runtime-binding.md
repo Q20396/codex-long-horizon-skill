@@ -111,6 +111,11 @@ per-command locks do not close that interval or provide hostile multi-process
 exclusion. Concurrent host mutation remains outside this bounded guarantee.
 
 Hooks and signing are disabled. Unsafe filters/helper configuration fails closed;
+promisor and remote upload/receive helper configuration is rejected before object
+reads. Every Git subprocess uses an empty transport allowlist (including local
+file transport), disables lazy fetch, and sets protocol denial. Lazy-fetch
+environment support alone is not relied upon. A precheck launch/capture whose
+effects are uncertain returns UNKNOWN and blocks retry, even before add/commit.
 pager/editor, interactive credential helpers and aliases must not become alternate
 execution routes. There is no reset, clean, fetch, pull, push or remote adapter.
 An uncertain commit is reconciled using read-only evidence, never retried blindly.
