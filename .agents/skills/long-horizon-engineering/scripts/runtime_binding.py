@@ -383,89 +383,108 @@ def _capture(argv, cwd, env, timeout, stdout_limit, stderr_limit, on_start=None,
     """Drain pipes continuously, retain bounded prefixes, and kill group on timeout."""
     _require(_pin(launcher[0]) == launcher[1], 'LAUNCHER_CHANGED')
     read_status, write_status = os.pipe()
+    process = None
+    failure = None
+    proved_not_started = [False]
     try:
         process = subprocess.Popen((launcher[0], '-I', '-S', '-c', _LAUNCHER_CODE,
             str(cwd_fd), str(write_status), json.dumps(argv), json.dumps(target_pin), json.dumps(env)),
             cwd='/', env={}, shell=False, stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True, close_fds=True,
             pass_fds=(cwd_fd, write_status))
-    except BaseException:
-        os.close(read_status)
-        raise
+        closing, write_status = write_status, None
+        os.close(closing)
+        result = _capture_started(process, read_status, timeout, stdout_limit, stderr_limit,
+                                  on_start, proved_not_started)
+    except Exception as error:
+        failure = error
     finally:
-        os.close(write_status)
-    output = [bytearray(), bytearray()]; truncated = [False, False]; timed_out = False
-    try:
-        deadline = time.monotonic() + timeout
-        # The target exec closes the status descriptor. Fixed F means the helper
-        # proved exec did not happen; absent/malformed acknowledgement is UNKNOWN.
-        status = bytearray()
-        with selectors.DefaultSelector() as ready:
-            ready.register(read_status, selectors.EVENT_READ)
-            while True:
-                remaining = deadline - time.monotonic()
-                if remaining <= 0 or not ready.select(remaining):
-                    raise _LaunchUncertain()
-                part = os.read(read_status, 8)
-                status.extend(part)
-                if b'F' in status:
-                    raise ValueError('TARGET_NOT_STARTED')
-                if not part:
-                    if status != b'R':
-                        raise _LaunchUncertain()
-                    if process.poll() is not None and process.returncode < 0:
-                        raise _LaunchUncertain()
-                    break
-                if len(status) > 2:
-                    raise _LaunchUncertain()
-        if on_start:
-            on_start()
-        with selectors.DefaultSelector() as selector:
-            for i, stream in enumerate((process.stdout, process.stderr)):
-                os.set_blocking(stream.fileno(), False)
-                selector.register(stream, selectors.EVENT_READ, i)
-            while selector.get_map() or process.poll() is None:
-                remaining = deadline - time.monotonic()
-                if remaining <= 0:
-                    timed_out = True
-                    break
-                for key, _ in selector.select(min(remaining, 0.05)):
-                    chunk = os.read(key.fileobj.fileno(), 65536)
-                    if not chunk:
-                        selector.unregister(key.fileobj)
-                        continue
-                    i = key.data; limit = (stdout_limit, stderr_limit)[i]
-                    available = limit - len(output[i])
-                    output[i].extend(chunk[:available])
-                    truncated[i] |= len(chunk) > available
-        if timed_out:
-            try:
-                os.killpg(process.pid, signal.SIGKILL)
-            except ProcessLookupError:
-                pass
-        process.wait(timeout=1)
-        return process.returncode, bytes(output[0]), bytes(output[1]), tuple(truncated), timed_out
-    finally:
-        os.close(read_status)
-        if process.poll() is None:
-            try:
-                os.killpg(process.pid, signal.SIGKILL)
-            except OSError:
-                # A helper can exit between poll and killpg (including macOS
-                # EPERM for a disappearing group). Reap it; retain uncertainty
-                # if it cannot be confirmed stopped.
+        # Cleanup failures must not overwrite post-launch uncertainty with a
+        # clean rejection, and one failed cleanup must not skip other resources.
+        for fd in (read_status, write_status):
+            if fd is not None:
                 try:
-                    process.kill()
-                except OSError:
-                    pass
+                    os.close(fd)
+                except Exception as error:
+                    failure = failure or error
+        if process is not None:
             try:
-                process.wait(timeout=1)
-            except subprocess.TimeoutExpired:
-                raise _LaunchUncertain() from None
+                if process.poll() is None:
+                    try:
+                        os.killpg(process.pid, signal.SIGKILL)
+                    except OSError:
+                        try:
+                            process.kill()
+                        except OSError:
+                            pass
+                    process.wait(timeout=1)
+            except Exception as error:
+                failure = failure or error
             finally:
-                process.stdout.close(); process.stderr.close()
-        else:
-            process.stdout.close(); process.stderr.close()
+                for stream in (process.stdout, process.stderr):
+                    try:
+                        stream.close()
+                    except Exception as error:
+                        failure = failure or error
+    if failure is not None:
+        if process is not None and not proved_not_started[0]:
+            raise _LaunchUncertain() from None
+        raise failure
+    return result
+
+
+def _capture_started(process, read_status, timeout, stdout_limit, stderr_limit, on_start,
+                     proved_not_started):
+    """Only the fixed helper F acknowledgement proves target exec did not occur."""
+    output = [bytearray(), bytearray()]; truncated = [False, False]; timed_out = False
+    deadline = time.monotonic() + timeout
+    status = bytearray()
+    with selectors.DefaultSelector() as ready:
+        ready.register(read_status, selectors.EVENT_READ)
+        while True:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0 or not ready.select(remaining):
+                raise _LaunchUncertain()
+            part = os.read(read_status, 8)
+            status.extend(part)
+            if status in (b'F', b'RF'):
+                proved_not_started[0] = True
+                raise ValueError('TARGET_NOT_STARTED')
+            if not part:
+                if status != b'R':
+                    raise _LaunchUncertain()
+                if process.poll() is not None and process.returncode < 0:
+                    raise _LaunchUncertain()
+                break
+            if len(status) > 2:
+                raise _LaunchUncertain()
+    if on_start:
+        on_start()
+    with selectors.DefaultSelector() as selector:
+        for i, stream in enumerate((process.stdout, process.stderr)):
+            os.set_blocking(stream.fileno(), False)
+            selector.register(stream, selectors.EVENT_READ, i)
+        while selector.get_map() or process.poll() is None:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                timed_out = True
+                break
+            for key, _ in selector.select(min(remaining, 0.05)):
+                chunk = os.read(key.fileobj.fileno(), 65536)
+                if not chunk:
+                    selector.unregister(key.fileobj)
+                    continue
+                i = key.data; limit = (stdout_limit, stderr_limit)[i]
+                available = limit - len(output[i])
+                output[i].extend(chunk[:available])
+                truncated[i] |= len(chunk) > available
+    if timed_out:
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+    process.wait(timeout=1)
+    return process.returncode, bytes(output[0]), bytes(output[1]), tuple(truncated), timed_out
 
 
 class ProcessAdapter:

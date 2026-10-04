@@ -550,6 +550,48 @@ class RuntimeTests(unittest.TestCase):
         self.assertTrue(observed)
         self.assertFalse(any('push' in argv for argv in observed))
 
+    def test_post_launch_boundary_errors_are_unknown_and_never_retried(self):
+        original_popen = self.m.subprocess.Popen
+        original_read = self.m.os.read
+        original_close = self.m.os.close
+        original_select = self.m.selectors.DefaultSelector.select
+        code = "with open('effect-marker','ab') as f: f.write(b'x')"
+        for boundary in ('read', 'select', 'close'):
+            with self.subTest(boundary=boundary):
+                marker = self.root / 'effect-marker'
+                if marker.exists():
+                    marker.unlink()
+                armed = [False]
+                def completed(*args, **kw):
+                    process = original_popen(*args, **kw)
+                    process.wait(timeout=5)
+                    armed[0] = True
+                    return process
+                def fail_once(original, *args, **kw):
+                    if armed[0]:
+                        armed[0] = False
+                        if boundary == 'close':
+                            original(*args, **kw)
+                        raise OSError('synthetic post-launch boundary failure')
+                    return original(*args, **kw)
+                def read(*args, **kw):
+                    return fail_once(original_read, *args, **kw)
+                def close(*args, **kw):
+                    return fail_once(original_close, *args, **kw)
+                def select(selector, *args, **kw):
+                    return fail_once(original_select, selector, *args, **kw)
+                target, name, replacement = {
+                    'read': (self.m.os, 'read', read),
+                    'select': (self.m.selectors.DefaultSelector, 'select', select),
+                    'close': (self.m.os, 'close', close),
+                }[boundary]
+                with patch.object(self.m.subprocess, 'Popen', side_effect=completed), patch.object(target, name, replacement):
+                    first = self.process(code, boundary)
+                second = self.process(code, boundary)
+                self.assertEqual(first.receipt.execution_state, 'UNKNOWN_OUTCOME')
+                self.assertEqual(second.receipt.policy_reason, 'UNKNOWN_OUTCOME_PENDING')
+                self.assertEqual(marker.read_bytes(), b'x')
+
 
 if __name__ == '__main__':
     unittest.main()
