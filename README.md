@@ -51,6 +51,16 @@ trusted head, valid tail truncation or whole-chain replacement cannot be detecte
 Actor authentication, signed checkpoints and external anchors are not implemented.
 This is source-branch functionality, not a published-release or deployment claim.
 
+### Token Accountability — Experimental Foundation
+
+The [Phase 1.35 foundation](.agents/skills/long-horizon-engineering/references/token-accountability.md)
+represents model usage by project/task/run, checks nested budget contracts and
+identifies deterministic anomalies such as unattributed, post-completion or
+unreconciled-retry usage. Provider-unreported metrics remain UNKNOWN; reported
+and estimated costs are separate. An anomaly is not evidence of theft or intent.
+No real provider/runtime binding, live quota enforcement or background monitoring
+is implemented. This is source-branch functionality, not a deployment claim.
+
 **Already installed?** Start with a non-sensitive repository and a bounded task:
 
 ```text
