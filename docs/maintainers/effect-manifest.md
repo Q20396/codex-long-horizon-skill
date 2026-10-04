@@ -16,3 +16,9 @@ to its selected path, and approved subprocess/worker adapters may have their own
 effects. Caller-provided consent is not proof of human approval or sandboxing.
 The manifest conservatively includes adapter effects; it does not imply that
 providers or remote transports ship with this package.
+
+The Phase 2A runtime binding is also an explicitly constructed API, not an
+apply-flag CLI. Its filesystem and local Git operations require RSE authority.
+The conservative network declaration covers possible internal effects of trusted
+allowlisted children; no network adapter ships and child network containment is
+not implemented. Importing or installing the module activates nothing.

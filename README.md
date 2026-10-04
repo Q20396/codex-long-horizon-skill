@@ -35,7 +35,8 @@ wake Codex or guarantee crash recovery.
 foundation](.agents/skills/long-horizon-engineering/references/runtime-safety-envelope.md)
 that separates AI action proposals from policy, authorization, capabilities,
 side-effect reconciliation and security receipts. Phase 1 tests exercise the
-Python kernel using fake adapters; no real runtime binding is included or activated.
+Python kernel using fake adapters. The separately constructed Phase 2A local
+binding below is opt-in; nothing is activated by installation or import.
 No host sandbox, kernel security, packet firewall or provider-internal security
 guarantee is implied. This is source-branch functionality, not a v0.7.0 release claim.
 
@@ -45,10 +46,11 @@ The [Phase 1.25 foundation](.agents/skills/long-horizon-engineering/references/s
 adds scoped management checks, bounded Break Glass records and deterministic
 SHA-256 linked history for policy, authorization, authority and RSE receipt digests.
 Tests use synthetic data, in-memory storage and explicitly selected temporary
-JSONL files. No real runtime binding or Paperclip dependency is added.
+JSONL files. Phase 1.25 itself adds no runtime binding or Paperclip dependency.
 The chain is **tamper-evident, not tamper-proof**: without a separately retained
 trusted head, valid tail truncation or whole-chain replacement cannot be detected.
-Actor authentication, signed checkpoints and external anchors are not implemented.
+Actor authentication is a trusted-host responsibility; the separate Phase 1.75
+checkpoint contract below accepts host-supplied verification and anchor evidence.
 This is source-branch functionality, not a published-release or deployment claim.
 
 ### Token Accountability — Experimental Foundation
@@ -78,9 +80,26 @@ compares declared effects with caller-supplied adapter observations, validates
 parent/child traces and reports bounded deterministic causal risk candidates.
 It can anchor evidence digests in the existing Security Chain. Adapter observations
 are not independent host evidence; even COMPLETE means caller-attested coverage.
-No host/kernel/syscall observer, malware or intent classification, real runtime
-binding, background monitoring or automatic enforcement is implemented.
+No host/kernel/syscall observer, malware or intent classification, background
+monitoring or automatic enforcement is implemented by this trace foundation.
 This is source-branch functionality, not a published-release or deployment claim.
+
+### Trusted Local Runtime Binding — Experimental / Same Process
+
+The opt-in [Phase 2A binding](.agents/skills/long-horizon-engineering/references/runtime-binding.md)
+routes bounded regular-file operations, explicitly allowlisted processes and local
+Git exact staging/commit through existing RSE governance. Payload digests must be
+bound before authorization; a Git commit additionally binds the exact staged tree,
+parent and message, rejecting changed tree/parent before commit. Adapters report their own observed boundaries to CET
+and seal evidence digests, not raw file contents or process output, in the chain.
+
+This is **not an OS sandbox, host observer or network containment**. Allowlisting
+a process does not reveal or constrain all its internal effects. Unsupported safe
+filesystem primitives fail closed; no universal race-free guarantee is made.
+UNKNOWN outcomes block blind retries within the same process, not across crashes.
+There is no network, Git push, GitHub, deployment, installation, secret-store,
+Paperclip, Codex-hook or Local Compute adapter. Nothing registers or executes on
+import. These are source-branch capabilities, not published-release claims.
 
 **Already installed?** Start with a non-sensitive repository and a bounded task:
 
