@@ -235,6 +235,8 @@ INSTALLED_REQUIRED_FILES = [
     ".agents/skills/long-horizon-engineering/scripts/audit_skill_descriptions.py",
     ".agents/skills/long-horizon-engineering/scripts/local_compute_deployment.py",
     ".agents/skills/long-horizon-engineering/scripts/local_compute_pool.py",
+    ".agents/skills/long-horizon-engineering/scripts/runtime_safety_envelope.py",
+    ".agents/skills/long-horizon-engineering/references/runtime-safety-envelope.md",
     ".agents/skills/long-horizon-engineering/scripts/validate_json_canvas.py",
     ".agents/skills/long-horizon-engineering/schemas/decision-map.schema.json",
     ".agents/skills/long-horizon-engineering/schemas/frontier.schema.json",
@@ -277,6 +279,8 @@ PACKAGE_MANIFEST_PATH = SKILL_DIR / "package-manifest.json"
 LHE_PATH_PREFIX = ".agents/skills/long-horizon-engineering/"
 SUPPORTED_COMPONENT_LAYERS = {"core", "bundled-optional"}
 POST_LEGACY_REQUIRED_FILES = {
+    ".agents/skills/long-horizon-engineering/scripts/runtime_safety_envelope.py",
+    ".agents/skills/long-horizon-engineering/references/runtime-safety-envelope.md",
     ".agents/skills/long-horizon-engineering/package-manifest.json",
     ".agents/skills/long-horizon-engineering/references/self-check-policy.md",
     ".agents/skills/long-horizon-engineering/templates/SELF_IMPROVEMENT_REVIEW_TEMPLATE.md",
