@@ -195,11 +195,11 @@ class CETTests(unittest.TestCase):
         action=self.action('NETWORK_REQUEST','https://outside.test')
         receipt=self.r._receipt(action,self.r.PolicyDecision('DENY','POLICY_DENIED'))
         event=self.event(kind='NETWORK_REQUEST',target='https://outside.test')
-        findings=self.m.correlate_rse(action,receipt,event)
+        findings=self.m.correlate_rse(action,receipt,event,attempt_linked=True).divergences
         self.assertEqual(findings[0].divergence_type.value,'OBSERVED_EFFECT_CONTRADICTS_RSE_DECISION')
         read=self.action()
         allowed=self.r._receipt(read,self.r.PolicyDecision('ALLOW','ALLOWED'))
-        self.assertEqual(len(self.m.correlate_rse(read,allowed,event)),1)
+        self.assertEqual(len(self.m.correlate_rse(read,allowed,event).divergences),1)
         with self.assertRaises(ValueError): self.m.correlate_rse(read,replace(allowed,action_id='wrong'),event)
 
     def test_trace_bounds_effect_bounds_depth_bounds(self):
@@ -312,6 +312,42 @@ class CETTests(unittest.TestCase):
         with redirect_stdout(out): exec(compile(example,'operator-example','exec'),{})
         self.assertIn('UNDECLARED_NETWORK',out.getvalue())
         self.assertIn('UNKNOWN',out.getvalue())
+
+    def test_risk_evidence_binds_full_causal_basis(self):
+        a=self.event()
+        bridge=self.event('bridge','a','CAPABILITY_USE','cap',2)
+        n=self.event('n','bridge','NETWORK_REQUEST','https://outside.test',3)
+        first=self.risks((a,bridge,n))
+        changed=self.risks((a,replace(bridge,target='other-cap'),n))
+        self.assertNotEqual(first[0].evidence_digest,changed[0].evidence_digest)
+        self.assertEqual(self.risks((a,replace(bridge,context=self.ctx('bridge')),n)),())
+        d=self.m.DeclaredEffects(n.context)
+        risks=self.risks((a,bridge,n),(d,))
+        self.assertEqual(len({r.evidence_digest for r in risks}),len(risks))
+        changed=self.risks((a,bridge,n),(replace(d,reads=('/other',)),))
+        self.assertNotEqual(risks[0].evidence_digest,changed[0].evidence_digest)
+        changed=self.m.detect_trace_risks(self.trace((a,bridge,n)),(),internal_network_origins=('https://different.test',),approved_network_origins=())
+        self.assertNotEqual(first[0].evidence_digest,changed[0].evidence_digest)
+
+    def test_rse_lifecycle_does_not_accuse_historical_or_uncertain_effects(self):
+        action=self.action('NETWORK_REQUEST','https://outside.test')
+        event=self.event(kind='NETWORK_REQUEST',target='https://outside.test')
+        for policy,reason,execution,reconciliation,final in (
+            ('DENY','ALREADY_COMPLETED','KNOWN_SUCCESS','NOT_REQUIRED','ALREADY_COMPLETED'),
+            ('DENY','ALREADY_COMPLETED','RECONCILED_SUCCESS','NOT_REQUIRED','ALREADY_COMPLETED'),
+            ('REQUIRE_RECONCILIATION','UNKNOWN_OUTCOME_PENDING','UNKNOWN_OUTCOME','RECONCILIATION_REQUIRED','REQUIRE_RECONCILIATION'),
+            ('DENY','REEVALUATION_REQUIRED','RECONCILED_SUCCESS','RECONCILED_SUCCESS','RECONCILED_SUCCESS'),
+            ('DENY','REEVALUATION_REQUIRED','RECONCILED_NOT_APPLIED','RECONCILED_NOT_APPLIED','RECONCILED_NOT_APPLIED'),
+            ('REQUIRE_AUTHORIZATION','AUTHORIZATION_EXPIRED','NOT_ATTEMPTED','NOT_REQUIRED','REQUIRE_AUTHORIZATION')):
+            receipt=self.r._receipt(action,self.r.PolicyDecision(policy,reason),execution,reconciliation,final=final)
+            result=self.m.correlate_rse(action,receipt,event)
+            self.assertEqual(result.divergences,())
+            self.assertEqual(result.execution_state,execution)
+            self.assertEqual(result.reconciliation_state,reconciliation)
+            self.assertFalse(result.attempt_linked)
+        denied=self.r._receipt(action,self.r.PolicyDecision('DENY','POLICY_DENIED'))
+        self.assertEqual(self.m.correlate_rse(action,denied,event).divergences,())
+        self.assertEqual(len(self.m.correlate_rse(action,denied,event,attempt_linked=True).divergences),1)
 
 
 if __name__=='__main__': unittest.main()

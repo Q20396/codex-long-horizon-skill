@@ -436,7 +436,9 @@ def detect_trace_risks(trace, declarations=(), *, internal_network_origins, appr
     _require(type(trace) is CriticalTrace)
     trace.verify_structure()
     declared = _declarations(trace, declarations)
-    trusted = {_origin(v) for v in _bounded(internal_network_origins)} | {_origin(v) for v in _bounded(approved_network_origins)}
+    internal = tuple(sorted({_origin(v) for v in _bounded(internal_network_origins)}))
+    approved = tuple(sorted({_origin(v) for v in _bounded(approved_network_origins)}))
+    trusted = set(internal) | set(approved)
     events = tuple(e for e in trace.events() if _observed(e))
     parents = {e.context.action_id: e.context.parent_action_id for e in trace.events()}
     ancestors = {}
@@ -454,10 +456,24 @@ def detect_trace_risks(trace, declarations=(), *, internal_network_origins, appr
 
     def add(kind, evidence):
         first, last = evidence[0], evidence[-1]
+        path = [last.context.action_id]
+        while path[-1] != first.context.action_id:
+            path.append(parents[path[-1]])
+        # Bind every supplied event on the connecting path, not just endpoints.
+        # Retain input artifacts outside the chain to reproduce this commitment.
+        basis = {
+            'finding_type': kind,
+            'causal_path': tuple(reversed(path)),
+            'path_event_digests': tuple(sc.artifact_digest(e) for e in trace.events()
+                                       if e.context.action_id in path),
+            'declaration_digest': sc.artifact_digest(declared.get(last.context.action_id)),
+            'internal_origins': internal,
+            'approved_origins': approved,
+        }
         findings.append(TraceRiskFinding(last.context, RiskType[kind], tuple(e.event_id for e in evidence),
             tuple(e.context.action_id for e in evidence), last.target, first.data_classification,
             'Candidate causal pattern in supplied observations; not proof of transfer or malicious intent.',
-            sc.artifact_digest(tuple(sc.artifact_digest(e) for e in evidence))))
+            sc.artifact_digest(basis)))
         _require(len(findings) <= MAX_FINDINGS)
 
     def undeclared(event, field):
@@ -487,23 +503,51 @@ def detect_trace_risks(trace, declarations=(), *, internal_network_origins, appr
     return tuple(sorted(findings, key=lambda f: (f.finding_type.value, f.event_ids)))
 
 
-def correlate_rse(action, receipt, event):
+@dataclass(frozen=True, repr=False)
+class RSECorrelation:
+    """Preserves the authoritative receipt states; no new execution state machine."""
+    divergences: tuple
+    receipt_digest: str
+    attempt_linked: bool
+    policy_disposition: str
+    execution_state: str
+    reconciliation_state: str
+    final_disposition: str
+
+
+def correlate_rse(action, receipt, event, *, attempt_linked=False):
+    """Caller attests same-attempt linkage; action identity alone is insufficient."""
     _require(type(event) is CriticalEvent and type(receipt) is rse.SecurityReceipt)
+    _require(type(attempt_linked) is bool)
     _match_action(action, event.context)
     expected = rse._receipt(action, rse.PolicyDecision(receipt.policy_disposition, receipt.policy_reason))
     names = ('receipt_version', 'action_id', 'task_id', 'run_id', 'provider', 'runtime',
              'action_class', 'target_locator', 'authorization_ref', 'capability')
     _require(all(getattr(expected, n) == getattr(receipt, n) for n in names))
-    _require(receipt.policy_disposition in ('ALLOW', 'DENY', 'INVALID'))
+    _require(receipt.policy_disposition in ('ALLOW', 'DENY', 'INVALID',
+                                          'REQUIRE_AUTHORIZATION', 'REQUIRE_RECONCILIATION'))
+    def result(divergences=()):
+        return RSECorrelation(divergences, sc.artifact_digest(receipt), attempt_linked,
+            receipt.policy_disposition, receipt.execution_state, receipt.reconciliation_state,
+            receipt.final_disposition)
+
     if not _observed(event) or not _event_effect(event):
-        return ()
+        return result()
     declared = declared_from_action(action, event.context)
     observed = ObservedEffects(event.context, source=event.source, **_event_effect(event))
     comparison = compare_effects(declared, observed)
-    if receipt.policy_disposition != 'ALLOW' or comparison.divergences:
-        return (TraceDivergence(event.context, DivergenceType.OBSERVED_EFFECT_CONTRADICTS_RSE_DECISION,
-            event.target, sc.artifact_digest(receipt), sc.artifact_digest(event), 'HIGH'),)
-    return ()
+    # A repeat denial, reconciliation or unknown result describes lifecycle, not
+    # proof that a prior effect violated policy. Without attempt linkage, only
+    # the structural action/effect mismatch can be established.
+    policy_contradiction = (attempt_linked and receipt.execution_state == 'NOT_ATTEMPTED'
+        and receipt.reconciliation_state == 'NOT_REQUIRED'
+        and receipt.policy_disposition in ('DENY', 'INVALID', 'REQUIRE_AUTHORIZATION')
+        and receipt.policy_reason not in ('ALREADY_COMPLETED', 'REEVALUATION_REQUIRED',
+                                         'RECONCILIATION_NOT_PENDING', 'ACTION_ID_CONFLICT'))
+    if policy_contradiction or comparison.divergences:
+        return result((TraceDivergence(event.context, DivergenceType.OBSERVED_EFFECT_CONTRADICTS_RSE_DECISION,
+            event.target, sc.artifact_digest((receipt, attempt_linked)), sc.artifact_digest(event), 'HIGH'),))
+    return result()
 
 
 @dataclass(frozen=True, repr=False)

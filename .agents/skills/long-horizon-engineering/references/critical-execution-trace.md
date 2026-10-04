@@ -90,8 +90,14 @@ Each carries its context, target, declared/observed digests and WARNING severity
 Absence of an expected effect is not reported as an extra effect.
 
 `correlate_rse` validates receipt identity against the supplied ActionRequest.
-Observed extra effects or effects despite non-ALLOW policy produce HIGH
-OBSERVED_EFFECT_CONTRADICTS_RSE_DECISION. It does not authenticate receipts or
+Observed extra effects produce HIGH OBSERVED_EFFECT_CONTRADICTS_RSE_DECISION.
+Policy-denial correlation additionally requires trusted caller attestation
+`attempt_linked=True` that the event belongs to the denied attempt; action ID
+alone cannot distinguish a historical effect from a retry. Default is unlinked.
+Repeat-success denials, reconciliation and unknown outcomes do not accuse prior
+effects. `RSECorrelation` preserves receipt policy/execution/reconciliation/final
+states alongside divergences and the linkage flag; empty divergences do not mean
+known success or absence of effects. It does not authenticate receipts or
 replace RSE execution/reconciliation state. Its input must come from the trusted
 RSE boundary; a forged matching receipt is not independently verifiable here.
 
@@ -164,6 +170,17 @@ separately authorized future design; no dormant implementation ships here.
 Phase 1.5 is an experimental trace foundation with synthetic tests. It is not
 runtime activation, independent host coverage, signed evidence, malware detection
 or prevention. No findings is not proof of safety. Merge is not release/deploy.
+
+### Reproducing a risk commitment
+
+`evidence_digest` binds the finding type, ordered connecting action path, digests
+of **all supplied events on that path** (including intermediate actions), the
+terminal action's declaration (or explicit absence), and normalized separate
+internal/approved origin sets. Retain the trace events, declarations and trusted
+origin configuration as caller-owned evidence to recompute the finding. Endpoint
+IDs alone are not the full evidence. A changed bridge, declaration or origin
+configuration changes the commitment or removes the finding. This is a digest
+commitment, not signed or independently authenticated observation.
 
 ## Synthetic Operator Walkthrough
 
