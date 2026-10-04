@@ -29,6 +29,16 @@ wake Codex or guarantee crash recovery.
 
 ## Customer Quick Start
 
+### Runtime Safety Envelope — Experimental Foundation
+
+20396 includes an experimental vendor-independent [Runtime Safety Envelope
+foundation](.agents/skills/long-horizon-engineering/references/runtime-safety-envelope.md)
+that separates AI action proposals from policy, authorization, capabilities,
+side-effect reconciliation and security receipts. Phase 1 tests exercise the
+Python kernel using fake adapters; no real runtime binding is included or activated.
+No host sandbox, kernel security, packet firewall or provider-internal security
+guarantee is implied. This is source-branch functionality, not a v0.7.0 release claim.
+
 **Already installed?** Start with a non-sensitive repository and a bounded task:
 
 ```text
