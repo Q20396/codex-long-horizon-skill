@@ -61,6 +61,16 @@ and estimated costs are separate. An anomaly is not evidence of theft or intent.
 No real provider/runtime binding, live quota enforcement or background monitoring
 is implemented. This is source-branch functionality, not a deployment claim.
 
+### Signed Checkpoints — Experimental Foundation
+
+20396 includes an experimental signed-checkpoint contract that can bind a verified
+Security Chain prefix to trusted external signature verification and independently
+retained anchor evidence supplied by a trusted host integration. It detects
+rollback or replacement only when that trusted evidence survives independently.
+The module does not manage private keys or contact an anchor service. Real crypto,
+key custody and external publication remain host responsibilities; synthetic tests
+do not establish those properties. See [signed checkpoint boundaries](.agents/skills/long-horizon-engineering/references/signed-checkpoints.md).
+
 ### Critical Execution Trace — Experimental Foundation
 
 The [Phase 1.5 foundation](.agents/skills/long-horizon-engineering/references/critical-execution-trace.md)

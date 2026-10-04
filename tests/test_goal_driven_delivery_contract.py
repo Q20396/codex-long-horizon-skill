@@ -109,7 +109,7 @@ class GoalDrivenDeliveryContractTests(unittest.TestCase):
         optional = manifest["components"]["bundled-optional"]["paths"]
         self.assertIn(template_path, optional)
         self.assertNotIn(template_path, manifest["components"]["core"]["paths"])
-        self.assertEqual(len(manifest["components"]["core"]["paths"]), 54)
+        self.assertEqual(len(manifest["components"]["core"]["paths"]), 56)
         self.assertEqual(len(optional), 106)
         self.assertEqual(
             sum(len(item["paths"]) for item in manifest["separate_skills"]),
