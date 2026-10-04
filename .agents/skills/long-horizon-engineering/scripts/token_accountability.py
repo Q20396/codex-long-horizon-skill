@@ -155,6 +155,12 @@ class BudgetDecision:
     budget_digests: tuple
     usage_digest: str
 
+    def __post_init__(self):
+        _require(self.state in ('WITHIN_BUDGET','WARNING','EXCEEDED','UNKNOWN'))
+        object.__setattr__(self,'budget_digests',tuple(self.budget_digests))
+        _require(len(self.budget_digests) <= 4 and all(_hash(v) for v in self.budget_digests)
+                 and _hash(self.usage_digest))
+
 
 @dataclass(frozen=True)
 class ProgressSnapshot:
@@ -165,7 +171,7 @@ class ProgressSnapshot:
     blockers_resolved: int
 
     def __post_init__(self):
-        _require(all(_integer(x) for x in vars(self).values()))
+        _require(all(x is None or _integer(x) for x in vars(self).values()))
 
 
 @dataclass(frozen=True, repr=False)
@@ -226,6 +232,20 @@ class TokenAnomaly:
     rule_id: str
     observed_at: float
     usage_count: int
+
+    def __post_init__(self):
+        _ids(self,('installation_id',),('project_id','task_id','run_id'))
+        _require(_hash(self.anomaly_id) and _hash(self.rule_id) and type(self.anomaly_type) is TokenAnomalyType
+                 and _time(self.observed_at) and _integer(self.usage_count) and self.usage_count > 0)
+        for name in ('usage_ids','evidence_refs'):
+            values = tuple(getattr(self,name))
+            _require(0 < len(values) <= 128 and all(_text(v) for v in values))
+            object.__setattr__(self,name,values)
+        _require(self.usage_count >= len(self.usage_ids) and all(_hash(v) for v in self.evidence_refs))
+
+
+def _hash(value):
+    return type(value) is str and re.fullmatch('[0-9a-f]{64}',value) is not None
 
 
 def _history(records):
@@ -336,11 +356,12 @@ def detect_anomalies(usage_records, snapshot, rules):
     for group in agents.values():
         if len(group) >= 2:
             first,last = group[0],group[-1]
-            if (first.input_tokens is not None and first.input_tokens > 0 and last.input_tokens is not None
+            if (last.started_at > first.started_at and first.input_tokens is not None and first.input_tokens > 0 and last.input_tokens is not None
                     and last.input_tokens*10000 >= first.input_tokens*rules.context_growth_bps):
                 add(TokenAnomalyType.CONTEXT_AMPLIFICATION,(first,last))
     p = snapshot.progress_snapshot
-    if (selected and p is not None and all(r.total_tokens is not None for r in selected)
+    if (selected and p is not None and all(v is not None for v in vars(p).values())
+            and all(r.total_tokens is not None for r in selected)
             and sum(r.total_tokens for r in selected) >= rules.low_progress_token_threshold
             and p.required_remaining_after >= p.required_remaining_before
             and p.acceptance_criteria_closed == p.verification_evidence_added == p.blockers_resolved == 0):
@@ -366,6 +387,8 @@ class TokenAccountabilityReport:
 
 def summarize(records, *, budget_decision=None, anomalies=()):
     records = _history(records)
+    _require(budget_decision is None or (type(budget_decision) is BudgetDecision
+                                       and budget_decision.usage_digest == _digest_many(records)))
     known = tuple((k,sum(getattr(r,k) for r in records if getattr(r,k) is not None)) for k in METRICS)
     unknown = tuple((k,sum(getattr(r,k) is None for r in records)) for k in METRICS)
     def costs(source):

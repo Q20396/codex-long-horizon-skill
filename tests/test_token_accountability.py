@@ -226,6 +226,28 @@ class TokenTests(unittest.TestCase):
             exec(code,namespace)
         self.assertEqual(dict(os.environ),env)
 
+    def test_report_rejects_budget_result_for_other_history(self):
+        d = self.m.evaluate_budget((self.usage(),),(self.budget(),),now=20)
+        with self.assertRaises(ValueError):
+            self.m.summarize((self.usage(total_tokens=900),),budget_decision=d)
+
+    def test_anomaly_collections_are_immutable_and_validated(self):
+        a = self.anomalies((self.usage(task_id=None),))[0]
+        values = ['u']
+        other = replace(a,usage_ids=values)
+        values.append('v')
+        self.assertEqual(other.usage_ids,('u',))
+        with self.assertRaises(ValueError):
+            replace(a,observed_at=True)
+
+    def test_context_requires_later_start_not_arbitrary_tie_order(self):
+        records = (self.usage(), self.usage(usage_id='v',call_id='z',input_tokens=900))
+        self.assertEqual(self.anomalies(records), ())
+
+    def test_partial_progress_stays_unknown(self):
+        p = self.m.ProgressSnapshot(3,3,None,0,0)
+        self.assertEqual(self.anomalies((self.usage(total_tokens=300),),progress_snapshot=p), ())
+
 
 if __name__ == '__main__':
     unittest.main()
