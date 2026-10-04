@@ -61,6 +61,17 @@ and estimated costs are separate. An anomaly is not evidence of theft or intent.
 No real provider/runtime binding, live quota enforcement or background monitoring
 is implemented. This is source-branch functionality, not a deployment claim.
 
+### Critical Execution Trace — Experimental Foundation
+
+The [Phase 1.5 foundation](.agents/skills/long-horizon-engineering/references/critical-execution-trace.md)
+compares declared effects with caller-supplied adapter observations, validates
+parent/child traces and reports bounded deterministic causal risk candidates.
+It can anchor evidence digests in the existing Security Chain. Adapter observations
+are not independent host evidence; even COMPLETE means caller-attested coverage.
+No host/kernel/syscall observer, malware or intent classification, real runtime
+binding, background monitoring or automatic enforcement is implemented.
+This is source-branch functionality, not a published-release or deployment claim.
+
 **Already installed?** Start with a non-sensitive repository and a bounded task:
 
 ```text
