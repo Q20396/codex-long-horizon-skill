@@ -39,6 +39,18 @@ Python kernel using fake adapters; no real runtime binding is included or activa
 No host sandbox, kernel security, packet firewall or provider-internal security
 guarantee is implied. This is source-branch functionality, not a v0.7.0 release claim.
 
+### Security Authority and Verifiable Security Chain — Experimental
+
+The [Phase 1.25 foundation](.agents/skills/long-horizon-engineering/references/security-authority-chain.md)
+adds scoped management checks, bounded Break Glass records and deterministic
+SHA-256 linked history for policy, authorization, authority and RSE receipt digests.
+Tests use synthetic data, in-memory storage and explicitly selected temporary
+JSONL files. No real runtime binding or Paperclip dependency is added.
+The chain is **tamper-evident, not tamper-proof**: without a separately retained
+trusted head, valid tail truncation or whole-chain replacement cannot be detected.
+Actor authentication, signed checkpoints and external anchors are not implemented.
+This is source-branch functionality, not a published-release or deployment claim.
+
 **Already installed?** Start with a non-sensitive repository and a bounded task:
 
 ```text
