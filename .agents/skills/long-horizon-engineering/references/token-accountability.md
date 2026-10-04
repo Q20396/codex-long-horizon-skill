@@ -86,6 +86,10 @@ unknown. The host calculates any explicit-rate estimate before submission.
 This module neither fetches prices nor embeds tariffs. It does not certify the
 rate arithmetic or invoice. Reported and estimated subtotals remain separate
 and partitioned by currency. No FX conversion or combined all-currency total.
+Only PROVIDER_REPORTED cost supports an unqualified budget conclusion. Estimated
+cost remains available in report subtotals but is UNKNOWN for cost-cap evaluation.
+In mixed observations, a reported subtotal already above the cap proves EXCEEDED;
+otherwise estimated/unreported portions prevent WITHIN_BUDGET or WARNING.
 
 ## Deterministic Anomalies
 
@@ -109,8 +113,11 @@ Model text, PR state and Paperclip status are not completion evidence.
 
 ### Unreconciled Retry Usage
 
-Requires `reconciliation_required` AND matching explicit unresolved retry group
-in the snapshot. It does not infer unresolved work from similar prompts.
+Requires `reconciliation_required`, a matching explicit unresolved retry group,
+and a call starting strictly after trusted `reconciliation_required_at`. Without
+that temporal evidence it does not classify historical calls. The host supplies
+a snapshot for the relevant unresolved interval; multiple intervals need separate
+invocations. It does not infer unresolved work from similar prompts.
 
 ### Retry Amplification
 
@@ -130,6 +137,7 @@ Requires all known cumulative totals crossing `low_progress_token_threshold`
 and a trusted progress snapshot: remaining work unchanged/increased, no criteria
 closed, no evidence added, no blockers resolved. Missing progress is not zero.
 Any of those forms of real progress suppresses this simple candidate rule.
+Individual progress fields may also be None; all five must be known for this rule.
 
 Anomalies anchor rules, trusted snapshot and full usage-set digest. `usage_ids`
 contains at most the first 128 IDs; `usage_count` explicitly identifies the full
@@ -186,6 +194,10 @@ and unknown counts for every category; a known subtotal of zero alongside an
 unknown count is NOT a measured zero total. For who approved a budget, resolve
 the chain's authority digest to the approved authority artifact. REQUESTED alone
 does not count as approval. Resolve anomaly evidence digests to inspect why.
+Supply matching anomalies to `summarize` to incorporate trusted invalid-parent
+findings into orphan counts. Without these, attribution counts only reflect field
+completeness, not independently authenticated relationships. A supplied budget
+decision must match the exact usage-history digest or the report is rejected.
 
 ## Privacy Boundary
 

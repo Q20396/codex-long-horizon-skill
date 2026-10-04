@@ -182,6 +182,7 @@ class ExecutionAccountabilitySnapshot:
     run_id: str
     task_verified_complete_at: float = None
     reconciliation_required: bool = False
+    reconciliation_required_at: float = None
     unresolved_retry_group_ids: tuple = ()
     invalid_parent_call_ids: tuple = ()
     progress_snapshot: ProgressSnapshot = None
@@ -190,6 +191,7 @@ class ExecutionAccountabilitySnapshot:
         _ids(self, ('installation_id','project_id','task_id','run_id'))
         _require(self.task_verified_complete_at is None or _time(self.task_verified_complete_at))
         _require(type(self.reconciliation_required) is bool)
+        _require(self.reconciliation_required_at is None or _time(self.reconciliation_required_at))
         _require(self.progress_snapshot is None or type(self.progress_snapshot) is ProgressSnapshot)
         for name in ('unresolved_retry_group_ids','invalid_parent_call_ids'):
             values = tuple(getattr(self, name))
@@ -304,9 +306,9 @@ def evaluate_budget(usage_history, budget_stack, proposed_or_observed_usage=None
             if cap is None:
                 continue
             known = sum(getattr(r,metric) for r in selected if getattr(r,metric) is not None
-                        and (metric != 'cost_micros' or r.currency == b.currency))
+                        and (metric != 'cost_micros' or (r.currency == b.currency and r.cost_source == CostSource.PROVIDER_REPORTED)))
             unknown = ambiguous or any(getattr(r,metric) is None or
-                       (metric == 'cost_micros' and r.currency != b.currency) for r in selected)
+                       (metric == 'cost_micros' and (r.currency != b.currency or r.cost_source != CostSource.PROVIDER_REPORTED)) for r in selected)
             states.append('EXCEEDED' if known > cap else 'UNKNOWN' if unknown else
                           'WARNING' if known*10000 >= cap*b.warning_threshold_bps else 'WITHIN_BUDGET')
     state = next((s for s in ('EXCEEDED','UNKNOWN','WARNING') if s in states), 'WITHIN_BUDGET' if states else 'UNKNOWN')
@@ -334,7 +336,9 @@ def detect_anomalies(usage_records, snapshot, rules):
             add(TokenAnomalyType.ORPHAN_USAGE,(r,))
         if scoped and snapshot.task_verified_complete_at is not None and r.started_at > snapshot.task_verified_complete_at:
             add(TokenAnomalyType.POST_COMPLETION_USAGE,(r,))
-        if scoped and snapshot.reconciliation_required and r.retry_group_id in snapshot.unresolved_retry_group_ids:
+        if (scoped and snapshot.reconciliation_required and snapshot.reconciliation_required_at is not None
+                and r.started_at > snapshot.reconciliation_required_at
+                and r.retry_group_id in snapshot.unresolved_retry_group_ids):
             add(TokenAnomalyType.UNRECONCILED_RETRY_USAGE,(r,))
     selected = tuple(r for r in records if _matches(snapshot,r))
     groups = {}
@@ -397,7 +401,11 @@ def summarize(records, *, budget_decision=None, anomalies=()):
             if r.cost_source == source:
                 values[r.currency] = values.get(r.currency,0) + r.cost_micros
         return tuple(sorted(values.items()))
-    attributed = sum(_attributed(r) for r in records)
+    anomalies = tuple(anomalies)
+    _require(all(type(a) is TokenAnomaly for a in anomalies))
+    orphan_ids = {(a.installation_id,uid) for a in anomalies if a.anomaly_type == TokenAnomalyType.ORPHAN_USAGE
+                  for uid in a.usage_ids}
+    attributed = sum(_attributed(r) and (r.installation_id,r.usage_id) not in orphan_ids for r in records)
     return TokenAccountabilityReport(len(records),attributed,len(records)-attributed,
         dict(known)['total_tokens'],dict(unknown)['total_tokens'],known,unknown,
         costs(CostSource.PROVIDER_REPORTED),costs(CostSource.EXPLICIT_RATE_DERIVED),

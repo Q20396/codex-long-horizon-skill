@@ -79,7 +79,7 @@ class TokenTests(unittest.TestCase):
     def test_retry_requires_explicit_unresolved_relationship(self):
         u = self.usage(retry_group_id='retry', attempt_index=2)
         self.assertEqual(self.anomalies((u,), reconciliation_required=True), ())
-        got = self.anomalies((u,), reconciliation_required=True, unresolved_retry_group_ids=('retry',))
+        got = self.anomalies((u,), reconciliation_required=True, reconciliation_required_at=9, unresolved_retry_group_ids=('retry',))
         self.assertEqual(got[0].anomaly_type.value, 'UNRECONCILED_RETRY_USAGE')
 
     def test_retry_context_amplification_and_determinism(self):
@@ -247,6 +247,36 @@ class TokenTests(unittest.TestCase):
     def test_partial_progress_stays_unknown(self):
         p = self.m.ProgressSnapshot(3,3,None,0,0)
         self.assertEqual(self.anomalies((self.usage(total_tokens=300),),progress_snapshot=p), ())
+
+    def test_r3_estimated_cost_never_certifies_reported_budget_state(self):
+        b = self.budget(max_total_tokens=None,max_cost_micros=100,currency='USD')
+        for source,state in ((self.m.CostSource.EXPLICIT_RATE_DERIVED,'UNKNOWN'),(self.m.CostSource.PROVIDER_REPORTED,'EXCEEDED')):
+            u = self.usage(cost_micros=150,currency='USD',cost_source=source,pricing_snapshot_ref='rates')
+            d = self.m.evaluate_budget((u,),(b,),now=20)
+            self.assertEqual(d.state,state)
+        mixed = (self.usage(cost_micros=50,currency='USD',cost_source=self.m.CostSource.PROVIDER_REPORTED),
+                 self.usage(usage_id='v',call_id='d',cost_micros=150,currency='USD',
+                            cost_source=self.m.CostSource.EXPLICIT_RATE_DERIVED,pricing_snapshot_ref='rates'))
+        self.assertEqual(self.m.evaluate_budget(mixed,(b,),now=20).state,'UNKNOWN')
+
+    def test_r3_reconciliation_needs_temporal_evidence(self):
+        records = (self.usage(retry_group_id='retry',attempt_index=1),
+                   self.usage(usage_id='v',call_id='d',started_at=20,finished_at=21,retry_group_id='retry',attempt_index=2))
+        got = self.anomalies(records,reconciliation_required=True,reconciliation_required_at=15,unresolved_retry_group_ids=('retry',))
+        self.assertEqual([(a.anomaly_type.value,a.usage_ids) for a in got],[('UNRECONCILED_RETRY_USAGE',('v',))])
+        self.assertEqual(self.anomalies(records,reconciliation_required=True,unresolved_retry_group_ids=('retry',)),())
+
+    def test_r3_invalid_parent_is_orphan_in_report(self):
+        u = self.usage()
+        anomalies = self.anomalies((u,),invalid_parent_call_ids=('c',))
+        r = self.m.summarize((u,),anomalies=anomalies)
+        self.assertEqual((r.fully_attributed_count,r.orphan_count),(0,1))
+
+    def test_legacy_chain_hash_still_verifies(self):
+        e = self.s.SecurityEventDraft('e',self.s.EventType.SECURITY_ALERT,1,'i',self.s.AuthorityRole.ROOT_OWNER,'root','test')
+        r = self.chain.append(e)
+        self.assertEqual(r.record_hash,'4d315ef290e844dcd7a7f751d1d5af017d74c15c33f07ae8a192ea916e2b6b30')
+        self.assertTrue(self.chain.verify().valid)
 
 
 if __name__ == '__main__':
