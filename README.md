@@ -89,7 +89,8 @@ This is source-branch functionality, not a published-release or deployment claim
 The opt-in [Phase 2A binding](.agents/skills/long-horizon-engineering/references/runtime-binding.md)
 routes bounded regular-file operations, explicitly allowlisted processes and local
 Git exact staging/commit through existing RSE governance. Payload digests must be
-bound before authorization. Adapters report their own observed boundaries to CET
+bound before authorization; a Git commit additionally binds the exact staged tree,
+parent and message, rejecting changed tree/parent before commit. Adapters report their own observed boundaries to CET
 and seal evidence digests, not raw file contents or process output, in the chain.
 
 This is **not an OS sandbox, host observer or network containment**. Allowlisting

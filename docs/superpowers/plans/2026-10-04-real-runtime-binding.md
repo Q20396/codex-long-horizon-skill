@@ -72,6 +72,27 @@ existing RSE/CET/chain are planned. Existing tests must remain passing. Any need
 to weaken governance or use non-synthetic real effects is a stop condition.
 Review completion is not approval; approval is not merge authority.
 
+## Bounded correction cycle — directive v1.2
+
+The Design Authority authorizes two payload fields for the expected staged tree
+and parent captured before authorization, not regenerated during execution.
+The correction remains in this isolated worktree. The original checkout and its
+three untracked files remain outside the write scope.
+
+1. Capture failing real Git tests for post-authorization tree and parent mutation.
+2. Bind expected tree and parent in the payload digest; verify them immediately
+   before commit and verify the resulting commit object afterward.
+3. Reject no-op, amend, merge and ambient operation/conflict states; validate
+   repository object format without a SHA-1-only assumption.
+4. Preserve and re-test the Reviewer 4 post-launch uncertainty correction.
+5. Run targeted, existing security/Local Compute, full and package/formal checks.
+6. Send the same final corrected SHA to designated Reviewers 2, 3 and 4. Reviewer
+   3's read-only review is explicitly authorized by v1.2. Only originating
+   independent review can close each finding; Main does not self-close them.
+7. Create the PR only after all blockers close and regressions pass, wait for
+   both required CI jobs, return the prescribed report and stop. No merge,
+   C31509 merge-approval request, runtime remote effects or Phase 2B.
+
 ## Implementation evidence
 
 - Clean baseline: 952 tests passed, 16 skipped, at the approved base tree.
@@ -92,3 +113,24 @@ Review completion is not approval; approval is not merge authority.
   routing fixtures, Python compilation and release-state consistency pass.
 - These results are implementation evidence, not independent review or permission
   to merge. Designated reviewers must inspect the locked final commit.
+
+## Correction evidence (supersedes the initial targeted count)
+
+- Reviewer 4's post-launch status-read/selector/cleanup failures were reproduced
+  as false known failures permitting a duplicate effect. The correction preserves
+  UNKNOWN and blocks retry when target non-start cannot be proved.
+- Reviewer 2 RED: both authorized-tree mutation and parent advance tests returned
+  `COMPLETED` against the old implementation (two failed assertions). Adding the
+  prebound fields and late comparisons made both pass.
+- Further RED cases exposed no-op, ambient operation/unmerged-index state and
+  post-commit object mismatch; the bounded checks make these regressions pass.
+- A remove-all-staged-content RED returned `GIT_NOTHING_TO_COMMIT`; moving the
+  no-op decision after tree comparison now returns `GIT_TREE_BINDING_MISMATCH`.
+- Targeted implementation run: 61 passed (59 runtime plus 2 package), with
+  ResourceWarning treated as an error. Real temporary SHA-256 repositories cover
+  both initial and subsequent exact-parent commits; no SHA-256 skip was needed.
+- Same-process serialization does not exclude concurrent external Git writers.
+  `write-tree` may create local tree objects during validation; rejection means
+  no commit invocation, not that Git performed no metadata writes at all.
+- Final Main validation and the three designated independent verdicts are still
+  required. No finding is closed by this implementation evidence alone.

@@ -69,6 +69,11 @@ after termination: the child may already have produced effects. Nonzero exit is
 not proof of no effects. A start event means confirmed launch; an exit event means
 confirmed exit, never presumed termination.
 
+Once the launcher process has been created, status-read, selector or cleanup
+errors remain UNKNOWN unless the handshake proves the target never started.
+An empty event list alone is not evidence of no effect; retry remains blocked
+even if a start event could not be recorded.
+
 **Process allowlisting is not process containment.** Child-internal file, network,
 credential or descendant activity is not independently observed. Tests use trusted
 controlled fixtures, not arbitrary hostile binaries. Parent socket guards do not
@@ -80,6 +85,30 @@ Only an explicitly supplied repository and Git executable are used. Staging
 accepts exact paths: no `.`/`--all`/`-A`, globs or directory-wide staging. Commit is
 a separately authorized action; staging does not authorize it. Messages are
 bounded to 16 KiB. A known commit returns its SHA as evidence.
+
+The trusted controller must capture the staged tree object ID and current parent
+**before authorization**, and supply `expected_git_tree` and
+`expected_git_parent` in the immutable payload alongside the message. Both fields
+are covered by its canonical digest. Initial commits use the single parent
+sentinel `UNBORN`. Execution never generates its own expected values.
+
+After validating repository configuration and operation state, the adapter
+re-reads HEAD and the staged tree as late as practical before commit. Changed
+tree or parent is rejected with `GIT_TREE_BINDING_MISMATCH` or
+`GIT_PARENT_BINDING_MISMATCH`, without invoking commit, restaging or resetting.
+No staged changes is rejected with `GIT_NOTHING_TO_COMMIT`. Amend, merge commits,
+and ambient merge/rebase/cherry-pick/revert/bisect or unmerged-index state are not
+supported. Unsupported operation state returns `UNSUPPORTED_GIT_STATE`.
+Object IDs are validated against the repository's recognized object format
+(SHA-1 or SHA-256), not assumed to be 40 characters.
+
+Success requires reading the resulting commit object and matching its exact
+tree, parent list and message to the approved payload. A possible commit whose
+result cannot be established remains UNKNOWN and cannot be retried blindly.
+The binding's journal serializes calls within that controller. It does **not**
+lock out external Git/index writers across authorization and execution; Git's
+per-command locks do not close that interval or provide hostile multi-process
+exclusion. Concurrent host mutation remains outside this bounded guarantee.
 
 Hooks and signing are disabled. Unsafe filters/helper configuration fails closed;
 pager/editor, interactive credential helpers and aliases must not become alternate

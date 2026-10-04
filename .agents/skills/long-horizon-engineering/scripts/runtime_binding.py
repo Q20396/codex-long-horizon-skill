@@ -28,6 +28,7 @@ import security_authority_chain as sc
 
 MAX_FILE_BYTES = 8 * 1024 * 1024
 MAX_OUTPUT_BYTES = 1024 * 1024
+UNBORN_GIT_PARENT = 'UNBORN'
 BOUND_ACTIONS = frozenset(rse.ActionClass[n] for n in (
     'READ_FILE', 'WRITE_FILE', 'CREATE_FILE', 'DELETE_FILE', 'MOVE_FILE',
     'EXECUTE_PROCESS', 'GIT_STAGE', 'GIT_COMMIT'))
@@ -63,6 +64,11 @@ def _git_path(value):
         and not any(c in value for c in '*?[]\\:\n\r'))
 
 
+def _git_oid(value, length=None):
+    return (type(value) is str and len(value) in ((length,) if length else (40, 64))
+            and re.fullmatch('[0-9a-f]+', value) is not None)
+
+
 @dataclass(frozen=True, repr=False)
 class RuntimePayload:
     action_id: str
@@ -73,6 +79,8 @@ class RuntimePayload:
     commit_message: str | None = None
     git_paths: tuple | None = None
     timeout: float | str = 'DEFAULT'
+    expected_git_tree: str | None = None
+    expected_git_parent: str | None = None
 
     def __post_init__(self):
         _require(_text(self.action_id, 1024))
@@ -85,6 +93,9 @@ class RuntimePayload:
                     and len(p[1].encode()) <= 4096 and '\0' not in p[1] for p in self.environment)
             and len({p[0] for p in self.environment}) == len(self.environment)))
         _require(self.commit_message is None or _text(self.commit_message, 16384))
+        _require(self.expected_git_tree is None or _git_oid(self.expected_git_tree))
+        _require(self.expected_git_parent is None or self.expected_git_parent == UNBORN_GIT_PARENT
+                 or _git_oid(self.expected_git_parent))
         _require(self.git_paths is None or (type(self.git_paths) is tuple and 0 < len(self.git_paths) <= 128
             and all(_git_path(p) for p in self.git_paths) and len(set(self.git_paths)) == len(self.git_paths)))
         if self.timeout != 'DEFAULT':
@@ -94,16 +105,19 @@ class RuntimePayload:
         values = dict(action_id=self.action_id, content_digest=None if self.content_bytes is None else _hash(self.content_bytes),
             content_size=None if self.content_bytes is None else len(self.content_bytes), argv=self.argv, cwd=self.cwd,
             environment=None if self.environment is None else sorted(self.environment),
-            commit_message=self.commit_message, git_paths=self.git_paths, timeout=self.timeout)
+            commit_message=self.commit_message, git_paths=self.git_paths, timeout=self.timeout,
+            expected_git_tree=self.expected_git_tree, expected_git_parent=self.expected_git_parent)
         return _hash(json.dumps(values, sort_keys=True, separators=(',', ':'), ensure_ascii=False).encode())
 
     def validate_for(self, action):
         _require(type(action) is rse.ActionRequest and self.action_id == action.action_id)
-        names = ('content_bytes', 'argv', 'cwd', 'environment', 'commit_message', 'git_paths')
+        names = ('content_bytes', 'argv', 'cwd', 'environment', 'commit_message', 'git_paths',
+                 'expected_git_tree', 'expected_git_parent')
         permitted = {
             rse.ActionClass.WRITE_FILE: {'content_bytes'}, rse.ActionClass.CREATE_FILE: {'content_bytes'},
             rse.ActionClass.EXECUTE_PROCESS: {'argv', 'cwd', 'environment'},
-            rse.ActionClass.GIT_STAGE: {'git_paths'}, rse.ActionClass.GIT_COMMIT: {'commit_message'},
+            rse.ActionClass.GIT_STAGE: {'git_paths'}, rse.ActionClass.GIT_COMMIT:
+                {'commit_message', 'expected_git_tree', 'expected_git_parent'},
         }.get(action.action_class, set())
         _require(all(getattr(self, name) is None for name in names if name not in permitted))
         required = permitted - {'cwd', 'environment'}
@@ -549,7 +563,7 @@ class LocalGitAdapter:
         env = dict(self.env)
         env.update(GIT_CONFIG_NOSYSTEM='1', GIT_CONFIG_GLOBAL='/dev/null', GIT_TERMINAL_PROMPT='0',
             GIT_PAGER='', GIT_EDITOR='/usr/bin/false', GIT_SEQUENCE_EDITOR='/usr/bin/false',
-            GIT_LITERAL_PATHSPECS='1', GIT_OPTIONAL_LOCKS='0', LC_ALL='C')
+            GIT_LITERAL_PATHSPECS='1', GIT_OPTIONAL_LOCKS='0', GIT_NO_REPLACE_OBJECTS='1', LC_ALL='C')
         argv = (self.git, '--no-pager', '-c', 'core.hooksPath=/dev/null', '-c', 'commit.gpgSign=false',
             '-c', 'tag.gpgSign=false', '-c', 'credential.helper=', '-c', 'core.fsmonitor=false',
             '-c', 'core.untrackedCache=false', '-c', 'maintenance.auto=false', '-c', 'gc.auto=0',
@@ -567,12 +581,57 @@ class LocalGitAdapter:
         code, data, _, trunc, expired = self._call(('config', '--local', '--no-includes', '--null', '--list'))
         _require(code == 0 and not any(trunc) and not expired, 'UNSAFE_GIT_CONFIG')
         for row in data.decode('utf-8').split('\0'):
-            key = row.split('\n', 1)[0].lower()
+            key, _, value = row.partition('\n')
+            key = key.lower()
             _require(not key.startswith(('include.', 'includeif.', 'filter.', 'diff.', 'credential.', 'alias.'))
                 and key not in ('core.sshcommand', 'core.gitproxy', 'core.worktree')
-                and not key.startswith('extensions.'), 'UNSAFE_GIT_CONFIG')
+                and (not key.startswith('extensions.') or
+                     (key == 'extensions.objectformat' and value in ('sha1', 'sha256'))), 'UNSAFE_GIT_CONFIG')
         code, data, _, trunc, expired = self._call(('rev-parse', '--show-toplevel'))
         _require(code == 0 and data.decode().strip() == self.root and not any(trunc) and not expired, 'REPOSITORY_MISMATCH')
+        object_format = self._read_git(('rev-parse', '--show-object-format')).decode().strip()
+        _require(object_format in ('sha1', 'sha256'), 'UNSUPPORTED_GIT_OBJECT_FORMAT')
+        return 40 if object_format == 'sha1' else 64
+
+    def _read_git(self, args):
+        code, data, _, trunc, expired = self._call(args)
+        _require(code == 0 and not expired and not any(trunc), 'GIT_REJECTED')
+        return data
+
+    def _head(self, oid_length):
+        code, data, _, trunc, expired = self._call(('rev-parse', '--verify', 'HEAD^{commit}'))
+        _require(not expired and not any(trunc), 'GIT_REJECTED')
+        if code == 0:
+            head = data.decode().strip()
+            _require(_git_oid(head, oid_length), 'GIT_REJECTED')
+            return head
+        # A failed rev-parse alone does not prove an unborn repository. Require
+        # a symbolic branch whose reference is demonstrably absent.
+        branch = self._read_git(('symbolic-ref', '--quiet', 'HEAD')).decode().strip()
+        _require(branch.startswith('refs/heads/'), 'UNSUPPORTED_GIT_STATE')
+        code, _, _, trunc, expired = self._call(('show-ref', '--verify', '--quiet', branch))
+        _require(code == 1 and not expired and not any(trunc), 'UNSUPPORTED_GIT_STATE')
+        return UNBORN_GIT_PARENT
+
+    def _simple_commit_state(self):
+        markers = {'MERGE_HEAD', 'MERGE_MSG', 'MERGE_MODE', 'AUTO_MERGE', 'SQUASH_MSG',
+            'CHERRY_PICK_HEAD', 'REVERT_HEAD', 'REBASE_HEAD', 'rebase-apply', 'rebase-merge',
+            'sequencer', 'BISECT_START', 'BISECT_LOG', 'BISECT_NAMES', 'BISECT_EXPECTED_REV'}
+        with _directory(self.root + '/.git') as fd:
+            _require(not markers.intersection(os.listdir(fd)), 'UNSUPPORTED_GIT_STATE')
+        _require(not self._read_git(('ls-files', '--unmerged', '-z')), 'UNSUPPORTED_GIT_STATE')
+
+    def _commit_matches(self, head, payload, oid_length):
+        _require(_git_oid(head, oid_length), 'GIT_REJECTED')
+        data = self._read_git(('cat-file', 'commit', head))
+        header, message = data.split(b'\n\n', 1)
+        expected_message = payload.commit_message.encode()
+        if not expected_message.endswith(b'\n'):
+            expected_message += b'\n'
+        parents = [row[7:].decode() for row in header.split(b'\n') if row.startswith(b'parent ')]
+        trees = [row[5:].decode() for row in header.split(b'\n') if row.startswith(b'tree ')]
+        expected_parents = [] if payload.expected_git_parent == UNBORN_GIT_PARENT else [payload.expected_git_parent]
+        return trees == [payload.expected_git_tree] and parents == expected_parents and message == expected_message
 
     def _check_metadata(self, fd, budget, depth=0):
         _require(depth <= 16, 'UNSAFE_GIT_METADATA')
@@ -595,21 +654,29 @@ class LocalGitAdapter:
         try:
             _require(action.action_class in (rse.ActionClass.GIT_STAGE, rse.ActionClass.GIT_COMMIT)
                 and action.target == self.root, 'NOT_BOUND')
-            self._validate()
+            oid_length = self._validate()
             if action.action_class == rse.ActionClass.GIT_STAGE:
                 for path in payload.git_paths:
                     with _parent(self.root, self.root + '/' + path) as (fd, name):
                         _regular(fd, name)
                 args = ('add', '--', *payload.git_paths)
             else:
-                code, data, _, trunc, expired = self._call(('rev-parse', '--verify', 'HEAD'))
-                _require(not expired and not any(trunc), 'GIT_UNCERTAIN')
-                parent_sha = data.decode().strip() if code == 0 else None
-                attempted = True
-                code, data, _, trunc, expired = self._call(('write-tree',))
-                tree_sha = data.decode().strip()
-                _require(code == 0 and not expired and not any(trunc)
-                    and re.fullmatch('[0-9a-f]{40}|[0-9a-f]{64}', tree_sha), 'GIT_UNCERTAIN')
+                _require(_git_oid(payload.expected_git_tree, oid_length)
+                    and (payload.expected_git_parent == UNBORN_GIT_PARENT
+                         or _git_oid(payload.expected_git_parent, oid_length)), 'GIT_OBJECT_FORMAT_MISMATCH')
+                self._simple_commit_state()
+                parent_sha = self._head(oid_length)
+                _require(parent_sha == payload.expected_git_parent, 'GIT_PARENT_BINDING_MISMATCH')
+                parent_tree = None; has_staged = True
+                if parent_sha != UNBORN_GIT_PARENT:
+                    parent_tree = self._read_git(('rev-parse', '--verify', parent_sha + '^{tree}')).decode().strip()
+                    _require(_git_oid(parent_tree, oid_length), 'GIT_REJECTED')
+                else:
+                    has_staged = bool(self._read_git(('ls-files', '--cached', '-z')))
+                tree_sha = self._read_git(('write-tree',)).decode().strip()
+                _require(_git_oid(tree_sha, oid_length), 'GIT_REJECTED')
+                _require(tree_sha == payload.expected_git_tree, 'GIT_TREE_BINDING_MISMATCH')
+                _require(has_staged and tree_sha != parent_tree, 'GIT_NOTHING_TO_COMMIT')
                 args = ('commit', '--no-gpg-sign', '--no-verify', '--cleanup=verbatim', '-m', payload.commit_message)
             attempted = True
             code, stdout, stderr, trunc, expired = self._call(args)
@@ -617,38 +684,32 @@ class LocalGitAdapter:
                 raise ValueError('GIT_UNCERTAIN')
             events = (_event(action, context, now),)
             if action.action_class == rse.ActionClass.GIT_COMMIT:
-                code, data, _, _, expired = self._call(('rev-parse', '--verify', 'HEAD'))
-                commit_sha = data.decode().strip()
-                _require(code == 0 and not expired and re.fullmatch('[0-9a-f]{40}|[0-9a-f]{64}', commit_sha), 'GIT_UNCERTAIN')
+                commit_sha = self._head(oid_length)
+                _require(self._commit_matches(commit_sha, payload, oid_length), 'GIT_COMMIT_RESULT_MISMATCH')
             return _Outcome(rse.ExecutionState.KNOWN_SUCCESS,
                 RuntimeOperationEvidence(payload.digest(), 'COMPLETED', commit_sha=commit_sha,
                     tree_sha=tree_sha, parent_sha=parent_sha), events)
-        except (OSError, ValueError, UnicodeError, subprocess.SubprocessError, _LaunchUncertain):
+        except (OSError, ValueError, UnicodeError, subprocess.SubprocessError, _LaunchUncertain) as error:
+            reason = 'GIT_UNCERTAIN' if attempted else 'GIT_REJECTED'
+            if not attempted and type(error) is ValueError and str(error) in (
+                    'GIT_PARENT_BINDING_MISMATCH', 'GIT_TREE_BINDING_MISMATCH', 'GIT_OBJECT_FORMAT_MISMATCH',
+                    'UNSUPPORTED_GIT_STATE', 'UNSUPPORTED_GIT_OBJECT_FORMAT', 'GIT_NOTHING_TO_COMMIT'):
+                reason = str(error)
+            if attempted and type(error) is ValueError and str(error) == 'GIT_COMMIT_RESULT_MISMATCH':
+                reason = str(error)
             return _Outcome(rse.ExecutionState.UNKNOWN_OUTCOME if attempted else rse.ExecutionState.KNOWN_FAILURE,
-                RuntimeOperationEvidence(payload.digest(), 'GIT_UNCERTAIN' if attempted else 'GIT_REJECTED',
+                RuntimeOperationEvidence(payload.digest(), reason,
                     tree_sha=tree_sha, parent_sha=parent_sha), events)
 
     def reconcile(self, action, payload, evidence=None):
         if action.action_class != rse.ActionClass.GIT_COMMIT or not evidence or not evidence.tree_sha:
             return rse.ReconciliationOutcome.STILL_UNKNOWN
         try:
-            self._validate()
-            code, data, _, trunc, expired = self._call(('rev-parse', '--verify', 'HEAD'))
-            if code != 0 or expired or any(trunc):
-                return rse.ReconciliationOutcome.STILL_UNKNOWN
-            head = data.decode().strip()
-            if head == evidence.parent_sha:
+            oid_length = self._validate()
+            head = self._head(oid_length)
+            if head == payload.expected_git_parent:
                 return rse.ReconciliationOutcome.EFFECT_NOT_APPLIED
-            code, data, _, trunc, expired = self._call(('cat-file', 'commit', head))
-            _require(code == 0 and not expired and not any(trunc), 'GIT_UNCERTAIN')
-            header, message = data.split(b'\n\n', 1)
-            expected_message = payload.commit_message.encode()
-            if not expected_message.endswith(b'\n'):
-                expected_message += b'\n'
-            parents = [row[7:].decode() for row in header.split(b'\n') if row.startswith(b'parent ')]
-            trees = [row[5:].decode() for row in header.split(b'\n') if row.startswith(b'tree ')]
-            if (trees == [evidence.tree_sha] and parents == ([] if evidence.parent_sha is None else [evidence.parent_sha])
-                    and message == expected_message):
+            if self._commit_matches(head, payload, oid_length):
                 return rse.ReconciliationOutcome.EFFECT_APPLIED
         except (OSError, ValueError, UnicodeError, subprocess.SubprocessError, _LaunchUncertain):
             pass

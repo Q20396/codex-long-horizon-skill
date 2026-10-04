@@ -187,16 +187,250 @@ class RuntimeTests(unittest.TestCase):
         out = self.process('print(1)', cwd='/')
         self.assertEqual(out.receipt.execution_state, 'KNOWN_FAILURE')
 
-    def git(self, *args):
+    def git(self, *args, input=None):
         return subprocess.run([shutil.which('git'), '-C', str(self.root), *args], check=True,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE, env={'PATH': '/usr/bin:/bin', 'GIT_CONFIG_NOSYSTEM': '1', 'GIT_CONFIG_GLOBAL': '/dev/null'})
+            input=input, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            env={'PATH': '/usr/bin:/bin', 'GIT_CONFIG_NOSYSTEM': '1', 'GIT_CONFIG_GLOBAL': '/dev/null'})
 
-    def setup_git(self):
-        self.git('init', '-q')
+    def setup_git(self, object_format='sha1'):
+        self.git('init', '-q', '--object-format=' + object_format)
         self.git('config', 'user.name', 'Synthetic')
         self.git('config', 'user.email', 'synthetic@example.invalid')
         adapter = self.m.LocalGitAdapter(workspace_root=str(self.root), git_executable=str(Path(shutil.which('git')).resolve()))
         self.broker.register('git.stage', adapter); self.broker.register('git.commit', adapter)
+
+    def commit_payload(self, ident, message='synthetic'):
+        tree = self.git('write-tree').stdout.decode().strip()
+        try:
+            parent = self.git('rev-parse', '--verify', 'HEAD').stdout.decode().strip()
+        except subprocess.CalledProcessError:
+            parent = 'UNBORN'
+        return self.m.RuntimePayload(ident, commit_message=message,
+            expected_git_tree=tree, expected_git_parent=parent)
+
+    def test_git_preauthorized_tree_mutation_denied(self):
+        self.setup_git()
+        (self.root / 'a').write_text('before'); self.git('add', '--', 'a')
+        self.git('commit', '-q', '-m', 'parent')
+        (self.root / 'a').write_text('approved'); self.git('add', '--', 'a')
+        payload = self.commit_payload('candidate'); approved = payload.digest()
+        head = self.git('rev-parse', 'HEAD').stdout
+        (self.root / 'a').write_text('substituted'); self.git('add', '--', 'a')
+        adapter = self.broker.get('git.commit'); original = adapter._call; commits = []
+        def observed(args):
+            if args[0] == 'commit':
+                commits.append(args)
+            return original(args)
+        with patch.object(adapter, '_call', side_effect=observed):
+            out = self.execute(self.action('GIT_COMMIT', self.root, 'candidate'), payload,
+                               expected_payload_digest=approved)
+        self.assertEqual(out.evidence.reason, 'GIT_TREE_BINDING_MISMATCH')
+        self.assertEqual(commits, [])
+        self.assertEqual(self.git('rev-parse', 'HEAD').stdout, head)
+
+    def test_git_preauthorized_parent_mutation_denied(self):
+        self.setup_git()
+        (self.root / 'a').write_text('parent'); self.git('add', '--', 'a')
+        self.git('commit', '-q', '-m', 'parent one')
+        (self.root / 'a').write_text('approved'); self.git('add', '--', 'a')
+        payload = self.commit_payload('candidate'); approved = payload.digest()
+        self.git('commit', '-q', '--allow-empty', '-m', 'parent two')
+        new_head = self.git('rev-parse', 'HEAD').stdout
+        (self.root / 'a').write_text('new stage'); self.git('add', '--', 'a')
+        adapter = self.broker.get('git.commit'); original = adapter._call; commits = []
+        def observed(args):
+            if args[0] == 'commit':
+                commits.append(args)
+            return original(args)
+        with patch.object(adapter, '_call', side_effect=observed):
+            out = self.execute(self.action('GIT_COMMIT', self.root, 'candidate'), payload,
+                               expected_payload_digest=approved)
+        self.assertEqual(out.evidence.reason, 'GIT_PARENT_BINDING_MISMATCH')
+        self.assertEqual(commits, [])
+        self.assertEqual(self.git('rev-parse', 'HEAD').stdout, new_head)
+
+    def test_git_additional_staged_file_after_approval_denied(self):
+        self.setup_git(); (self.root / 'a').write_text('a'); self.git('add', '--', 'a')
+        payload = self.commit_payload('candidate'); approved = payload.digest()
+        (self.root / 'b').write_text('b'); self.git('add', '--', 'b')
+        out = self.execute(self.action('GIT_COMMIT', self.root, 'candidate'), payload, expected_payload_digest=approved)
+        self.assertEqual(out.evidence.reason, 'GIT_TREE_BINDING_MISMATCH')
+        self.assertEqual(self.git('rev-list', '--count', '--all').stdout, b'0\n')
+
+    def test_git_removed_staged_file_after_approval_denied(self):
+        self.setup_git()
+        for name in ('a', 'b'):
+            (self.root / name).write_text(name)
+        self.git('add', '--', 'a', 'b')
+        payload = self.commit_payload('candidate'); approved = payload.digest()
+        self.git('rm', '--cached', '--', 'b')
+        out = self.execute(self.action('GIT_COMMIT', self.root, 'candidate'), payload, expected_payload_digest=approved)
+        self.assertEqual(out.evidence.reason, 'GIT_TREE_BINDING_MISMATCH')
+        self.assertEqual(self.git('rev-list', '--count', '--all').stdout, b'0\n')
+
+    def test_git_all_staged_content_removed_after_approval_is_tree_mismatch(self):
+        self.setup_git(); (self.root / 'a').write_text('a'); self.git('add', '--', 'a')
+        payload = self.commit_payload('candidate'); approved = payload.digest()
+        self.git('rm', '--cached', '--', 'a')
+        out = self.execute(self.action('GIT_COMMIT', self.root, 'candidate'), payload, expected_payload_digest=approved)
+        self.assertEqual(out.evidence.reason, 'GIT_TREE_BINDING_MISMATCH')
+        self.assertEqual(self.git('rev-list', '--count', '--all').stdout, b'0\n')
+
+    def test_git_parent_rewind_after_approval_denied(self):
+        self.setup_git(); (self.root / 'a').write_text('one'); self.git('add', '--', 'a')
+        self.git('commit', '-q', '-m', 'one'); p1 = self.git('rev-parse', 'HEAD').stdout.decode().strip()
+        (self.root / 'a').write_text('two'); self.git('add', '--', 'a'); self.git('commit', '-q', '-m', 'two')
+        (self.root / 'a').write_text('approved'); self.git('add', '--', 'a')
+        payload = self.commit_payload('candidate'); approved = payload.digest()
+        self.git('update-ref', 'HEAD', p1)
+        out = self.execute(self.action('GIT_COMMIT', self.root, 'candidate'), payload, expected_payload_digest=approved)
+        self.assertEqual(out.evidence.reason, 'GIT_PARENT_BINDING_MISMATCH')
+        self.assertEqual(self.git('rev-parse', 'HEAD').stdout.decode().strip(), p1)
+
+    def test_git_payload_fields_are_prebound_and_commit_only(self):
+        self.setup_git(); (self.root / 'a').write_text('a'); self.git('add', '--', 'a')
+        payload = self.commit_payload('candidate'); approved = payload.digest()
+        action = self.action('GIT_COMMIT', self.root, 'candidate')
+        for changes in ({'commit_message': 'substitute'}, {'expected_git_tree': '1' * 40},
+                        {'expected_git_parent': '2' * 40}):
+            with self.subTest(changes=tuple(changes)), patch.object(self.broker.get('git.commit'),
+                    '_validate', side_effect=AssertionError('repository must not be inspected')):
+                out = self.execute(action, replace(payload, **changes), expected_payload_digest=approved)
+                self.assertEqual(out.boundary_status, 'PAYLOAD_DIGEST_MISMATCH')
+        out = self.execute(action, self.m.RuntimePayload('candidate', commit_message='missing tree and parent'))
+        self.assertEqual(out.boundary_status, 'MALFORMED_RUNTIME_PAYLOAD')
+        out = self.execute(self.action('READ_FILE', ident='candidate'), replace(payload, commit_message=None))
+        self.assertEqual(out.boundary_status, 'MALFORMED_RUNTIME_PAYLOAD')
+        out = self.execute(action, replace(payload, argv=('/usr/bin/git', 'commit', '--amend')))
+        self.assertEqual(out.boundary_status, 'MALFORMED_RUNTIME_PAYLOAD')
+
+    def test_git_exact_commit_object_matches_preapproved_contract(self):
+        self.setup_git(); (self.root / 'a').write_text('one'); self.git('add', '--', 'a')
+        self.git('commit', '-q', '-m', 'parent')
+        (self.root / 'a').write_text('approved'); self.git('add', '--', 'a')
+        payload = self.commit_payload('candidate', 'approved message')
+        out = self.execute(self.action('GIT_COMMIT', self.root, 'candidate'), payload)
+        self.assertEqual(out.receipt.execution_state, 'KNOWN_SUCCESS')
+        raw = self.git('cat-file', 'commit', out.evidence.commit_sha).stdout
+        header, message = raw.split(b'\n\n', 1)
+        self.assertIn(('tree ' + payload.expected_git_tree).encode(), header.splitlines())
+        self.assertIn(('parent ' + payload.expected_git_parent).encode(), header.splitlines())
+        self.assertEqual(message, b'approved message\n')
+
+    def test_git_noop_commit_denied_before_commit_command(self):
+        self.setup_git(); (self.root / 'a').write_text('a'); self.git('add', '--', 'a')
+        self.git('commit', '-q', '-m', 'parent')
+        payload = self.commit_payload('candidate')
+        adapter = self.broker.get('git.commit'); original = adapter._call; commits = []
+        def record(args):
+            if args[0] == 'commit':
+                commits.append(args)
+            return original(args)
+        with patch.object(adapter, '_call', side_effect=record):
+            out = self.execute(self.action('GIT_COMMIT', self.root, 'candidate'), payload)
+        self.assertEqual(out.evidence.reason, 'GIT_NOTHING_TO_COMMIT')
+        self.assertEqual(commits, [])
+
+    def test_git_ambient_operation_state_denied(self):
+        self.setup_git(); (self.root / 'a').write_text('a'); self.git('add', '--', 'a')
+        payload = self.commit_payload('candidate')
+        for state in ('MERGE_HEAD', 'CHERRY_PICK_HEAD', 'REVERT_HEAD', 'REBASE_HEAD',
+                      'rebase-apply', 'rebase-merge', 'sequencer', 'BISECT_START'):
+            with self.subTest(state=state):
+                path = self.root / '.git' / state
+                path.write_text('synthetic operation marker')
+                p = replace(payload, action_id=state)
+                out = self.execute(self.action('GIT_COMMIT', self.root, state), p)
+                self.assertEqual(out.evidence.reason, 'UNSUPPORTED_GIT_STATE')
+                path.unlink()
+        self.assertEqual(self.git('rev-list', '--count', '--all').stdout, b'0\n')
+
+    def test_git_unmerged_index_denied(self):
+        self.setup_git(); (self.root / 'a').write_text('a'); self.git('add', '--', 'a')
+        payload = self.commit_payload('candidate')
+        blob = self.git('rev-parse', ':a').stdout.decode().strip()
+        self.git('update-index', '--index-info', input=(f'0 {"0" * 40}\ta\n100644 {blob} 1\ta\n100644 {blob} 2\ta\n').encode())
+        out = self.execute(self.action('GIT_COMMIT', self.root, 'candidate'), payload)
+        self.assertEqual(out.evidence.reason, 'UNSUPPORTED_GIT_STATE')
+        self.assertEqual(self.git('rev-list', '--count', '--all').stdout, b'0\n')
+
+    def test_git_postcheck_tree_mutation_cannot_report_success(self):
+        self.setup_git(); (self.root / 'a').write_text('a'); self.git('add', '--', 'a')
+        payload = self.commit_payload('candidate')
+        adapter = self.broker.get('git.commit'); original = adapter._call
+        def mutation(args):
+            if args[0] == 'commit':
+                (self.root / 'foreign').write_text('not approved')
+                self.git('add', '--', 'foreign')
+            return original(args)
+        with patch.object(adapter, '_call', side_effect=mutation):
+            out = self.execute(self.action('GIT_COMMIT', self.root, 'candidate'), payload)
+        self.assertEqual(out.receipt.execution_state, 'UNKNOWN_OUTCOME')
+        self.assertEqual(out.evidence.reason, 'GIT_COMMIT_RESULT_MISMATCH')
+        retry = self.execute(self.action('GIT_COMMIT', self.root, 'candidate'), payload)
+        self.assertEqual(retry.receipt.policy_reason, 'UNKNOWN_OUTCOME_PENDING')
+
+    def test_git_postcheck_parent_mutation_cannot_report_success(self):
+        self.setup_git(); (self.root / 'a').write_text('base'); self.git('add', '--', 'a')
+        self.git('commit', '-q', '-m', 'parent')
+        parent_tree = self.git('rev-parse', 'HEAD^{tree}').stdout.decode().strip()
+        (self.root / 'a').write_text('approved'); self.git('add', '--', 'a')
+        payload = self.commit_payload('candidate')
+        adapter = self.broker.get('git.commit'); original = adapter._call
+        def mutation(args):
+            if args[0] == 'commit':
+                foreign = self.git('commit-tree', parent_tree, '-p', payload.expected_git_parent,
+                    '-m', 'foreign parent').stdout.decode().strip()
+                self.git('update-ref', 'HEAD', foreign)
+            return original(args)
+        with patch.object(adapter, '_call', side_effect=mutation):
+            out = self.execute(self.action('GIT_COMMIT', self.root, 'candidate'), payload)
+        self.assertEqual(out.receipt.execution_state, 'UNKNOWN_OUTCOME')
+        self.assertEqual(out.evidence.reason, 'GIT_COMMIT_RESULT_MISMATCH')
+
+    def test_git_invalid_head_is_not_assumed_unborn(self):
+        self.setup_git(); (self.root / 'a').write_text('a'); self.git('add', '--', 'a')
+        payload = self.commit_payload('candidate')
+        (self.root / '.git/HEAD').write_text('1' * 40 + '\n')
+        out = self.execute(self.action('GIT_COMMIT', self.root, 'candidate'), payload)
+        self.assertEqual(out.receipt.execution_state, 'KNOWN_FAILURE')
+        self.assertEqual(out.evidence.reason, 'GIT_REJECTED')
+        self.assertEqual((self.root / '.git/HEAD').read_text(), '1' * 40 + '\n')
+
+    def test_git_unknown_object_format_fails_closed(self):
+        self.setup_git(); (self.root / 'a').write_text('a'); self.git('add', '--', 'a')
+        payload = self.commit_payload('candidate')
+        self.git('config', 'extensions.objectformat', 'unsupported-future-format')
+        out = self.execute(self.action('GIT_COMMIT', self.root, 'candidate'), payload)
+        self.assertEqual(out.receipt.execution_state, 'KNOWN_FAILURE')
+        self.assertEqual(out.events, ())
+
+    def test_git_sha256_exact_initial_commit(self):
+        self.setup_git('sha256'); (self.root / 'a').write_text('a'); self.git('add', '--', 'a')
+        payload = self.commit_payload('candidate')
+        self.assertEqual(len(payload.expected_git_tree), 64)
+        self.assertEqual(payload.expected_git_parent, 'UNBORN')
+        out = self.execute(self.action('GIT_COMMIT', self.root, 'candidate'), payload)
+        self.assertEqual(out.receipt.execution_state, 'KNOWN_SUCCESS')
+        self.assertEqual(len(out.evidence.commit_sha), 64)
+        self.assertEqual(self.git('rev-parse', 'HEAD^{tree}').stdout.decode().strip(), payload.expected_git_tree)
+        self.assertNotIn(b'parent ', self.git('cat-file', 'commit', out.evidence.commit_sha).stdout.split(b'\n\n')[0])
+        (self.root / 'a').write_text('second'); self.git('add', '--', 'a')
+        second = self.commit_payload('second')
+        self.assertEqual(second.expected_git_parent, out.evidence.commit_sha)
+        result = self.execute(self.action('GIT_COMMIT', self.root, 'second'), second)
+        self.assertEqual(result.receipt.execution_state, 'KNOWN_SUCCESS')
+        self.assertEqual(self.git('rev-parse', 'HEAD^').stdout.decode().strip(), second.expected_git_parent)
+        self.assertEqual(self.git('rev-parse', 'HEAD^{tree}').stdout.decode().strip(), second.expected_git_tree)
+
+    def test_git_oid_format_mismatch_and_invalid_parent_denied(self):
+        self.setup_git(); (self.root / 'a').write_text('a'); self.git('add', '--', 'a')
+        payload = self.commit_payload('candidate')
+        out = self.execute(self.action('GIT_COMMIT', self.root, 'candidate'), replace(payload, expected_git_tree='1' * 64))
+        self.assertEqual(out.evidence.reason, 'GIT_OBJECT_FORMAT_MISMATCH')
+        for value in ('', 'unborn', 'HEAD', 'a' * 39, 'G' * 40):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                replace(payload, expected_git_parent=value)
 
     def test_git_exact_stage_hooks_signing_and_commit(self):
         self.setup_git()
@@ -208,7 +442,7 @@ class RuntimeTests(unittest.TestCase):
         stage = self.execute(self.action('GIT_STAGE', self.root), self.m.RuntimePayload('a', git_paths=('a',)))
         self.assertEqual(stage.receipt.execution_state, 'KNOWN_SUCCESS')
         self.assertEqual(self.git('diff', '--cached', '--name-only').stdout, b'a\n')
-        out = self.execute(self.action('GIT_COMMIT', self.root, 'b'), self.m.RuntimePayload('b', commit_message='SYNTHETIC_MESSAGE'))
+        out = self.execute(self.action('GIT_COMMIT', self.root, 'b'), self.commit_payload('b', 'SYNTHETIC_MESSAGE'))
         self.assertEqual(out.receipt.execution_state, 'KNOWN_SUCCESS')
         self.assertEqual(out.evidence.commit_sha, self.git('rev-parse', 'HEAD').stdout.decode().strip())
         self.assertFalse((self.root / 'marker').exists())
@@ -237,7 +471,7 @@ class RuntimeTests(unittest.TestCase):
                 return result[0], result[1], result[2], result[3], True
             return result
         a = self.action('GIT_COMMIT', self.root, 'commit')
-        p = self.m.RuntimePayload('commit', commit_message='synthetic reconciliation')
+        p = self.commit_payload('commit', 'synthetic reconciliation')
         with patch.object(adapter, '_call', side_effect=uncertain):
             out = self.execute(a, p)
         self.assertEqual(out.receipt.execution_state, 'UNKNOWN_OUTCOME')
@@ -307,7 +541,7 @@ class RuntimeTests(unittest.TestCase):
             self.git('config', key, 'touch marker')
         self.git('config', 'commit.gpgSign', 'true')
         self.execute(self.action('GIT_STAGE', self.root), self.m.RuntimePayload('a', git_paths=('a',)))
-        out = self.execute(self.action('GIT_COMMIT', self.root, 'b'), self.m.RuntimePayload('b', commit_message='synthetic'))
+        out = self.execute(self.action('GIT_COMMIT', self.root, 'b'), self.commit_payload('b'))
         self.assertEqual(out.receipt.execution_state, 'KNOWN_SUCCESS')
         self.assertFalse((self.root / 'marker').exists())
 
@@ -527,7 +761,8 @@ class RuntimeTests(unittest.TestCase):
             (self.root / 'stage-file').write_text('synthetic')
             for kind, ident, kwargs in [('GIT_STAGE', 'stage', {'git_paths': ('stage-file',)}),
                                        ('GIT_COMMIT', 'commit', {'commit_message': 'synthetic'})]:
-                out = self.execute(self.action(kind, self.root, ident), self.m.RuntimePayload(ident, **kwargs))
+                payload = self.commit_payload(ident) if kind == 'GIT_COMMIT' else self.m.RuntimePayload(ident, **kwargs)
+                out = self.execute(self.action(kind, self.root, ident), payload)
                 self.assertEqual(out.receipt.execution_state, 'KNOWN_SUCCESS')
         self.assertEqual(set(seen), {'CREATE_FILE', 'READ_FILE', 'WRITE_FILE', 'MOVE_FILE', 'DELETE_FILE',
             'EXECUTE_PROCESS', 'GIT_STAGE', 'GIT_COMMIT'})
@@ -537,14 +772,14 @@ class RuntimeTests(unittest.TestCase):
         original = self.m.subprocess.Popen
         observed = []
         def capture(*args, **kw):
-            observed.append(json.loads(args[0][7]))
+            observed.append(json.loads(args[0][7]) if args[0][1] == '-I' else args[0])
             return original(*args, **kw)
         with patch.object(self.m.subprocess, 'Popen', side_effect=capture):
             self.execute(self.action('GIT_STAGE', self.root), self.m.RuntimePayload('a', git_paths=('a',)))
             only_stage = self.r.Authorization('auth', 'task', frozenset({self.r.ActionClass.GIT_STAGE}),
                 (str(self.root),), frozenset({'git.stage'}), 100)
             out = self.execute(self.action('GIT_COMMIT', self.root, 'b'),
-                self.m.RuntimePayload('b', commit_message='synthetic'), authorization=only_stage)
+                self.commit_payload('b'), authorization=only_stage)
         self.assertEqual(out.receipt.policy_reason, 'AUTHORIZATION_MISSING')
         self.assertEqual(self.git('rev-list', '--count', '--all').stdout, b'0\n')
         self.assertTrue(observed)
