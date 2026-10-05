@@ -192,6 +192,8 @@ class RemoteOperationEvidence:
     resource_digest: str | None = None
     status_code: int | None = None
     reconciliation: str | None = None
+    response_body_complete: bool | None = None
+    response_parse_status: str = 'NOT_ATTEMPTED'
 
 
 @dataclass(frozen=True, repr=False)
@@ -311,8 +313,12 @@ class HTTPSRemoteTransport:
         _require(context.verify_mode == ssl.CERT_REQUIRED and context.check_hostname, 'INVALID_REMOTE_CONFIG')
         connection = http.client.HTTPSConnection(p.hostname, p.port, timeout=timeout, context=context)
         deadline = time.monotonic() + timeout
-        connection.response_class = lambda *a, **kw: _Response(*a, deadline=deadline, **kw)
         response = None
+        def make_response(*args, **kwargs):
+            nonlocal response
+            response = _Response(*args, deadline=deadline, **kwargs)
+            return response
+        connection.response_class = make_response
         try:
             connection.request(method, p.path + ('?' + query if query else ''), body=body,
                 headers=dict(outgoing))
@@ -333,7 +339,7 @@ class HTTPSRemoteTransport:
             _require(len(data) <= response_limit and response.length in (None, 0), 'REMOTE_RESPONSE_LIMIT')
             return response.status, response_headers, data
         except Exception:
-            if response is not None:
+            if response is not None and type(response.status) is int and 100 <= response.status <= 599:
                 raise _ObservedResponseFailure(response.status) from None
             raise ValueError('REMOTE_TRANSPORT_UNCERTAIN') from None
         finally:
@@ -360,11 +366,20 @@ class NetworkRequestAdapter:
         self._configuration()
         _require(_url(target)[0] in self.origins, 'REMOTE_DESTINATION_DENIED')
 
-    def _request(self, p, method, url, headers=(), body=b''):
+    def _request(self, p, method, url, headers=(), body=b'', *, observe=None):
+        # Per-invocation digest/status updates happen at the observed boundary,
+        # before callers parse. Later parser failures cannot erase these facts.
+        observe = observe or (lambda **values: None)
         self._preflight(url)
-        status, response_headers, data = self.transport.request(method, url, headers, body,
-            timeout=p.timeout, response_limit=p.response_limit)
+        observe(request_attempted=True)
+        try:
+            status, response_headers, data = self.transport.request(method, url, headers, body,
+                timeout=p.timeout, response_limit=p.response_limit)
+        except _ObservedResponseFailure as error:
+            observe(response_observed=True, status_code=error.status, response_body_complete=False)
+            raise
         _require(type(status) is int and 100 <= status <= 599, 'REMOTE_RESPONSE_INVALID')
+        observe(response_observed=True, status_code=status, response_body_complete=False)
         try:
             _require(type(data) is bytes
             and len(data) <= p.response_limit and type(response_headers) is tuple
@@ -374,33 +389,31 @@ class NetworkRequestAdapter:
                 'REMOTE_RESPONSE_INVALID')
         except Exception:
             raise _ObservedResponseFailure(status) from None
+        observe(response_body_complete=True, response_digest=_digest(data))
         return status, response_headers, data
 
     def _run(self, a, p, context, now):
-        attempted = False; observed_status = None
+        attempted = False; observed = {}
         try:
             _require(a.action_class == rse.ActionClass.NETWORK_REQUEST, 'NOT_BOUND')
             self._preflight(p.target)
             headers = p.headers + ((('idempotency-key', p.request_identity),) if p.request_identity else ())
             attempted = True
-            status, _, data = self._request(p, p.method, _endpoint(p.target, p.query), headers, p.body)
-            observed_status = status
+            status, _, data = self._request(p, p.method, _endpoint(p.target, p.query), headers, p.body,
+                observe=observed.update)
             state = (rse.ExecutionState.KNOWN_SUCCESS if 200 <= status < 300 else
                 rse.ExecutionState.KNOWN_FAILURE if p.method in ('GET', 'HEAD') else rse.ExecutionState.UNKNOWN_OUTCOME)
-            evidence = _evidence(p, 'RESPONSE_OBSERVED', request_attempted=True, response_observed=True,
-                response_digest=_digest(data), status_code=status)
+            evidence = _evidence(p, 'RESPONSE_OBSERVED', **observed)
             return _Outcome(state, evidence, (_event(a, context, now, evidence, state == rse.ExecutionState.KNOWN_SUCCESS),))
-        except Exception as error:
+        except Exception:
             state = rse.ExecutionState.UNKNOWN_OUTCOME if attempted and p.method not in ('GET', 'HEAD') else rse.ExecutionState.KNOWN_FAILURE
-            observed = isinstance(error, _ObservedResponseFailure) or observed_status is not None
-            evidence = _evidence(p, 'REMOTE_UNCERTAIN' if attempted else 'REMOTE_REJECTED', request_attempted=attempted,
-                response_observed=observed, status_code=error.status if isinstance(error, _ObservedResponseFailure) else observed_status)
+            evidence = _evidence(p, 'REMOTE_UNCERTAIN' if attempted else 'REMOTE_REJECTED', **observed)
             return _Outcome(state, evidence, (_event(a, context, now, evidence),) if attempted else ())
 
-    def _readback(self, a, p):
+    def _readback(self, a, p, *, observe=None):
         if p.readback_target is None:
             return 'STILL_UNKNOWN', None
-        status, _, data = self._request(p, 'GET', _endpoint(p.readback_target, p.readback_query), p.headers)
+        status, _, data = self._request(p, 'GET', _endpoint(p.readback_target, p.readback_query), p.headers, observe=observe)
         digest = _digest(data)
         return ('RECONCILED_SUCCESS' if status == 200 and digest == p.expected_readback_digest else 'STILL_UNKNOWN'), digest
 
@@ -455,11 +468,13 @@ class GitPushAdapter(NetworkRequestAdapter):
         oid = self.local._read_git(('rev-parse', '--verify', p.local_ref + '^{commit}')).decode().strip()
         _require(oid == p.expected_local_oid, 'LOCAL_REF_CHANGED')
 
-    def _remote(self, p):
+    def _remote(self, p, *, observe=None):
+        observe = observe or (lambda **values: None)
         status, headers, data = self._request(p, 'GET', p.target.rstrip('/') + '/info/refs?service=git-receive-pack',
-            (('accept', 'application/x-git-receive-pack-advertisement'),))
+            (('accept', 'application/x-git-receive-pack-advertisement'),), observe=observe)
         _require(status == 200 and ('content-type', 'application/x-git-receive-pack-advertisement') in
             tuple((k.lower(), v.lower()) for k, v in headers), 'GIT_PROTOCOL_INVALID')
+        observe(response_parse_status='PARSE_FAILED')
         packets = _packets(data)
         _require(len(packets) >= 4 and packets[:2] == [b'# service=git-receive-pack\n', None]
             and packets[-1] is None and all(x is not None for x in packets[2:-1]), 'GIT_PROTOCOL_INVALID')
@@ -473,11 +488,12 @@ class GitPushAdapter(NetworkRequestAdapter):
             oid, sep, ref = row.partition(b' ')
             _require(sep and local._git_oid(oid.decode('ascii'), 40) and ref not in refs, 'GIT_PROTOCOL_INVALID')
             refs[ref] = oid.decode('ascii')
+        observe(response_parse_status='PARSED')
         _require(p.remote_ref.encode() in refs, 'REMOTE_REF_CHANGED')
         return refs[p.remote_ref.encode()]
 
     def _run(self, a, p, context, now):
-        attempted = False; observed_status = None
+        attempted = False; observed = {}
         try:
             _require(a.action_class == rse.ActionClass.GIT_PUSH, 'NOT_BOUND')
             self._preflight(p.target); self._repository(p)
@@ -499,12 +515,13 @@ class GitPushAdapter(NetworkRequestAdapter):
             attempted = True
             status, _, data = self._request(p, 'POST', p.target.rstrip('/') + '/git-receive-pack',
                 (('content-type', 'application/x-git-receive-pack-request'),
-                 ('accept', 'application/x-git-receive-pack-result')), body)
-            observed_status = status
-            _require(status == 200 and _packets(data) == [b'unpack ok\n', b'ok ' + p.remote_ref.encode() + b'\n', None], 'GIT_UNCERTAIN')
+                 ('accept', 'application/x-git-receive-pack-result')), body, observe=observed.update)
+            _require(status == 200, 'GIT_UNCERTAIN')
+            observed['response_parse_status'] = 'PARSE_FAILED'
+            _require(_packets(data) == [b'unpack ok\n', b'ok ' + p.remote_ref.encode() + b'\n', None], 'GIT_UNCERTAIN')
+            observed['response_parse_status'] = 'PARSED'
             _require(self._remote(p) == p.expected_local_oid, 'GIT_UNCERTAIN')
-            evidence = _evidence(p, 'COMPLETED', request_attempted=True, response_observed=True,
-                response_digest=_digest(data), resource_digest=_digest(p.expected_local_oid.encode()), status_code=status)
+            evidence = _evidence(p, 'COMPLETED', resource_digest=_digest(p.expected_local_oid.encode()), **observed)
             return _Outcome(rse.ExecutionState.KNOWN_SUCCESS, evidence, (_event(a, context, now, evidence, True),))
         except Exception as error:
             reason = 'GIT_UNCERTAIN' if attempted else 'GIT_REJECTED'
@@ -512,18 +529,17 @@ class GitPushAdapter(NetworkRequestAdapter):
                 'GIT_REPOSITORY_MISMATCH', 'LOCAL_REF_CHANGED', 'REMOTE_REF_CHANGED', 'GIT_REMOTE_BINDING_MISMATCH',
                 'NON_FAST_FORWARD', 'UNSAFE_GIT_CONFIG', 'GIT_PACK_REJECTED', 'GIT_OBJECT_FORMAT_UNSUPPORTED'):
                 reason = str(error)
-            if isinstance(error, _ObservedResponseFailure):
-                observed_status = error.status
-            evidence = _evidence(p, reason, request_attempted=attempted,
-                response_observed=observed_status is not None, status_code=observed_status)
+            evidence = _evidence(p, reason, **observed)
             return _Outcome(rse.ExecutionState.UNKNOWN_OUTCOME if attempted else rse.ExecutionState.KNOWN_FAILURE,
                 evidence, (_event(a, context, now, evidence),) if attempted else ())
 
-    def _readback(self, a, p):
+    def _readback(self, a, p, *, observe=None):
         # Reconciliation reads the prebound URL; local refs may legitimately drift.
-        oid = self._remote(p)
+        oid = self._remote(p, observe=observe)
         state = 'RECONCILED_SUCCESS' if oid == p.expected_local_oid else (
             'RECONCILED_NOT_APPLIED' if oid == p.expected_remote_oid else 'CONFLICT')
+        if observe:
+            observe(resource_digest=_digest(oid.encode()))
         return state, _digest(oid.encode())
 
 
@@ -547,7 +563,7 @@ class PullRequestCreateAdapter(NetworkRequestAdapter):
             return False
 
     def _run(self, a, p, context, now):
-        attempted = False; observed_status = None
+        attempted = False; observed = {}
         try:
             _require(a.action_class == rse.ActionClass.PR_CREATE, 'NOT_BOUND')
             self._preflight(p.target)
@@ -556,27 +572,29 @@ class PullRequestCreateAdapter(NetworkRequestAdapter):
             _require(len(body) <= MAX_BODY)
             attempted = True
             status, _, data = self._request(p, 'POST', p.target,
-                (('content-type', 'application/json'), ('accept', 'application/vnd.github+json')), body)
-            observed_status = status
+                (('content-type', 'application/json'), ('accept', 'application/vnd.github+json')), body, observe=observed.update)
+            observed['response_parse_status'] = 'PARSE_FAILED'
             result = json.loads(data)
+            _require(type(result) is dict, 'PR_UNCERTAIN')
+            observed['response_parse_status'] = 'PARSED'
             _require(status == 201 and self._matches(p, result), 'PR_UNCERTAIN')
-            evidence = _evidence(p, 'COMPLETED', request_attempted=True, response_observed=True,
-                response_digest=_digest(data), resource_digest=sc.artifact_digest((result['id'], result['number'])), status_code=status)
+            evidence = _evidence(p, 'COMPLETED', resource_digest=sc.artifact_digest((result['id'], result['number'])), **observed)
             return _Outcome(rse.ExecutionState.KNOWN_SUCCESS, evidence, (_event(a, context, now, evidence, True),))
-        except Exception as error:
-            if isinstance(error, _ObservedResponseFailure):
-                observed_status = error.status
-            evidence = _evidence(p, 'PR_UNCERTAIN' if attempted else 'PR_REJECTED', request_attempted=attempted,
-                response_observed=observed_status is not None, status_code=observed_status)
+        except Exception:
+            evidence = _evidence(p, 'PR_UNCERTAIN' if attempted else 'PR_REJECTED', **observed)
             return _Outcome(rse.ExecutionState.UNKNOWN_OUTCOME if attempted else rse.ExecutionState.KNOWN_FAILURE,
                 evidence, (_event(a, context, now, evidence),) if attempted else ())
 
-    def _readback(self, a, p):
+    def _readback(self, a, p, *, observe=None):
+        observe = observe or (lambda **values: None)
         query = 'state=all&per_page=100&head=' + quote(p.repository.split('/')[0] + ':' + p.head, safe='') + '&base=' + quote(p.base, safe='')
-        status, headers, data = self._request(p, 'GET', p.target + '?' + query, (('accept', 'application/vnd.github+json'),))
+        status, headers, data = self._request(p, 'GET', p.target + '?' + query, (('accept', 'application/vnd.github+json'),), observe=observe)
+        observe(response_parse_status='PARSE_FAILED')
         results = json.loads(data)
+        _require(type(results) is list, 'PR_READBACK_INCOMPLETE')
+        observe(response_parse_status='PARSED')
         # Pagination could hide a duplicate. One bounded page, no automatic retry.
-        _require(status == 200 and type(results) is list and len(results) < 100
+        _require(status == 200 and len(results) < 100
             and not any(k.lower() == 'link' for k, v in headers), 'PR_READBACK_INCOMPLETE')
         matches = [v for v in results if self._matches(p, v)]
         marker = '<!-- 20396-request:' + p.request_identity + ' -->'
@@ -694,13 +712,16 @@ class RemoteRuntimeBinding:
         evidence = None
         def read(_):
             nonlocal evidence
-            state, result_digest = 'STILL_UNKNOWN', None
+            state = 'STILL_UNKNOWN'
+            evidence = _evidence(payload, 'READBACK_OBSERVED')
+            def observe(**values):
+                nonlocal evidence
+                evidence = replace(evidence, **values)
             try:
-                state, result_digest = adapter._readback(action, payload)
+                state, _ = adapter._readback(action, payload, observe=observe)
             except Exception:
                 pass
-            evidence = _evidence(payload, 'READBACK_OBSERVED', response_digest=result_digest,
-                response_observed=result_digest is not None, reconciliation=state)
+            evidence = replace(evidence, reconciliation=state)
             return {'RECONCILED_SUCCESS': rse.ReconciliationOutcome.EFFECT_APPLIED,
                 'RECONCILED_NOT_APPLIED': rse.ReconciliationOutcome.EFFECT_NOT_APPLIED}.get(state, rse.ReconciliationOutcome.STILL_UNKNOWN)
         try:

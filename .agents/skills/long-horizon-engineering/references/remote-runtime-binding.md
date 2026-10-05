@@ -167,6 +167,45 @@ readback is optional: a prebound same-origin GET target/query plus exact expecte
 response digest can prove a match; absent/mismatching/empty readback does not
 prove non-application. Git and PR have the bounded strategies above.
 
+Readback evidence is captured before body interpretation. `request_attempted`
+describes the current reconciliation GET reaching the transport boundary, not
+a second mutation or proof that bytes were sent. It stays false when no readback
+is configured or the request is rejected before that boundary. Each call keeps
+its own observations; adapters retain no shared mutable response state.
+
+`response_observed` becomes true only after an HTTP status/response has actually
+been observed; its `status_code` survives later framing, body or semantic parsing
+failure. The included HTTPS transport also retains a parsed status line when
+subsequent header parsing fails. A timeout without response metadata keeps
+`response_observed=false` and `status_code=None`.
+
+Two additive evidence fields distinguish body completeness and parsing:
+
+| Observation | `response_body_complete` | `response_digest` | `response_parse_status` |
+|---|---|---|---|
+| No response metadata | `None` | `None` | `NOT_ATTEMPTED` |
+| Observed status, incomplete/over-limit body or rejected headers | `false` | `None` | `NOT_ATTEMPTED` |
+| Complete bounded body, malformed JSON/protocol | `true` | SHA-256 of full body | `PARSE_FAILED` |
+| Complete bounded body, valid but ambiguous PR list | `true` | SHA-256 of full body | `PARSED` |
+| Generic network digest readback (no semantic parser) | `true` | SHA-256 of full body | `NOT_ATTEMPTED` |
+
+`response_digest` never denotes a partial body or a Git OID. Incomplete bodies
+have no digest; Git's resolved-ref digest uses `resource_digest`. `PARSED` means
+the expected representation/container was interpreted, not that a resource
+matched or an effect was proved. An observed non-2xx response retains its status
+and any complete bounded body digest, while reconciliation stays conservative.
+An HTTP 200 with malformed PR JSON therefore reports response observed, status
+200, complete body and `PARSE_FAILED`, while remaining `STILL_UNKNOWN`. Repeating
+execution is still blocked; readback never creates another PR.
+
+The same additive fields describe the existing execution response where one is
+captured: network requests have no semantic parser, PR creation parses its JSON
+object, and Git push parses its mutation report-status response. Git preflight
+lookups remain separate from that mutation response. Evidence contains only
+bounded status/boolean/enum values and digests; raw bodies and exception text do
+not enter receipts, CET or Security Chain. The existing chain anchors the updated
+evidence digest without a schema or authorization change.
+
 An UNKNOWN action stays pending and execution returns `UNKNOWN_OUTCOME_PENDING`
 without another mutation. Reconciliation reporting not-applied does not itself
 retry; a subsequent explicitly authorized execution is a new controller decision.

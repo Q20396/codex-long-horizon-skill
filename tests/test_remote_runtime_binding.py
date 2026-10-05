@@ -192,6 +192,8 @@ class RemoteTests(unittest.TestCase):
         self.assertEqual(out.events[0].source, self.c.ObservationSource.ADAPTER_OBSERVED)
         self.assertEqual(out.events[0].status, self.c.EventStatus.COMPLETED)
         self.assertTrue(out.evidence.request_attempted and out.evidence.response_observed)
+        self.assertIs(out.evidence.response_body_complete, True)
+        self.assertEqual(out.evidence.response_parse_status, 'NOT_ATTEMPTED')
         self.assertEqual(out.evidence.response_digest, hashlib.sha256(b'RESPONSE_MARKER').hexdigest())
         self.assertTrue(self.chain.verify().valid)
 
@@ -329,6 +331,8 @@ class RemoteTests(unittest.TestCase):
         value = subprocess.check_output([shutil.which('git'), '--git-dir', str(remote), 'rev-parse', p.remote_ref]).decode().strip()
         self.assertEqual(value, p.expected_local_oid)
         self.assertEqual(bare.mutations, 1)
+        self.assertIs(out.evidence.response_body_complete, True)
+        self.assertEqual(out.evidence.response_parse_status, 'PARSED')
 
     def test_git_compare_and_swap_rejects_drift_after_lookup(self):
         p = self.setup_git(); self.prepare([p]); remote = self.root.parent / 'bare.git'
@@ -390,6 +394,8 @@ class RemoteTests(unittest.TestCase):
         out = self.execute(p)
         self.assertEqual(out.receipt.execution_state, 'KNOWN_SUCCESS')
         self.assertIsNotNone(out.evidence.resource_digest)
+        self.assertIs(out.evidence.response_body_complete, True)
+        self.assertEqual(out.evidence.response_parse_status, 'PARSED')
         self.assertEqual(self.provider.resources[0]['body'], 'PR_BODY_MARKER\n\n<!-- 20396-request:request-1 -->')
 
     def test_pr_empty_multiple_and_exact_readbacks(self):
@@ -408,6 +414,155 @@ class RemoteTests(unittest.TestCase):
         p = self.setup_pr(); self.prepare([p]); self.provider.lose_response = True; self.execute(p)
         self.provider.resources[0]['head']['repo']['full_name'] = 'attacker/repo'
         self.assertEqual(self.execute(p, reconcile=True).evidence.reconciliation, 'STILL_UNKNOWN')
+
+    def recovery_pr(self, **changes):
+        p = replace(self.setup_pr(), **changes)
+        self.prepare([p]); self.provider.lose_response = True
+        self.assertEqual(self.execute(p).receipt.execution_state, 'UNKNOWN_OUTCOME')
+        return p
+
+    def assert_recovery_pending(self, p, out):
+        self.assertEqual(out.evidence.reconciliation, 'STILL_UNKNOWN')
+        self.assertEqual(self.execute(p).receipt.policy_reason, 'UNKNOWN_OUTCOME_PENDING')
+        self.assertEqual(sum(request[0] == 'POST' for request in self.provider.requests), 1)
+
+    def test_recovery_malformed_200_retains_observation_status_and_complete_digest(self):
+        p = self.recovery_pr()
+        body = b'{SYNTHETIC_RESPONSE_BODY'
+        self.provider.readback_response = (200, (), body)
+        out = self.execute(p, reconcile=True)
+        self.assertTrue(out.evidence.response_observed)
+        self.assertEqual(out.evidence.status_code, 200)
+        self.assertTrue(out.evidence.request_attempted)
+        self.assertIs(getattr(out.evidence, 'response_body_complete', None), True)
+        self.assertEqual(out.evidence.response_digest, hashlib.sha256(body).hexdigest())
+        self.assertEqual(getattr(out.evidence, 'response_parse_status', None), 'PARSE_FAILED')
+        self.assert_recovery_pending(p, out)
+
+    def test_recovery_no_response_is_distinct_from_parse_failure(self):
+        p = self.recovery_pr(); self.provider.readback_error = TimeoutError('SYNTHETIC_SECRET_TOKEN')
+        out = self.execute(p, reconcile=True)
+        self.assertTrue(out.evidence.request_attempted)
+        self.assertFalse(out.evidence.response_observed)
+        self.assertIsNone(out.evidence.status_code)
+        self.assertIsNone(getattr(out.evidence, 'response_body_complete', None))
+        self.assertIsNone(out.evidence.response_digest)
+        self.assertEqual(getattr(out.evidence, 'response_parse_status', None), 'NOT_ATTEMPTED')
+        self.assert_recovery_pending(p, out)
+
+    def test_recovery_valid_exact_pr_retains_parsed_response_metadata(self):
+        p = self.recovery_pr()
+        out = self.execute(p, reconcile=True)
+        self.assertEqual(out.evidence.status_code, 200)
+        self.assertTrue(out.evidence.response_observed and out.evidence.request_attempted)
+        self.assertIs(getattr(out.evidence, 'response_body_complete', None), True)
+        self.assertEqual(getattr(out.evidence, 'response_parse_status', None), 'PARSED')
+        self.assertEqual(out.evidence.reconciliation, 'RECONCILED_SUCCESS')
+        self.assertEqual(self.execute(p).receipt.policy_reason, 'ALREADY_COMPLETED')
+        self.assertEqual(sum(request[0] == 'POST' for request in self.provider.requests), 1)
+
+    def test_recovery_ambiguous_pr_is_parsed_but_still_unknown(self):
+        p = self.recovery_pr(); self.provider.resources.append(dict(self.provider.resources[0], id=99, number=43))
+        out = self.execute(p, reconcile=True)
+        self.assertEqual(out.evidence.status_code, 200)
+        self.assertTrue(out.evidence.response_observed)
+        self.assertEqual(getattr(out.evidence, 'response_parse_status', None), 'PARSED')
+        self.assert_recovery_pending(p, out)
+
+    def test_recovery_non_2xx_is_observed_and_keeps_complete_body_digest(self):
+        p = self.recovery_pr(); self.provider.readback_response = (503, (), b'[]')
+        out = self.execute(p, reconcile=True)
+        self.assertTrue(out.evidence.response_observed)
+        self.assertEqual(out.evidence.status_code, 503)
+        self.assertIs(getattr(out.evidence, 'response_body_complete', None), True)
+        self.assertEqual(out.evidence.response_digest, hashlib.sha256(b'[]').hexdigest())
+        self.assertEqual(getattr(out.evidence, 'response_parse_status', None), 'PARSED')
+        self.assert_recovery_pending(p, out)
+
+    def test_recovery_production_http_incomplete_bodies_omit_digest_and_parse(self):
+        cases = (
+            b'HTTP/1.1 200 OK\r\nContent-Length: 20\r\n\r\n' + b'x' * 20,
+            b'HTTP/1.1 200 OK\r\nContent-Length: 20\r\n\r\n{',
+            b'HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n5\r\n{',
+        )
+        for index, raw in enumerate(cases):
+            with self.subTest(case=index):
+                self.journal = self.r.InMemorySecurityJournal()
+                self.broker = self.r.CapabilityBroker()
+                p = self.recovery_pr(response_limit=8)
+                transport = self.m.HTTPSRemoteTransport()
+                self.broker.get(self.r.CAPABILITIES[p.action_class]).transport = transport
+                with patch.object(self.m.http.client, 'HTTPSConnection', response_connection(raw)):
+                    out = self.execute(p, reconcile=True)
+                self.assertTrue(out.evidence.response_observed)
+                self.assertEqual(out.evidence.status_code, 200)
+                self.assertTrue(out.evidence.request_attempted)
+                self.assertIs(getattr(out.evidence, 'response_body_complete', None), False)
+                self.assertIsNone(out.evidence.response_digest)
+                self.assertEqual(getattr(out.evidence, 'response_parse_status', None), 'NOT_ATTEMPTED')
+                self.assert_recovery_pending(p, out)
+
+    def test_recovery_production_http_status_survives_header_parse_failure(self):
+        p = self.recovery_pr()
+        self.broker.get(self.r.CAPABILITIES[p.action_class]).transport = self.m.HTTPSRemoteTransport()
+        raw = b'HTTP/1.1 200 OK\r\n' + (b'X-Header: ' + b'x' * 1000 + b'\r\n') * 70 + b'\r\n'
+        with patch.object(self.m.http.client, 'HTTPSConnection', response_connection(raw)):
+            out = self.execute(p, reconcile=True)
+        self.assertTrue(out.evidence.response_observed)
+        self.assertEqual(out.evidence.status_code, 200)
+        self.assertIs(getattr(out.evidence, 'response_body_complete', None), False)
+        self.assertIsNone(out.evidence.response_digest)
+        self.assertEqual(getattr(out.evidence, 'response_parse_status', None), 'NOT_ATTEMPTED')
+        self.assert_recovery_pending(p, out)
+
+    def test_recovery_evidence_chain_and_repr_keep_only_digest_metadata(self):
+        p = self.recovery_pr()
+        self.provider.readback_response = (200, (), b'{SYNTHETIC_RESPONSE_BODY SYNTHETIC_SECRET_TOKEN')
+        out = self.execute(p, reconcile=True)
+        digest = self.s.artifact_digest(out.evidence)
+        self.assertIn(digest, out.receipt.evidence_refs)
+        self.assertTrue(self.chain.verify().valid)
+        serialized = json.dumps([asdict(v) for v in self.chain.records()]) + repr(out.receipt) + repr(out.evidence) + repr(out) + repr(out.events)
+        for marker in ('SYNTHETIC_RESPONSE_BODY', 'SYNTHETIC_SECRET_TOKEN', 'PR_BODY_MARKER'):
+            self.assertNotIn(marker, serialized)
+        self.assertTrue(out.evidence.response_observed)
+        self.assert_recovery_pending(p, out)
+
+    def test_recovery_network_digest_readback_reports_current_get(self):
+        p = self.payload(readback_target='https://api.example.invalid/resource/status',
+            expected_readback_digest=hashlib.sha256(b'RESPONSE_MARKER').hexdigest())
+        self.prepare([p]); self.service.lose_response = True; self.execute(p)
+        out = self.execute(p, reconcile=True)
+        self.assertEqual(out.evidence.status_code, 200)
+        self.assertTrue(out.evidence.request_attempted and out.evidence.response_observed)
+        self.assertIs(getattr(out.evidence, 'response_body_complete', None), True)
+        self.assertEqual(getattr(out.evidence, 'response_parse_status', None), 'NOT_ATTEMPTED')
+        self.assertEqual(out.evidence.reconciliation, 'RECONCILED_SUCCESS')
+        self.assertEqual([request[0] for request in self.service.requests], ['POST', 'GET'])
+
+    def test_recovery_without_readback_reports_no_request_or_response(self):
+        p = self.payload(); self.prepare([p]); self.service.lose_response = True; self.execute(p)
+        out = self.execute(p, reconcile=True)
+        self.assertFalse(out.evidence.request_attempted or out.evidence.response_observed)
+        self.assertIsNone(out.evidence.status_code)
+        self.assertIsNone(getattr(out.evidence, 'response_body_complete', None))
+        self.assertEqual(getattr(out.evidence, 'response_parse_status', None), 'NOT_ATTEMPTED')
+        self.assertEqual(len(self.service.requests), 1)
+
+    def test_recovery_git_protocol_parse_failure_keeps_http_evidence(self):
+        p = self.setup_git(); self.prepare([p]); self.git_service.lose_response = True; self.execute(p)
+        body = b'not pkt-line data'
+        with patch.object(self.git_service, 'request', return_value=(200,
+                (('content-type', 'application/x-git-receive-pack-advertisement'),), body)):
+            out = self.execute(p, reconcile=True)
+        self.assertTrue(out.evidence.response_observed and out.evidence.request_attempted)
+        self.assertEqual(out.evidence.status_code, 200)
+        self.assertIs(getattr(out.evidence, 'response_body_complete', None), True)
+        self.assertEqual(out.evidence.response_digest, hashlib.sha256(body).hexdigest())
+        self.assertEqual(getattr(out.evidence, 'response_parse_status', None), 'PARSE_FAILED')
+        self.assertEqual(out.evidence.reconciliation, 'STILL_UNKNOWN')
+        self.assertEqual(self.execute(p).receipt.policy_reason, 'UNKNOWN_OUTCOME_PENDING')
+        self.assertEqual(self.git_service.mutations, 1)
 
     def test_pr_merge_and_other_actions_not_bound(self):
         p = replace(self.payload(), action_class=self.r.ActionClass.PR_MERGE)
@@ -502,6 +657,9 @@ class RemoteTests(unittest.TestCase):
         self.assertEqual(out.receipt.execution_state, 'UNKNOWN_OUTCOME')
         self.assertTrue(out.evidence.response_observed)
         self.assertEqual(out.evidence.status_code, 201)
+        self.assertIs(out.evidence.response_body_complete, True)
+        self.assertEqual(out.evidence.response_parse_status, 'PARSE_FAILED')
+        self.assertEqual(out.evidence.response_digest, hashlib.sha256(b'not json').hexdigest())
 
     def test_legacy_reconcile_waits_for_scoped_mutation(self):
         p = self.payload(); self.prepare([p]); self.service.lose_response = True
@@ -677,7 +835,13 @@ class RemoteTests(unittest.TestCase):
             def read1(self, size): return b''
         self.adapter.transport = self.m.HTTPSRemoteTransport()
         with patch.object(self.m.http.client, 'HTTPSConnection', Connection):
-            self.assertEqual(self.execute(p).receipt.execution_state, 'UNKNOWN_OUTCOME')
+            out = self.execute(p)
+        self.assertEqual(out.receipt.execution_state, 'UNKNOWN_OUTCOME')
+        self.assertTrue(out.evidence.response_observed)
+        self.assertEqual(out.evidence.status_code, 200)
+        self.assertIs(out.evidence.response_body_complete, False)
+        self.assertIsNone(out.evidence.response_digest)
+        self.assertEqual(out.evidence.response_parse_status, 'NOT_ATTEMPTED')
 
 
 class BareGitService(Service):
@@ -736,7 +900,25 @@ class PRService(Service):
             if self.lose_response:
                 raise TimeoutError('SYNTHETIC_SECRET_TOKEN')
             return 201, (), json.dumps(record).encode()
-        return 200, (), json.dumps(self.resources).encode()
+        if getattr(self, 'readback_error', None):
+            raise self.readback_error
+        return getattr(self, 'readback_response', (200, (), json.dumps(self.resources).encode()))
+
+
+def response_connection(raw):
+    """Only connection I/O is replaced; production HTTPResponse parses bytes."""
+    class Socket:
+        def makefile(self, mode): return io.BytesIO(raw)
+        def settimeout(self, value): pass
+    class Connection:
+        def __init__(self, *args, **kwargs): pass
+        def request(self, method, *args, **kwargs): self.method = method
+        def getresponse(self):
+            response = self.response_class(Socket(), method=self.method)
+            response.begin()
+            return response
+        def close(self): pass
+    return Connection
 
 
 if __name__ == '__main__':
