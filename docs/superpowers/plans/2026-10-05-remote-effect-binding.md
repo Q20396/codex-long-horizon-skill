@@ -64,8 +64,8 @@ external account mutations. These results do not replace independent review.
 - [x] Write installed-core import RED test with socket, subprocess, thread and discovery guards; fresh broker contains no remote capabilities.
 - [x] Run `python3 -B -m unittest tests.test_remote_runtime_binding_package -v` and record RED.
 - [x] Add two inactive core artifacts to manifest/checker. Explain trusted-host credential custody, exact URL/query handling, readback ambiguity, digest-only result channel, same-process lifecycle loss on crash and no exactly-once/network-sandbox claims.
-- [ ] GREEN package test; `python3 scripts/full_skill_validation.py`; `python3 scripts/validate_formal_schemas.py --check-lock`; `python3 -B -m unittest discover -s tests -p 'test_*.py' -q`; `git diff --check`.
-- [ ] Record exact test/skip/warning counts. Commit explicit paths and capture final SHA.
+- [x] GREEN package test; `python3 scripts/full_skill_validation.py`; `python3 scripts/validate_formal_schemas.py --check-lock`; `python3 -B -m unittest discover -s tests -p 'test_*.py' -q`; `git diff --check`.
+- [x] Record exact test/skip/warning counts. Commit explicit paths and capture final SHA.
 
 ## Task 3: Independent review and PR handoff
 
@@ -75,3 +75,54 @@ external account mutations. These results do not replace independent review.
 - [ ] Reproduce blockers safely, correct narrowly, send corrected SHA to originating reviewer and refresh other affected approvals.
 - [ ] Once all gates pass, push feature branch and create PR titled `feat: add bounded remote effect binding`, attach PR to chat, await check-skill and formal-schema-gate.
 - [ ] Verify original three hashes unchanged; deliver directive section 157 report. MERGE NOT_PERFORMED; Phase 2C NOT_STARTED.
+
+## Task 4: v1.2 bounded recovery-evidence correction
+
+**Authority:** Design Authority Execution Directive v1.2, sections 0–45.
+Correction baseline: `7f8cb1bfa3810e60d80cbb802fbda3d68b4b46b5`.
+Base main and branch remain unchanged. This supersedes Task 3's review handoff
+only as expressly described below; it does not authorize merge or Phase 2C.
+
+**Observed issue:** Reviewer 4 independently reproduced an HTTP 200 PR readback
+whose malformed body became `STILL_UNKNOWN` with false no-response evidence.
+The existing duplicate-create gate held. Reviewer 2 approved the baseline;
+Reviewer 3 did not complete because of a platform restriction. Neither tests nor
+Main can replace the missing independent verdict.
+
+**Owned scope:** remote module, its behavioral tests and bounded reference
+documentation. No new capabilities, dependency, recovery framework, journal,
+secret store, SSH, host observer or Security Chain schema change.
+
+- [x] Reproduce malformed-200 recovery evidence with RED assertions; cover no
+  response, valid exact match, ambiguity, non-2xx and oversized/truncated bodies.
+- [x] Preserve observed status monotonically, distinguish complete body evidence
+  from incomplete/no body, and distinguish parse failure from no response.
+  Retain only bounded digest/status metadata; preserve UNKNOWN and no second
+  create. Document evidence semantics without strengthening runtime claims.
+- [x] Targeted GREEN, all relevant regressions, full suite, package checks and
+  local formal schema/lock checks. Keep generated test logs outside the source
+  tree; do not weaken absolute-source-path validation.
+- [ ] Commit bounded correction, freeze final SHA, and obtain Reviewer 4 closure,
+  Reviewer 3 read-only static security verdict, and Reviewer 2 freshness review.
+  An entire-review platform block again means STOP, with no workaround or
+  substitute reviewer. Restricted probes are not PASS.
+- [ ] Only if all same-SHA review and validation gates close, create the approved
+  PR and require check-skill plus formal-schema-gate. Do not merge.
+
+Containment: retain the isolated branch and evidence on failure. Do not alter the
+original checkout or its three unrelated untracked files. A correction remains
+open until its originating reviewer independently closes it.
+
+Correction implementation: `ce99ef4f2caa7cebe661a90d4ae61259a08f259c` changes
+exactly the three owned paths. RED: 11 tests, 13 assertion failures; GREEN:
+11 recovery tests and 64 remote/package tests (62 + 2). Relevant regressions:
+Phase 2A 65, RSE 52, Security Chain 41, token 37, CET 31, checkpoints 19,
+Local Compute 47; each passed with zero skips.
+
+Main validation: full suite 1081 total, 1065 passed, 16 skipped; exit 0.
+Full package validation exited 0, required checks PASS, 11 unchanged optional
+warnings; no failures. Local schema/lock check PASS (32 schemas, 6 locked
+distributions), with formal engine execution still PENDING, not CI proof.
+Logs and correction report remain outside the worktree. Original checkout and
+three untracked-file hashes were rechecked unchanged. Independent final-SHA
+reviews, P2 closure, PR and CI remain pending; no merge or Phase 2C.
