@@ -393,7 +393,8 @@ def _launcher():
     return executable, _pin(executable)
 
 
-def _capture(argv, cwd, env, timeout, stdout_limit, stderr_limit, on_start=None, *, cwd_fd, launcher, target_pin):
+def _capture(argv, cwd, env, timeout, stdout_limit, stderr_limit, on_start=None, *, cwd_fd, launcher, target_pin,
+             stdin_file=None):
     """Drain pipes continuously, retain bounded prefixes, and kill group on timeout."""
     _require(_pin(launcher[0]) == launcher[1], 'LAUNCHER_CHANGED')
     read_status, write_status = os.pipe()
@@ -403,7 +404,7 @@ def _capture(argv, cwd, env, timeout, stdout_limit, stderr_limit, on_start=None,
     try:
         process = subprocess.Popen((launcher[0], '-I', '-S', '-c', _LAUNCHER_CODE,
             str(cwd_fd), str(write_status), json.dumps(argv), json.dumps(target_pin), json.dumps(env)),
-            cwd='/', env={}, shell=False, stdin=subprocess.DEVNULL,
+            cwd='/', env={}, shell=False, stdin=subprocess.DEVNULL if stdin_file is None else stdin_file,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True, close_fds=True,
             pass_fds=(cwd_fd, write_status))
         closing, write_status = write_status, None
@@ -559,7 +560,7 @@ class LocalGitAdapter:
     def execute(self, action):
         raise ValueError('RUNTIME_BINDING_REQUIRED')
 
-    def _call(self, args):
+    def _call(self, args, *, stdin_file=None):
         env = dict(self.env)
         env.update(GIT_CONFIG_NOSYSTEM='1', GIT_CONFIG_GLOBAL='/dev/null', GIT_TERMINAL_PROMPT='0',
             GIT_PAGER='', GIT_EDITOR='/usr/bin/false', GIT_SEQUENCE_EDITOR='/usr/bin/false',
@@ -571,7 +572,7 @@ class LocalGitAdapter:
             '-c', 'core.pager=', '-c', 'core.editor=/usr/bin/false', '-c', 'protocol.allow=never', *args)
         with _directory(self.root) as cwd_fd:
             return _capture(argv, self.root, env, 30, MAX_OUTPUT_BYTES, MAX_OUTPUT_BYTES,
-                cwd_fd=cwd_fd, launcher=self.launcher, target_pin=self.pin)
+                cwd_fd=cwd_fd, launcher=self.launcher, target_pin=self.pin, stdin_file=stdin_file)
 
     def _validate(self):
         _require(_pin(self.git, git=True) == self.pin, 'EXECUTABLE_CHANGED')

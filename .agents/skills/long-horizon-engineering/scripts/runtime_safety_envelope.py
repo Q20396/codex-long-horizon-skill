@@ -6,6 +6,7 @@ not authenticate a human or sandbox hostile Python code. No effects occur on imp
 All paths are logical POSIX paths; no filesystem or DNS inspection is performed.
 """
 from dataclasses import dataclass, fields
+from contextlib import ExitStack
 from enum import Enum
 import hashlib
 import ipaddress
@@ -235,9 +236,32 @@ class InMemorySecurityJournal:
     def __init__(self):
         self._entries = []
         self._lock = RLock()
+        self._action_locks = {}
 
     def transaction(self):
         return self._lock
+
+    def action_transaction(self, action_id):
+        """Optional per-action serialization; no network call holds _lock.
+
+        Legacy transaction() retains its original semantics. Entries and lock
+        lookup remain protected by the short data lock. Locks share the same
+        lifetime as journal identities, not a separate remote journal.
+        """
+        legacy_owned = self._lock._is_owned()
+        with self._lock:
+            lock = self._action_locks.setdefault(_ref(action_id), RLock())
+        # A legacy transaction may not wait for a remote action whose result
+        # needs the legacy lock. Fail closed instead of reversing lock order.
+        if legacy_owned:
+            if not lock.acquire(blocking=False):
+                raise ValueError('JOURNAL_LOCK_ORDER')
+            # Keep the acquisition through context exit; a probe-and-release
+            # would reopen the inversion race before __enter__.
+            held = ExitStack()
+            held.callback(lock.release)
+            return held
+        return lock
 
     def append(self, entry):
         with self._lock:
@@ -471,7 +495,13 @@ def _prior(action, journal):
     return None
 
 
-def evaluate_and_execute(action, policy_stack, authorization, capability_broker, journal, now):
+def action_transaction(journal, action_id):
+    """Optional journal capability, with conservative legacy serialization."""
+    scoped = getattr(journal, 'action_transaction', None)
+    return scoped(action_id) if callable(scoped) else journal.transaction()
+
+
+def evaluate_and_execute(action, policy_stack, authorization, capability_broker, journal, now, *, action_scoped=False):
     """One transaction, one attempt; never auto-retry. Trusted adapters only.
 
     Caller must keep journal ownership and supply current authority on every call.
@@ -482,28 +512,31 @@ def evaluate_and_execute(action, policy_stack, authorization, capability_broker,
         return _receipt(action, PolicyDecision('INVALID', 'MALFORMED_ACTION'))
     execution = 'UNKNOWN_OUTCOME'  # History may be unavailable at the boundary.
     try:
-        with journal.transaction():
-            previous = _prior(action, journal)
-            if previous == 'IDENTITY_CONFLICT':
-                return _receipt(action, PolicyDecision('DENY', 'ACTION_ID_CONFLICT'))
-            if previous in ('KNOWN_SUCCESS', 'RECONCILED_SUCCESS'):
-                return _receipt(action, PolicyDecision('DENY', 'ALREADY_COMPLETED'),
-                                execution=previous, final='ALREADY_COMPLETED')
-            if previous in ('AUTHORIZED', 'ATTEMPTED', 'UNKNOWN_OUTCOME', 'RECONCILIATION_REQUIRED'):
-                return _receipt(action, PolicyDecision('REQUIRE_RECONCILIATION', 'UNKNOWN_OUTCOME_PENDING'),
-                                execution='UNKNOWN_OUTCOME',
-                                reconciliation='RECONCILIATION_REQUIRED')
-            execution = 'NOT_ATTEMPTED'
-            _append(journal, action, JournalState.PROPOSED)
-            decision = evaluate_policy(action, policy_stack, authorization, now)
-            if decision.disposition == 'ALLOW' and not capability_broker.has(action.capability):
-                decision = PolicyDecision('DENY', 'CAPABILITY_MISSING')
-            if decision.disposition != 'ALLOW':
-                _append(journal, action, JournalState.BLOCKED, decision.reason)
-                return _receipt(action, decision)
-            adapter = capability_broker.get(action.capability)
-            _append(journal, action, JournalState.AUTHORIZED, 'AUTHORIZED')
-            _append(journal, action, JournalState.ATTEMPTED)
+        with (action_transaction(journal, action.action_id) if action_scoped else journal.transaction()):
+            # Atomic reservation shared with legacy callers. Only the adapter
+            # operation is released from the global lock in scoped mode.
+            with journal.transaction():
+                previous = _prior(action, journal)
+                if previous == 'IDENTITY_CONFLICT':
+                    return _receipt(action, PolicyDecision('DENY', 'ACTION_ID_CONFLICT'))
+                if previous in ('KNOWN_SUCCESS', 'RECONCILED_SUCCESS'):
+                    return _receipt(action, PolicyDecision('DENY', 'ALREADY_COMPLETED'),
+                                    execution=previous, final='ALREADY_COMPLETED')
+                if previous in ('AUTHORIZED', 'ATTEMPTED', 'UNKNOWN_OUTCOME', 'RECONCILIATION_REQUIRED'):
+                    return _receipt(action, PolicyDecision('REQUIRE_RECONCILIATION', 'UNKNOWN_OUTCOME_PENDING'),
+                                    execution='UNKNOWN_OUTCOME',
+                                    reconciliation='RECONCILIATION_REQUIRED')
+                execution = 'NOT_ATTEMPTED'
+                _append(journal, action, JournalState.PROPOSED)
+                decision = evaluate_policy(action, policy_stack, authorization, now)
+                if decision.disposition == 'ALLOW' and not capability_broker.has(action.capability):
+                    decision = PolicyDecision('DENY', 'CAPABILITY_MISSING')
+                if decision.disposition != 'ALLOW':
+                    _append(journal, action, JournalState.BLOCKED, decision.reason)
+                    return _receipt(action, decision)
+                adapter = capability_broker.get(action.capability)
+                _append(journal, action, JournalState.AUTHORIZED, 'AUTHORIZED')
+                _append(journal, action, JournalState.ATTEMPTED)
             execution = 'UNKNOWN_OUTCOME'
             try:
                 result = adapter.execute(action)
@@ -531,11 +564,13 @@ def reconcile(action, journal, reconciler):
 
     EFFECT_NOT_APPLIED only clears uncertainty. The next execute call re-evaluates
     the complete current policy, authorization, expiry, revocation and capability.
+    Optional per-action journal serialization also protects legacy callers from
+    clearing a scoped attempt while its remote adapter is still running.
     """
     if not _valid_action(action):
         return _receipt(action, PolicyDecision('INVALID', 'MALFORMED_ACTION'))
     try:
-        with journal.transaction():
+        with action_transaction(journal, action.action_id):
             previous = _prior(action, journal)
             if previous not in ('AUTHORIZED', 'ATTEMPTED', 'UNKNOWN_OUTCOME', 'RECONCILIATION_REQUIRED'):
                 return _receipt(action, PolicyDecision('DENY', 'RECONCILIATION_NOT_PENDING'))

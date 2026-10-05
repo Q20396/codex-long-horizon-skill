@@ -97,9 +97,25 @@ This is **not an OS sandbox, host observer or network containment**. Allowlistin
 a process does not reveal or constrain all its internal effects. Unsupported safe
 filesystem primitives fail closed; no universal race-free guarantee is made.
 UNKNOWN outcomes block blind retries within the same process, not across crashes.
-There is no network, Git push, GitHub, deployment, installation, secret-store,
+Phase 2A has no network, Git push, GitHub, deployment, installation, secret-store,
 Paperclip, Codex-hook or Local Compute adapter. Nothing registers or executes on
 import. These are source-branch capabilities, not published-release claims.
+
+### Bounded Remote Effect Binding — Experimental / Same Process
+
+The separate opt-in [Phase 2B binding](.agents/skills/long-horizon-engineering/references/remote-runtime-binding.md)
+adds bounded HTTPS requests, exact single-branch fast-forward Git updates and
+GitHub-compatible PR creation through existing RSE authority. Destination,
+payload and old/new Git state are committed before authorization. Credentials
+are supplied by trusted host transport code, not discovered or included in model
+payloads. Redirects are disabled and TLS verification remains enabled.
+
+UNKNOWN blocks blind mutation retries in the same journal process; bounded
+readback may remain inconclusive. This is **not exactly-once, crash-durable
+execution, a secret manager, a network sandbox or independent host observation**.
+No PR merge/update, release/deploy, package installation, SSH, Paperclip,
+Codex runtime hook or Local Compute integration is added. Installing/importing
+the module activates nothing; no real external account mutation is used in tests.
 
 **Already installed?** Start with a non-sensitive repository and a bounded task:
 
