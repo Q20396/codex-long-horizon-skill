@@ -142,7 +142,9 @@ def _prepared_digest(p):
 def _material(action, payload):
     """Effect semantics exclude attribution, action IDs and execution limits."""
     kind = action.action_class
-    common = (kind, action.target, action.destination)
+    # Git discovery and receive-pack requests use this same transport target.
+    target = action.target.rstrip('/') if kind == rse.ActionClass.GIT_PUSH else action.target
+    common = (kind, target, action.destination)
     names = {
         rse.ActionClass.READ_FILE: (), rse.ActionClass.DELETE_FILE: (), rse.ActionClass.MOVE_FILE: (),
         rse.ActionClass.CREATE_FILE: ('content_bytes',), rse.ActionClass.WRITE_FILE: ('content_bytes',),

@@ -319,6 +319,73 @@ class BridgeTests(unittest.TestCase):
             repository=str(self.root), remote_name='origin', local_ref=self.git('symbolic-ref', 'HEAD').decode().strip(),
             remote_ref='refs/heads/main', expected_local_oid=new, expected_remote_oid=old))
 
+    def git_alias_proposals(self):
+        data = self.git_proposal()
+        target = data['requested_target'] + '/'
+        self.git('remote', 'add', 'alias', target)
+        alias = dict(data, proposal_id='alias', requested_target=target,
+            requested_parameters=dict(data['requested_parameters'], remote_name='alias'))
+        return data, alias
+
+    def test_git_trailing_slash_alias_material_identity_preserves_commitments(self):
+        data, alias = self.git_alias_proposals()
+        p = self.prepare(data).prepared; q = self.prepare(alias, 'host-2').prepared
+        self.assertEqual(p.material_effect_identity, q.material_effect_identity)
+        self.assertEqual(q.action_request.target, 'https://api.example.invalid:443/repo.git/')
+        self.assertEqual(q.normalized_payload.target, 'https://api.example.invalid:443/repo.git/')
+        self.assertEqual(q.normalized_payload.remote_name, 'alias')
+        self.assertNotEqual(p.payload_digest, q.payload_digest)
+        self.assertNotEqual(p.prepared_digest, q.prepared_digest)
+        distinct = dict(alias, requested_parameters=dict(alias['requested_parameters'],
+            remote_ref='refs/heads/other'))
+        self.assertNotEqual(p.material_effect_identity,
+            self.prepare(distinct, 'host-3').prepared.material_effect_identity)
+        for kind in ('NETWORK_REQUEST', 'PR_CREATE'):
+            with self.subTest(kind=kind):
+                original = self.prepare(self.proposal(kind), kind).prepared
+                changed = replace(original.action_request, target=original.action_request.target + '/')
+                self.assertNotEqual(original.material_effect_identity,
+                    self.m._material(changed, original.normalized_payload))
+
+    def test_git_trailing_slash_alias_unknown_blocks_reproposal(self):
+        data, alias = self.git_alias_proposals()
+        p = self.prepare(data).prepared; q = self.prepare(alias, 'host-2').prepared
+        self.bind(p, q); self.git_service.lose_response = True
+        self.assertEqual(self.execute(p).receipt.execution_state, 'UNKNOWN_OUTCOME')
+        requests = len(self.git_service.requests)
+        self.assertEqual(self.execute(q).status, 'RECONCILIATION_REQUIRED')
+        self.assertEqual(len(self.git_service.requests), requests)
+        self.assertEqual(self.git_service.mutations, 1)
+
+    def test_git_trailing_slash_alias_concurrent_execution_is_serialized(self):
+        data, alias = self.git_alias_proposals()
+        p = self.prepare(data).prepared; q = self.prepare(alias, 'host-2').prepared
+        self.bind(p, q)
+        entered, release = threading.Event(), threading.Event()
+        request = self.git_service.request
+        def blocked_request(method, url, headers, body, **limits):
+            if method == 'POST':
+                entered.set()
+                if not release.wait(3):
+                    raise TimeoutError('synthetic release timeout')
+            return request(method, url, headers, body, **limits)
+        with patch.object(self.git_service, 'request', side_effect=blocked_request):
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                first = pool.submit(self.execute, p)
+                try:
+                    self.assertTrue(entered.wait(2))
+                    requests = len(self.git_service.requests)
+                    try:
+                        result = pool.submit(self.execute, q).result(2)
+                    except FutureTimeout:
+                        self.fail('alias reached the blocked transport instead of reservation denial')
+                    self.assertEqual(result.status, 'RECONCILIATION_REQUIRED')
+                    self.assertEqual(len(self.git_service.requests), requests)
+                finally:
+                    release.set()
+                self.assertEqual(first.result(3).receipt.execution_state, 'KNOWN_SUCCESS')
+        self.assertEqual(self.git_service.mutations, 1)
+
     def test_git_push_unknown_new_proposal_and_not_applied(self):
         data = self.git_proposal()
         p = self.prepare(data).prepared; q = self.prepare(dict(data, proposal_id='new'), 'host-2').prepared
