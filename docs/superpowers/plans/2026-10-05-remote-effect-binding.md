@@ -126,3 +126,64 @@ distributions), with formal engine execution still PENDING, not CI proof.
 Logs and correction report remain outside the worktree. Original checkout and
 three untracked-file hashes were rechecked unchanged. Independent final-SHA
 reviews, P2 closure, PR and CI remain pending; no merge or Phase 2C.
+
+## Task 5: v1.3 Git ancestry integrity correction
+
+**Authority:** Design Authority Execution Directive v1.3, sections 0–40.
+Starting HEAD: `8cfbcb75104576390eaa6e25f487a388ca2170d0`.
+At that SHA Reviewer 4 closed P2, Reviewer 2 approved minimality, and Reviewer 3
+completed static review with F1/P1 BLOCK: legacy graft ancestry was not excluded.
+
+**Scope:** Only Git push ancestry integrity. Prefer remote module, remote tests,
+and remote reference documentation. A small shared Git helper change is allowed
+only if needed to enforce this boundary without changing unrelated behavior;
+add focused regression coverage for any shared change. Main owns this plan.
+No new capabilities, dependencies, graph framework, force/SSH, retry/durability,
+provider layer, schema expansion, real account tests, merge or Phase 2C.
+
+- [x] Write and observe RED graft/replace rejection tests with synthetic temp
+  repositories, no external endpoint. Preserve a fixture using actual unrelated
+  commit objects; demonstrate vulnerable interpretation only if practical.
+- [x] Fail closed on non-empty or malformed `.git/info/grafts` and any replace
+  namespace entry, including packed refs. Empty graft file may safely pass and
+  that rule must be tested and documented. Reject before ancestry/pack/mutation;
+  retain existing pre-send recheck, old/local OID and URL binding.
+- [x] Verify security-critical Git commands retain `GIT_NO_REPLACE_OBJECTS=1`
+  and clean environment/configuration; do not rely on that variable alone.
+  Test normal true fast-forward success and real non-fast-forward denial,
+  no mutation on rejection, remote unchanged, bounded reason/no raw metadata.
+- [x] Run targeted GREEN (baseline 64), Phase 2A, RSE, chain, token, CET,
+  checkpoints, Local Compute, full suite (baseline 1081/1065/16), package and
+  local formal checks. Keep generated evidence outside worktree.
+- [ ] Commit scoped correction and final plan, freeze final SHA. Reviewer 3
+  independently closes F1; Reviewer 2 checks minimality and Reviewer 4 checks
+  P2/UNKNOWN freshness. All three actual verdicts must apply to that SHA.
+- [ ] Only after all gates close, push feature branch, create the approved PR,
+  attach it and await check-skill and formal-schema-gate. Never merge.
+
+Containment: preserve original checkout and three untracked files. Retain
+isolated branch/evidence on blockers; do not self-close independent findings.
+Any newly required capability or unrelated fix returns to Design Authority.
+
+Task 5 implementation: `3bbd7ad3ea03087ab853c58ddb06899be9ff98cb` changes
+only the remote module, its behavioral tests and reference. Shared Phase 2A
+helper and all schemas remain unchanged. Accepted RED: 10 tests, 11 expected
+assertion failures, zero errors; genuine unrelated root commits reproduce the
+graft interpretation bypass. GREEN: 10 focused tests, 74 remote/package tests
+(72 + 2), zero skips. The real launcher boundary verifies replacement disabling
+and exclusion of ambient graft/config injection. Empty regular graft files are
+allowed; malformed/nonempty grafts and loose/packed replacement refs are denied.
+
+Main's relevant regressions: Phase 2A 65, RSE 52, Security Chain 41, token 37,
+CET 31, checkpoints 19, Local Compute 47; all PASS with no skips. Full suite:
+1091 total, 1075 passed, 16 unchanged skips; exit 0. Full package validation:
+required checks PASS, 11 unchanged optional warnings, no failures; exit 0.
+Local formal schema/lock check: PASS, 32 schemas and 6 locked distributions;
+formal engine execution remains PENDING until separately evidenced by CI.
+No real external-account mutation, installation into user skills, merge or
+Phase 2C. Generated validation logs remain outside the worktree.
+
+Original checkout and all three untracked-file hashes remain unchanged. This
+record does not close F1: final frozen-SHA Reviewer 3 closure, Reviewer 2/4
+freshness, then gated PR and CI are still required. Independent review results
+will be recorded outside the frozen source tree to avoid stale approvals.
