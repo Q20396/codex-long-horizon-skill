@@ -5,7 +5,7 @@ references supplied by a trusted adapter. Nothing here authenticates an adapter.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, InitVar
 from enum import Enum
 from itertools import islice
 import math
@@ -37,6 +37,8 @@ class CriticalEventType(str, Enum):
     GIT_STAGE = 'GIT_STAGE'
     GIT_COMMIT = 'GIT_COMMIT'
     GIT_PUSH = 'GIT_PUSH'
+    GIT_EFFECT = 'GIT_EFFECT'
+    REMOTE_EFFECT = 'REMOTE_EFFECT'
     PR_CREATE = 'PR_CREATE'
     PR_MERGE = 'PR_MERGE'
     RELEASE = 'RELEASE'
@@ -50,6 +52,7 @@ class ObservationSource(str, Enum):
     DECLARED = 'DECLARED'
     ADAPTER_OBSERVED = 'ADAPTER_OBSERVED'
     RECONCILIATION_OBSERVED = 'RECONCILIATION_OBSERVED'
+    HOST_OBSERVED = 'HOST_OBSERVED'
 
 
 class EventStatus(str, Enum):
@@ -155,6 +158,10 @@ ACTION_EVENTS = MappingProxyType({k: CriticalEventType[{
     'EXECUTE_PROCESS': 'PROCESS_START'}.get(k.name, k.name)] for k in rse.ActionClass})
 _PATH_EVENTS = frozenset(ACTION_EVENTS[k] for k in rse.PATH_ACTIONS)
 _NETWORK_EVENTS = frozenset(ACTION_EVENTS[k] for k in rse.EGRESS_ACTIONS)
+_HOST_EVENT_TOKEN = object()
+_HOST_EVENT_TYPES = frozenset(CriticalEventType[name] for name in (
+    'FILE_READ', 'FILE_WRITE', 'FILE_CREATE', 'FILE_DELETE', 'FILE_MOVE',
+    'PROCESS_START', 'PROCESS_EXIT', 'NETWORK_REQUEST', 'GIT_EFFECT', 'REMOTE_EFFECT'))
 
 
 def _target(kind, target):
@@ -180,20 +187,36 @@ class CriticalEvent:
     evidence_refs: tuple = ()
     exit_code: int | None = None
     destination: str | None = None
+    _host_token: InitVar[object] = None
 
-    def __post_init__(self):
+    def __post_init__(self, _host_token):
         _require(_text(self.event_id) and type(self.context) is TraceContext)
         _require(type(self.event_type) is CriticalEventType and type(self.source) is ObservationSource)
         _require(type(self.data_classification) is rse.DataClass and type(self.status) is EventStatus)
         _require(_time(self.timestamp) and (self.capability is None or _text(self.capability)))
-        _require((self.event_type == CriticalEventType.FILE_MOVE) == (self.destination is not None))
+        host = self.source == ObservationSource.HOST_OBSERVED
+        _require(not host or (_host_token is _HOST_EVENT_TOKEN and self.event_type in _HOST_EVENT_TYPES))
+        _require(host or self.event_type not in (CriticalEventType.GIT_EFFECT, CriticalEventType.REMOTE_EFFECT))
+        _require(not host or (self.destination is None and self.capability is None
+                             and self.status == EventStatus.OBSERVED and self.exit_code is None))
+        _require(host or ((self.event_type == CriticalEventType.FILE_MOVE) == (self.destination is not None)))
         _require(self.exit_code is None or (self.event_type == CriticalEventType.PROCESS_EXIT
                      and type(self.exit_code) is int and -255 <= self.exit_code <= 255))
-        object.__setattr__(self, 'target', _target(self.event_type, self.target))
+        if host:
+            _require(type(self.target) is str and self.target.startswith('sha256:')
+                     and _digest(self.target[7:]))
+        else:
+            object.__setattr__(self, 'target', _target(self.event_type, self.target))
         if self.destination is not None:
             _require(_text(self.destination))
             object.__setattr__(self, 'destination', rse._path(self.destination))
         object.__setattr__(self, 'evidence_refs', _refs(self.evidence_refs))
+
+
+def _host_observed_event(**kwargs):
+    """Private trusted ingestion path; not a hostile-Python isolation boundary."""
+    return CriticalEvent(source=ObservationSource.HOST_OBSERVED,
+                         _host_token=_HOST_EVENT_TOKEN, **kwargs)
 
 
 _CATEGORIES = ('reads', 'writes', 'creates', 'deletes', 'moves', 'processes',
@@ -253,7 +276,8 @@ class ObservedEffects(DeclaredEffects):
 
     def __post_init__(self):
         super().__post_init__()
-        _require(type(self.source) is ObservationSource and self.source != ObservationSource.DECLARED)
+        _require(type(self.source) is ObservationSource and self.source in (
+            ObservationSource.ADAPTER_OBSERVED, ObservationSource.RECONCILIATION_OBSERVED))
 
 
 def effect_count(effects):
@@ -299,6 +323,8 @@ def compare_effects(declared, observed):
 
 
 def _event_effect(event):
+    if event.source == ObservationSource.HOST_OBSERVED:
+        return {}  # Phase 3A does not compare opaque host evidence with concrete effects.
     kind, target = event.event_type, event.target
     basic = {CriticalEventType.FILE_READ: 'reads', CriticalEventType.FILE_WRITE: 'writes',
         CriticalEventType.FILE_CREATE: 'creates', CriticalEventType.FILE_DELETE: 'deletes',
@@ -328,7 +354,8 @@ def declared_from_action(action, context):
 
 
 def _observed(event):
-    return event.source != ObservationSource.DECLARED and event.status != EventStatus.ATTEMPTED
+    return event.source in (ObservationSource.ADAPTER_OBSERVED,
+                           ObservationSource.RECONCILIATION_OBSERVED) and event.status != EventStatus.ATTEMPTED
 
 
 @dataclass(frozen=True)
@@ -439,8 +466,9 @@ def detect_trace_risks(trace, declarations=(), *, internal_network_origins, appr
     internal = tuple(sorted({_origin(v) for v in _bounded(internal_network_origins)}))
     approved = tuple(sorted({_origin(v) for v in _bounded(approved_network_origins)}))
     trusted = set(internal) | set(approved)
-    events = tuple(e for e in trace.events() if _observed(e))
-    parents = {e.context.action_id: e.context.parent_action_id for e in trace.events()}
+    legacy_events = tuple(e for e in trace.events() if e.source != ObservationSource.HOST_OBSERVED)
+    events = tuple(e for e in legacy_events if _observed(e))
+    parents = {e.context.action_id: e.context.parent_action_id for e in legacy_events}
     ancestors = {}
     for action in parents:
         chain, parent = set(), parents[action]
@@ -464,7 +492,7 @@ def detect_trace_risks(trace, declarations=(), *, internal_network_origins, appr
         basis = {
             'finding_type': kind,
             'causal_path': tuple(reversed(path)),
-            'path_event_digests': tuple(sc.artifact_digest(e) for e in trace.events()
+            'path_event_digests': tuple(sc.artifact_digest(e) for e in legacy_events
                                        if e.context.action_id in path),
             'declaration_digest': sc.artifact_digest(declared.get(last.context.action_id)),
             'internal_origins': internal,
