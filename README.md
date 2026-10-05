@@ -131,6 +131,17 @@ Duplicate-effect suppression is same-process and same-bridge only; this is not
 crash-durable agent orchestration, a Host Observer, OS sandbox, or proprietary
 Codex interception layer.
 
+### Host Observation — Experimental Evidence Foundation
+
+20396 can ingest bounded observations from an explicitly trusted host evidence
+source and represent them separately from model declarations, adapter observations
+and reconciliation evidence.
+
+This phase defines only evidence provenance, ordering, scoped coverage and explicit
+action correlation. It does not ship an OS-specific sensor, kernel trace,
+enforcement layer, Host Observer daemon, or proof that missing host evidence means
+an effect did not occur.
+
 **Already installed?** Start with a non-sensitive repository and a bounded task:
 
 ```text
