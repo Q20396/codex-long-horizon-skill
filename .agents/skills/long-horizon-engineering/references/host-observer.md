@@ -88,7 +88,9 @@ MALFORMED_OBSERVATION; old replay evidence is never evicted. Use one ingestor an
 one trusted controller for a trace/chain. Other writers must be serialized by
 the caller; this lock does not coordinate separate ingestors or processes.
 
-Emission failure latches ingestion closed with MALFORMED_OBSERVATION. An optional
+Any exceptional exit during publication or replay-state update latches ingestion
+closed. ValueError/OSError return MALFORMED_OBSERVATION; unexpected exceptions and
+interrupts propagate after latching and are not swallowed. An optional
 chain may have written before failing; inspect existing evidence rather than
 blindly retrying with a fresh ingestor/ID. There is no durable atomic transaction,
 persistent session registry, crash recovery or cross-process deduplication.
@@ -107,9 +109,15 @@ When chain and actor are explicitly configured together, ingestion reuses existi
 `record_critical_event` authority validation and CRITICAL_TRACE_EVENT anchoring.
 The existing `20396-security-chain/v1` schema and ledger are unchanged; sealed
 records contain digests only. No chain is automatically created or persisted.
+Chain permission checks and recording use the trusted host's current wall clock,
+not the observation's supporting timestamp. Event evidence keeps `observed_at`
+unchanged. Expired current authority and observations later than the host's current
+clock cannot anchor an event. This is not a tamper-resistant clock guarantee.
 
 Legacy CET effect comparisons, risk detection and RSE correlation exclude host
-evidence. The trace retains host events, but legacy `observed_event_count` counts
+evidence. Legacy risk ancestry and finding digests use only non-host events, so
+host-only intermediary contexts cannot create a legacy causal path. The trace
+retains host events, but legacy `observed_event_count` counts
 adapter/reconciliation observations only. Phase 4 cross-layer verdicts are not
 implemented. No host observation does not change an action or prove no effect.
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import re
+import time
 from threading import Lock
 from types import MappingProxyType
 
@@ -157,17 +158,20 @@ class HostObservationIngestor:
                 self._trace._structure(self._trace._events + (event,))
                 if self._chain is not None:
                     record = cet.record_critical_event(self._chain, self._actor, event,
-                                                      now=observation.observed_at)
+                                                      now=time.time())
                     chain_ref = record.record_hash
                 self._trace.append(event)
-            except (ValueError, OSError):
+                reason = ('SEQUENCE_GAP' if gap else 'UNRESOLVED_LINK'
+                          if correlation == 'UNRESOLVED_LINK' else 'ACCEPTED')
+                result = HostObservationResult(True, reason, correlation, coverage,
+                                               cet.sc.artifact_digest(event), chain_ref)
+                self._accepted[observation.observation_id] = (digest, result)
+                self._sessions[observation.session_id] = (observation.sequence, incomplete)
+                return result
+            except BaseException as error:
                 # An optional store may have written before failing. Never retry
                 # within this lifecycle or claim crash-safe atomic publication.
                 self._closed = True
-                return reject('MALFORMED_OBSERVATION')
-            reason = 'SEQUENCE_GAP' if gap else 'UNRESOLVED_LINK' if correlation == 'UNRESOLVED_LINK' else 'ACCEPTED'
-            result = HostObservationResult(True, reason, correlation, coverage,
-                                           cet.sc.artifact_digest(event), chain_ref)
-            self._accepted[observation.observation_id] = (digest, result)
-            self._sessions[observation.session_id] = (observation.sequence, incomplete)
-            return result
+                if isinstance(error, (ValueError, OSError)):
+                    return reject('MALFORMED_OBSERVATION')
+                raise  # Preserve unexpected errors and interrupts after latching.

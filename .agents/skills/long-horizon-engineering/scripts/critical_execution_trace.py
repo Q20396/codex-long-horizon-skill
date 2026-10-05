@@ -466,8 +466,9 @@ def detect_trace_risks(trace, declarations=(), *, internal_network_origins, appr
     internal = tuple(sorted({_origin(v) for v in _bounded(internal_network_origins)}))
     approved = tuple(sorted({_origin(v) for v in _bounded(approved_network_origins)}))
     trusted = set(internal) | set(approved)
-    events = tuple(e for e in trace.events() if _observed(e))
-    parents = {e.context.action_id: e.context.parent_action_id for e in trace.events()}
+    legacy_events = tuple(e for e in trace.events() if e.source != ObservationSource.HOST_OBSERVED)
+    events = tuple(e for e in legacy_events if _observed(e))
+    parents = {e.context.action_id: e.context.parent_action_id for e in legacy_events}
     ancestors = {}
     for action in parents:
         chain, parent = set(), parents[action]
@@ -491,7 +492,7 @@ def detect_trace_risks(trace, declarations=(), *, internal_network_origins, appr
         basis = {
             'finding_type': kind,
             'causal_path': tuple(reversed(path)),
-            'path_event_digests': tuple(sc.artifact_digest(e) for e in trace.events()
+            'path_event_digests': tuple(sc.artifact_digest(e) for e in legacy_events
                                        if e.context.action_id in path),
             'declaration_digest': sc.artifact_digest(declared.get(last.context.action_id)),
             'internal_origins': internal,

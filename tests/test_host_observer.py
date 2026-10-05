@@ -8,7 +8,9 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILL = Path('.agents/skills/long-horizon-engineering')
@@ -292,6 +294,92 @@ class HostObservationTests(unittest.TestCase):
         self.assertFalse(ingestor.ingest(self.observation()).accepted)
         self.assertFalse(ingestor.ingest(self.observation(observation_id='retry')).accepted)
         self.assertEqual((self.trace.events(), chain.records()), ((), ()))
+
+    def test_chain_write_then_exception_propagates_and_latches_lifecycle_closed(self):
+        for exception_type in (RuntimeError, KeyboardInterrupt, SystemExit):
+            with self.subTest(exception_type=exception_type.__name__):
+                self.trace = self.c.CriticalTrace('trace', 'install')
+
+                class WriteThenRaise(self.c.sc.InMemorySecurityChain):
+                    fail_once = True
+
+                    def append(self, event):
+                        record = super().append(event)
+                        if self.fail_once:
+                            self.fail_once = False
+                            raise exception_type('synthetic publishing failure')
+                        return record
+
+                chain = WriteThenRaise('chain', 'install')
+                actor = self.c.sc.SecurityAuthority('actor', self.c.sc.AuthorityRole.RUNTIME, 'install')
+                ingestor = self.ingestor(chain=chain, actor=actor)
+                with self.assertRaises(exception_type):
+                    ingestor.ingest(self.observation())
+                self.assertEqual((len(chain.records()), len(self.trace.events())), (1, 0))
+                next_result = ingestor.ingest(self.observation(sequence=2, observation_id='next'))
+                self.assertEqual((next_result.accepted, next_result.reason, next_result.effective_coverage),
+                                 (False, 'MALFORMED_OBSERVATION', 'UNKNOWN'))
+                self.assertEqual((len(chain.records()), len(self.trace.events())), (1, 0))
+
+    def test_historical_observation_cannot_record_with_current_expired_authority(self):
+        chain = self.c.sc.InMemorySecurityChain('chain', 'install')
+        actor = self.c.sc.SecurityAuthority('actor', self.c.sc.AuthorityRole.RUNTIME,
+                                            'install', expires_at=10)
+        with patch.object(time, 'time', return_value=20):
+            result = self.ingestor(chain=chain, actor=actor).ingest(self.observation(observed_at=1))
+        self.assertFalse(result.accepted)
+        self.assertEqual((self.trace.events(), chain.records()), ((), ()))
+
+    def test_future_observation_does_not_choose_chain_authorization_time(self):
+        chain = self.c.sc.InMemorySecurityChain('chain', 'install')
+        actor = self.c.sc.SecurityAuthority('actor', self.c.sc.AuthorityRole.RUNTIME,
+                                            'install', expires_at=100)
+        with patch.object(time, 'time', return_value=20):
+            result = self.ingestor(chain=chain, actor=actor).ingest(self.observation(observed_at=30))
+        self.assertFalse(result.accepted)
+        self.assertEqual((self.trace.events(), chain.records()), ((), ()))
+
+    def test_host_only_intermediary_does_not_create_legacy_risk_path(self):
+        root = self.c.TraceContext('trace', 'install', 'project', 'task', 'run',
+                                   'read', None, 'trusted', None, 'runtime')
+        middle = replace(root, action_id='middle', parent_action_id='read')
+        network = replace(root, action_id='network', parent_action_id='middle')
+        for identity, kind, context, timestamp, target, classification in (
+            ('read', 'FILE_READ', root, 1, '/synthetic/private', self.c.rse.DataClass.SENSITIVE),
+            ('network', 'NETWORK_REQUEST', network, 3, 'https://outside.invalid', self.c.rse.DataClass.PUBLIC)):
+            self.trace.append(self.c.CriticalEvent(identity, self.c.CriticalEventType[kind], context,
+                self.c.ObservationSource.ADAPTER_OBSERVED, timestamp, target, classification))
+        self.assertEqual(self.c.detect_trace_risks(self.trace,
+            internal_network_origins=(), approved_network_origins=()), ())
+        self.ingestor(known_actions={'ref:middle': middle}).ingest(self.observation(
+            event_class='REMOTE_EFFECT', action_id_ref='ref:middle', observed_at=2))
+        self.assertEqual(len(self.trace.events()), 3)
+        self.assertEqual(self.c.detect_trace_risks(self.trace,
+            internal_network_origins=(), approved_network_origins=()), ())
+
+    def test_host_event_does_not_change_existing_legacy_risk_evidence_digest(self):
+        root = self.context('read')
+        network = replace(root, action_id='network', parent_action_id='read')
+        self.trace.append(self.c.CriticalEvent('read', self.c.CriticalEventType.FILE_READ, root,
+            self.c.ObservationSource.ADAPTER_OBSERVED, 1, '/synthetic/private', self.c.rse.DataClass.SENSITIVE))
+        self.trace.append(self.c.CriticalEvent('network', self.c.CriticalEventType.NETWORK_REQUEST, network,
+            self.c.ObservationSource.ADAPTER_OBSERVED, 3, 'https://outside.invalid', self.c.rse.DataClass.PUBLIC))
+        before = self.c.detect_trace_risks(self.trace, internal_network_origins=(), approved_network_origins=())
+        self.assertEqual(len(before), 1)
+        self.ingestor(known_actions={'ref:read': root}).ingest(self.observation(
+            event_class='REMOTE_EFFECT', action_id_ref='ref:read', observed_at=2))
+        after = self.c.detect_trace_risks(self.trace, internal_network_origins=(), approved_network_origins=())
+        self.assertEqual(after, before)
+
+    def test_valid_historical_observation_preserves_evidence_time_and_records_current_time(self):
+        chain = self.c.sc.InMemorySecurityChain('chain', 'install')
+        actor = self.c.sc.SecurityAuthority('actor', self.c.sc.AuthorityRole.RUNTIME,
+                                            'install', expires_at=100)
+        with patch.object(time, 'time', return_value=20):
+            result = self.ingestor(chain=chain, actor=actor).ingest(self.observation(observed_at=1))
+        self.assertTrue(result.accepted)
+        self.assertEqual(self.trace.events()[0].timestamp, 1)
+        self.assertEqual(chain.records()[0].timestamp, 20)
 
     def test_all_normalization_classes_are_retained_as_host_evidence(self):
         ingestor = self.ingestor()
