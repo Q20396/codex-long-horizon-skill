@@ -11,6 +11,7 @@ import http.client
 import ipaddress
 import json
 import math
+import os
 import re
 import ssl
 import tempfile
@@ -449,9 +450,29 @@ class GitPushAdapter(NetworkRequestAdapter):
         super().__init__(transport=transport, allowed_origins=allowed_origins)
         self.local = local.LocalGitAdapter(workspace_root=workspace_root, git_executable=git_executable)
 
+    def _ancestry(self):
+        # Reject override state, not just overrides relevant to today's graph.
+        # Inspect metadata only: malformed/comment-only grafts are also unsafe.
+        reason = 'GIT_ANCESTRY_OVERRIDE_PRESENT'
+        try:
+            with local._directory(self.local.root + '/.git/info') as fd:
+                grafts = local._regular(fd, 'grafts', missing=True)
+                _require(grafts is None or grafts.st_size == 0, reason)
+        except FileNotFoundError:
+            pass
+        try:
+            with local._directory(self.local.root + '/.git/refs/replace') as fd:
+                _require(not os.listdir(fd), reason)
+        except FileNotFoundError:
+            pass
+        # Includes packed refs; the directory check above also catches malformed
+        # loose entries which Git may omit from its enumeration.
+        _require(not self.local._read_git(('for-each-ref', '--format=%(refname)', 'refs/replace/')), reason)
+
     def _repository(self, p):
         _require(p.repository == self.local.root, 'GIT_REPOSITORY_MISMATCH')
         _require(self.local._validate() == 40, 'GIT_OBJECT_FORMAT_UNSUPPORTED')
+        self._ancestry()
         raw = self.local._read_git(('config', '--local', '--no-includes', '--null', '--list'))
         values = {}
         for row in raw.decode().split('\0'):
@@ -498,8 +519,10 @@ class GitPushAdapter(NetworkRequestAdapter):
             _require(a.action_class == rse.ActionClass.GIT_PUSH, 'NOT_BOUND')
             self._preflight(p.target); self._repository(p)
             _require(self._remote(p) == p.expected_remote_oid, 'REMOTE_REF_CHANGED')
+            self._ancestry()
             code, _, _, trunc, expired = self.local._call(('merge-base', '--is-ancestor', p.expected_remote_oid, p.expected_local_oid))
             _require(code == 0 and not expired and not any(trunc), 'NON_FAST_FORWARD')
+            self._ancestry()
             # Generate a self-contained exact reachability difference, never --all.
             with tempfile.TemporaryFile() as revisions:
                 revisions.write((p.expected_local_oid + '\n^' + p.expected_remote_oid + '\n').encode()); revisions.seek(0)
@@ -512,6 +535,7 @@ class GitPushAdapter(NetworkRequestAdapter):
             # Re-read mutable local inputs immediately before the sole mutation.
             self._repository(p)
             _require(self._remote(p) == p.expected_remote_oid, 'REMOTE_REF_CHANGED')
+            self._ancestry()
             attempted = True
             status, _, data = self._request(p, 'POST', p.target.rstrip('/') + '/git-receive-pack',
                 (('content-type', 'application/x-git-receive-pack-request'),
@@ -527,7 +551,8 @@ class GitPushAdapter(NetworkRequestAdapter):
             reason = 'GIT_UNCERTAIN' if attempted else 'GIT_REJECTED'
             if not attempted and type(error) is ValueError and str(error) in (
                 'GIT_REPOSITORY_MISMATCH', 'LOCAL_REF_CHANGED', 'REMOTE_REF_CHANGED', 'GIT_REMOTE_BINDING_MISMATCH',
-                'NON_FAST_FORWARD', 'UNSAFE_GIT_CONFIG', 'GIT_PACK_REJECTED', 'GIT_OBJECT_FORMAT_UNSUPPORTED'):
+                'NON_FAST_FORWARD', 'UNSAFE_GIT_CONFIG', 'GIT_PACK_REJECTED', 'GIT_OBJECT_FORMAT_UNSUPPORTED',
+                'GIT_ANCESTRY_OVERRIDE_PRESENT'):
                 reason = str(error)
             evidence = _evidence(p, reason, **observed)
             return _Outcome(rse.ExecutionState.UNKNOWN_OUTCOME if attempted else rse.ExecutionState.KNOWN_FAILURE,

@@ -123,6 +123,23 @@ exact revision input for bounded pack generation (at most the existing local
 capture limit of 1 MiB); ordinary local operations keep
 DEVNULL stdin. This does not grant arbitrary model-controlled process input.
 
+Ancestry decisions require no local graph overrides: any nonempty
+`.git/info/grafts` file (including malformed, whitespace-only or comment-only
+content) and any `refs/replace/*` entry (loose or packed, even irrelevant to the
+selected commits) are rejected with `GIT_ANCESTRY_OVERRIDE_PRESENT`. An absent
+or zero-byte regular grafts file is allowed. Loose namespace presence is checked
+even when Git would ignore malformed ref contents; packed refs are enumerated by
+the hardened Git command. Graft contents are not read into evidence or errors.
+These checks precede local commit resolution, ancestry validation and pack
+generation, and are repeated before mutation. Actual local Git subprocesses
+retain `GIT_NO_REPLACE_OBJECTS=1`; their clean environment excludes caller-supplied
+graft/replacement/config injection. This is a bounded integrity check, not a
+general proof against every Git graph mechanism or concurrent hostile filesystem
+mutation between checks; the trusted host must control the workspace throughout.
+Under those assumptions and with these overrides excluded, Git's own ancestry
+commands validate the actual commit-object graph; this is not an independent
+graph-parser proof or a guarantee against every Git implementation bug.
+
 Remote discovery and update use a minimal HTTPS smart-protocol exchange, not a
 Git network subprocess. The update packet carries **both old and new OIDs** and
 one exact ref; this supplies server-side old-value protection in addition to

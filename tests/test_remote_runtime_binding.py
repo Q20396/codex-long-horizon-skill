@@ -5,6 +5,7 @@ import hashlib
 import importlib
 import json
 import io
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -355,6 +356,140 @@ class RemoteTests(unittest.TestCase):
         self.prepare([p]); out = self.execute(p)
         self.assertEqual(out.evidence.reason, 'NON_FAST_FORWARD')
         self.assertEqual(self.git_service.mutations, 0)
+
+    def unrelated_git(self):
+        p = self.setup_git()
+        tree = self.git('rev-parse', p.expected_local_oid + '^{tree}').decode().strip()
+        unrelated = self.git('commit-tree', tree, '-m', 'unrelated root').decode().strip()
+        self.git('update-ref', p.local_ref, unrelated)
+        p = replace(p, expected_local_oid=unrelated)
+        for oid in (p.expected_remote_oid, unrelated):
+            header = self.git('cat-file', 'commit', oid).split(b'\n\n', 1)[0]
+            self.assertEqual([row for row in header.splitlines() if row.startswith(b'parent ')], [])
+        with self.assertRaises(subprocess.CalledProcessError) as caught:
+            self.git('merge-base', '--is-ancestor', p.expected_remote_oid, unrelated)
+        self.assertEqual(caught.exception.returncode, 1)
+        return p, tree
+
+    def assert_ancestry_rejected(self, p):
+        self.prepare([p]); out = self.execute(p)
+        self.assertEqual(out.evidence.reason, 'GIT_ANCESTRY_OVERRIDE_PRESENT')
+        self.assertEqual(out.receipt.execution_state, 'KNOWN_FAILURE')
+        self.assertEqual(self.git_service.mutations, 0)
+        self.assertEqual(self.git_service.oid, p.expected_remote_oid)
+        self.assertFalse(any(request[0] == 'POST' for request in self.git_service.requests))
+        return out
+
+    def test_ancestry_graft_on_unrelated_real_roots_rejected(self):
+        p, _ = self.unrelated_git()
+        (self.root / '.git/info/grafts').write_text(p.expected_local_oid + ' ' + p.expected_remote_oid + '\n')
+        # The fixture really changes Git's ordinary graph interpretation.
+        self.git('merge-base', '--is-ancestor', p.expected_remote_oid, p.expected_local_oid)
+        self.assert_ancestry_rejected(p)
+
+    def test_ancestry_loose_replace_of_unrelated_root_rejected(self):
+        p, tree = self.unrelated_git()
+        replacement = self.git('commit-tree', tree, '-p', p.expected_remote_oid, '-m', 'replacement parent').decode().strip()
+        self.git('update-ref', 'refs/replace/' + p.expected_local_oid, replacement)
+        self.git('merge-base', '--is-ancestor', p.expected_remote_oid, p.expected_local_oid)
+        self.assert_ancestry_rejected(p)
+
+    def test_ancestry_packed_replace_of_unrelated_root_rejected(self):
+        p, tree = self.unrelated_git()
+        replacement = self.git('commit-tree', tree, '-p', p.expected_remote_oid, '-m', 'packed replacement parent').decode().strip()
+        ref = 'refs/replace/' + p.expected_local_oid
+        self.git('update-ref', ref, replacement); self.git('pack-refs', '--all', '--prune')
+        self.assertFalse((self.root / '.git' / ref).exists())
+        self.assertIn(ref.encode(), (self.root / '.git/packed-refs').read_bytes())
+        self.git('merge-base', '--is-ancestor', p.expected_remote_oid, p.expected_local_oid)
+        self.assert_ancestry_rejected(p)
+
+    def test_ancestry_irrelevant_replace_namespace_entry_rejected(self):
+        p = self.setup_git()
+        self.git('update-ref', 'refs/replace/' + '4' * 40, p.expected_remote_oid)
+        self.assert_ancestry_rejected(p)
+
+    def test_ancestry_malformed_loose_replace_entry_rejected(self):
+        p = self.setup_git()
+        directory = self.root / '.git/refs/replace'; directory.mkdir()
+        (directory / 'not-an-object-id').write_text('SYNTHETIC_INVALID_REF\n')
+        self.assert_ancestry_rejected(p)
+
+    def test_ancestry_malformed_nonempty_grafts_rejected_without_content_leak(self):
+        for content in ('SYNTHETIC_GRAFT_PRIVATE_MARKER\n', '\n', '# comment only\n'):
+            with self.subTest(content_kind=len(content)):
+                self.broker = self.r.CapabilityBroker(); self.journal = self.r.InMemorySecurityJournal()
+                p = self.setup_git()
+                (self.root / '.git/info/grafts').write_text(content)
+                out = self.assert_ancestry_rejected(p)
+                artifacts = repr(out.evidence) + repr(out.receipt) + repr(out.events)
+                artifacts += json.dumps([asdict(record) for record in self.chain.records()])
+                self.assertNotIn('SYNTHETIC_GRAFT_PRIVATE_MARKER', artifacts)
+
+    def test_ancestry_empty_grafts_allows_true_fast_forward(self):
+        p = self.setup_git(); (self.root / '.git/info/grafts').write_bytes(b'')
+        self.prepare([p]); out = self.execute(p)
+        self.assertEqual(out.receipt.execution_state, 'KNOWN_SUCCESS')
+        self.assertEqual(self.git_service.oid, p.expected_local_oid)
+        self.assertEqual(self.git_service.mutations, 1)
+
+    def test_ancestry_unrelated_clean_roots_denied_without_override(self):
+        p, _ = self.unrelated_git(); self.prepare([p])
+        self.assertEqual(self.execute(p).evidence.reason, 'NON_FAST_FORWARD')
+        self.assertEqual(self.git_service.oid, p.expected_remote_oid)
+        self.assertEqual(self.git_service.mutations, 0)
+
+    def test_ancestry_override_rechecked_before_graph_pack_and_send(self):
+        for phase in ('remote', 'merge-base', 'pack-objects'):
+            with self.subTest(phase=phase):
+                self.broker = self.r.CapabilityBroker(); self.journal = self.r.InMemorySecurityJournal()
+                p = self.setup_git(); adapter = self.broker.get('git.push')
+                original_call, original_request = adapter.local._call, self.git_service.request
+                calls = []
+                def inject():
+                    (self.root / '.git/info/grafts').write_text('SYNTHETIC_LATE_OVERRIDE\n')
+                def call(args, **kwargs):
+                    calls.append(args[0]); result = original_call(args, **kwargs)
+                    if args[0] == phase:
+                        inject()
+                    return result
+                def request(*args, **kwargs):
+                    result = original_request(*args, **kwargs)
+                    if phase == 'remote':
+                        inject()
+                    return result
+                with patch.object(adapter.local, '_call', side_effect=call), \
+                        patch.object(self.git_service, 'request', side_effect=request):
+                    self.assert_ancestry_rejected(p)
+                if phase == 'remote':
+                    self.assertNotIn('merge-base', calls)
+                if phase in ('remote', 'merge-base'):
+                    self.assertNotIn('pack-objects', calls)
+
+    def test_ancestry_actual_subprocess_environment_disables_replacement(self):
+        p = self.setup_git(); self.prepare([p])
+        actual_popen = self.m.local.subprocess.Popen
+        commands = []
+        def launch(argv, *args, **kwargs):
+            # This is the real launcher subprocess boundary, with the exact
+            # target argv/environment subsequently passed to os.execve.
+            target_argv, target_environment = json.loads(argv[-3]), json.loads(argv[-1])
+            self.assertEqual(kwargs['env'], {})
+            self.assertEqual(target_environment.get('GIT_NO_REPLACE_OBJECTS'), '1')
+            for key in ('GIT_REPLACE_REF_BASE', 'GIT_GRAFT_FILE', 'GIT_CONFIG_COUNT',
+                    'GIT_CONFIG_KEY_0', 'GIT_CONFIG_VALUE_0'):
+                self.assertNotIn(key, target_environment)
+            commands.append(target_argv)
+            return actual_popen(argv, *args, **kwargs)
+        injected = {'GIT_NO_REPLACE_OBJECTS': '0', 'GIT_REPLACE_REF_BASE': 'refs/injected',
+            'GIT_GRAFT_FILE': str(self.root / 'injected-grafts'), 'GIT_CONFIG_COUNT': '1',
+            'GIT_CONFIG_KEY_0': 'core.useReplaceRefs', 'GIT_CONFIG_VALUE_0': 'true'}
+        with patch.dict(os.environ, injected), patch.object(self.m.local.subprocess, 'Popen', side_effect=launch):
+            out = self.execute(p)
+        self.assertEqual(out.receipt.execution_state, 'KNOWN_SUCCESS')
+        for command in ('rev-parse', 'merge-base', 'pack-objects'):
+            self.assertTrue(any(command in argv for argv in commands), command)
+        self.assertEqual(self.git_service.mutations, 1)
 
     def test_git_broad_delete_and_ssh_requests_rejected(self):
         p = self.setup_git()
