@@ -506,6 +506,89 @@ class BridgeTests(unittest.TestCase):
         b = self.prepare(data, 'other').prepared
         self.assertEqual(a.material_effect_identity, b.material_effect_identity)
 
+    def test_uncertainty_journal_update_excludes_concurrent_reconciliation(self):
+        data = self.proposal('NETWORK_REQUEST')
+        data['requested_parameters'].update(readback_target='https://api.example.invalid/state',
+            expected_readback_digest=hashlib.sha256(b'RESPONSE_MARKER').hexdigest())
+        p = self.prepare(data).prepared; q = self.prepare(data, 'host-2').prepared
+        self.bind(p, q); self.service.lose_response = True
+        entered, release = threading.Event(), threading.Event()
+        uncertain = self.bridge._uncertain
+        result = self.bridge._result
+        def pause_uncertain(*args):
+            entered.set()
+            if not release.wait(3):
+                raise AssertionError('uncertainty journal update was not released')
+            return uncertain(*args)
+        def fail_execution_evidence(*args, **kw):
+            if not kw.get('reconciliation'):
+                raise RuntimeError('synthetic evidence failure')
+            return result(*args, **kw)
+        with patch.object(self.bridge, '_uncertain', side_effect=pause_uncertain), \
+                patch.object(self.bridge, '_result', side_effect=fail_execution_evidence), \
+                ThreadPoolExecutor(max_workers=1) as pool:
+            first = pool.submit(self.execute, p)
+            try:
+                self.assertTrue(entered.wait(2))
+                raced_reconcile = self.execute(p, reconcile=True)
+            finally:
+                release.set()
+            self.assertEqual(first.result(3).receipt.execution_state, 'UNKNOWN_OUTCOME')
+        reproposed = self.execute(q)
+        self.assertEqual(len(self.service.resources), 1)
+        self.assertEqual(raced_reconcile.status, 'RECONCILIATION_REQUIRED')
+        self.assertEqual(reproposed.status, 'RECONCILIATION_REQUIRED')
+        self.assertEqual(self.execute(p, reconcile=True).receipt.final_disposition, 'RECONCILED_SUCCESS')
+        self.assertEqual(len(self.service.resources), 1)
+
+    def test_expired_prepared_unknown_can_reconcile_with_current_authorization(self):
+        for kind in ('CREATE_FILE', 'NETWORK_REQUEST'):
+            with self.subTest(kind=kind):
+                self.bridge = self.m.AgentRuntimeBridge()
+                data = self.proposal(kind)
+                if kind == 'NETWORK_REQUEST':
+                    data['requested_parameters'].update(readback_target='https://api.example.invalid/state',
+                        expected_readback_digest=hashlib.sha256(b'RESPONSE_MARKER').hexdigest())
+                    self.service.lose_response = True
+                p = self.prepare(data, ident=kind, expires_at=3).prepared; self.bind(p)
+                with patch('os.fsync', side_effect=OSError('synthetic')):
+                    self.assertEqual(self.execute(p, now=2).receipt.execution_state, 'UNKNOWN_OUTCOME')
+                self.assertEqual(self.execute(p, now=4).status, 'INVALID_PREPARED_ACTION')
+                out = self.execute(p, reconcile=True, now=4)
+                self.assertEqual(out.receipt.final_disposition, 'RECONCILED_SUCCESS')
+        self.assertEqual(len(self.service.resources), 1)
+
+    def test_expired_prepared_recovery_still_requires_current_valid_authorization(self):
+        data = self.proposal('NETWORK_REQUEST')
+        data['requested_parameters'].update(readback_target='https://api.example.invalid/state',
+            expected_readback_digest=hashlib.sha256(b'RESPONSE_MARKER').hexdigest())
+        p = self.prepare(data, expires_at=3).prepared; self.bind(p); self.service.lose_response = True
+        self.execute(p)
+        valid = self.r.Authorization('auth', 'task', frozenset({p.action_request.action_class}),
+            (p.action_request.target,), frozenset({p.trusted_capability_name}), 100)
+        for auth, reason in ((replace(valid, revoked=True), 'AUTHORIZATION_REVOKED'),
+                (replace(valid, expires_at=3), 'AUTHORIZATION_EXPIRED')):
+            out = self.execute(p, reconcile=True, now=4, authorization=auth)
+            self.assertEqual(out.receipt.policy_reason, reason)
+            self.assertEqual(len(self.service.requests), 1)
+            self.assertEqual(len(self.service.resources), 1)
+        self.assertEqual(self.execute(p, reconcile=True, now=4, authorization=valid).receipt.final_disposition,
+            'RECONCILED_SUCCESS')
+        self.assertEqual(len(self.service.requests), 2)
+        self.assertEqual(len(self.service.resources), 1)
+
+    def test_expired_security_authority_cannot_read_back_expired_prepared_action(self):
+        data = self.proposal('NETWORK_REQUEST')
+        data['requested_parameters'].update(readback_target='https://api.example.invalid/state',
+            expected_readback_digest=hashlib.sha256(b'RESPONSE_MARKER').hexdigest())
+        self.actor = replace(self.actor, expires_at=3)
+        p = self.prepare(data, expires_at=3).prepared; self.bind(p); self.service.lose_response = True
+        self.assertEqual(self.execute(p, now=2).receipt.execution_state, 'UNKNOWN_OUTCOME')
+        out = self.execute(p, reconcile=True, now=4)
+        self.assertEqual(out.status, 'RECONCILIATION_REQUIRED')
+        self.assertEqual(len(self.service.requests), 1)
+        self.assertEqual(len(self.service.resources), 1)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -241,7 +241,7 @@ class AgentRuntimeBridge:
         except (ValueError, TypeError, AttributeError, OverflowError, RecursionError):
             return AgentRuntimePrepareResult('MALFORMED_PROPOSAL')
 
-    def _validate(self, p, binding, expected_payload_digest, expected_prepared_digest, context, now):
+    def _validate(self, p, binding, expected_payload_digest, expected_prepared_digest, context, now, *, reconciliation=False):
         _require(type(p) is PreparedAgentAction, 'INVALID_PREPARED_ACTION')
         a = p.action_request
         _require(type(a) is rse.ActionRequest, 'INVALID_PREPARED_ACTION')
@@ -254,7 +254,10 @@ class AgentRuntimeBridge:
         _require(p.prepared_digest == expected_prepared_digest == _prepared_digest(p), 'INVALID_PREPARED_ACTION')
         _require(_CAPABILITIES.get(a.action_class) == a.capability, 'CAPABILITY_ACTION_MISMATCH')
         _require(context == p.context and type(context) is cet.TraceContext and rse._time(now)
-            and now >= p.prepared_at and (p.expires_at is None or now < p.expires_at), 'INVALID_PREPARED_ACTION')
+            and now >= p.prepared_at, 'INVALID_PREPARED_ACTION')
+        # Expiry limits new execution, not observation of an unresolved effect.
+        # Reconciliation still evaluates current policy/authorization below.
+        _require(reconciliation or p.expires_at is None or now < p.expires_at, 'INVALID_PREPARED_ACTION')
         cet._match_action(a, context)
         p.normalized_payload.validate_for(a)
         _require(p.material_effect_identity == _material(a, p.normalized_payload), 'INVALID_PREPARED_ACTION')
@@ -345,10 +348,14 @@ class AgentRuntimeBridge:
                 authorization=authorization, context=context, now=now)
             out = self._result(p, binding, runtime, context, now)
         except BaseException as error:
-            with self._lock:
-                if _mutation(p):
-                    self._pending[key] = (p.prepared_digest, binding, 'UNKNOWN')
-            out = self._uncertain(p, binding)
+            # Keep EXECUTING until the authoritative uncertainty update finishes:
+            # reconciliation must not clear a reservation before a late append.
+            try:
+                out = self._uncertain(p, binding)
+            finally:
+                with self._lock:
+                    if _mutation(p):
+                        self._pending[key] = (p.prepared_digest, binding, 'UNKNOWN')
             if not isinstance(error, Exception):
                 raise
             return out
@@ -366,7 +373,7 @@ class AgentRuntimeBridge:
         out = None
         acquired = False
         try:
-            self._validate(p, binding, expected_payload_digest, expected_prepared_digest, context, now)
+            self._validate(p, binding, expected_payload_digest, expected_prepared_digest, context, now, reconciliation=True)
             key = p.material_effect_identity
             with self._lock:
                 reservation = self._pending.get(key)
