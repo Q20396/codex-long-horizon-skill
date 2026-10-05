@@ -32,3 +32,15 @@ the module does not discover credentials. Its remote DELETE method is a bounded
 HTTP operation, not a local delete or a Git-ref deletion API. This declaration
 does not authorize an endpoint or imply exactly-once, crash durability, network
 containment, independent host observation or a production deployment.
+
+The Phase 2C agent bridge is an inactive API. Pure `prepare()` freezes and
+normalizes proposal data without executing effects. The manifest conservatively
+declares effects delegated through the existing Phase 2A/2B bindings, plus
+same-process reservations, the existing journal and digest-only chain evidence.
+It adds no runtime effect route or direct adapter invocation. The trusted host
+must supply independently saved prepared/payload commitments, construct the
+bindings, register capabilities and obtain current scoped authorization before
+execution. Installation, import and preparation grant no capability or authority.
+Model/provider identity and effect declarations do not authorize effects. Trusted
+child effects remain uncontained; no host interception or crash persistence is
+implied by this declaration.

@@ -117,6 +117,20 @@ No PR merge/update, release/deploy, package installation, SSH, Paperclip,
 Codex runtime hook or Local Compute integration is added. Installing/importing
 the module activates nothing; no real external account mutation is used in tests.
 
+### Agent Runtime Integration — Experimental Foundation
+
+20396 can translate bounded agent action proposals into existing governed
+ActionRequest and Phase 2A/2B payload contracts, then route explicitly authorized
+actions through the existing RSE-controlled execution path.
+
+Agent/model output remains untrusted proposal data. The bridge does not let a
+model self-authorize, self-grant capabilities, directly invoke effect adapters,
+or bypass an unresolved UNKNOWN mutation by issuing a cosmetically new proposal.
+
+Duplicate-effect suppression is same-process and same-bridge only; this is not
+crash-durable agent orchestration, a Host Observer, OS sandbox, or proprietary
+Codex interception layer.
+
 **Already installed?** Start with a non-sensitive repository and a bounded task:
 
 ```text
