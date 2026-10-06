@@ -53,3 +53,8 @@ session state; `close()` releases the descriptor. Only returned matching native
 events produce HostObservation values, and the existing ingestor owns CET/chain
 publication. Import and installation activate nothing. Coverage is PARTIAL;
 observation grants no authority, enforcement or automatic reconciliation.
+
+The Phase 4 cross-layer verifier is a pure read-only API over immutable bounded
+references for one action. It collects no evidence and invokes no runtime,
+observer, chain/CET append or reconciliation API. Findings exist only in the
+returned tuple; they are not persisted, chained or used for enforcement.

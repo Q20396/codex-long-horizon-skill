@@ -153,6 +153,17 @@ one-shot, the wait is finite and the caller closes the session. No command line 
 environment is collected. No daemon, global process monitor, enforcement layer,
 polling fallback, kernel-truth guarantee or automatic reconciliation is included.
 
+### Cross-Layer Verification — Experimental
+
+20396 can deterministically compare bounded evidence across model declarations,
+RSE authorization, adapter observations, host observations and trusted
+target-reality evidence for one action at a time.
+
+The verifier produces MATCH, MISSING, EXTRA, DIVERGED, UNKNOWN and NOT_OBSERVED.
+It is read-only: findings are not persisted or written back to the Security Chain,
+and verification does not authorize, execute, enforce or automatically reconcile
+anything. See the [normalization and coverage contract](.agents/skills/long-horizon-engineering/references/cross-layer-verification.md).
+
 **Already installed?** Start with a non-sensitive repository and a bounded task:
 
 ```text
