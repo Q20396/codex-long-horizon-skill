@@ -27,6 +27,7 @@ class CriticalEventType(str, Enum):
     FILE_DELETE = 'FILE_DELETE'
     FILE_MOVE = 'FILE_MOVE'
     PROCESS_START = 'PROCESS_START'
+    PROCESS_EXEC = 'PROCESS_EXEC'
     PROCESS_EXIT = 'PROCESS_EXIT'
     NETWORK_REQUEST = 'NETWORK_REQUEST'
     SECRET_ACCESS = 'SECRET_ACCESS'
@@ -161,7 +162,7 @@ _NETWORK_EVENTS = frozenset(ACTION_EVENTS[k] for k in rse.EGRESS_ACTIONS)
 _HOST_EVENT_TOKEN = object()
 _HOST_EVENT_TYPES = frozenset(CriticalEventType[name] for name in (
     'FILE_READ', 'FILE_WRITE', 'FILE_CREATE', 'FILE_DELETE', 'FILE_MOVE',
-    'PROCESS_START', 'PROCESS_EXIT', 'NETWORK_REQUEST', 'GIT_EFFECT', 'REMOTE_EFFECT'))
+    'PROCESS_START', 'PROCESS_EXEC', 'PROCESS_EXIT', 'NETWORK_REQUEST', 'GIT_EFFECT', 'REMOTE_EFFECT'))
 
 
 def _target(kind, target):
@@ -196,7 +197,8 @@ class CriticalEvent:
         _require(_time(self.timestamp) and (self.capability is None or _text(self.capability)))
         host = self.source == ObservationSource.HOST_OBSERVED
         _require(not host or (_host_token is _HOST_EVENT_TOKEN and self.event_type in _HOST_EVENT_TYPES))
-        _require(host or self.event_type not in (CriticalEventType.GIT_EFFECT, CriticalEventType.REMOTE_EFFECT))
+        _require(host or self.event_type not in (CriticalEventType.GIT_EFFECT, CriticalEventType.REMOTE_EFFECT,
+                                               CriticalEventType.PROCESS_EXEC))
         _require(not host or (self.destination is None and self.capability is None
                              and self.status == EventStatus.OBSERVED and self.exit_code is None))
         _require(host or ((self.event_type == CriticalEventType.FILE_MOVE) == (self.destination is not None)))

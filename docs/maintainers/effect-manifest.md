@@ -44,3 +44,12 @@ execution. Installation, import and preparation grant no capability or authority
 Model/provider identity and effect declarations do not authorize effects. Trusted
 child effects remain uncontained; no host interception or crash persistence is
 implied by this declaration.
+
+The Phase 3B macOS backend is an explicitly constructed, session-scoped API.
+It creates one kqueue descriptor and registers caller-supplied PIDs for a single
+NOTE_EXEC each. It launches no child and reads no command line, environment or
+process metadata. Its effects are native registration and bounded in-memory
+session state; `close()` releases the descriptor. Only returned matching native
+events produce HostObservation values, and the existing ingestor owns CET/chain
+publication. Import and installation activate nothing. Coverage is PARTIAL;
+observation grants no authority, enforcement or automatic reconciliation.
