@@ -2,6 +2,7 @@
   "schema_version": "1.0",
   "scope": ".agents/skills/long-horizon-engineering/scripts/*.py",
   "scripts": {
+    "cross_layer_verification.py": {"network": "none", "writes": [], "deletes": [], "external_commands": [], "requires_apply_flag": false, "requires_human_confirmation": false},
     "host_observer_macos.py": {"network": "none", "writes": ["session-kqueue-registration", "in-memory-observer-session"], "deletes": [], "external_commands": [], "requires_apply_flag": false, "requires_human_confirmation": true},
     "host_observer.py": {"network": "none", "writes": ["in-memory-trace", "in-memory-replay-state", "explicit-caller-security-chain"], "deletes": [], "external_commands": [], "requires_apply_flag": false, "requires_human_confirmation": true},
     "agent_runtime_integration.py": {"network": "explicit-only", "writes": ["delegated-authorized-phase-2a-and-2b-effects", "in-memory-effect-reservations", "existing-in-memory-journal", "explicit-caller-security-chain", "delegated-trusted-child-effects-not-contained"], "deletes": ["delegated-authorized-phase-2a-and-2b-deletes", "delegated-trusted-child-effects-not-contained"], "external_commands": ["delegated-existing-runtime-binding-commands"], "requires_apply_flag": false, "requires_human_confirmation": true},
