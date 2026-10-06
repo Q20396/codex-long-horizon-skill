@@ -86,6 +86,81 @@ class CrossLayerTests(unittest.TestCase):
         self.assertEqual(self.results(self.value(adapter_observed_effects=(e,), host_observed_effects=(e,)),
                          'ADAPTER_OBSERVED', 'HOST_OBSERVED'), [('ref:A', 'MATCH', 'EFFECT_MATCH')])
 
+    def test_f1_partial_host_coverage_cannot_prove_leftover_divergence(self):
+        value = self.value(adapter_observed_effects=(self.effect(kind='PROCESS_EXEC'),),
+            host_observed_effects=(self.effect('ref:B', 'PROCESS_EXEC'),), host_coverage='PARTIAL')
+        self.assertEqual(self.results(value, 'ADAPTER_OBSERVED', 'HOST_OBSERVED'),
+                         [('ref:A', 'UNKNOWN', 'AMBIGUOUS_EFFECT_IDENTITY'),
+                          ('ref:B', 'UNKNOWN', 'AMBIGUOUS_EFFECT_IDENTITY')])
+
+    def test_f1_host_gap_cannot_prove_leftover_divergence(self):
+        value = self.value(adapter_observed_effects=(self.effect(kind='PROCESS_EXEC'),),
+            host_observed_effects=(self.effect('ref:B', 'PROCESS_EXEC'),), host_gap=True)
+        self.assertEqual(self.results(value, 'ADAPTER_OBSERVED', 'HOST_OBSERVED'),
+                         [('ref:A', 'UNKNOWN', 'AMBIGUOUS_EFFECT_IDENTITY'),
+                          ('ref:B', 'UNKNOWN', 'AMBIGUOUS_EFFECT_IDENTITY')])
+
+    def test_f1_unresolved_host_exact_alternative_prevents_leftover_divergence(self):
+        unresolved = self.effect(kind='PROCESS_EXEC', correlation='UNRESOLVED_LINK',
+                                 evidence=('ref:unassigned-evidence',))
+        value = self.value(adapter_observed_effects=(self.effect(kind='PROCESS_EXEC'),),
+            host_observed_effects=(self.effect('ref:B', 'PROCESS_EXEC'), unresolved))
+        findings = self.pair(value, 'ADAPTER_OBSERVED', 'HOST_OBSERVED')
+        self.assertEqual([(f.effect_ref, f.result, f.reason) for f in findings],
+                         [('ref:A', 'UNKNOWN', 'AMBIGUOUS_EFFECT_IDENTITY'),
+                          ('ref:B', 'UNKNOWN', 'AMBIGUOUS_EFFECT_IDENTITY')])
+        self.assertTrue(all(f.compared_effect_ref is None for f in findings))
+        self.assertTrue(all('ref:unassigned-evidence' not in f.evidence_refs for f in findings))
+
+    def test_f1_partial_or_unknown_on_either_side_prevents_leftover_divergence(self):
+        for field in ('adapter_coverage', 'host_coverage'):
+            for status in ('PARTIAL', 'UNKNOWN'):
+                with self.subTest(field=field, status=status):
+                    value = self.value(adapter_observed_effects=(self.effect(kind='PROCESS_EXEC'),),
+                        host_observed_effects=(self.effect('ref:B', 'PROCESS_EXEC'),), **{field: status})
+                    self.assertEqual(self.results(value, 'ADAPTER_OBSERVED', 'HOST_OBSERVED'),
+                                     [('ref:A', 'UNKNOWN', 'AMBIGUOUS_EFFECT_IDENTITY'),
+                                      ('ref:B', 'UNKNOWN', 'AMBIGUOUS_EFFECT_IDENTITY')])
+
+    def test_f1_unassigned_alternative_on_either_side_prevents_leftover_divergence(self):
+        for field, ref in (('adapter_observed_effects', 'ref:B'), ('host_observed_effects', 'ref:A')):
+            for action, correlation in (('ref:action', 'UNRESOLVED_LINK'),
+                                        ('ref:unresolved', 'UNRESOLVED_LINK'), (None, 'UNCORRELATED')):
+                with self.subTest(field=field, correlation=correlation, action=action):
+                    args = dict(adapter_observed_effects=(self.effect(kind='PROCESS_EXEC'),),
+                                host_observed_effects=(self.effect('ref:B', 'PROCESS_EXEC'),))
+                    args[field] += (self.effect(ref, 'PROCESS_EXEC', action, correlation,
+                                               ('ref:unassigned-evidence',)),)
+                    fs = self.pair(self.value(**args), 'ADAPTER_OBSERVED', 'HOST_OBSERVED')
+                    self.assertEqual([(f.effect_ref, f.result) for f in fs],
+                                     [('ref:A', 'UNKNOWN'), ('ref:B', 'UNKNOWN')])
+                    self.assertTrue(all(f.compared_effect_ref is None for f in fs))
+                    self.assertTrue(all('ref:unassigned-evidence' not in f.evidence_refs for f in fs))
+
+    def test_f1_positive_exact_match_survives_coverage_gap_and_unresolved_evidence(self):
+        e = self.effect(kind='PROCESS_EXEC')
+        for changes in (dict(adapter_coverage='PARTIAL'), dict(adapter_coverage='UNKNOWN'),
+                        dict(host_coverage='PARTIAL'), dict(host_coverage='UNKNOWN'), dict(host_gap=True),
+                        dict(host_observed_effects=(e, self.effect('ref:B', 'PROCESS_EXEC',
+                             correlation='UNRESOLVED_LINK'))),
+                        dict(adapter_observed_effects=(e, self.effect('ref:B', 'PROCESS_EXEC',
+                             correlation='UNRESOLVED_LINK')))):
+            args = dict(adapter_observed_effects=(e,), host_observed_effects=(e,))
+            args.update(changes)
+            self.assertEqual(self.results(self.value(**args), 'ADAPTER_OBSERVED', 'HOST_OBSERVED'),
+                             [('ref:A', 'MATCH', 'EFFECT_MATCH')])
+
+    def test_f1_covered_unique_divergence_survives_after_positive_exact_match(self):
+        a, b, exact = (self.effect(ref, 'PROCESS_EXEC') for ref in ('ref:A', 'ref:B', 'ref:C'))
+        for fields, layers in ((('authorized_effects', 'adapter_observed_effects'),
+                               ('AUTHORIZED', 'ADAPTER_OBSERVED')),
+                              (('adapter_observed_effects', 'host_observed_effects'),
+                               ('ADAPTER_OBSERVED', 'HOST_OBSERVED'))):
+            value = self.value(**{fields[0]: (a, exact), fields[1]: (b, exact)})
+            self.assertEqual(self.results(value, *layers),
+                             [('ref:A', 'DIVERGED', 'MATERIAL_EFFECT_DIFFERENCE'),
+                              ('ref:C', 'MATCH', 'EFFECT_MATCH')])
+
     def test_observation_absence_requires_scoped_complete_coverage(self):
         for field, coverage, a, b in (
             ('authorized_effects', 'adapter_coverage', 'AUTHORIZED', 'ADAPTER_OBSERVED'),
@@ -188,10 +263,14 @@ class CrossLayerTests(unittest.TestCase):
             self.assertTrue(fs)
             self.assertEqual({(f.result, f.reason) for f in fs}, {('UNKNOWN', 'TARGET_REALITY_UNKNOWN')})
 
-    def test_verified_reality_match_divergence_extra_and_absence(self):
+    def test_verified_reality_matches_without_inferred_leftover_pairing(self):
         for left, right, want in (
             ((self.effect(),), (self.effect(),), [('ref:A', 'MATCH', 'EFFECT_MATCH')]),
-            ((self.effect(),), (self.effect('ref:B'),), [('ref:A', 'DIVERGED', 'MATERIAL_EFFECT_DIFFERENCE')]),
+            # VERIFIED does not supply complete reality coverage or independent
+            # pairing proof: different leftovers cannot prove correspondence.
+            ((self.effect(),), (self.effect('ref:B'),),
+             [('ref:A', 'UNKNOWN', 'AMBIGUOUS_EFFECT_IDENTITY'),
+              ('ref:B', 'UNKNOWN', 'AMBIGUOUS_EFFECT_IDENTITY')]),
             ((), (self.effect(),), [('ref:A', 'EXTRA', 'UNEXPECTED_EFFECT_OBSERVED')]),
             ((self.effect(),), (), [('ref:A', 'UNKNOWN', 'INSUFFICIENT_COVERAGE')]),
         ):

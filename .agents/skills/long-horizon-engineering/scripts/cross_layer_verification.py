@@ -158,7 +158,8 @@ def _compare(value, a, b, source_a, source_b, coverage_a, coverage_b):
         aa = tuple(ma[ref] for ref in sorted(ma.keys() - mb.keys()))
         bb = tuple(mb[ref] for ref in sorted(mb.keys() - ma.keys()))
         if aa and bb:
-            if len(aa) == len(bb) == 1:
+            if (len(aa) == len(bb) == 1 and coverage_a == coverage_b == 'SCOPED_COMPLETE'
+                    and not (unresolved_a or unresolved_b)):
                 findings.append(_finding(value, a, b, 'DIVERGED', 'MATERIAL_EFFECT_DIFFERENCE',
                                          coverage_b, aa[0], bb[0]))
             else:

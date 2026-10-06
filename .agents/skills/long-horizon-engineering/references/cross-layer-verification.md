@@ -104,9 +104,13 @@ an absent observation cannot become MISSING. PARTIAL absence is NOT_OBSERVED;
 UNKNOWN coverage yields UNKNOWN. Likewise, partial/unavailable evidence in
 source A cannot prove that an unmatched B effect is EXTRA.
 
-Unique material identities in the same class MATCH. After exact matches, only
-a single remaining comparable identity on each side can DIVERGE. Multiple
-candidates, repeated identities or any incomplete identity in that class yield
+Unique material identities in the same class MATCH, including proven positive
+matches under partial coverage or a host gap. After exact matches, DIVERGED
+requires uniquely established material correspondence: a single complete
+comparable identity on each side, complete scoped coverage on both sides, and
+no gap or unresolved alternative that could hide an exact counterpart.
+Uncertain leftover pairing yields UNKNOWN. Multiple candidates, repeated
+identities or any incomplete identity in that class yield
 UNKNOWN instead of arbitrary pairing. Distinct classes follow directional set
 semantics and never DIVERGE merely because their classes differ. Unsupported
 semantics yield UNKNOWN. These are bounded factual comparisons, not claims of
@@ -116,6 +120,8 @@ Reality status is only VERIFIED/UNKNOWN. UNKNOWN dominates the entire reality
 comparison, even with no host effects. VERIFIED requires trusted independent
 evidence but does not attest exhaustive reality coverage. Thus absent reality
 evidence remains UNKNOWN; this API supplies no complete reality coverage claim.
+Consequently different host/reality leftovers also remain UNKNOWN; VERIFIED
+alone does not prove a unique pairing.
 
 Findings include action, both layers, semantic class, material ref, result,
 reason, evidence refs and coverage. `compared_effect_ref` shows the counterpart
