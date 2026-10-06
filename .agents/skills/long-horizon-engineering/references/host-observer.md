@@ -174,7 +174,7 @@ session registry. One controller serializes calls; no background thread exists.
 timeouts from 0 through 30 seconds. Only a returned native kevent with matching
 registered ident/PID, EVFILT_PROC and NOTE_EXEC creates a HostObservation. Error
 events cannot create observations. No matching event returns `None`, the
-OBSERVATION_TIMEOUT result, and proves no negative effect. Invalid inputs and
+OBSERVATION_TIMEOUT result, and establishes no negative-effect claim. Invalid inputs and
 native errors propagate after closing the descriptor; timeout alone leaves the
 session open. `close()` is idempotent and prevents further use.
 

@@ -22,7 +22,7 @@ class MacOSExecObserver:
     """Explicit create/register/wait/close, one trusted synchronous controller.
 
     wait_for_exec returns None (OBSERVATION_TIMEOUT) if the finite wait supplies
-    no matching NOTE_EXEC. Absence proves no negative effect. No sensor starts
+    no matching NOTE_EXEC. This establishes no negative-effect claim. No sensor starts
     until construction; no target is inspected, launched, authorized or reconciled.
     """
 
