@@ -137,10 +137,21 @@ Codex interception layer.
 source and represent them separately from model declarations, adapter observations
 and reconciliation evidence.
 
-This phase defines only evidence provenance, ordering, scoped coverage and explicit
-action correlation. It does not ship an OS-specific sensor, kernel trace,
-enforcement layer, Host Observer daemon, or proof that missing host evidence means
-an effect did not occur.
+The foundation defines evidence provenance, ordering, scoped coverage and explicit
+action correlation. Missing host evidence does not prove an effect did not occur.
+
+### Real Host Observation — Experimental macOS Slice
+
+An experimental macOS backend uses kqueue EVFILT_PROC / NOTE_EXEC for explicitly
+registered processes. PROCESS_EXEC means the registered PID executed a new program
+image; coverage is PARTIAL. It does not represent fork/new-PID creation, application
+success or complete process lifecycle coverage.
+
+The native event becomes an existing HostObservation, then HOST_OBSERVED CET and
+bounded Security Chain evidence through the existing ingestor. Registration is
+one-shot, the wait is finite and the caller closes the session. No command line or
+environment is collected. No daemon, global process monitor, enforcement layer,
+polling fallback, kernel-truth guarantee or automatic reconciliation is included.
 
 **Already installed?** Start with a non-sensitive repository and a bounded task:
 

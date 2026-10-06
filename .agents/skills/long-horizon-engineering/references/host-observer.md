@@ -1,14 +1,15 @@
-# Host Observation — Phase 3A
+# Host Observation — Phase 3A / 3B
 
 `HOST_OBSERVED` is supported as a distinct evidence source. This experimental
-foundation receives synthetic `HostObservation` values from explicitly trusted
-host code. It starts no observer and performs no target effects. Importing the
-module performs no filesystem, subprocess, socket, thread or environment effects.
+foundation receives bounded `HostObservation` values from explicitly trusted
+host code, including the Phase 3B macOS backend below. The ingestor starts no
+observer and performs no target effects. Importing either module creates no
+observer, filesystem write, subprocess, socket, thread or environment mutation.
 
 | Boundary | Status |
 | --- | --- |
 | HOST_OBSERVED | SUPPORTED AS A DISTINCT EVIDENCE SOURCE |
-| REAL HOST SENSOR | NOT_IMPLEMENTED |
+| REAL HOST SENSOR | EXPERIMENTAL MACOS REGISTERED-PID NOTE_EXEC ONLY |
 | HOST ENFORCEMENT | NOT_IMPLEMENTED |
 | KERNEL TRACE | NOT_IMPLEMENTED |
 | HOST OBSERVED == TARGET REALITY | FALSE |
@@ -35,8 +36,11 @@ integer from 1 through 2**53 (bool is invalid); time is finite, nonnegative and 
 most 2**53. Time supports ordering evidence, not global trusted time or causality.
 
 Allowed classes are FILE_READ, FILE_WRITE, FILE_CREATE, FILE_DELETE, FILE_MOVE,
-PROCESS_START, PROCESS_EXIT, NETWORK_REQUEST, GIT_EFFECT and REMOTE_EFFECT. These
-are normalization categories, not implemented OS sensor capabilities. GIT_EFFECT
+PROCESS_START, PROCESS_EXEC, PROCESS_EXIT, NETWORK_REQUEST, GIT_EFFECT and REMOTE_EFFECT. These
+are normalization categories, not general OS sensor capabilities. PROCESS_EXEC
+means a registered process executed a new program image; it implies no fork,
+new PID birth, application success or completed side effect. It is host-only;
+existing EXECUTE_PROCESS adapters retain PROCESS_START/PROCESS_EXIT semantics. GIT_EFFECT
 does not imply commit, stage, push, a ref mutation or success. REMOTE_EFFECT does
 not imply HTTP method, PR creation, remote success or target-reality change.
 Host FILE_MOVE keeps only an opaque target/effect commitment; it invents no source
@@ -138,6 +142,64 @@ assert result.accepted and result.correlation_status == 'UNCORRELATED'
 assert trace.events()[0].destination is None
 ```
 
+## Experimental macOS registered-process exec slice
+
+`host_observer_macos.MacOSExecObserver(session_id)` explicitly creates one native
+macOS `select.kqueue` session. Trusted code supplies a unique bounded session ID
+and owns the synchronous lifecycle:
+
+```python
+from host_observer_macos import MacOSExecObserver, OBSERVER_ID, PROVENANCE_REF
+
+observer = MacOSExecObserver('unique-host-session')
+try:
+    observer.register(explicit_pid, action_id_ref=None)
+    observation = observer.wait_for_exec(3)
+    if observation is not None:
+        result = trusted_ingestor.ingest(observation)
+finally:
+    observer.close()
+```
+
+Configure `trusted_ingestor` with `OBSERVER_ID` (`macos-kqueue-proc`) and
+`PROVENANCE_REF` (`ref:macos-kqueue-evfilt-proc-note-exec`). An exact integer PID
+from 1 through 2**31-1 is trusted caller input. A successful registration uses
+EVFILT_PROC, NOTE_EXEC and EV_ONESHOT. It observes one exec, then requires another
+explicit registration to observe a later exec. Re-registering a pending PID is
+rejected rather than changing its correlation. At most 128 registrations and
+observations are allowed across one instance; there is no eviction or persistent
+session registry. One controller serializes calls; no background thread exists.
+
+`wait_for_exec(timeout)` makes one bounded native wait, accepting finite int/float
+timeouts from 0 through 30 seconds. Only a returned native kevent with matching
+registered ident/PID, EVFILT_PROC and NOTE_EXEC creates a HostObservation. Error
+events cannot create observations. No matching event returns `None`, the
+OBSERVATION_TIMEOUT result, and establishes no negative-effect claim. Invalid inputs and
+native errors propagate after closing the descriptor; timeout alone leaves the
+session open. `close()` is idempotent and prevents further use.
+
+The observation carries PROCESS_EXEC, PARTIAL coverage, the supplied session,
+monotonic sequence starting at 1, fresh observation identity, native backend
+provenance and `ref:pid-<registered PID>`. PID is a short-session reference, not a
+durable global process identity or executable identity. A caller must register
+the intended live process before exec and close the short session; this slice adds
+no global PID-reuse protection. A supplied action ref is carried exactly; None
+stays uncorrelated. Ingestion, sequence/dedupe rules, source isolation, hashed
+evidence and authority/reconciliation boundaries remain the Phase 3A path.
+
+No command line, executable metadata or environment is inspected or stored.
+PROCESS_EXIT, fork/new-PID discovery, global process creation, filesystem/network
+observation, enforcement, daemon, Endpoint Security, FSEvents, DTrace, polling
+fallback and multi-platform framework are NOT_IMPLEMENTED. This is native host
+observation from macOS kqueue NOTE_EXEC, not tamper-proof kernel truth.
+
 Tests: `python3 -B -m unittest discover -s tests -p 'test_host_observer*.py' -v`.
+The native test forks a harmless child blocked on a pipe, registers its PID,
+then releases it to exec the current Python and exit. Native delivery must precede
+normalization, ingestion, CET and chain assertions. Negative doubles never count
+as native PASS. Child cleanup and wait are bounded. On non-macOS, native tests
+report NOT_RUN_PLATFORM_RESTRICTED rather than PASS; unavailable native validation
+is BETA only for an environment limitation, never a reproducible implementation
+defect. Linux formal validation is a separate gate and proves no macOS event.
 No batch API, backend registry, daemon, telemetry framework or cross-layer verifier
-is included. Phase 3B, enforcement and production hardening require separate work.
+is included. Phase 4, enforcement and production hardening require separate work.

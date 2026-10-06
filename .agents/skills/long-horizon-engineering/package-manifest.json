@@ -83,6 +83,7 @@
         ".agents/skills/long-horizon-engineering/scripts/remote_runtime_binding.py",
         ".agents/skills/long-horizon-engineering/scripts/agent_runtime_integration.py",
         ".agents/skills/long-horizon-engineering/scripts/host_observer.py",
+        ".agents/skills/long-horizon-engineering/scripts/host_observer_macos.py",
         ".agents/skills/long-horizon-engineering/scripts/audit_skill_safety.py",
         ".agents/skills/long-horizon-engineering/scripts/check_skill_package.py",
         ".agents/skills/long-horizon-engineering/scripts/doctor.py",

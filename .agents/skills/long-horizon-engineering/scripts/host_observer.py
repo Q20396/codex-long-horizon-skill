@@ -1,4 +1,4 @@
-"""Synthetic-only trusted host evidence ingestion. No sensor or execution authority."""
+"""Trusted host evidence ingestion. This module has no sensor or execution authority."""
 from __future__ import annotations
 
 from dataclasses import dataclass
