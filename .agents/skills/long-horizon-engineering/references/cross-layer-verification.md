@@ -134,4 +134,6 @@ If both scoped sets are empty but an unresolved link is present, a pair-level
 UNKNOWN reports the correlation gap without assigning that event to the action.
 
 No finding authorizes, executes, enforces, retries or automatically reconciles
-an action. Findings are not persisted or chained. Phase 5 is not implemented.
+an action. Findings are not persisted or chained. The bounded Phase 5 test-only
+integration is described in the repository-only `docs/end-to-end-security-runtime.md`;
+that document and its tests are not part of an installed skill profile.
