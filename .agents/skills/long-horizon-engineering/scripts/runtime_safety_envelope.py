@@ -1,9 +1,10 @@
-"""Experimental, in-memory policy kernel. No real runtime bindings.
+"""Experimental policy kernel with optional explicit durable execution journal.
 
 Trusted host code supplies policies, authorizations, broker, journal and reconciler.
 Model proposals must never populate those trusted arguments. Python object types do
 not authenticate a human or sandbox hostile Python code. No effects occur on import.
-All paths are logical POSIX paths; no filesystem or DNS inspection is performed.
+Policy paths are logical POSIX paths; policy evaluation performs no filesystem or
+DNS inspection. Only explicitly constructed durable journals access local storage.
 """
 from dataclasses import dataclass, fields
 from contextlib import ExitStack
@@ -12,8 +13,10 @@ import hashlib
 import ipaddress
 import json
 import math
+import os
 import posixpath
 import re
+import stat
 from threading import RLock
 from types import MappingProxyType
 from urllib.parse import urlsplit, urlunsplit
@@ -225,6 +228,35 @@ class JournalEntry:
     evidence_refs: tuple = ()
 
 
+def validate_journal_transition(history, entry):
+    """Canonical existing RSE transition contract for live append and replay.
+
+    This validates evidence; it does not execute, authorize, or advance a state.
+    """
+    if type(entry) is not JournalEntry or type(entry.state) is not JournalState:
+        raise ValueError('INVALID_JOURNAL_TRANSITION')
+    if any(e.request_ref != entry.request_ref for e in history):
+        raise ValueError('ACTION_ID_CONFLICT')
+    previous = history[-1].state.value if history else None
+    allowed = {
+        None: {'PROPOSED'},
+        'PROPOSED': {'PROPOSED', 'BLOCKED', 'AUTHORIZED'},
+        'BLOCKED': {'PROPOSED'},
+        'AUTHORIZED': {'ATTEMPTED', 'RECONCILIATION_REQUIRED', 'RECONCILED_SUCCESS', 'RECONCILED_NOT_APPLIED'},
+        'ATTEMPTED': {'KNOWN_SUCCESS', 'KNOWN_FAILURE', 'UNKNOWN_OUTCOME', 'RECONCILIATION_REQUIRED', 'RECONCILED_SUCCESS', 'RECONCILED_NOT_APPLIED'},
+        'KNOWN_SUCCESS': {'RECONCILIATION_REQUIRED'},
+        'KNOWN_FAILURE': {'PROPOSED', 'RECONCILIATION_REQUIRED'},
+        'UNKNOWN_OUTCOME': {'RECONCILIATION_REQUIRED', 'RECONCILED_SUCCESS', 'RECONCILED_NOT_APPLIED'},
+        'RECONCILIATION_REQUIRED': {'RECONCILIATION_REQUIRED', 'RECONCILED_SUCCESS', 'RECONCILED_NOT_APPLIED'},
+        'RECONCILED_SUCCESS': {'RECONCILIATION_REQUIRED'},
+        'RECONCILED_NOT_APPLIED': {'PROPOSED', 'RECONCILIATION_REQUIRED'},
+    }
+    if entry.state.value not in allowed.get(previous, ()):
+        raise ValueError('INVALID_JOURNAL_TRANSITION')
+    if entry.state == JournalState.KNOWN_SUCCESS and not entry.evidence_refs:
+        raise ValueError('INVALID_JOURNAL_EVIDENCE')
+
+
 class InMemorySecurityJournal:
     """Trusted serial transaction + append/latest/history journal implementation.
 
@@ -265,6 +297,7 @@ class InMemorySecurityJournal:
 
     def append(self, entry):
         with self._lock:
+            validate_journal_transition(tuple(e for e in self._entries if e.action_id == entry.action_id), entry)
             self._entries.append(entry)
 
     def history(self, action_id):
@@ -275,6 +308,229 @@ class InMemorySecurityJournal:
     def latest(self, action_id):
         entries = self.history(action_id)
         return entries[-1] if entries else None
+
+
+class DurableSecurityJournal(InMemorySecurityJournal):
+    """Explicit single-controller process-restart store, not a Security Chain.
+
+    A trusted owner must keep the storage identity and directory lifecycle. Use
+    create only for genuinely new storage, never as recovery fallback. Complete
+    rollback/deletion cannot be detected without an external trusted anchor.
+    fsync is required but this does not claim power-loss or multi-process safety.
+    Detected external modification latches this object closed. No auto-repair.
+    """
+    MAX_BYTES = 16 * 1024 * 1024
+    MAX_ROWS = 16384
+
+    def __init__(self, path, *, storage_id, create=False):
+        super().__init__()
+        self._failed = False
+        self._path = os.path.abspath(os.fspath(path))
+        self._storage = _ref(storage_id)
+        self._rows = []
+        self._bindings = {}
+        self._authorizations = {}
+        self._attempts = {}
+        try:
+            if not _text(storage_id) or not hasattr(os, 'O_NOFOLLOW'):
+                raise ValueError()
+            # Explicit trusted path only; reject symlinks in every component.
+            current = self._path
+            while current != os.path.dirname(current):
+                if os.path.lexists(current) and stat.S_ISLNK(os.lstat(current).st_mode):
+                    raise ValueError()
+                current = os.path.dirname(current)
+            if create:
+                fd = os.open(self._path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
+                try:
+                    header = self._encode({'storage': self._storage, 'version': 1})
+                    if os.write(fd, header) != len(header):
+                        raise OSError()
+                    os.fsync(fd)
+                finally:
+                    os.close(fd)
+                parent = os.open(os.path.dirname(self._path), os.O_RDONLY | os.O_NOFOLLOW)
+                try:
+                    os.fsync(parent)
+                finally:
+                    os.close(parent)
+            self._load()
+        except Exception:
+            self._failed = True
+            raise ValueError('DURABLE_STATE_UNTRUSTED') from None
+
+    @staticmethod
+    def _encode(value):
+        return (json.dumps(value, sort_keys=True, separators=(',', ':'), ensure_ascii=True) + '\n').encode()
+
+    def _open(self, write=False):
+        fd = os.open(self._path, (os.O_RDWR | os.O_APPEND if write else os.O_RDONLY)
+            | os.O_NOFOLLOW | os.O_NONBLOCK)
+        info = os.fstat(fd)
+        if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or info.st_mode & 0o077:
+            os.close(fd)
+            raise ValueError('DURABLE_STATE_UNTRUSTED')
+        return fd
+
+    def _read(self, fd):
+        os.lseek(fd, 0, os.SEEK_SET)
+        chunks = []
+        size = 0
+        while True:
+            data = os.read(fd, 65536)
+            if not data:
+                break
+            size += len(data)
+            if size > self.MAX_BYTES:
+                raise ValueError()
+            chunks.append(data)
+        return b''.join(chunks)
+
+    def _load(self):
+        fd = self._open()
+        try:
+            data = self._read(fd)
+            info = os.fstat(fd)
+        finally:
+            os.close(fd)
+        lines = data.splitlines(keepends=True)
+        if not lines or len(lines) > self.MAX_ROWS or lines[0] != self._encode({'storage': self._storage, 'version': 1}):
+            raise ValueError()
+        previous = hashlib.sha256(lines[0]).hexdigest()
+        for line in lines[1:]:
+            row = json.loads(line)
+            if self._encode(row) != line or set(row) != {'seq', 'previous', 'entry', 'binding', 'authorization', 'attempt', 'digest'}:
+                raise ValueError()
+            digest = row.pop('digest')
+            if type(row['seq']) is not int or row['seq'] != len(self._rows) + 1 or row['previous'] != previous or digest != hashlib.sha256(self._encode(row)).hexdigest():
+                raise ValueError()
+            raw = row['entry']
+            if set(raw) != {'action_id', 'request_ref', 'state', 'reason', 'evidence_refs'}:
+                raise ValueError()
+            entry = JournalEntry(raw['action_id'], raw['request_ref'], JournalState(raw['state']),
+                raw['reason'], tuple(raw['evidence_refs']))
+            if type(raw['evidence_refs']) is not list or not re.fullmatch(r'sha256:[0-9a-f]{64}', row['authorization']):
+                raise ValueError()
+            attempt = row['seq'] if entry.state == JournalState.PROPOSED else self._attempts.get(entry.action_id)
+            if type(row['attempt']) is not int or row['attempt'] != attempt:
+                raise ValueError()
+            self._attempts[entry.action_id] = attempt
+            self._authorizations[entry.action_id] = row['authorization']
+            binding = row['binding']
+            if binding is not None:
+                if type(binding) is not list or len(binding) != 2 or not all(type(v) is str and re.fullmatch('[0-9a-f]{64}', v) for v in binding):
+                    raise ValueError()
+                old = self._bindings.get(entry.action_id)
+                if old is not None and old != tuple(binding):
+                    raise ValueError()
+                self._bindings[entry.action_id] = tuple(binding)
+            elif entry.action_id in self._bindings:
+                raise ValueError()
+            self._validate_entry(entry)
+            self._entries.append(entry)
+            row['digest'] = digest
+            self._rows.append(row)
+            previous = digest
+        self._tail = previous
+        self._data = data
+        self._identity = (info.st_dev, info.st_ino)
+
+    def _validate_entry(self, entry):
+        if type(entry) is not JournalEntry or type(entry.state) is not JournalState:
+            raise ValueError()
+        digest = lambda v: type(v) is str and re.fullmatch(r'sha256:[0-9a-f]{64}', v)
+        if not digest(entry.action_id) or not digest(entry.request_ref) or not all(digest(v) for v in entry.evidence_refs):
+            raise ValueError()
+        if type(entry.reason) is not str or not re.fullmatch(r'[A-Z_]{1,80}', entry.reason):
+            raise ValueError()
+        history = [e for e in self._entries if e.action_id == entry.action_id]
+        validate_journal_transition(history, entry)
+
+    def _check(self):
+        if self._failed:
+            raise ValueError('DURABLE_STATE_UNTRUSTED')
+        fd = self._open()
+        try:
+            info = os.fstat(fd)
+            if (info.st_dev, info.st_ino) != self._identity or self._read(fd) != self._data:
+                self._failed = True
+                raise ValueError('DURABLE_STATE_UNTRUSTED')
+        finally:
+            os.close(fd)
+
+    def history(self, action_id):
+        with self._lock:
+            self._check()
+            return super().history(action_id)
+
+    def material_pending(self, material):
+        with self._lock:
+            self._check()
+            pending = []
+            for key, binding in self._bindings.items():
+                if binding[0] != material:
+                    continue
+                history = [e for e in self._entries if e.action_id == key]
+                states = [e.state for e in history if e.state not in (JournalState.PROPOSED, JournalState.BLOCKED)]
+                if states and states[-1] in (JournalState.AUTHORIZED, JournalState.ATTEMPTED,
+                        JournalState.UNKNOWN_OUTCOME, JournalState.RECONCILIATION_REQUIRED):
+                    pending.append(key)
+            return tuple(pending)
+
+    def bind_material(self, action_id, material, payload):
+        """Trusted Bridge supplies its existing identity; never derive new equivalence."""
+        with self._lock:
+            self._check()
+            if not all(type(v) is str and re.fullmatch('[0-9a-f]{64}', v) for v in (material, payload)):
+                raise ValueError('DURABLE_STATE_UNTRUSTED')
+            if self.material_pending(material):
+                return False
+            key = _ref(action_id)
+            old = self._bindings.get(key)
+            if old is not None and old != (material, payload):
+                raise ValueError('DURABLE_STATE_UNTRUSTED')
+            self._bindings[key] = (material, payload)
+            return True
+
+    def append(self, entry):
+        with self._lock:
+            try:
+                self._check()
+                self._validate_entry(entry)
+                raw = {f.name: getattr(entry, f.name) for f in fields(entry)}
+                row = dict(seq=len(self._rows) + 1, previous=self._tail, entry=raw,
+                    binding=self._bindings.get(entry.action_id),
+                    authorization=self._authorizations.get(entry.action_id, _ref(None)),
+                    attempt=len(self._rows) + 1 if entry.state == JournalState.PROPOSED else self._attempts.get(entry.action_id))
+                if not re.fullmatch(r'sha256:[0-9a-f]{64}', row['authorization']):
+                    raise ValueError()
+                row['digest'] = hashlib.sha256(self._encode(row)).hexdigest()
+                data = self._encode(row)
+                if len(self._rows) + 2 > self.MAX_ROWS or len(self._data) + len(data) > self.MAX_BYTES:
+                    raise ValueError()
+                fd = self._open(write=True)
+                try:
+                    info = os.fstat(fd)
+                    if (info.st_dev, info.st_ino) != self._identity or self._read(fd) != self._data:
+                        raise ValueError()
+                    if os.write(fd, data) != len(data):
+                        raise OSError()
+                    os.fsync(fd)
+                finally:
+                    os.close(fd)
+                self._data += data
+                self._tail = row['digest']
+                self._rows.append(row)
+                self._entries.append(entry)
+                self._attempts[entry.action_id] = row['attempt']
+            except Exception:
+                self._failed = True
+                raise ValueError('DURABLE_STATE_UNTRUSTED') from None
+
+    def append_action(self, action, entry):
+        with self._lock:
+            self._authorizations[entry.action_id] = _ref(action.authorization_ref)
+            self.append(entry)
 
 
 @dataclass(frozen=True)
@@ -482,7 +738,11 @@ def _receipt(action, decision, execution='NOT_ATTEMPTED', reconciliation='NOT_RE
 
 
 def _append(journal, action, state, reason='NONE', evidence=()):
-    journal.append(JournalEntry(_ref(action.action_id), _request_ref(action), state, reason, tuple(evidence)))
+    entry = JournalEntry(_ref(action.action_id), _request_ref(action), state, reason, tuple(evidence))
+    if isinstance(journal, DurableSecurityJournal):
+        journal.append_action(action, entry)
+    else:
+        journal.append(entry)
 
 
 def _prior(action, journal):

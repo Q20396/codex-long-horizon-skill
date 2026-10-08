@@ -381,7 +381,8 @@ class CrossLayerTests(unittest.TestCase):
         chain = self.s.InMemorySecurityChain('chain', 'install')
         trace = self.c.CriticalTrace('trace', 'install')
         journal = self.r.InMemorySecurityJournal()
-        journal.append(self.r.JournalEntry(self.r._ref('action'), 'request', self.r.JournalState.UNKNOWN_OUTCOME))
+        for state in ('PROPOSED', 'AUTHORIZED', 'ATTEMPTED', 'UNKNOWN_OUTCOME'):
+            journal.append(self.r.JournalEntry(self.r._ref('action'), 'request', self.r.JournalState(state)))
         self.assertEqual(journal.latest('action').state, self.r.JournalState.UNKNOWN_OUTCOME)
         auth = self.r.Authorization('auth', 'task', frozenset({self.r.ActionClass.WRITE_FILE}),
                                    ('/repo/a',), frozenset({'filesystem.write'}), 100)
@@ -431,8 +432,9 @@ class CrossLayerTests(unittest.TestCase):
             outcome = adapter.reconcile(action, payload)
             self.assertEqual(outcome, self.r.ReconciliationOutcome.EFFECT_APPLIED)
             journal = self.r.InMemorySecurityJournal()
-            journal.append(self.r.JournalEntry(self.r._ref('action'), self.r._request_ref(action),
-                                              self.r.JournalState.UNKNOWN_OUTCOME))
+            for state in ('PROPOSED', 'AUTHORIZED', 'ATTEMPTED', 'UNKNOWN_OUTCOME'):
+                journal.append(self.r.JournalEntry(self.r._ref('action'), self.r._request_ref(action),
+                                                  self.r.JournalState(state)))
             receipt = self.r.reconcile(action, journal, lambda request: adapter.reconcile(request, payload))
             self.assertEqual(receipt.reconciliation_state, 'RECONCILED_SUCCESS')
             # A trusted caller uses the actual readback outcome and known bounded

@@ -339,6 +339,12 @@ class AgentRuntimeBridge:
             return self._denied(p, reason)
         key = p.material_effect_identity
         with self._lock:
+            if isinstance(binding.journal, rse.DurableSecurityJournal):
+                try:
+                    if not binding.journal.bind_material(p.action_request.action_id, key, p.payload_digest):
+                        return self._denied(p, 'RECONCILIATION_REQUIRED')
+                except Exception:
+                    return self._denied(p, 'DURABLE_STATE_UNTRUSTED')
             if _mutation(p):
                 if key in self._pending:
                     return self._denied(p, 'RECONCILIATION_REQUIRED')
@@ -379,6 +385,10 @@ class AgentRuntimeBridge:
             key = p.material_effect_identity
             with self._lock:
                 reservation = self._pending.get(key)
+                if reservation is None and isinstance(binding.journal, rse.DurableSecurityJournal):
+                    recovered = binding.journal.material_pending(key)
+                    if recovered == (rse._ref(p.action_request.action_id),):
+                        reservation = (p.prepared_digest, binding, 'UNKNOWN')
                 _require(not _mutation(p) or reservation == (p.prepared_digest, binding, 'UNKNOWN'), 'RECONCILIATION_REQUIRED')
                 if _mutation(p):
                     self._pending[key] = (p.prepared_digest, binding, 'RECONCILING')
