@@ -352,7 +352,7 @@ subprocess.Popen = threading.Thread.start = forbidden
 import independent_target_reality
 print('INACTIVE')
 '''
-        out = subprocess.run([sys.executable, '-I', '-S', '-c', code, str(SCRIPTS)],
+        out = subprocess.run([sys.executable, '-I', '-B', '-S', '-c', code, str(SCRIPTS)],
                              capture_output=True, timeout=5)
         self.assertEqual((out.returncode, out.stdout.strip()), (0, b'INACTIVE'))
 

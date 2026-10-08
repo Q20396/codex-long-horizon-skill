@@ -13,6 +13,7 @@ import os
 from pathlib import Path
 import re
 import select
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -29,6 +30,11 @@ NOTE_EXEC_TIMEOUT = 3
 CHILD_EXIT_TIMEOUT = 8
 SECRET_MARKER = 'PHASE5_SYNTHETIC_PRIVATE_MARKER'
 
+
+def isolated_python_args(executable, code, *arguments):
+    """One test-only launch policy for isolated no-network child fixtures."""
+    return [executable, '-I', '-B', '-S', '-c', code, *arguments]
+
 # TEST-ONLY SYNCHRONIZATION: only decimal PID and an empty release file.
 # The parent learns no host event from this protocol. RuntimeBinding's deadline
 # bounds and reaps the child even if a parent assertion fails before release.
@@ -43,7 +49,7 @@ while not release_path.exists():
     if time.monotonic() >= deadline:
         raise SystemExit(124)
     time.sleep(0.01)
-os.execv(sys.executable, [sys.executable, '-I', '-S', '-c', 'raise SystemExit(0)'])
+os.execv(sys.executable, [sys.executable, '-I', '-B', '-S', '-c', 'raise SystemExit(0)'])
 '''
 
 
@@ -109,8 +115,8 @@ class EndToEndSecurityRuntimeTests(unittest.TestCase):
 
     def prepare(self, timeout=6, child_code=CHILD_CODE):
         self.proposal = self.m.AgentActionProposal('proposal', 'EXECUTE_PROCESS',
-            self.executable, dict(argv=(self.executable, '-I', '-S', '-c', child_code,
-                str(self.root / 'pid'), str(self.root / 'release')),
+            self.executable, dict(argv=tuple(isolated_python_args(self.executable, child_code,
+                str(self.root / 'pid'), str(self.root / 'release'))),
                 cwd=str(self.root), timeout=timeout),
             declared_effects={'processes': (self.executable,)}, reason_text=SECRET_MARKER)
         result = self.bridge.prepare(self.proposal, context=self.context,
@@ -419,7 +425,7 @@ class EndToEndSecurityRuntimeTests(unittest.TestCase):
         request = self.artifact_request(content=b'x', target='effect')
         owner = self.r.CrossProcessOwner(self.root)
         self.addCleanup(owner.close)
-        args = [sys.executable, '-I', '-S', '-c', RACE, str(SCRIPTS), str(self.root), 'B', 'recover']
+        args = isolated_python_args(sys.executable, RACE, str(SCRIPTS), str(self.root), 'B', 'recover')
         out = subprocess.run(args, capture_output=True, timeout=8)
         self.assertEqual((out.returncode, out.stdout.strip()), (0, b'OWNERSHIP_CONTENDED'))
         self.assertFalse((self.root / 'effect').exists())
@@ -430,7 +436,7 @@ class EndToEndSecurityRuntimeTests(unittest.TestCase):
         # Break: independently matched bytes clear real recovered ATTEMPTED uncertainty.
         from test_cross_process_coordination import RACE
         request = self.artifact_request(content=b'x', target='effect')
-        args = [sys.executable, '-I', '-S', '-c', RACE, str(SCRIPTS), str(self.root)]
+        args = isolated_python_args(sys.executable, RACE, str(SCRIPTS), str(self.root))
         crashed = subprocess.run(args + ['A', 'before_outcome'], capture_output=True, timeout=8)
         self.assertEqual(crashed.returncode, 73)
         durable_before = ((self.root / 'journal').read_bytes(), (self.root / 'chain').read_bytes())
@@ -478,7 +484,7 @@ binding = local.RuntimeBinding(broker,j,chain,sc.SecurityAuthority('runtime',sc.
 out = binding.execute(p.action_request,p.normalized_payload,policy_stack=(policy,),authorization=auth,context=ctx,now=2)
 print(out.receipt.execution_state, out.receipt.reconciliation_state, flush=True)
 '''
-        args = [sys.executable, '-I', '-S', '-c', code, str(SCRIPTS), str(self.root)]
+        args = isolated_python_args(sys.executable, code, str(SCRIPTS), str(self.root))
         crashed = subprocess.run(args + ['crash'], capture_output=True, timeout=8)
         self.assertEqual(crashed.returncode, 73)
         before = ((self.root / 'h1-effect').read_bytes(), (self.root / 'h1-effect').stat().st_mtime_ns,
@@ -491,6 +497,32 @@ print(out.receipt.execution_state, out.receipt.reconciliation_state, flush=True)
         self.assertEqual(((self.root / 'h1-effect').read_bytes(), (self.root / 'h1-effect').stat().st_mtime_ns,
                           (self.root / 'h1-journal').read_bytes()), before)
         self.assertFalse(result.retry_authorized)
+
+    def test_isolated_child_import_does_not_modify_package_sources(self):
+        # Break: -I ignores the CI environment's PYTHONDONTWRITEBYTECODE; without
+        # explicit -B, child imports add unmanifested pyc files to source trees.
+        # Real copies isolate the probe from the repository/package originals.
+        source = self.root / 'probe-source'
+        source.mkdir()
+        for name in ('agent_runtime_integration', 'critical_execution_trace',
+                     'remote_runtime_binding', 'runtime_binding',
+                     'runtime_safety_envelope', 'security_authority_chain'):
+            shutil.copy2(SCRIPTS / (name + '.py'), source / (name + '.py'))
+        code = '''
+import sys
+sys.path.insert(0, sys.argv[1])
+import agent_runtime_integration
+print('BYTECODE_DISABLED' if sys.dont_write_bytecode else 'BYTECODE_ENABLED')
+'''
+        args = isolated_python_args(sys.executable, code, str(source))
+        out = subprocess.run(args, env={**os.environ, 'PYTHONDONTWRITEBYTECODE': '1'},
+                             capture_output=True, timeout=8)
+        self.assertEqual(out.returncode, 0, out.stderr)
+        self.assertEqual(list(source.rglob('*.pyc')), [], 'isolated import modified source inventory')
+        self.assertEqual(out.stdout.strip(), b'BYTECODE_DISABLED')
+        # Apple Python 3.9 enables this by default; require the explicit option
+        # even there so the test catches launch policy regressions on that host.
+        self.assertIn('-B', args[1:args.index('-c')])
 
     def test_pid_timeout_fails_once_without_second_execution(self):
         # A real child blocks on release; parent intentionally reads an absent path.
