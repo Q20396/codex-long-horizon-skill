@@ -7,11 +7,14 @@ from concurrent.futures import ThreadPoolExecutor
 from contextlib import ExitStack
 from dataclasses import asdict, replace
 import importlib
+import hashlib
 import json
 import os
 from pathlib import Path
 import re
 import select
+import shutil
+import subprocess
 import sys
 import tempfile
 import time
@@ -27,6 +30,11 @@ NOTE_EXEC_TIMEOUT = 3
 CHILD_EXIT_TIMEOUT = 8
 SECRET_MARKER = 'PHASE5_SYNTHETIC_PRIVATE_MARKER'
 
+
+def isolated_python_args(executable, code, *arguments):
+    """One test-only launch policy for isolated no-network child fixtures."""
+    return [executable, '-I', '-B', '-S', '-c', code, *arguments]
+
 # TEST-ONLY SYNCHRONIZATION: only decimal PID and an empty release file.
 # The parent learns no host event from this protocol. RuntimeBinding's deadline
 # bounds and reaps the child even if a parent assertion fails before release.
@@ -41,7 +49,7 @@ while not release_path.exists():
     if time.monotonic() >= deadline:
         raise SystemExit(124)
     time.sleep(0.01)
-os.execv(sys.executable, [sys.executable, '-I', '-S', '-c', 'raise SystemExit(0)'])
+os.execv(sys.executable, [sys.executable, '-I', '-B', '-S', '-c', 'raise SystemExit(0)'])
 '''
 
 
@@ -105,10 +113,10 @@ class EndToEndSecurityRuntimeTests(unittest.TestCase):
             frozenset({self.r.ActionClass.EXECUTE_PROCESS}), (self.executable,),
             frozenset({'process.execute'}), 100)
 
-    def prepare(self, timeout=6):
+    def prepare(self, timeout=6, child_code=CHILD_CODE):
         self.proposal = self.m.AgentActionProposal('proposal', 'EXECUTE_PROCESS',
-            self.executable, dict(argv=(self.executable, '-I', '-S', '-c', CHILD_CODE,
-                str(self.root / 'pid'), str(self.root / 'release')),
+            self.executable, dict(argv=tuple(isolated_python_args(self.executable, child_code,
+                str(self.root / 'pid'), str(self.root / 'release'))),
                 cwd=str(self.root), timeout=timeout),
             declared_effects={'processes': (self.executable,)}, reason_text=SECRET_MARKER)
         result = self.bridge.prepare(self.proposal, context=self.context,
@@ -316,6 +324,205 @@ class EndToEndSecurityRuntimeTests(unittest.TestCase):
         self.assertEqual(out.runtime_result.events, ())
         self.assertFalse((self.root / 'pid').exists())
         self.assertEqual(self.executions.call_count, 0)
+
+    def artifact_request(self, content=b'A', target='artifact', attempt='ref:action-attempt-1'):
+        """Trusted fixture fixes observation scope and identity before execution."""
+        repository_scripts = SCRIPTS.parents[3] / 'scripts'
+        self.assertTrue((repository_scripts / 'independent_target_reality.py').is_file(),
+                        'independent local artifact collector missing')
+        sys.path.insert(0, str(repository_scripts))
+        self.addCleanup(sys.path.remove, str(repository_scripts))
+        self.artifact = importlib.import_module('independent_target_reality')
+        return self.artifact.bind_request(root=self.root, target=target,
+            expected_size=len(content), expected_digest=hashlib.sha256(content).hexdigest(),
+            attempt_ref=attempt, scope_ref='ref:artifact-only', max_bytes=32)
+
+    def prepare_artifact(self, code="from pathlib import Path; Path('artifact').write_bytes(b'A')"):
+        return self.prepare(child_code=code)
+
+    def test_independent_artifact_actual_governed_execution_and_incomplete_host(self):
+        # Break: bypass binding, repeat effect, or invent FILE_WRITE coverage/identity.
+        request = self.artifact_request()
+        p = self.prepare_artifact()
+        out = self.execute()
+        self.assertEqual((out.receipt.execution_state, self.executions.call_count),
+                         ('KNOWN_SUCCESS', 1))
+        before = self.snapshot()
+        observation = self.artifact.collect(request)
+        self.assertTrue(self.artifact.matches_request(request, observation))
+        self.assertEqual((observation.status, observation.expectation_match,
+                          observation.process_authorship), ('OBSERVED', 'MATCH', 'NOT_PROVEN'))
+        self.assertEqual(self.snapshot(), before)
+        self.assertEqual((self.root / 'artifact').read_bytes(), b'A')
+        self.assertEqual(self.trace.events(), ())
+        # File observation cannot truthfully fill the verifier's process slot.
+        material = 'sha256:' + p.material_effect_identity
+        effect = ('PROCESS_START', material, 'ref:action', ('ref:adapter',), 'CORRELATED')
+        value = self.v.VerificationInput('ref:action', declared_effects=(),
+            authorized_effects=(effect,), adapter_observed_effects=(effect,),
+            host_observed_effects=(), target_reality_effects=None,
+            adapter_coverage='PARTIAL', host_coverage='PARTIAL', target_reality_status='UNKNOWN')
+        findings = self.verify_without_effects(value)
+        self.assertTrue(any(f.result == 'NOT_OBSERVED' for f in findings))
+        self.assertEqual([(f.result, f.reason) for f in findings if f.layer_b == 'TARGET_REALITY'],
+                         [('UNKNOWN', 'TARGET_REALITY_UNKNOWN')])
+        self.assertEqual(self.executions.call_count, 1)
+
+    def test_independent_artifact_zero_exit_without_file_stays_unknown(self):
+        # Break: use adapter exit/reap evidence as actual file reality.
+        request = self.artifact_request()
+        self.prepare_artifact('raise SystemExit(0)')
+        out = self.execute()
+        self.assertEqual(out.runtime_result.evidence.exit_code, 0)
+        result = self.artifact.collect(request)
+        self.assertEqual((result.status, result.observed_digest), ('UNKNOWN', None))
+        self.assertFalse(result.retry_authorized)
+        self.assertEqual(self.executions.call_count, 1)
+
+    def test_independent_artifact_wrong_content_survives_adapter_evidence_loss(self):
+        # Break: expected/adapter digest contaminates actual bytes, or missing adapter erases them.
+        request = self.artifact_request()
+        self.prepare_artifact("from pathlib import Path; Path('artifact').write_bytes(b'B')")
+        out = self.execute()
+        result = self.artifact.collect(request)
+        discarded = replace(out.runtime_result, evidence=None)
+        altered = replace(out.runtime_result, evidence=replace(out.runtime_result.evidence, exit_code=97))
+        self.assertIsNone(discarded.evidence)
+        self.assertEqual(altered.evidence.exit_code, 97)
+        self.assertEqual(self.artifact.collect(request), result)
+        self.assertEqual((result.status, result.observed_digest, result.expectation_match),
+            ('OBSERVED', 'df7e70e5021544f4834bbee64a9e3789febc4be81470df629cad6ddb03320a5c', 'MISMATCH'))
+
+    def test_independent_artifact_preexisting_match_does_not_prove_denied_action(self):
+        # Break: matching preexisting file upgrades missing authorization to success.
+        (self.root / 'artifact').write_bytes(b'A')
+        request = self.artifact_request()
+        self.prepare_artifact()
+        out = self.execute(authorization=None)
+        result = self.artifact.collect(request)
+        self.assertEqual(out.receipt.policy_reason, 'AUTHORIZATION_MISSING')
+        self.assertEqual(self.executions.call_count, 0)
+        self.assertEqual((result.status, result.expectation_match, result.process_authorship),
+                         ('OBSERVED', 'MATCH', 'NOT_PROVEN'))
+        self.assertFalse(result.retry_authorized)
+
+    def test_independent_artifact_h1_barrier_failure_prevents_process(self):
+        # Break: collector bypasses durable attempt admission or grants retry on absence.
+        request = self.artifact_request()
+        self.journal = self.r.DurableSecurityJournal(self.root / 'journal', storage_id='h3', create=True)
+        self.prepare_artifact()
+        with patch('os.fsync', side_effect=OSError('synthetic barrier failure')):
+            out = self.execute()
+        self.assertNotEqual(out.receipt.execution_state, 'KNOWN_SUCCESS')
+        self.assertEqual(self.executions.call_count, 0)
+        before = (self.root / 'journal').read_bytes()
+        self.assertEqual(self.artifact.collect(request).status, 'UNKNOWN')
+        self.assertEqual((self.root / 'journal').read_bytes(), before)
+
+    def test_independent_artifact_h2_owner_contention_prevents_effect(self):
+        # Break: observation authorizes a second controller despite real ownership contention.
+        from test_cross_process_coordination import RACE
+        request = self.artifact_request(content=b'x', target='effect')
+        owner = self.r.CrossProcessOwner(self.root)
+        self.addCleanup(owner.close)
+        args = isolated_python_args(sys.executable, RACE, str(SCRIPTS), str(self.root), 'B', 'recover')
+        out = subprocess.run(args, capture_output=True, timeout=8)
+        self.assertEqual((out.returncode, out.stdout.strip()), (0, b'OWNERSHIP_CONTENDED'))
+        self.assertFalse((self.root / 'effect').exists())
+        self.assertEqual(self.artifact.collect(request).status, 'UNKNOWN')
+        owner.check()
+
+    def test_independent_artifact_crash_match_preserves_material_retry_barrier(self):
+        # Break: independently matched bytes clear real recovered ATTEMPTED uncertainty.
+        from test_cross_process_coordination import RACE
+        request = self.artifact_request(content=b'x', target='effect')
+        args = isolated_python_args(sys.executable, RACE, str(SCRIPTS), str(self.root))
+        crashed = subprocess.run(args + ['A', 'before_outcome'], capture_output=True, timeout=8)
+        self.assertEqual(crashed.returncode, 73)
+        durable_before = ((self.root / 'journal').read_bytes(), (self.root / 'chain').read_bytes())
+        result = self.artifact.collect(request)
+        self.assertEqual((result.status, result.expectation_match, result.process_authorship),
+                         ('OBSERVED', 'MATCH', 'NOT_PROVEN'))
+        self.assertEqual(((self.root / 'journal').read_bytes(), (self.root / 'chain').read_bytes()), durable_before)
+        before = ((self.root / 'effect').read_bytes(), (self.root / 'effect').stat().st_mtime_ns,
+                  (self.root / 'journal').read_bytes(), (self.root / 'chain').read_bytes())
+        recovered = subprocess.run(args + ['A', 'recover'], capture_output=True, timeout=8)
+        self.assertEqual((recovered.returncode, recovered.stdout.splitlines()),
+                         (0, [b'DENY', b'RECONCILIATION_REQUIRED', b'ATTEMPTED']))
+        self.assertEqual(((self.root / 'effect').read_bytes(), (self.root / 'effect').stat().st_mtime_ns), before[:2])
+        self.assertEqual((self.root / 'journal').read_bytes(), before[2])
+        fresh = subprocess.run(args + ['B', 'recover'], capture_output=True, timeout=8)
+        self.assertEqual((fresh.returncode, fresh.stdout.splitlines()),
+                         (0, [b'DENY', b'RECONCILIATION_REQUIRED', b'ATTEMPTED']))
+        self.assertEqual(((self.root / 'effect').read_bytes(), (self.root / 'effect').stat().st_mtime_ns), before[:2])
+        self.assertFalse(result.retry_authorized)
+
+    def test_independent_artifact_h1_crash_recovery_remains_unknown(self):
+        # Break: matched bytes clear H1 durable ATTEMPTED and re-invoke the effect.
+        request = self.artifact_request(content=b'x', target='h1-effect')
+        code = '''
+import os, sys
+sys.path.insert(0, sys.argv[1])
+import agent_runtime_integration as m
+r, sc, cet, local = m.rse, m.sc, m.cet, m.local
+root, phase = sys.argv[2:]
+j = r.DurableSecurityJournal(root+'/h1-journal', storage_id='h3-h1', create=phase=='crash')
+chain = sc.InMemorySecurityChain('h3-h1','install')
+ctx = cet.TraceContext('trace','install','project','task','run','A',None,'provider',None,'runtime')
+bridge = m.AgentRuntimeBridge()
+p = bridge.prepare(dict(proposal_id='A',requested_action_class='CREATE_FILE',requested_target=root+'/h1-effect',requested_parameters={'content_bytes':b'x'}),context=ctx,trusted_agent_id='agent',authorization_ref='auth',data_classification=r.DataClass.NON_SENSITIVE,now=1).prepared
+policy = r.Policy('core',r.PolicyLevel.CORE,allowed_actions={r.ActionClass.CREATE_FILE},write_roots=(root,),allowed_capabilities={'filesystem.write'})
+auth = r.Authorization('auth','task',{r.ActionClass.CREATE_FILE},(root+'/h1-effect',),{'filesystem.write'},100)
+append = j.append
+def fault(entry):
+ if phase=='crash' and entry.state==r.JournalState.KNOWN_SUCCESS: os._exit(73)
+ append(entry)
+j.append = fault
+broker = r.CapabilityBroker()
+broker.register('filesystem.write', local.FilesystemAdapter(workspace_root=root))
+binding = local.RuntimeBinding(broker,j,chain,sc.SecurityAuthority('runtime',sc.AuthorityRole.RUNTIME,'install'),approved_payload_digests={'A':p.payload_digest})
+out = binding.execute(p.action_request,p.normalized_payload,policy_stack=(policy,),authorization=auth,context=ctx,now=2)
+print(out.receipt.execution_state, out.receipt.reconciliation_state, flush=True)
+'''
+        args = isolated_python_args(sys.executable, code, str(SCRIPTS), str(self.root))
+        crashed = subprocess.run(args + ['crash'], capture_output=True, timeout=8)
+        self.assertEqual(crashed.returncode, 73)
+        before = ((self.root / 'h1-effect').read_bytes(), (self.root / 'h1-effect').stat().st_mtime_ns,
+                  (self.root / 'h1-journal').read_bytes())
+        result = self.artifact.collect(request)
+        self.assertEqual((result.status, result.expectation_match), ('OBSERVED', 'MATCH'))
+        recovered = subprocess.run(args + ['recover'], capture_output=True, timeout=8)
+        self.assertEqual((recovered.returncode, recovered.stdout.strip()),
+                         (0, b'UNKNOWN_OUTCOME RECONCILIATION_REQUIRED'))
+        self.assertEqual(((self.root / 'h1-effect').read_bytes(), (self.root / 'h1-effect').stat().st_mtime_ns,
+                          (self.root / 'h1-journal').read_bytes()), before)
+        self.assertFalse(result.retry_authorized)
+
+    def test_isolated_child_import_does_not_modify_package_sources(self):
+        # Break: -I ignores the CI environment's PYTHONDONTWRITEBYTECODE; without
+        # explicit -B, child imports add unmanifested pyc files to source trees.
+        # Real copies isolate the probe from the repository/package originals.
+        source = self.root / 'probe-source'
+        source.mkdir()
+        for name in ('agent_runtime_integration', 'critical_execution_trace',
+                     'remote_runtime_binding', 'runtime_binding',
+                     'runtime_safety_envelope', 'security_authority_chain'):
+            shutil.copy2(SCRIPTS / (name + '.py'), source / (name + '.py'))
+        code = '''
+import sys
+sys.path.insert(0, sys.argv[1])
+import agent_runtime_integration
+print('BYTECODE_DISABLED' if sys.dont_write_bytecode else 'BYTECODE_ENABLED')
+'''
+        args = isolated_python_args(sys.executable, code, str(source))
+        out = subprocess.run(args, env={**os.environ, 'PYTHONDONTWRITEBYTECODE': '1'},
+                             capture_output=True, timeout=8)
+        self.assertEqual(out.returncode, 0, out.stderr)
+        self.assertEqual(list(source.rglob('*.pyc')), [], 'isolated import modified source inventory')
+        self.assertEqual(out.stdout.strip(), b'BYTECODE_DISABLED')
+        # Apple Python 3.9 enables this by default; require the explicit option
+        # even there so the test catches launch policy regressions on that host.
+        self.assertIn('-B', args[1:args.index('-c')])
 
     def test_pid_timeout_fails_once_without_second_execution(self):
         # A real child blocks on release; parent intentionally reads an absent path.

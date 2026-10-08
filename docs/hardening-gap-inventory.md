@@ -97,9 +97,9 @@ not replace restart, coordination, reality or trust work.
 ### G05
 
 - area: Independent process target reality.
-- current_state: NOT_IMPLEMENTED — NO_INDEPENDENT_REALITY_SENSOR; bounded wait/reap evidence exists.
-- evidence: `docs/end-to-end-security-runtime.md` Distinct evidence and normalization; `T/test_end_to_end_security_runtime.py`; `S/runtime_binding.py:_capture_started`; `S/cross_layer_verification.py:_compare`.
-- risk_if_unfixed: Adapter/result agreement shares one provenance. EXITED/0 with a bound payload is not executed-image identity, proof of all child side effects, or an independent hostile-host sensor. ProcessAdapter has no reconciler; uncertain outcomes remain unknown.
+- current_state: PARTIALLY_IMPLEMENTED — H3 repository-only experimental independent local artifact observation; process image identity and all-effect reality remain NOT_IMPLEMENTED.
+- evidence: repository `scripts/independent_target_reality.py:bind_request/collect/matches_request`, `T/test_independent_target_reality.py`, independent artifact scenarios in `T/test_end_to_end_security_runtime.py`, and `docs/h3-independent-target-reality.md`; existing `S/runtime_binding.py:_capture_started` wait/reap and `S/cross_layer_verification.py:_compare` remain unchanged. Exact-candidate independent review and Linux CI are separate pending gates.
+- risk_if_unfixed: Adapter/result agreement shares one provenance. The selected H3 collector reads bounded actual file bytes/identity separately, but a match does not prove process authorship, executed-image identity, all child side effects, or hostile-kernel independence. File absence/mismatch does not mean NOT_APPLIED, and no observation grants retry/reconciliation authority. ProcessAdapter has no reconciler; uncertain outcomes remain unknown.
 - hardening_goal: Establish independently sourced, explicitly bounded target facts before stronger cross-layer assurance claims.
 - priority: P1.
 - recommended_hardening_stage: H3.
