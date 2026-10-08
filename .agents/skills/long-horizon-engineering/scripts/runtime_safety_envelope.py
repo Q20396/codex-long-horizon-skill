@@ -7,7 +7,7 @@ Policy paths are logical POSIX paths; policy evaluation performs no filesystem o
 DNS inspection. Only explicitly constructed durable journals access local storage.
 """
 from dataclasses import dataclass, fields
-from contextlib import ExitStack
+from contextlib import ExitStack, contextmanager, nullcontext
 from enum import Enum
 import hashlib
 import ipaddress
@@ -17,9 +17,221 @@ import os
 import posixpath
 import re
 import stat
+import sys
+import weakref
 from threading import RLock
 from types import MappingProxyType
 from urllib.parse import urlsplit, urlunsplit
+
+
+_owners = weakref.WeakSet()
+_fork_registered = False
+_fork_lock = RLock()
+
+
+def _discard_inherited_owners():
+    global _fork_lock
+    # Close, never LOCK_UN: flock's open file description belongs to the parent.
+    # Do not acquire inherited Python mutexes in the fork child.
+    for owner in tuple(_owners):
+        owner._dispose()
+    _fork_lock = RLock()
+
+
+def _local_posix_storage(fd, path):
+    """Narrow filesystem allowlist; no network filesystems or caller attestation.
+
+    Darwin's statvfs omits MNT_LOCAL; use its public 64-bit statfs ABI. Linux
+    exposes the filesystem type in the kernel mount table. Unknown means deny.
+    """
+    if sys.platform == 'darwin':
+        import ctypes as c
+        class StatFS(c.Structure):
+            _fields_ = [('bsize', c.c_uint32), ('iosize', c.c_int32),
+                ('counts', c.c_uint64 * 5), ('fsid', c.c_int32 * 2),
+                ('owner', c.c_uint32), ('type', c.c_uint32),
+                ('flags', c.c_uint32), ('subtype', c.c_uint32),
+                ('name', c.c_char * 16), ('mount', c.c_char * 1024),
+                ('source', c.c_char * 1024), ('reserved', c.c_uint32 * 8)]
+        libc = c.CDLL('/usr/lib/libSystem.B.dylib', use_errno=True)
+        call = libc.fstatfs64
+        call.argtypes, call.restype = [c.c_int, c.POINTER(StatFS)], c.c_int
+        value = StatFS()
+        return call(fd, c.byref(value)) == 0 and bool(value.flags & 0x1000) and value.name == b'apfs'
+    if sys.platform == 'linux':
+        with open('/proc/self/mountinfo', encoding='ascii') as stream:
+            matches = []
+            for line in stream:
+                left, right = line.rstrip('\n').split(' - ', 1)
+                raw_mount = left.split()[4]
+                mount = re.sub(r'\\([0-7]{3})', lambda match: chr(int(match[1], 8)), raw_mount)
+                # An escaped or stacked mount must not fall back to a local
+                # parent mount. Decode only to identify it, then reject it.
+                if path == mount or path.startswith(mount.rstrip('/') + '/'):
+                    matches.append((len(mount), '\\' not in raw_mount
+                        and right.split()[0] in ('ext4', 'xfs', 'btrfs', 'tmpfs')))
+        if not matches:
+            return False
+        deepest = [supported for depth, supported in matches if depth == max(row[0] for row in matches)]
+        return len(deepest) == 1 and deepest[0]
+    return False
+
+
+class CrossProcessOwner:
+    """Explicit nonblocking flock ownership of one trusted local directory.
+
+    All protected files must be immediate children on the same filesystem.
+    Host code must preserve directory/lock/file identities, never unlink the lock,
+    never mix legacy writers, and never pass this handle or its FDs to effects.
+    Cooperative controllers only; this is not hostile-storage protection.
+    """
+    def __init__(self, directory):
+        global _fork_registered
+        self._fd = self._dir_fd = None
+        self._pid = os.getpid()
+        self._lock = RLock()
+        self._active = 0
+        self._bindings = {}
+        self._failed = False
+        if sys.platform not in ('darwin', 'linux') or not hasattr(os, 'register_at_fork'):
+            raise ValueError('OWNERSHIP_PLATFORM_UNSUPPORTED')
+        with _fork_lock:
+            if not _fork_registered:
+                os.register_at_fork(before=lambda: _fork_lock.acquire(),
+                    after_in_parent=lambda: _fork_lock.release(), after_in_child=_discard_inherited_owners)
+                _fork_registered = True
+            # Register before opening descriptors. The fork barrier covers the
+            # interval between open(2) returning and Python assigning the FD.
+            _owners.add(self)
+            self._acquire(directory)
+
+    def _acquire(self, directory):
+        import fcntl
+        self._path = os.path.abspath(os.fspath(directory))
+        try:
+            if os.path.realpath(self._path) != self._path:
+                raise ValueError('OWNERSHIP_IDENTITY_INVALID')
+            self._dir_fd = os.open(self._path, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+            info = os.fstat(self._dir_fd)
+            self._directory_identity = (info.st_dev, info.st_ino)
+            if info.st_uid != os.getuid() or info.st_mode & 0o022:
+                raise ValueError('OWNERSHIP_IDENTITY_INVALID')
+            if not _local_posix_storage(self._dir_fd, self._path):
+                raise ValueError('OWNERSHIP_STORAGE_UNSUPPORTED')
+            self._fd = os.open('.h2-owner', os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW | os.O_NONBLOCK,
+                0o600, dir_fd=self._dir_fd)
+            os.set_inheritable(self._fd, False)
+            os.set_inheritable(self._dir_fd, False)
+            info = os.fstat(self._fd)
+            self._identity = (info.st_dev, info.st_ino)
+            if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or info.st_mode & 0o077 or info.st_uid != os.getuid():
+                raise ValueError('OWNERSHIP_IDENTITY_INVALID')
+            try:
+                fcntl.flock(self._fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                raise ValueError('OWNERSHIP_CONTENDED') from None
+            self.check()
+        except (OSError, AttributeError, UnicodeError):
+            self._dispose()
+            raise ValueError('OWNERSHIP_ACQUISITION_FAILED') from None
+        except BaseException:
+            self._dispose()
+            raise
+
+    def _dispose(self):
+        for name in ('_fd', '_dir_fd'):
+            fd = getattr(self, name, None)
+            setattr(self, name, None)
+            if fd is not None:
+                try:
+                    os.close(fd)
+                except OSError:
+                    pass  # Close both descriptors; never mask an earlier error.
+
+    def __del__(self):
+        self._dispose()
+
+    def check(self):
+        if self._pid != os.getpid() or self._fd is None or self._failed:
+            raise ValueError('OWNERSHIP_INVALID')
+        try:
+            info = os.stat(self._path, follow_symlinks=False)
+            lock = os.stat('.h2-owner', dir_fd=self._dir_fd, follow_symlinks=False)
+            if (os.path.realpath(self._path) != self._path
+                    or (info.st_dev, info.st_ino) != self._directory_identity
+                    or (lock.st_dev, lock.st_ino) != self._identity
+                    or not stat.S_ISREG(lock.st_mode) or lock.st_nlink != 1
+                    or lock.st_mode & 0o077 or info.st_mode & 0o022
+                    or (os.fstat(self._fd).st_dev, os.fstat(self._fd).st_ino) != self._identity):
+                raise ValueError()
+            for path, identity in self._bindings.items():
+                item = os.stat(path, follow_symlinks=False)
+                if ((item.st_dev, item.st_ino) != identity or not stat.S_ISREG(item.st_mode)
+                        or item.st_nlink != 1 or item.st_mode & 0o077):
+                    raise ValueError()
+        except (OSError, ValueError):
+            self._failed = True
+            raise ValueError('OWNERSHIP_IDENTITY_INVALID') from None
+
+    def require_path(self, path):
+        self.check()
+        path = os.path.abspath(os.fspath(path))
+        if (os.path.dirname(path) != self._path or os.path.basename(path) == '.h2-owner'
+                or os.path.realpath(path) != path):
+            raise ValueError('OWNERSHIP_STORAGE_MISMATCH')
+        if os.path.lexists(path):
+            info = os.stat(path, follow_symlinks=False)
+            if (not stat.S_ISREG(info.st_mode) or info.st_dev != self._directory_identity[0]
+                    or info.st_nlink != 1 or info.st_mode & 0o077):
+                raise ValueError('OWNERSHIP_STORAGE_MISMATCH')
+
+    def bind(self, path):
+        self.require_path(path)
+        path = os.path.abspath(os.fspath(path))
+        info = os.stat(path, follow_symlinks=False)
+        if (not stat.S_ISREG(info.st_mode) or info.st_dev != self._directory_identity[0]
+                or info.st_nlink != 1 or info.st_mode & 0o077):
+            raise ValueError('OWNERSHIP_STORAGE_MISMATCH')
+        identity = (info.st_dev, info.st_ino)
+        if path in self._bindings and self._bindings[path] != identity:
+            raise ValueError('OWNERSHIP_STORAGE_MISMATCH')
+        self._bindings[path] = identity
+
+    @contextmanager
+    def operation(self):
+        self.check()  # PID check precedes inherited mutex access.
+        with self._lock:
+            self.check()
+            self._active += 1
+            try:
+                yield
+            finally:
+                self._active -= 1
+
+    def close(self):
+        if self._pid != os.getpid():
+            self._dispose()
+            return
+        if not self._lock.acquire(blocking=False):
+            raise ValueError('OWNERSHIP_BUSY')
+        try:
+            if self._active:
+                raise ValueError('OWNERSHIP_BUSY')
+            self._dispose()
+        finally:
+            self._lock.release()
+
+
+def storage_owner(path, owner):
+    """A coordinated directory may not silently reopen in legacy mode."""
+    if owner is None:
+        if os.path.lexists(os.path.join(os.path.dirname(os.path.abspath(os.fspath(path))), '.h2-owner')):
+            raise ValueError('OWNERSHIP_REQUIRED')
+        return nullcontext()
+    if type(owner) is not CrossProcessOwner:
+        raise ValueError('OWNERSHIP_INVALID')
+    owner.require_path(path)
+    return owner.operation()
 
 
 class ActionClass(str, Enum):
@@ -311,19 +523,22 @@ class InMemorySecurityJournal:
 
 
 class DurableSecurityJournal(InMemorySecurityJournal):
-    """Explicit single-controller process-restart store, not a Security Chain.
+    """Explicit process-restart store, optionally coordinated; not a Security Chain.
 
     A trusted owner must keep the storage identity and directory lifecycle. Use
     create only for genuinely new storage, never as recovery fallback. Complete
     rollback/deletion cannot be detected without an external trusted anchor.
-    fsync is required but this does not claim power-loss or multi-process safety.
+    fsync is required but does not prove power-loss durability. Without owner,
+    this is H1-only single-controller storage. H2 requires the coordinated Bridge.
     Detected external modification latches this object closed. No auto-repair.
     """
     MAX_BYTES = 16 * 1024 * 1024
     MAX_ROWS = 16384
 
-    def __init__(self, path, *, storage_id, create=False):
+    def __init__(self, path, *, storage_id, create=False, owner=None):
         super().__init__()
+        self.owner = owner
+        self._execution_scope = None
         self._failed = False
         self._path = os.path.abspath(os.fspath(path))
         self._storage = _ref(storage_id)
@@ -331,6 +546,12 @@ class DurableSecurityJournal(InMemorySecurityJournal):
         self._bindings = {}
         self._authorizations = {}
         self._attempts = {}
+        with storage_owner(self._path, owner):
+            self._initialize(storage_id, create)
+            if owner is not None:
+                owner.bind(self._path)
+
+    def _initialize(self, storage_id, create):
         try:
             if not _text(storage_id) or not hasattr(os, 'O_NOFOLLOW'):
                 raise ValueError()
@@ -358,6 +579,60 @@ class DurableSecurityJournal(InMemorySecurityJournal):
         except Exception:
             self._failed = True
             raise ValueError('DURABLE_STATE_UNTRUSTED') from None
+
+    @contextmanager
+    def transaction(self):
+        with (self.owner.operation() if self.owner is not None else nullcontext()):
+            with self._lock:
+                yield
+
+    def action_transaction(self, action_id):
+        # Coordinated ownership remains active through effect and bookkeeping.
+        return self.transaction() if self.owner is not None else super().action_transaction(action_id)
+
+    @contextmanager
+    def _bridge_scope(self, action, chain):
+        with self.transaction():
+            if self.owner is None or getattr(chain, 'owner', None) is not self.owner or not chain.verify().valid:
+                raise ValueError('OWNERSHIP_COMPOSITION_MISMATCH')
+            if self._execution_scope is not None:
+                raise ValueError('OWNERSHIP_BUSY')
+            self._execution_scope = (action, chain)
+            try:
+                yield
+            finally:
+                self._execution_scope = None
+
+    def _execution_allowed(self, action):
+        if self.owner is None:
+            return True
+        self.owner.check()
+        return (self._execution_scope is not None and self._execution_scope[0] == action
+            and self._execution_scope[1].verify().valid)
+
+    def _fresh_authorization(self, action):
+        if self.owner is None:
+            return True
+        key = _ref(action.action_id)
+        material = self._bindings.get(key)
+        if material is None:
+            return True
+        authorized = {}
+        for row in self._rows:
+            entry = row['entry']
+            binding = self._bindings.get(entry['action_id'])
+            if binding is None or binding[0] != material[0]:
+                continue
+            attempt = (entry['action_id'], row['attempt'])
+            # Use the authorization that actually admitted this historical
+            # attempt. Later denied proposals or reconciliation credentials
+            # cannot replace it, including after replay or action-ID changes.
+            if entry['state'] == JournalState.AUTHORIZED:
+                authorized[attempt] = row['authorization']
+            elif (entry['state'] == JournalState.RECONCILED_NOT_APPLIED
+                    and authorized.get(attempt) == _ref(action.authorization_ref)):
+                return False
+        return True
 
     @staticmethod
     def _encode(value):
@@ -447,6 +722,8 @@ class DurableSecurityJournal(InMemorySecurityJournal):
         validate_journal_transition(history, entry)
 
     def _check(self):
+        if self.owner is not None:
+            self.owner.check()
         if self._failed:
             raise ValueError('DURABLE_STATE_UNTRUSTED')
         fd = self._open()
@@ -459,12 +736,12 @@ class DurableSecurityJournal(InMemorySecurityJournal):
             os.close(fd)
 
     def history(self, action_id):
-        with self._lock:
+        with self.transaction():
             self._check()
             return super().history(action_id)
 
     def material_pending(self, material):
-        with self._lock:
+        with self.transaction():
             self._check()
             pending = []
             for key, binding in self._bindings.items():
@@ -472,14 +749,17 @@ class DurableSecurityJournal(InMemorySecurityJournal):
                     continue
                 history = [e for e in self._entries if e.action_id == key]
                 states = [e.state for e in history if e.state not in (JournalState.PROPOSED, JournalState.BLOCKED)]
-                if states and states[-1] in (JournalState.AUTHORIZED, JournalState.ATTEMPTED,
-                        JournalState.UNKNOWN_OUTCOME, JournalState.RECONCILIATION_REQUIRED):
+                blocked = (JournalState.AUTHORIZED, JournalState.ATTEMPTED,
+                    JournalState.UNKNOWN_OUTCOME, JournalState.RECONCILIATION_REQUIRED)
+                if self.owner is not None:
+                    blocked += (JournalState.KNOWN_SUCCESS, JournalState.RECONCILED_SUCCESS)
+                if states and states[-1] in blocked:
                     pending.append(key)
             return tuple(pending)
 
     def bind_material(self, action_id, material, payload):
         """Trusted Bridge supplies its existing identity; never derive new equivalence."""
-        with self._lock:
+        with self.transaction():
             self._check()
             if not all(type(v) is str and re.fullmatch('[0-9a-f]{64}', v) for v in (material, payload)):
                 raise ValueError('DURABLE_STATE_UNTRUSTED')
@@ -493,7 +773,7 @@ class DurableSecurityJournal(InMemorySecurityJournal):
             return True
 
     def append(self, entry):
-        with self._lock:
+        with self.transaction():
             try:
                 self._check()
                 self._validate_entry(entry)
@@ -528,7 +808,7 @@ class DurableSecurityJournal(InMemorySecurityJournal):
                 raise ValueError('DURABLE_STATE_UNTRUSTED') from None
 
     def append_action(self, action, entry):
-        with self._lock:
+        with self.transaction():
             self._authorizations[entry.action_id] = _ref(action.authorization_ref)
             self.append(entry)
 
@@ -773,6 +1053,10 @@ def evaluate_and_execute(action, policy_stack, authorization, capability_broker,
     execution = 'UNKNOWN_OUTCOME'  # History may be unavailable at the boundary.
     try:
         with (action_transaction(journal, action.action_id) if action_scoped else journal.transaction()):
+            if isinstance(journal, DurableSecurityJournal) and not journal._execution_allowed(action):
+                return _receipt(action, PolicyDecision('DENY', 'OWNERSHIP_COMPOSITION_MISMATCH'))
+            if isinstance(journal, DurableSecurityJournal) and not journal._fresh_authorization(action):
+                return _receipt(action, PolicyDecision('REQUIRE_AUTHORIZATION', 'FRESH_AUTHORIZATION_REQUIRED'))
             # Atomic reservation shared with legacy callers. Only the adapter
             # operation is released from the global lock in scoped mode.
             with journal.transaction():
@@ -831,6 +1115,8 @@ def reconcile(action, journal, reconciler):
         return _receipt(action, PolicyDecision('INVALID', 'MALFORMED_ACTION'))
     try:
         with action_transaction(journal, action.action_id):
+            if isinstance(journal, DurableSecurityJournal) and not journal._execution_allowed(action):
+                return _receipt(action, PolicyDecision('DENY', 'OWNERSHIP_COMPOSITION_MISMATCH'))
             previous = _prior(action, journal)
             if previous not in ('AUTHORIZED', 'ATTEMPTED', 'UNKNOWN_OUTCOME', 'RECONCILIATION_REQUIRED'):
                 return _receipt(action, PolicyDecision('DENY', 'RECONCILIATION_NOT_PENDING'))

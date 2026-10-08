@@ -19,6 +19,18 @@ PATH = SCRIPTS / 'security_authority_chain.py'
 class SecurityChainTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        saved_path = sys.path[:]
+        saved_modules = {name: sys.modules.get(name) for name in
+                         ('security_authority_chain', 'runtime_safety_envelope')}
+        def restore_imports():
+            sys.path[:] = saved_path
+            for name, module in saved_modules.items():
+                if module is None:
+                    sys.modules.pop(name, None)
+                else:
+                    sys.modules[name] = module
+        cls.addClassCleanup(restore_imports)
+        sys.path.insert(0, str(SCRIPTS))
         if PATH.exists():
             spec = importlib.util.spec_from_file_location('security_authority_chain', PATH)
             cls.m = importlib.util.module_from_spec(spec)
