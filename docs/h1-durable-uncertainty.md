@@ -2,7 +2,9 @@
 
 Experimental, opt-in, standard-library execution journal. This is not a new
 authority, Security Chain, daemon, retry engine, or state machine. Existing
-in-memory callers remain unchanged. H2 cross-process coordination is not implemented.
+in-memory interfaces remain unchanged. Live and durable journals share one pure
+RSE transition validator; invalid transitions are rejected in both. H2 cross-process
+coordination is not implemented.
 
 ## Trusted host setup
 

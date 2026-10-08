@@ -139,6 +139,13 @@ class DurableTests(unittest.TestCase):
         self.execute()
         self.assertEqual(self.calls, [])
 
+    def test_normal_and_durable_append_share_transition_rejection(self):
+        for journal in (self.r.InMemorySecurityJournal(), self.j):
+            self.r._append(journal, self.a, self.r.JournalState.PROPOSED)
+            with self.assertRaises(ValueError):
+                self.r._append(journal, self.a, self.r.JournalState.KNOWN_SUCCESS,
+                    evidence=(self.r._ref('e'),))
+
     def test_changed_storage_and_symlink_rejected(self):
         self.path.write_bytes(self.path.read_bytes() + b'{}\n')
         self.execute()

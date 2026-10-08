@@ -1,9 +1,10 @@
-"""Experimental, in-memory policy kernel. No real runtime bindings.
+"""Experimental policy kernel with optional explicit durable execution journal.
 
 Trusted host code supplies policies, authorizations, broker, journal and reconciler.
 Model proposals must never populate those trusted arguments. Python object types do
 not authenticate a human or sandbox hostile Python code. No effects occur on import.
-All paths are logical POSIX paths; no filesystem or DNS inspection is performed.
+Policy paths are logical POSIX paths; policy evaluation performs no filesystem or
+DNS inspection. Only explicitly constructed durable journals access local storage.
 """
 from dataclasses import dataclass, fields
 from contextlib import ExitStack
@@ -227,6 +228,35 @@ class JournalEntry:
     evidence_refs: tuple = ()
 
 
+def validate_journal_transition(history, entry):
+    """Canonical existing RSE transition contract for live append and replay.
+
+    This validates evidence; it does not execute, authorize, or advance a state.
+    """
+    if type(entry) is not JournalEntry or type(entry.state) is not JournalState:
+        raise ValueError('INVALID_JOURNAL_TRANSITION')
+    if any(e.request_ref != entry.request_ref for e in history):
+        raise ValueError('ACTION_ID_CONFLICT')
+    previous = history[-1].state.value if history else None
+    allowed = {
+        None: {'PROPOSED'},
+        'PROPOSED': {'PROPOSED', 'BLOCKED', 'AUTHORIZED'},
+        'BLOCKED': {'PROPOSED'},
+        'AUTHORIZED': {'ATTEMPTED', 'RECONCILIATION_REQUIRED', 'RECONCILED_SUCCESS', 'RECONCILED_NOT_APPLIED'},
+        'ATTEMPTED': {'KNOWN_SUCCESS', 'KNOWN_FAILURE', 'UNKNOWN_OUTCOME', 'RECONCILIATION_REQUIRED', 'RECONCILED_SUCCESS', 'RECONCILED_NOT_APPLIED'},
+        'KNOWN_SUCCESS': {'RECONCILIATION_REQUIRED'},
+        'KNOWN_FAILURE': {'PROPOSED', 'RECONCILIATION_REQUIRED'},
+        'UNKNOWN_OUTCOME': {'RECONCILIATION_REQUIRED', 'RECONCILED_SUCCESS', 'RECONCILED_NOT_APPLIED'},
+        'RECONCILIATION_REQUIRED': {'RECONCILIATION_REQUIRED', 'RECONCILED_SUCCESS', 'RECONCILED_NOT_APPLIED'},
+        'RECONCILED_SUCCESS': {'RECONCILIATION_REQUIRED'},
+        'RECONCILED_NOT_APPLIED': {'PROPOSED', 'RECONCILIATION_REQUIRED'},
+    }
+    if entry.state.value not in allowed.get(previous, ()):
+        raise ValueError('INVALID_JOURNAL_TRANSITION')
+    if entry.state == JournalState.KNOWN_SUCCESS and not entry.evidence_refs:
+        raise ValueError('INVALID_JOURNAL_EVIDENCE')
+
+
 class InMemorySecurityJournal:
     """Trusted serial transaction + append/latest/history journal implementation.
 
@@ -267,6 +297,7 @@ class InMemorySecurityJournal:
 
     def append(self, entry):
         with self._lock:
+            validate_journal_transition(tuple(e for e in self._entries if e.action_id == entry.action_id), entry)
             self._entries.append(entry)
 
     def history(self, action_id):
@@ -413,27 +444,7 @@ class DurableSecurityJournal(InMemorySecurityJournal):
         if type(entry.reason) is not str or not re.fullmatch(r'[A-Z_]{1,80}', entry.reason):
             raise ValueError()
         history = [e for e in self._entries if e.action_id == entry.action_id]
-        if any(e.request_ref != entry.request_ref for e in history):
-            raise ValueError()
-        previous = history[-1].state.value if history else None
-        # Validate the EXISTING RSE transitions, not another execution machine.
-        allowed = {
-            None: {'PROPOSED'},
-            'PROPOSED': {'PROPOSED', 'BLOCKED', 'AUTHORIZED'},
-            'BLOCKED': {'PROPOSED'},
-            'AUTHORIZED': {'ATTEMPTED', 'RECONCILIATION_REQUIRED', 'RECONCILED_SUCCESS', 'RECONCILED_NOT_APPLIED'},
-            'ATTEMPTED': {'KNOWN_SUCCESS', 'KNOWN_FAILURE', 'UNKNOWN_OUTCOME', 'RECONCILIATION_REQUIRED', 'RECONCILED_SUCCESS', 'RECONCILED_NOT_APPLIED'},
-            'KNOWN_SUCCESS': {'RECONCILIATION_REQUIRED'},
-            'KNOWN_FAILURE': {'PROPOSED', 'RECONCILIATION_REQUIRED'},
-            'UNKNOWN_OUTCOME': {'RECONCILIATION_REQUIRED', 'RECONCILED_SUCCESS', 'RECONCILED_NOT_APPLIED'},
-            'RECONCILIATION_REQUIRED': {'RECONCILIATION_REQUIRED', 'RECONCILED_SUCCESS', 'RECONCILED_NOT_APPLIED'},
-            'RECONCILED_SUCCESS': {'RECONCILIATION_REQUIRED'},
-            'RECONCILED_NOT_APPLIED': {'PROPOSED', 'RECONCILIATION_REQUIRED'},
-        }
-        if entry.state.value not in allowed[previous]:
-            raise ValueError()
-        if entry.state == JournalState.KNOWN_SUCCESS and not entry.evidence_refs:
-            raise ValueError()
+        validate_journal_transition(history, entry)
 
     def _check(self):
         if self._failed:
