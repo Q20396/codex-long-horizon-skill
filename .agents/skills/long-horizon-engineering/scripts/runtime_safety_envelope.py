@@ -615,13 +615,22 @@ class DurableSecurityJournal(InMemorySecurityJournal):
             return True
         key = _ref(action.action_id)
         material = self._bindings.get(key)
-        for candidate, binding in self._bindings.items():
-            if material is None or binding[0] != material[0]:
+        if material is None:
+            return True
+        authorized = {}
+        for row in self._rows:
+            entry = row['entry']
+            binding = self._bindings.get(entry['action_id'])
+            if binding is None or binding[0] != material[0]:
                 continue
-            history = [e for e in self._entries if e.action_id == candidate
-                and e.state not in (JournalState.PROPOSED, JournalState.BLOCKED)]
-            if (history and history[-1].state == JournalState.RECONCILED_NOT_APPLIED
-                    and self._authorizations.get(candidate) == _ref(action.authorization_ref)):
+            attempt = (entry['action_id'], row['attempt'])
+            # Use the authorization that actually admitted this historical
+            # attempt. Later denied proposals or reconciliation credentials
+            # cannot replace it, including after replay or action-ID changes.
+            if entry['state'] == JournalState.AUTHORIZED:
+                authorized[attempt] = row['authorization']
+            elif (entry['state'] == JournalState.RECONCILED_NOT_APPLIED
+                    and authorized.get(attempt) == _ref(action.authorization_ref)):
                 return False
         return True
 

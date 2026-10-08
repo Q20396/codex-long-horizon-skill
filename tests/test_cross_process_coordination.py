@@ -1,6 +1,7 @@
 """Real independent interpreters, synthetic effects, pipe-synchronized admission."""
 import importlib
 import io
+import json
 import os
 from pathlib import Path
 import subprocess
@@ -87,6 +88,27 @@ try:
  print(chain.head()[0],flush=True)
  owner.close()
 except ValueError as e: print(str(e),flush=True)
+'''
+
+AUTHORIZATION_RECOVERY = r'''
+import json,sys
+sys.path.insert(0,sys.argv[1])
+import agent_runtime_integration as m
+r,sc,cet,local=m.rse,m.sc,m.cet,m.local
+root=sys.argv[2]
+owner=r.CrossProcessOwner(root)
+j=r.DurableSecurityJournal(root+'/journal',storage_id='bridge',owner=owner)
+chain=sc.JsonlSecurityChain('chain','install',root+'/chain',owner=owner)
+bridge=m.AgentRuntimeBridge(owner=owner)
+ctx=cet.TraceContext('trace','install','project','task','run','fresh-action',None,'host-provider','host-model','runtime')
+p=bridge.prepare(dict(proposal_id='fresh-proposal',requested_action_class='CREATE_FILE',requested_target=root+'/file',requested_parameters={'content_bytes':b'content'}),context=ctx,trusted_agent_id='host-agent',authorization_ref='auth',data_classification=r.DataClass.NON_SENSITIVE,now=1).prepared
+broker=r.CapabilityBroker();broker.register('filesystem.write',local.FilesystemAdapter(workspace_root=root))
+binding=local.RuntimeBinding(broker,j,chain,sc.SecurityAuthority('runtime',sc.AuthorityRole.RUNTIME,'install'),approved_payload_digests={'fresh-action':p.payload_digest})
+policy=r.Policy('core',r.PolicyLevel.CORE,allowed_actions={r.ActionClass.CREATE_FILE},write_roots=(root,),allowed_capabilities={'filesystem.write'})
+auth=r.Authorization('auth','task',{r.ActionClass.CREATE_FILE},(root+'/file',),{'filesystem.write'},100)
+out=bridge.execute(p,binding=binding,expected_payload_digest=p.payload_digest,expected_prepared_digest=p.prepared_digest,policy_stack=(policy,),authorization=auth,context=ctx,now=2)
+print(json.dumps({'reason':out.receipt.policy_reason,'execution':out.receipt.execution_state}))
+owner.close()
 '''
 
 
@@ -570,6 +592,32 @@ class CoordinatedBridgeTests(unittest.TestCase):
         auth=self.r.Authorization('renewed','task',{renewed.action_request.action_class},
             (renewed.action_request.target,),{renewed.trusted_capability_name},100)
         self.assertEqual(self.execute(renewed,authorization=auth).receipt.execution_state,'KNOWN_SUCCESS')
+
+    def denied_reference_after_not_applied(self):
+        p=self.prepare().prepared;self.bind(p)
+        with patch.object(self.fs,'run',side_effect=RuntimeError('synthetic lost reply')):
+            self.assertEqual(self.execute(p).receipt.execution_state,'UNKNOWN_OUTCOME')
+        with patch.object(self.fs,'reconcile',return_value=self.r.ReconciliationOutcome.EFFECT_NOT_APPLIED):
+            self.assertEqual(self.execute(p,reconcile=True).receipt.final_disposition,'RECONCILED_NOT_APPLIED')
+        self.assertEqual(self.execute(p).receipt.policy_reason,'FRESH_AUTHORIZATION_REQUIRED')
+        unapproved=self.prepare(authorization_ref='unapproved-new-ref').prepared
+        self.bind(unapproved)
+        self.assertEqual(self.execute(unapproved,authorization=None).receipt.policy_reason,'AUTHORIZATION_MISSING')
+        return p
+
+    def test_denied_reference_cannot_restore_stale_authorization(self):
+        p=self.denied_reference_after_not_applied();self.bind(p)
+        result=self.execute(p)
+        self.assertEqual(result.receipt.policy_reason,'FRESH_AUTHORIZATION_REQUIRED')
+        self.assertFalse((self.root/'file').exists())
+
+    def test_denied_reference_cannot_restore_stale_authorization_after_fresh_recovery(self):
+        self.denied_reference_after_not_applied();self.owner.close()
+        result=subprocess.run([sys.executable,'-B','-c',AUTHORIZATION_RECOVERY,str(SCRIPTS),str(self.root)],
+            capture_output=True,text=True,timeout=15)
+        self.assertEqual(result.returncode,0,result.stderr)
+        self.assertEqual(json.loads(result.stdout)['reason'],'FRESH_AUTHORIZATION_REQUIRED')
+        self.assertFalse((self.root/'file').exists())
 
     def test_observer_handoff_rejects_old_session_and_old_observation(self):
         import host_observer as h
