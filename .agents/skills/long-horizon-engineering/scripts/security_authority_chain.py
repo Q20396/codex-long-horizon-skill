@@ -562,6 +562,8 @@ class JsonlSecurityChain(InMemorySecurityChain):
     def verify(self):
         try:
             with self._owned(), self._lock:
+                if self.owner is not None and self._uncertain:
+                    return SecurityChainVerification(False,'CHAIN_IO_UNCERTAIN',0,0,GENESIS)
                 return verify_chain(self.records(),self._chain_id,self._installation_id)
         except ValueError as error:
             return SecurityChainVerification(False,str(error),0,0,GENESIS)

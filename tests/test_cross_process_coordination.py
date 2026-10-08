@@ -536,6 +536,21 @@ class CoordinatedBridgeTests(unittest.TestCase):
         self.assertEqual((self.root/'file').read_bytes(),b'content')
         self.assertEqual(self.journal.latest(p.action_request.action_id).state.value,'RECONCILIATION_REQUIRED')
 
+    def test_uncertain_chain_denies_new_material_before_another_effect(self):
+        p=self.prepare().prepared; self.bind(p)
+        sync=os.fsync
+        chain_inode=(self.root/'chain').stat().st_ino
+        def fail_chain(fd):
+            if os.fstat(fd).st_ino==chain_inode:
+                raise OSError('synthetic chain sync failure')
+            sync(fd)
+        with patch('os.fsync',side_effect=fail_chain):
+            self.assertEqual(self.execute(p).receipt.execution_state,'UNKNOWN_OUTCOME')
+        q=self.prepare(self.proposal(requested_target=str(self.root/'second')),ident='second').prepared
+        self.bind(p,q)
+        self.assertNotEqual(self.execute(q).receipt.execution_state,'KNOWN_SUCCESS')
+        self.assertFalse((self.root/'second').exists(),'uncertain chain admitted another effect')
+
     def test_reconciliation_insufficient_evidence_and_stale_authorization(self):
         p=self.prepare().prepared; self.bind(p)
         with patch.object(self.fs,'run',side_effect=RuntimeError('lost reply')):
