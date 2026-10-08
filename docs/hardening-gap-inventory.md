@@ -64,8 +64,8 @@ not replace restart, coordination, reality or trust work.
 ### G02
 
 - area: Core cross-process coordination.
-- current_state: BETA — SAME_PROCESS_ONLY.
-- evidence: `S/runtime_safety_envelope.py:InMemorySecurityJournal.action_transaction`; `S/agent_runtime_integration.py:AgentRuntimeBridge`; `S/host_observer.py:HostObservationIngestor`; `S/security_authority_chain.py:JsonlSecurityChain` inherits an in-process RLock.
+- current_state: BETA — bounded H2 implementation under validation; legacy modes remain SAME_PROCESS_ONLY. H2 acceptance is not COMPLETE.
+- evidence: `S/runtime_safety_envelope.py:CrossProcessOwner`, coordinated journal; `S/agent_runtime_integration.py:AgentRuntimeBridge`; coordinated `S/host_observer.py:HostObservationIngestor` and `S/security_authority_chain.py:JsonlSecurityChain`; `T/test_cross_process_coordination.py`; `docs/h2-cross-process-coordination.md`. Actual Darwin/APFS multiprocess evidence is distinct from pending Linux CI and independent review.
 - risk_if_unfixed: A second journal/bridge/ingestor instance, including a second process, has independent guards. Concurrent JSONL controllers can read the same head before appending; per-instance locks are not a shared writer protocol. Same-material suppression, action serialization, host dedupe and chain sequencing are not globally enforced.
 - hardening_goal: Establish single authoritative ownership/coordination for the protected state across controllers.
 - priority: P0.
@@ -75,8 +75,8 @@ not replace restart, coordination, reality or trust work.
 ### G03
 
 - area: Host observation restart continuity.
-- current_state: NOT_IMPLEMENTED — NO_CRASH_DURABILITY, SAME_PROCESS_ONLY.
-- evidence: `S/host_observer.py:HostObservationIngestor._accepted/_sessions/_closed`; `S/host_observer_macos.py:MacOSExecObserver._registered/_sequence`; `R/host-observer.md` limits.
+- current_state: PARTIALLY_IMPLEMENTED — H2 preserves consumed session/observation claims and forces explicit new-session gaps; native continuity and durable trace recovery remain NOT_IMPLEMENTED.
+- evidence: coordinated `S/host_observer.py:HostObservationIngestor`, existing-chain SECURITY_ALERT claims, and fresh-interpreter handoff tests in `T/test_cross_process_coordination.py`; `S/host_observer_macos.py:MacOSExecObserver._registered/_sequence` and `R/host-observer.md` limits remain unchanged. See `docs/h2-cross-process-coordination.md` for the remaining G03 boundary.
 - risk_if_unfixed: Restart loses duplicate IDs, per-session sequence/gap history, sticky failure latch and native registrations. Retained chain records do not automatically reconstruct ingestion state; continuity cannot be asserted across the gap. Ingestion also writes chain then trace, not a durable atomic transaction across both.
 - hardening_goal: Preserve trustworthy restart/gap semantics before asserting continued observation.
 - priority: P1.

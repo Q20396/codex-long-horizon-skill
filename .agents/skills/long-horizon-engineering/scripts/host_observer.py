@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from contextlib import nullcontext
 import re
 import time
 from threading import Lock
@@ -85,7 +86,7 @@ class HostObservationIngestor:
     """
 
     def __init__(self, trusted_observer_id, trusted_provenance_ref, *, trace,
-                 known_actions=None, chain=None, actor=None):
+                 known_actions=None, chain=None, actor=None, owner=None, session_id=None):
         _require(_identity(trusted_observer_id) and _ref(trusted_provenance_ref))
         _require(type(trace) is cet.CriticalTrace)
         _require((chain is None) == (actor is None))
@@ -102,8 +103,53 @@ class HostObservationIngestor:
         self._accepted, self._sessions = {}, {}
         self._lock = Lock()
         self._closed = False
+        self.owner = owner
+        self._session = session_id
+        if owner is not None or getattr(chain, 'owner', None) is not None:
+            if (type(owner) is not cet.rse.CrossProcessOwner or getattr(chain, 'owner', None) is not owner
+                    or type(chain) is not cet.sc.JsonlSecurityChain or not _identity(session_id)
+                    or chain._installation_id != trace.installation_id):
+                raise ValueError('OWNERSHIP_COMPOSITION_MISMATCH')
+            with owner.operation():
+                if not chain.verify().valid:
+                    raise ValueError('CHAIN_INTEGRITY_FAILURE')
+                claim = self._claim('session', session_id)
+                if self._claimed(claim):
+                    raise ValueError('OBSERVER_SESSION_REUSED')
+                # Even an empty new session is durably consumed. No resume proof
+                # exists in this bounded mode, so every startup declares a gap.
+                self._record_claim(claim, 'H2_OBSERVER_HANDOFF_GAP')
+        elif session_id is not None:
+            raise ValueError('OWNERSHIP_REQUIRED')
+
+    def _claim(self, kind, identity):
+        return 'h2:' + kind + ':' + cet.sc.artifact_digest((self._observer, identity))
+
+    def _claimed(self, claim):
+        ref = cet.sc._ref(claim)
+        return any(ref in record.evidence_refs for record in self._chain.records())
+
+    def _record_claim(self, claim, reason):
+        now = time.time()
+        sc = cet.sc
+        decision = sc.authorize_management_change(self._actor, sc.ManagementAction.RSE_RECEIPT_RECORD,
+            installation_id=self._trace.installation_id, now=now)
+        if decision.disposition != 'ALLOW':
+            raise ValueError('UNTRUSTED_OBSERVER')
+        self._chain.append(sc.SecurityEventDraft(claim, sc.EventType.SECURITY_ALERT, now,
+            self._trace.installation_id, self._actor.role, self._actor.authority_id, reason,
+            evidence_refs=(claim, 'handoff-gap:YES', 'coverage:PARTIAL')))
 
     def ingest(self, observation):
+        try:
+            with (self.owner.operation() if self.owner is not None else nullcontext()):
+                if self.owner is not None and getattr(self._chain, 'owner', None) is not self.owner:
+                    raise ValueError('OWNERSHIP_COMPOSITION_MISMATCH')
+                return self._ingest(observation)
+        except ValueError:
+            return HostObservationResult(False, 'UNTRUSTED_OBSERVER', 'UNCORRELATED', 'UNKNOWN')
+
+    def _ingest(self, observation):
         with self._lock:
             reject = lambda reason: HostObservationResult(False, reason, 'UNCORRELATED', 'UNKNOWN')
             if type(observation) is not HostObservation:
@@ -113,6 +159,8 @@ class HostObservationIngestor:
             except ValueError:
                 return reject('MALFORMED_OBSERVATION')
             if observation.observer_id != self._observer or observation.provenance_ref != self._provenance:
+                return reject('UNTRUSTED_OBSERVER')
+            if self.owner is not None and observation.session_id != self._session:
                 return reject('UNTRUSTED_OBSERVER')
             digest = cet.sc.artifact_digest(observation)
             previous = self._accepted.get(observation.observation_id)
@@ -124,12 +172,16 @@ class HostObservationIngestor:
                     result.effective_coverage, result.cet_event_ref, result.chain_ref)
             if self._closed or len(self._accepted) >= MAX_OBSERVATIONS:
                 return reject('MALFORMED_OBSERVATION')
+            claim = self._claim('observation', observation.observation_id)
+            if self.owner is not None and self._claimed(claim):
+                return reject('OBSERVATION_ID_CONFLICT')
             last, incomplete = self._sessions.get(observation.session_id, (None, False))
             if last is not None and observation.sequence <= last:
                 return reject('OBSERVATION_SEQUENCE_INVALID')
-            gap = last is not None and observation.sequence > last + 1
+            gap = (self.owner is not None and last is None) or (last is not None and observation.sequence > last + 1)
             incomplete = incomplete or gap
-            coverage = 'PARTIAL' if incomplete else observation.coverage
+            coverage = ('PARTIAL' if incomplete and (self.owner is None or observation.coverage != 'UNKNOWN')
+                        else observation.coverage)
             context = self._known.get(observation.action_id_ref)
             correlation = ('CORRELATED' if context is not None else
                            'UNCORRELATED' if observation.action_id_ref is None else 'UNRESOLVED_LINK')
@@ -145,6 +197,8 @@ class HostObservationIngestor:
             evidence += ('host-observation:' + digest, 'sequence:' + str(observation.sequence),
                          'coverage:' + coverage, 'correlation:' + correlation,
                          'sequence-gap:' + ('YES' if gap else 'NO'))
+            if self.owner is not None:
+                evidence += ('handoff-gap:YES',)
             if observation.effect_digest is not None:
                 evidence += ('effect-sha256:' + observation.effect_digest,)
             event = cet._host_observed_event(event_id='host:' + digest,
@@ -157,6 +211,10 @@ class HostObservationIngestor:
                 cet._require(len(self._trace._events) < cet.MAX_EVENTS)
                 self._trace._structure(self._trace._events + (event,))
                 if self._chain is not None:
+                    if self.owner is not None:
+                        # A crash after claim but before publication consumes the
+                        # ID conservatively; it never authorizes replay.
+                        self._record_claim(claim, 'H2_OBSERVATION_CLAIM')
                     record = cet.record_critical_event(self._chain, self._actor, event,
                                                       now=time.time())
                     chain_ref = record.record_hash

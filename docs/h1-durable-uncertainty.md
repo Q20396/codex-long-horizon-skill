@@ -3,8 +3,10 @@
 Experimental, opt-in, standard-library execution journal. This is not a new
 authority, Security Chain, daemon, retry engine, or state machine. Existing
 in-memory interfaces remain unchanged. Live and durable journals share one pure
-RSE transition validator; invalid transitions are rejected in both. H2 cross-process
-coordination is not implemented.
+RSE transition validator; invalid transitions are rejected in both. These H1-only
+interfaces do not provide cross-process coordination. The separate opt-in
+[H2 ownership mode](h2-cross-process-coordination.md) adds that bounded contract;
+it does not turn existing H1-only callers into coordinated controllers.
 
 ## Trusted host setup
 
@@ -87,7 +89,8 @@ action's pending reservation only for explicit reconciliation.
   request reconciliation; a crash between journals may leave incomplete chain
   evidence. A valid journal does not establish independent target reality.
 - Local formal validation remains BETA when the approved target environment is
-  unavailable. No dependency substitution, framework, or H2 work is included.
+  unavailable. No dependency substitution or framework is included. H2 ownership
+  does not broaden H1's storage rollback, target-reality, or cross-log limits.
 
 Tests in `tests/test_durable_uncertainty.py` use synthetic storage and effects,
 including `os._exit` in a child and a fresh interpreter that must block retry.

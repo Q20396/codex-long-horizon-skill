@@ -5,6 +5,7 @@ do not authenticate actors. Low-level chain append is a trusted storage API, not
 an authorization entrypoint. No runtime effects or import-time I/O.
 """
 from dataclasses import dataclass, fields, is_dataclass, asdict
+from contextlib import nullcontext
 from enum import Enum
 import hashlib
 import json
@@ -13,6 +14,7 @@ import os
 import re
 import stat
 from threading import RLock
+import runtime_safety_envelope as rse
 
 SCHEMA = '20396-security-chain/v1'
 GENESIS = '0' * 64
@@ -484,10 +486,28 @@ class JsonlSecurityChain(InMemorySecurityChain):
     privileged rewrites, complete deletion, or multiple object/controller races.
     A failed append is uncertain: this object latches closed; inspect/reopen explicitly.
     """
-    def __init__(self,chain_id,installation_id,path,*,create=False):
+    def __init__(self,chain_id,installation_id,path,*,create=False,owner=None):
         super().__init__(chain_id,installation_id)
-        self._path=os.fspath(path)
+        self.owner=owner
+        self._path=os.path.abspath(os.fspath(path))
         self._uncertain=False
+        with rse.storage_owner(self._path,owner):
+            self._initialize(create)
+            if owner is not None:
+                owner.bind(self._path)
+
+    def _owned(self):
+        return self.owner.operation() if self.owner is not None else nullcontext()
+
+    def head(self):
+        with self._owned():
+            return super().head()
+
+    def verify_against(self, expected_sequence, expected_head):
+        with self._owned():
+            return super().verify_against(expected_sequence, expected_head)
+
+    def _initialize(self,create):
         try:
             if create:
                 fd=os.open(self._path,os.O_WRONLY|os.O_CREAT|os.O_EXCL|getattr(os,'O_NOFOLLOW',0),0o600)
@@ -532,7 +552,7 @@ class JsonlSecurityChain(InMemorySecurityChain):
                 raise ValueError('MALFORMED_RECORD') from None
 
     def records(self):
-        with self._lock:
+        with self._owned(), self._lock:
             try:
                 with self._open() as stream:
                     return self._read(stream)
@@ -540,14 +560,14 @@ class JsonlSecurityChain(InMemorySecurityChain):
                 raise ValueError('CHAIN_IO_FAILURE') from None
 
     def verify(self):
-        with self._lock:
-            try:
+        try:
+            with self._owned(), self._lock:
                 return verify_chain(self.records(),self._chain_id,self._installation_id)
-            except ValueError as error:
-                return SecurityChainVerification(False,str(error),0,0,GENESIS)
+        except ValueError as error:
+            return SecurityChainVerification(False,str(error),0,0,GENESIS)
 
     def append(self,event):
-        with self._lock:
+        with self._owned(), self._lock:
             if self._uncertain:
                 raise ValueError('CHAIN_IO_UNCERTAIN')
             try:

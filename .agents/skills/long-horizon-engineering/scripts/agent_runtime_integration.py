@@ -13,6 +13,7 @@ import math
 from threading import RLock
 from types import MappingProxyType
 import uuid
+from functools import wraps
 
 import runtime_binding as local
 import remote_runtime_binding as remote
@@ -163,6 +164,31 @@ def _mutation(p):
         p.action_request.action_class == rse.ActionClass.NETWORK_REQUEST and p.normalized_payload.method in ('GET', 'HEAD'))
 
 
+def _owned_execution(method):
+    @wraps(method)
+    def call(self, prepared, **kwargs):
+        binding = kwargs.get('binding')
+        journal = getattr(binding, 'journal', None)
+        chain = getattr(binding, 'chain', None)
+        owners = (self.owner, getattr(journal, 'owner', None), getattr(chain, 'owner', None))
+        if all(owner is None for owner in owners):
+            return method(self, prepared, **kwargs)
+        try:
+            if (type(self.owner) is not rse.CrossProcessOwner or any(owner is not self.owner for owner in owners)
+                    or type(journal) is not rse.DurableSecurityJournal or type(chain) is not sc.JsonlSecurityChain):
+                raise ValueError('OWNERSHIP_COMPOSITION_MISMATCH')
+            with self.owner.operation():
+                self._validate(prepared, binding, kwargs.get('expected_payload_digest'),
+                    kwargs.get('expected_prepared_digest'), kwargs.get('context'), kwargs.get('now'),
+                    reconciliation=method.__name__ == 'reconcile')
+                bound = binding._bound(prepared.action_request, prepared.normalized_payload)
+                with journal._bridge_scope(bound, chain):
+                    return method(self, prepared, **kwargs)
+        except Exception:
+            return self._denied(prepared, 'OWNERSHIP_COMPOSITION_MISMATCH')
+    return call
+
+
 class AgentRuntimeBridge:
     """Small bounded reservations; no new authority, adapter or durable ledger.
 
@@ -170,7 +196,12 @@ class AgentRuntimeBridge:
     authorizing, and pass those saved values, never derive them from execute input.
     The bridge pins binding lifecycle components on first execution per kind.
     """
-    def __init__(self):
+    def __init__(self, *, owner=None):
+        self.owner = owner
+        if owner is not None:
+            if type(owner) is not rse.CrossProcessOwner:
+                raise ValueError('OWNERSHIP_INVALID')
+            owner.check()
         self._lock = RLock()
         self._pending = {}
         self._lifecycles = {}
@@ -327,6 +358,7 @@ class AgentRuntimeBridge:
         events.extend(additions)
         return AgentRuntimeExecutionResult(receipt.final_disposition, receipt, runtime, tuple(events), refs)
 
+    @_owned_execution
     def execute(self, prepared, *, binding, expected_payload_digest, expected_prepared_digest,
                 policy_stack, authorization, context, now):
         p = prepared
@@ -375,6 +407,7 @@ class AgentRuntimeBridge:
                     self._pending.pop(key, None)
         return out
 
+    @_owned_execution
     def reconcile(self, prepared, *, binding, expected_payload_digest, expected_prepared_digest,
                   policy_stack, authorization, context, now):
         p = prepared
