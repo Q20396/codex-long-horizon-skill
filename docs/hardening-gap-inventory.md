@@ -130,9 +130,9 @@ not replace restart, coordination, reality or trust work.
 ### G08
 
 - area: External anchor publication and readback adapter.
-- current_state: NOT_IMPLEMENTED real deployment; protocol behavior TEST_CONTRACT_ONLY.
-- evidence: `S/signed_checkpoints.py:AnchorPublisher`, `AnchorReader`, `publish_anchor`, `reconcile_anchor`; `R/signed-checkpoints.md` external publication boundaries.
-- risk_if_unfixed: Protocol acceptance/readback comparison is not evidence that a real service published the checkpoint. Ambiguous publication requires retention of checkpoint/request identity; no durable publication queue/recovery is supplied.
+- current_state: PARTIALLY_IMPLEMENTED — REPOSITORY_ONLY_EXPERIMENTAL fixed GitHub adapter and bounded immutable capsule/GET-only recovery; real external publication NOT_VALIDATED.
+- evidence: Root `scripts/checkpoint_anchor.py`, `tests/test_checkpoint_anchor.py` SYNTHETIC_SERVICE stored-byte and fresh-process tests, and `docs/h5-real-external-anchor.md`; existing `S/signed_checkpoints.py` contracts remain unchanged.
+- risk_if_unfixed: Synthetic publication/readback does not establish real GitHub publication. Cooperative private local storage preserves bounded unresolved request identity; deletion/rollback defeats local duplicate history. Provider permission is not create-only; no global retry/publication safety or production deployment is established.
 - hardening_goal: Validate bounded real publication and read-only reconciliation with durable unresolved identity.
 - priority: P1.
 - recommended_hardening_stage: H5, after H1 and H4.
@@ -141,8 +141,8 @@ not replace restart, coordination, reality or trust work.
 ### G09
 
 - area: Anchor independence, retention and external trust domain.
-- current_state: UNKNOWN operational independence/retention; no supplied independently trusted deployment.
-- evidence: `R/signed-checkpoints.md` publisher-attested versus readback-verified semantics and latest-anchor requirement; `S/signed_checkpoints.py:verify_security_history`.
+- current_state: PARTIALLY_IMPLEMENTED — separate provider receipt/actual GET/version pin and optional relative freshness assessment; operational independence/retention and real freshness NOT_VALIDATED.
+- evidence: Root `scripts/checkpoint_anchor.py` immutable version observation, exact commit/tree/blob reads and trusted-input freshness; `tests/test_checkpoint_anchor.py` SYNTHETIC_SERVICE replacement/staleness/recovery tests; `docs/h5-real-external-anchor.md`; existing `S/signed_checkpoints.py:verify_security_history` remains unchanged.
 - risk_if_unfixed: Same-controller or same-failure-domain readback may agree on replacement history. A genuine but stale checkpoint does not establish the newest tail. Readback matching is not independent retention or trusted external identity.
 - hardening_goal: Demonstrate independently retained, trusted and sufficiently fresh anchor evidence.
 - priority: P1.
