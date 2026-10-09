@@ -333,37 +333,55 @@ class AnchorTests(unittest.TestCase):
     def test_real_process_termination_in_capsule_send_receipt_observation_windows(self):
         for stage in ('partial', 'durable', 'send', 'receipt', 'observation_partial', 'observation'):
             with self.subTest(stage=stage), tempfile.TemporaryDirectory(prefix='h5-crash-') as directory:
+                storage = Path(directory) / 'capsules'
+                storage.mkdir(mode=0o700)
                 ready = Path(directory) / 'ready'
                 self.service.ready.clear()
                 self.service.mode = 'hold' if stage == 'send' else 'ok'
-                child = self.child(stage, os.path.realpath(directory), str(ready))
-                deadline = time.monotonic() + 8
-                reached = lambda: self.service.ready.is_set() if stage == 'send' else ready.exists()
-                while not reached() and child.poll() is None and time.monotonic() < deadline:
-                    time.sleep(.01)
-                self.assertTrue(reached(), 'crash window not reached')
-                child.kill()
-                child.communicate(timeout=5)
-                before = self.service.creates
-                # Marker is outside capsule storage: remove before recovery scan.
-                if ready.exists():
-                    ready.unlink()
-                self.service.mode = 'ok'
-                recovery = self.child('recover', os.path.realpath(directory))
-                out, error = recovery.communicate(timeout=10)
-                self.assertEqual(recovery.returncode, 0, error.decode())
-                result = json.loads(out)
-                self.assertEqual(self.service.creates, before)
-                self.assertEqual(result['send_state'], 'NOT_SENT_THIS_INVOCATION')
-                if stage in ('partial', 'observation_partial'):
-                    self.assertEqual(result['reason'], 'PERSISTENCE_INVALID')
-                elif stage == 'durable':
-                    self.assertEqual(result['readback'], 'NOT_OBSERVED')
-                else:
-                    self.assertEqual(result['readback'], 'READBACK_OBSERVED')
-                print('H5_SYNTHETIC_CRASH window=' + stage + ' recovery=' + result['reason']
-                      + ' create_count_unchanged=' + str(self.service.creates == before))
-                self.service.objects.clear()
+                child = recovery = None
+                try:
+                    child = self.child(stage, os.path.realpath(storage), str(ready))
+                    deadline = time.monotonic() + 8
+                    reached = lambda: self.service.ready.is_set() if stage == 'send' else ready.exists()
+                    while not reached() and child.poll() is None and time.monotonic() < deadline:
+                        time.sleep(.01)
+                    self.assertTrue(reached(), 'crash window not reached')
+                    stem = hashlib.sha256(b'request').hexdigest()
+                    self.assertTrue((storage / (stem + '.capsule')).is_file())
+                    if stage == 'partial':
+                        self.assertEqual((storage / (stem + '.capsule')).stat().st_size, 9)
+                    elif stage == 'observation_partial':
+                        self.assertEqual((storage / (stem + '.observation')).stat().st_size, 9)
+                    child.kill()
+                    child.communicate(timeout=5)
+                    before = self.service.creates
+                    self.service.mode = 'ok'
+                    # Keep the marker present: it must be outside the recovery scan.
+                    recovery = self.child('recover', os.path.realpath(storage))
+                    out, error = recovery.communicate(timeout=10)
+                    self.assertEqual(recovery.returncode, 0, error.decode())
+                    result = json.loads(out)
+                    self.assertEqual(self.service.creates, before)
+                    self.assertEqual(result['send_state'], 'NOT_SENT_THIS_INVOCATION')
+                    if stage in ('partial', 'observation_partial'):
+                        self.assertEqual(result['reason'], 'PERSISTENCE_INVALID')
+                    elif stage == 'durable':
+                        self.assertEqual(result['readback'], 'NOT_OBSERVED')
+                    else:
+                        self.assertEqual(result['readback'], 'READBACK_OBSERVED')
+                    print('H5_SYNTHETIC_CRASH window=' + stage + ' recovery=' + result['reason']
+                          + ' create_count_unchanged=' + str(self.service.creates == before))
+                finally:
+                    try:
+                        for process in (child, recovery):
+                            if process is not None:
+                                if process.poll() is None:
+                                    process.kill()
+                                process.communicate(timeout=5)
+                    finally:
+                        self.service.objects.clear()
+                        self.service.ready.clear()
+                        self.service.mode = 'ok'
     def child(self, mode, directory=None, marker=''):
         config = encoded(dict(mode=mode, directory=directory or self.directory, marker=marker,
             port=self.service.server.server_port, checkpoint=self.data.decode(), policy=self.policy_data))
@@ -684,15 +702,30 @@ def run_child():
     def pause():
         Path(config['marker']).write_text('ready')
         time.sleep(30)
+    def target_fd(fd, suffix):
+        path = Path(config['directory']) / (hashlib.sha256(b'request').hexdigest() + suffix)
+        try:
+            opened, named = os.fstat(fd), os.stat(path, follow_symlinks=False)
+        except FileNotFoundError:
+            return False
+        return (stat.S_ISREG(opened.st_mode) and stat.S_ISREG(named.st_mode)
+                and (opened.st_dev, opened.st_ino) == (named.st_dev, named.st_ino))
+    def unrelated_write():
+        # Exercise a cold stdlib tempdir probe and an unrelated regular write on
+        # every Python version, without weakening the exact crash-target check.
+        tempfile.tempdir = None
+        with tempfile.TemporaryFile() as probe:
+            os.write(probe.fileno(), b'blat')
     if config['mode'] == 'partial':
         real_write = m.os.write
         def partial(fd, data):
-            regular = stat.S_ISREG(os.fstat(fd).st_mode)
-            result = real_write(fd, data[:9] if regular else data)
-            if regular:
+            matched = target_fd(fd, '.capsule')
+            result = real_write(fd, data[:9] if matched else data)
+            if matched:
                 pause()
             return result
         m.os.write = partial
+        unrelated_write()
     elif config['mode'] == 'durable':
         real_request = transport.request
         def before_send(method, *args, **kwargs):
@@ -708,10 +741,13 @@ def run_child():
             if config['mode'] == 'observation_partial':
                 real_write = m.os.write
                 def partial_observation(fd, data):
-                    result = real_write(fd, data[:9])
-                    pause()
+                    matched = target_fd(fd, '.observation')
+                    result = real_write(fd, data[:9] if matched else data)
+                    if matched:
+                        pause()
                     return result
                 m.os.write = partial_observation
+                unrelated_write()
             result = real_observe(*args, **kwargs)
             pause()
             return result
