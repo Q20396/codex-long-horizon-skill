@@ -29,7 +29,7 @@ MAX_CAPSULE = 16384
 MAX_FILES = 256
 MAX_DEPTH = 8
 HEADERS = (('accept', 'application/vnd.github+json'), ('content-type', 'application/json'),
-           ('x-github-api-version', API_VERSION))
+           ('x-github-api-version', API_VERSION), ('user-agent', '20396-checkpoint-anchor/1'))
 
 
 class AnchorFailure(ValueError):
@@ -285,11 +285,22 @@ class GitHubAnchor:
             cp = checkpoints.checkpoint_from_json(data.decode('utf-8'))
             _require(checkpoints.checkpoint_to_json(cp).encode() == data and _digest(data) == request.checkpoint_hash
                 and cp.sequence == request.sequence and type(request.sequence) is int and cp.key_id == request.key_id
+                and cp.chain_id_ref == checkpoints._ref(request.chain_id)
+                and cp.installation_ref == checkpoints._ref(request.installation_id)
                 and self.verifier.policy is not None and self.verifier.policy.reference == request.policy_reference)
-            checked = checkpoints.verify_checkpoint(cp, self.verifier, expected_chain_id=request.chain_id,
-                expected_installation_id=request.installation_id, expected_hash=request.checkpoint_hash)
-            _require(checked.valid)
+            assessment = self.verifier.assess(checkpoints.canonical_payload(cp),
+                checkpoints.SignatureEnvelope(cp.algorithm, cp.key_id, cp.signature))
+            _require(type(assessment) is crypto.SignatureAssessment
+                and assessment.policy_reference == request.policy_reference)
+            if assessment.cryptographic_validity == 'UNKNOWN' and assessment.reason in (
+                    'BACKEND_UNAVAILABLE', 'BACKEND_UNSUPPORTED', 'BACKEND_TIMEOUT',
+                    'BACKEND_OUTPUT_LIMIT', 'BACKEND_FAILED', 'CLEANUP_UNKNOWN'):
+                raise AnchorFailure(assessment.reason)
+            _require(assessment.cryptographic_validity == 'VALID'
+                and assessment.signer_trust == 'TRUSTED' and assessment.reason == 'VALID')
             return cp
+        except AnchorFailure:
+            raise
         except Exception:
             raise AnchorFailure('BINDING_MISMATCH') from None
 

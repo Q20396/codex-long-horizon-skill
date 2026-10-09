@@ -34,6 +34,7 @@ class Service:
     """Reader obtains service storage, never a publisher's in-memory receipt."""
     def __init__(self):
         self.creates, self.gets, self.objects = 0, [], {}
+        self.user_agents = []
         self.mode, self.mutation = 'ok', None
         self.commit, self.ready = 'a' * 40, threading.Event()
         service = self
@@ -50,6 +51,7 @@ class Service:
                 except (BrokenPipeError, ConnectionResetError):
                     pass
             def do_PUT(self):
+                service.user_agents.append(('PUT', self.headers.get('User-Agent')))
                 service.creates += 1
                 if self.headers.get('X-GitHub-Api-Version') != '2026-03-10':
                     return self.reply(422, {})
@@ -71,6 +73,7 @@ class Service:
                 return self.reply(status, {'content': {'path': path, 'sha': git_blob(data)},
                                            'commit': {'sha': service.commit}})
             def do_GET(self):
+                service.user_agents.append(('GET', self.headers.get('User-Agent')))
                 service.gets.append(self.path)
                 if service.mode in ('401', '403', '503'):
                     return self.reply(int(service.mode), {})
@@ -196,6 +199,13 @@ class AnchorTests(unittest.TestCase):
         self.assertEqual((read.independent_retention, read.freshness), ('NOT_VALIDATED', 'UNKNOWN'))
         self.assertEqual(self.service.creates, 1)
         self.assertTrue(any('/git/blobs/' in path for path in self.service.gets))
+
+    def test_fixed_application_user_agent_reaches_actual_get_and_put_requests(self):
+        self.assertEqual(self.adapter.publish(self.request).publication, 'PUBLICATION_CONFIRMED_BY_PROVIDER')
+        self.assertEqual(self.adapter.read(self.request).readback, 'READBACK_OBSERVED')
+        self.assertEqual({method for method, value in self.service.user_agents}, {'GET', 'PUT'})
+        self.assertTrue(all(value == '20396-checkpoint-anchor/1' for method, value in self.service.user_agents),
+                        self.service.user_agents)
     def test_receipt_never_proves_readback(self):
         self.assertEqual(self.adapter.publish(self.request).publication, 'PUBLICATION_CONFIRMED_BY_PROVIDER')
         self.service.objects.clear()
@@ -498,6 +508,48 @@ class AnchorTests(unittest.TestCase):
             self.assertEqual(self.service.creates, 0)
         finally:
             self.verifier.policy = self.policy
+
+    def test_h4_backend_unknown_before_publish_preserves_diagnostic_and_zero_transport(self):
+        for reason in ('BACKEND_UNAVAILABLE', 'BACKEND_TIMEOUT', 'CLEANUP_UNKNOWN'):
+            with self.subTest(reason=reason), tempfile.TemporaryDirectory(prefix='h5-h4-unknown-') as directory:
+                directory = os.path.realpath(directory)
+                executable = directory + '/missing-executable' if reason == 'BACKEND_UNAVAILABLE' else '/usr/bin/ssh-keygen'
+                backend = crypto.OpenSSHBackend(executable)
+                verifier = crypto.OpenSSHCheckpointVerifier(backend, self.policy)
+                adapter = self.m.GitHubAnchor(self.target, directory, verifier=verifier,
+                    write_transport=self.adapter.write_transport, read_transport=self.adapter.read_transport)
+                if reason == 'BACKEND_UNAVAILABLE':
+                    result = adapter.publish(self.request)
+                else:
+                    with patch.object(backend, '_run', side_effect=crypto.BackendFailure(reason)):
+                        result = adapter.publish(self.request)
+                self.assertEqual((result.reason, result.send_state, result.publication, result.readback),
+                    (reason, 'NOT_SENT_THIS_INVOCATION', 'OUTCOME_UNKNOWN', 'NOT_OBSERVED'))
+                self.assertEqual((self.service.creates, self.service.gets), (0, []))
+
+    def test_existing_capsule_h4_backend_unknown_retains_get_only_recovery(self):
+        self.adapter.publish(self.request)
+        before = (self.service.creates, len(self.service.gets))
+        for reason in ('BACKEND_UNAVAILABLE', 'BACKEND_TIMEOUT', 'CLEANUP_UNKNOWN'):
+            with self.subTest(reason=reason):
+                executable = self.directory + '/missing-executable' if reason == 'BACKEND_UNAVAILABLE' else '/usr/bin/ssh-keygen'
+                backend = crypto.OpenSSHBackend(executable)
+                verifier = crypto.OpenSSHCheckpointVerifier(backend, self.policy)
+                adapter = self.m.GitHubAnchor(self.target, self.directory, verifier=verifier,
+                    write_transport=self.adapter.write_transport, read_transport=self.adapter.read_transport)
+                if reason == 'BACKEND_UNAVAILABLE':
+                    result, read = adapter.publish(self.request), adapter.read(self.request)
+                else:
+                    with patch.object(backend, '_run', side_effect=crypto.BackendFailure(reason)):
+                        result, read = adapter.publish(self.request), adapter.read(self.request)
+                for outcome in (result, read):
+                    self.assertEqual((outcome.reason, outcome.send_state, outcome.publication, outcome.readback),
+                        (reason, 'NOT_SENT_THIS_INVOCATION', 'PUBLICATION_CONFIRMED_BY_PROVIDER', 'NOT_OBSERVED'))
+                self.assertEqual((self.service.creates, len(self.service.gets)), before)
+        # Restored H4 availability reads existing capsule; it never recreates.
+        recovery = self.adapter.publish(self.request)
+        self.assertEqual((recovery.readback, recovery.send_state, self.service.creates),
+                         ('READBACK_OBSERVED', 'NOT_SENT_THIS_INVOCATION', 1))
 
     def test_production_transport_bounds_deadline_output_and_closes_resources(self):
         real_popen = self.m.subprocess.Popen

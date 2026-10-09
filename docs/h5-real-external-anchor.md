@@ -2,12 +2,14 @@
 
 DELIVERY: REPOSITORY_ONLY_EXPERIMENTAL
 
-REAL EXTERNAL PUBLICATION: NOT_VALIDATED  
-INDEPENDENT RETENTION: NOT_VALIDATED  
-REAL FRESHNESS: NOT_VALIDATED  
-G08 / G09: PARTIALLY_IMPLEMENTED  
-H5 FULL ACCEPTANCE: NOT_COMPLETE  
+```text
+REAL EXTERNAL PUBLICATION: NOT_VALIDATED
+INDEPENDENT RETENTION: NOT_VALIDATED
+REAL FRESHNESS: NOT_VALIDATED
+G08 / G09: PARTIALLY_IMPLEMENTED
+H5 FULL ACCEPTANCE: NOT_COMPLETE
 PRODUCTION HARDENING: NOT_COMPLETE
+```
 
 The root `scripts/checkpoint_anchor.py` is inactive on import and outside the
 installed core. It supplies one fixed GitHub REST adapter, a private immutable
@@ -30,6 +32,14 @@ and H4 signature/trust through the explicit `OpenSSHCheckpointVerifier`. Its
 actual `policy.reference` must equal the supplied reference. Historical capsules
 are structurally validated without applying today's policy to unrelated old
 requests. H4 policy anti-rollback remains NOT_IMPLEMENTED.
+
+H4 UNKNOWN backend assessments retain only bounded backend-unavailable,
+unsupported, timeout, output-limit, failure or cleanup diagnostics. They never
+become evidence of an invalid signature/binding or readback. An initial verifier
+failure produces zero transport calls; an existing capsule retains GET-only
+eligibility and any prior reliable publication evidence. Structural, identity,
+policy, untrusted-key and mathematically invalid signature checks still reject
+with BINDING_MISMATCH.
 
 Write/read transports are separately required. `GitHubHTTPS` performs real HTTPS
 I/O with verified TLS, no redirect/retry/proxy/netrc/environment credential lookup,
@@ -98,6 +108,9 @@ Official documentation inspected 2026-10-09:
   size/base64/SHA; the adapter verifies Git blob SHA1 and exact canonical bytes.
 - [Repositories](https://docs.github.com/en/rest/repos/repos): every invocation's
   metadata GET checks numeric ID and exact full_name before publication/readback.
+- [REST request headers](https://docs.github.com/en/rest/using-the-rest-api/getting-started-with-the-rest-api):
+  GitHub requires a valid User-Agent. Every GET/PUT uses the fixed nonsecret
+  application identifier `20396-checkpoint-anchor/1`, with no host/account data.
 
 The fixed API version is `2026-03-10`. The sole create body contains message,
 content and branch. No update/delete path or automatic retry exists. Response
