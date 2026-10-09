@@ -108,8 +108,8 @@ not replace restart, coordination, reality or trust work.
 ### G06
 
 - area: Real checkpoint cryptography.
-- current_state: NOT_IMPLEMENTED for supplied production signer/verifier integration — TEST_CONTRACT_ONLY validation.
-- evidence: `S/signed_checkpoints.py:CheckpointSigner`, `CheckpointVerifier`, `create_checkpoint`, `verify_checkpoint`; `R/signed-checkpoints.md`; `T/test_signed_checkpoints.py` FakeSigner/FakeVerifier reused by Phase 5.
+- current_state: PARTIALLY_IMPLEMENTED — H4 REPOSITORY_ONLY_EXPERIMENTAL Ed25519/OpenSSH adapter; production signer deployment NOT_VALIDATED.
+- evidence: repository `scripts/checkpoint_crypto.py:OpenSSHCheckpointSigner/OpenSSHCheckpointVerifier`, `T/test_checkpoint_crypto.py` real synthetic-key integration and `docs/h4-real-signer-checkpoint-trust.md`; Darwin explicit `/usr/bin/ssh-keygen` preflight and real tests, 198-byte raw SSHSIG within the existing 1024-byte bound. Linux CI and exact-candidate independent review are separate pending gates. Existing `S/signed_checkpoints.py` contracts, canonicalization, `R/signed-checkpoints.md` and Fake contract tests remain unchanged.
 - risk_if_unfixed: Algorithm identifiers and injected valid results establish API contracts, not cryptographic math/security. Exact-message fake lookup cannot support a real-signature deployment claim.
 - hardening_goal: Validate an actual cryptographic implementation under the existing bounded checkpoint contract.
 - priority: P1.
@@ -119,8 +119,8 @@ not replace restart, coordination, reality or trust work.
 ### G07
 
 - area: Signer identity and production key lifecycle.
-- current_state: UNKNOWN trusted deployment identity; operational key management NOT_IMPLEMENTED.
-- evidence: `R/signed-checkpoints.md` host trust/key limitations; injected verifier outcome in `S/signed_checkpoints.py:verify_checkpoint`.
+- current_state: PARTIALLY_IMPLEMENTED — EXPLICIT_OPERATOR_POLICY immutable public snapshot and static rotation/revocation; production signer identity UNKNOWN / custody NOT_VALIDATED, operational key management NOT_IMPLEMENTED.
+- evidence: repository `scripts/checkpoint_crypto.py:load_policy/TrustPolicy/OpenSSHCheckpointVerifier.assess`, `T/test_checkpoint_crypto.py` separate VALID/UNTRUSTED results, strict key/principal/fingerprint/purpose policy binding and static lifecycle cases; `docs/h4-real-signer-checkpoint-trust.md`. No default enrollment, TOFU, production keys, timestamp-based restoration or persistent policy-rollback protection. `R/signed-checkpoints.md` host trust/key limitations and core injected-result acceptance remain unchanged.
 - risk_if_unfixed: A mathematically valid signature does not establish trusted ownership. Key ID is not custody, authorized signer identity, rotation/revocation policy or compromise handling. Formal tooling or Git commit verification does not establish runtime-checkpoint signer trust.
 - hardening_goal: Establish operational trust/custody/lifecycle evidence separately from cryptographic validity.
 - priority: P1.
