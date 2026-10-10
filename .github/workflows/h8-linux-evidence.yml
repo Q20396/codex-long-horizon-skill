@@ -1,0 +1,38 @@
+name: H8 fixed SHA Linux evidence
+on:
+  push:
+    branches:
+      - h8-linux-evidence-20261010-once
+permissions:
+  contents: read
+jobs:
+  qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - name: Checkout reviewed control
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          path: control
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Checkout frozen tested commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 2a5ced0f17232039fad09f8e0f077329c07a3530
+          path: tested
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Exact Python without dependency installation or cache
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.14.8"
+          architecture: x64
+          check-latest: false
+      - name: Noninterference check
+        run: timeout --signal=TERM --kill-after=5 120 python3 -B control/scripts/h8_linux_evidence.py --self-test
+      - name: One bounded qualification execution
+        run: python3 -B control/scripts/h8_linux_evidence.py --run tested control
