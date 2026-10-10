@@ -55,12 +55,14 @@ class _BudgetTransport:
     tls_verified = True
     follows_redirects = False
 
-    def __init__(self, synthetic, headers, manifest, cancelled):
+    def __init__(self, synthetic, headers, manifest, cancelled, check_authority):
         self.synthetic, self.headers, self.m, self.cancelled = synthetic, headers, manifest, cancelled
+        self.check_authority = check_authority
         self.posts = self.gets = self.bytes = 0
         self.start = time.monotonic()
 
     def request(self, method, url, headers, body, *, timeout, response_limit):
+        self.check_authority()
         _require(not self.cancelled() and time.monotonic() - self.start < self.m['time_budget'])
         parsed = urlsplit(url)
         if parsed.scheme == 'https' and parsed.port == 443 and not parsed.username and not parsed.password:
@@ -81,6 +83,7 @@ class _BudgetTransport:
                 response_limit=min(response_limit, remaining))
             _require(type(data) is bytes and len(data) <= min(response_limit, remaining))
             self.bytes += len(data)
+            self.check_authority()
             _require(not self.cancelled() and time.monotonic() - self.start < self.m['time_budget'])
             if '/pulls' in url and status in (200, 201):
                 value = json.loads(data)
@@ -112,6 +115,7 @@ def qualify(manifest, *, launch=False, synthetic_transport=None, credential_head
         live_execution='LIVE_EXECUTION_BLOCKED_UNBOUNDED_DNS_OR_TRANSPORT',
         independent_corroboration='NOT_VALIDATED', posts=0, gets=0)
     transport = None
+    started = time.monotonic()
     try:
         _validate(manifest, now)
         # Snapshot only validated primitive values. Never mutate the host manifest.
@@ -141,7 +145,12 @@ def qualify(manifest, *, launch=False, synthetic_transport=None, credential_head
         _require(r.evaluate_policy(prepared.action_request, policy_stack, authority, now).disposition == 'ALLOW')
         # Existing credential validator; synthetic values only, explicit host input.
         credentials = remote.HTTPSRemoteTransport(credential_headers=credential_headers)
-        transport = _BudgetTransport(synthetic_transport, credentials._credentials, m, cancelled)
+        def current_authority():
+            current = now + time.monotonic() - started
+            _require(current < m['expires_at'] and current < authority.expires_at)
+            _require(r.evaluate_policy(prepared.action_request, policy_stack, authority, current).disposition == 'ALLOW')
+            return current
+        transport = _BudgetTransport(synthetic_transport, credentials._credentials, m, cancelled, current_authority)
         with closing(r.CrossProcessOwner(m['storage_domain'])) as owner:
             journal = r.DurableSecurityJournal(str(Path(m['storage_domain']) / 'journal'),
                 storage_id=m['storage_id'], create=create, owner=owner)
@@ -170,7 +179,7 @@ def qualify(manifest, *, launch=False, synthetic_transport=None, credential_head
             method = controller.reconcile if recover else controller.execute
             out = method(prepared, binding=binding, expected_payload_digest=m['payload_digest'],
                 expected_prepared_digest=prepared.prepared_digest, policy_stack=policy_stack,
-                authorization=authority, context=context, now=now)
+                authorization=authority, context=context, now=current_authority())
             report.update(status=out.status, execution_state=out.receipt.execution_state,
                 reconciliation_state=out.receipt.reconciliation_state)
     except Exception:

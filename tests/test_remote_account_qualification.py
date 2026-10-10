@@ -4,6 +4,8 @@ import json
 import io
 import subprocess
 import sys
+import time
+from dataclasses import replace
 import tarfile
 import tempfile
 import importlib.util
@@ -86,6 +88,34 @@ class H6MaterialQualification(unittest.TestCase):
         args['authority']=None
         out=h.qualify(m,recover=True,**args)
         self.assertEqual((out['posts'],out['gets']),(0,0))
+
+    def test_authority_expiring_during_preflight_prevents_post(self):
+        h,m,args,f = self.harness_fixture()
+        m['expires_at']=1.03; args['authority']=replace(args['authority'],expires_at=1.03)
+        original=args['synthetic_transport'].request
+        def delayed(*a,**kw):
+            time.sleep(.04)
+            return original(*a,**kw)
+        args['synthetic_transport'].request=delayed
+        self.assertEqual(h.qualify(m,create=True,**args)['posts'],0)
+
+    def test_authority_expiring_during_readback_preserves_unknown(self):
+        h,m,args,f = self.harness_fixture()
+        f.provider.lose_response=True; h.qualify(m,create=True,**args)
+        args['authority']=replace(args['authority'],expires_at=1.03)
+        original=args['synthetic_transport'].request
+        def delayed(method,url,*a,**kw):
+            if '/pulls?' in url: time.sleep(.04)
+            return original(method,url,*a,**kw)
+        args['synthetic_transport'].request=delayed
+        out=h.qualify(m,recover=True,**args)
+        self.assertNotEqual(out['status'],'RECONCILED_SUCCESS')
+        owner=f.r.CrossProcessOwner(str(f.root))
+        try:
+            journal=f.r.DurableSecurityJournal(f.root/'journal',storage_id='h6',owner=owner)
+            self.assertEqual(journal.latest('host-1').state,f.r.JournalState.RECONCILIATION_REQUIRED)
+        finally:
+            owner.close()
 
     def test_harness_fsync_failure_and_cancel_no_execution(self):
         h,m,args,f = self.harness_fixture()

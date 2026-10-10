@@ -35,6 +35,11 @@ storage; existing or corrupt storage never falls back to an empty journal.
 Admission uses existing exact payload commitments, policy and authorization.
 ATTEMPTED must be durable before the adapter can POST. A POST-attempt limit of
 one applies, and persistent material barriers survive changed correlation IDs.
+Authority time advances from the trusted host's initial time using monotonic
+elapsed time. Manifest, authorization and policy are rechecked before/after
+each transport call and before Bridge execution; expired readback is withheld
+from reconciliation and cannot clear UNKNOWN. This is not an atomic wall-clock
+transaction or a preemptive deadline over arbitrary trusted host code.
 Recovery is explicit GET-only reconciliation with current authority and the
 original action/request identity. Credential replacement does not remove history.
 
