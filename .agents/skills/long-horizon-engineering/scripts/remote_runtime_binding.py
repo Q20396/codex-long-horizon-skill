@@ -597,7 +597,8 @@ class PullRequestCreateAdapter(NetworkRequestAdapter):
             _require(len(body) <= MAX_BODY)
             attempted = True
             status, _, data = self._request(p, 'POST', p.target,
-                (('content-type', 'application/json'), ('accept', 'application/vnd.github+json')), body, observe=observed.update)
+                (('content-type', 'application/json'), ('accept', 'application/vnd.github+json'),
+                 ('user-agent', '20396-remote-runtime-binding')), body, observe=observed.update)
             observed['response_parse_status'] = 'PARSE_FAILED'
             result = json.loads(data)
             _require(type(result) is dict, 'PR_UNCERTAIN')
@@ -613,7 +614,8 @@ class PullRequestCreateAdapter(NetworkRequestAdapter):
     def _readback(self, a, p, *, observe=None):
         observe = observe or (lambda **values: None)
         query = 'state=all&per_page=100&head=' + quote(p.repository.split('/')[0] + ':' + p.head, safe='') + '&base=' + quote(p.base, safe='')
-        status, headers, data = self._request(p, 'GET', p.target + '?' + query, (('accept', 'application/vnd.github+json'),), observe=observe)
+        status, headers, data = self._request(p, 'GET', p.target + '?' + query,
+            (('accept', 'application/vnd.github+json'), ('user-agent', '20396-remote-runtime-binding')), observe=observe)
         observe(response_parse_status='PARSE_FAILED')
         results = json.loads(data)
         _require(type(results) is list, 'PR_READBACK_INCOMPLETE')

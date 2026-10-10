@@ -104,6 +104,42 @@ class BridgeTests(unittest.TestCase):
                 self.assertEqual(self.prepare(self.proposal(**{field: 'pr.create'})).status, 'MALFORMED_PROPOSAL')
         self.assertEqual(self.chain.records(), ())
 
+    def test_pr_intended_identity_excludes_only_correlation(self):
+        proposal = self.proposal('PR_CREATE')
+        first = self.prepare(proposal).prepared
+        proposal['requested_parameters']['request_identity'] = 'new-request'
+        second = self.prepare(proposal, ident='different-action').prepared
+        self.assertEqual(first.material_effect_identity, second.material_effect_identity)
+        self.assertNotEqual(first.payload_digest, second.payload_digest)
+        for field, value in [('head', 'other'), ('base', 'other'), ('title', 'Other'),
+                ('body', b'body\n<!-- 20396-request:legitimate-text -->'), ('draft', False)]:
+            p = self.proposal('PR_CREATE'); p['requested_parameters'][field] = value
+            self.assertNotEqual(first.material_effect_identity, self.prepare(p).prepared.material_effect_identity)
+
+    def test_completed_pr_same_material_new_ids_denied(self):
+        p = self.prepare(self.proposal('PR_CREATE')).prepared
+        changed = self.proposal('PR_CREATE', proposal_id='other')
+        changed['requested_parameters']['request_identity'] = 'other'
+        q = self.prepare(changed, ident='other').prepared
+        self.bind(p, q)
+        self.assertEqual(self.execute(p).receipt.execution_state, 'KNOWN_SUCCESS')
+        self.execute(q)
+        self.assertEqual(sum(v[0] == 'POST' for v in self.provider.requests), 1)
+
+    def test_pr_reconciliation_keeps_original_request_identity(self):
+        p = self.prepare(self.proposal('PR_CREATE')).prepared
+        other = self.proposal('PR_CREATE', proposal_id='new')
+        other['requested_parameters']['request_identity'] = 'new'
+        q = self.prepare(other, ident='new').prepared
+        self.bind(p,q); self.provider.lose_response = True
+        self.execute(p)
+        self.execute(q,reconcile=True)
+        self.execute(p,reconcile=True,authorization=None)
+        self.assertEqual(len(self.provider.requests),1)
+        self.assertEqual(self.execute(p,reconcile=True).receipt.final_disposition,'RECONCILED_SUCCESS')
+        self.assertIn('request-1',self.provider.resources[0]['body'])
+        self.assertEqual(sum(v[0]=='POST' for v in self.provider.requests),1)
+
     def test_unknown_action_never_falls_back_to_process(self):
         self.assertEqual(self.prepare(self.proposal('shell')).status, 'NOT_SUPPORTED')
         self.assertEqual(self.prepare(self.proposal('PR_MERGE')).status, 'NOT_SUPPORTED')

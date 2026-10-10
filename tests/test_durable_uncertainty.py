@@ -44,6 +44,48 @@ class DurableTests(unittest.TestCase):
     def reopen(self):
         return self.r.DurableSecurityJournal(self.path, storage_id='fixture')
 
+    def test_versioned_binding_strict_replay_and_readonly_classification(self):
+        self.j.bind_material('a', '1' * 64, '2' * 64,
+            effect_class='WRITE_FILE', material_identity_version='EXISTING_V1')
+        self.execute()
+        before = self.path.read_bytes()
+        recovered = self.reopen()
+        self.assertEqual(recovered.binding_classification()[0]['effect_class'], 'WRITE_FILE')
+        self.assertEqual(self.path.read_bytes(), before)
+        self.assertIsInstance(json.loads(before.splitlines()[1])['binding'], dict)
+
+    def test_versioned_binding_rejects_invalid_metadata_before_write(self):
+        before = self.path.read_bytes()
+        for effect, version in [('PR_CREATE', 'EXISTING_V1'), ('WRITE_FILE', 'PR_INTENDED_V1'),
+                ('BOGUS', 'EXISTING_V1'), ('PR_CREATE', 1), (True, 'EXISTING_V1')]:
+            with self.subTest(effect=effect, version=version), self.assertRaises(ValueError):
+                self.j.bind_material('a', '1' * 64, '2' * 64,
+                    effect_class=effect, material_identity_version=version)
+        self.assertEqual(self.path.read_bytes(), before)
+
+    def test_new_binding_parser_rejects_rehashed_invalid_envelopes(self):
+        import hashlib
+        self.j.bind_material('a', '1' * 64, '2' * 64,
+            effect_class='WRITE_FILE', material_identity_version='EXISTING_V1')
+        self.execute()
+        original = self.path.read_bytes()
+        mutations = [lambda b: b.update(extra='x'), lambda b: b.pop('effect_class'),
+            lambda b: b.update(format_version=True), lambda b: b.update(format_version=3),
+            lambda b: b.update(effect_class='PR_CREATE'), lambda b: b.update(digests=['x', 'y'])]
+        for change in mutations:
+            rows = [json.loads(line) for line in original.splitlines()]
+            change(rows[1]['binding'])
+            encoded = [self.j._encode(rows[0])]
+            previous = hashlib.sha256(encoded[0]).hexdigest()
+            for row in rows[1:]:
+                row.pop('digest'); row['previous'] = previous
+                row['digest'] = hashlib.sha256(self.j._encode(row)).hexdigest()
+                previous = row['digest']; encoded.append(self.j._encode(row))
+            self.path.write_bytes(b''.join(encoded))
+            with self.assertRaises(ValueError):
+                self.reopen()
+        self.path.write_bytes(original)
+
     def execute(self, auth=True):
         return self.r.evaluate_and_execute(self.a, (self.policy,), self.auth if auth else None,
             self.broker, self.j, 1)
@@ -114,16 +156,20 @@ class DurableTests(unittest.TestCase):
 
     def test_recovered_material_blocks_new_action_and_needs_reconciliation(self):
         self.assertTrue(hasattr(self.j, 'bind_material'), 'material binding missing')
-        self.assertTrue(self.j.bind_material('a', 'a' * 64, 'b' * 64))
+        self.assertTrue(self.j.bind_material('a', 'a' * 64, 'b' * 64,
+            effect_class='WRITE_FILE', material_identity_version='EXISTING_V1'))
         for state in ('PROPOSED', 'AUTHORIZED', 'ATTEMPTED'):
             self.r._append(self.j, self.a, self.r.JournalState(state))
         self.j = self.reopen()
-        self.assertFalse(self.j.bind_material('new-action', 'a' * 64, 'b' * 64))
+        self.assertFalse(self.j.bind_material('new-action', 'a' * 64, 'b' * 64,
+            effect_class='WRITE_FILE', material_identity_version='EXISTING_V1'))
         self.assertEqual(self.r.reconcile(self.a, self.j, lambda a: 'SUCCESS').execution_state, 'UNKNOWN_OUTCOME')
-        self.assertFalse(self.reopen().bind_material('new-action', 'a' * 64, 'b' * 64))
+        self.assertFalse(self.reopen().bind_material('new-action', 'a' * 64, 'b' * 64,
+            effect_class='WRITE_FILE', material_identity_version='EXISTING_V1'))
         out = self.r.reconcile(self.a, self.j, lambda a: self.r.ReconciliationOutcome.EFFECT_NOT_APPLIED)
         self.assertEqual(out.final_disposition, 'RECONCILED_NOT_APPLIED')
-        self.assertTrue(self.reopen().bind_material('new-action', 'a' * 64, 'b' * 64))
+        self.assertTrue(self.reopen().bind_material('new-action', 'a' * 64, 'b' * 64,
+            effect_class='WRITE_FILE', material_identity_version='EXISTING_V1'))
 
     def test_records_bind_authorization_and_attempt_without_raw_identity(self):
         self.execute()

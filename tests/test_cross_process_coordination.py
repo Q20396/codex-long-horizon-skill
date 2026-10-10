@@ -16,6 +16,81 @@ from unittest.mock import patch
 
 SCRIPTS = Path(__file__).resolve().parents[1] / '.agents/skills/long-horizon-engineering/scripts'
 
+PR_RESTART = r'''
+import os,sys,tempfile
+from pathlib import Path
+sys.path.insert(0,sys.argv[1])
+from test_agent_runtime_integration import BridgeTests
+root,mode=sys.argv[2:4]
+# Parent owns the complete temporary domain, including abrupt-exit residue.
+tempfile.tempdir=root
+BridgeTests.setUpClass(); f=BridgeTests('runTest'); f.setUp(); f.root=Path(root)
+try:
+ owner=f.r.CrossProcessOwner(root)
+except ValueError:
+ print('CONTENDED',flush=True); sys.exit(0)
+try:
+ f.journal=f.r.DurableSecurityJournal(root+'/journal',storage_id='pr-restart',create=mode!='recover',owner=owner)
+ f.chain=f.s.JsonlSecurityChain('chain','install',root+'/chain',create=mode!='recover',owner=owner)
+ f.bridge=f.m.AgentRuntimeBridge(owner=owner)
+ proposal=f.proposal('PR_CREATE',proposal_id=mode)
+ proposal['requested_parameters']['request_identity']=mode
+ p=f.prepare(proposal,ident=mode).prepared; f.bind(p)
+ original=f.provider.request
+ def request(method,url,headers,body,**kw):
+  if method=='POST':
+   with open(root+'/post-count','a') as count: count.write('POST\n')
+   if mode=='crash': os._exit(73)
+   if mode=='hold':
+    print('POST_ENTERED',flush=True); sys.stdin.readline()
+  return original(method,url,headers,body,**kw)
+ f.provider.request=request
+ out=f.execute(p)
+ print(out.status,flush=True)
+finally:
+ owner.close(); f.doCleanups(); BridgeTests.tearDownClass()
+'''
+
+
+class PRBindingRestartTests(unittest.TestCase):
+    def test_crash_fixture_does_not_leak_outside_parent_domain(self):
+        with tempfile.TemporaryDirectory() as directory, tempfile.TemporaryDirectory() as scratch:
+            args=[sys.executable,'-B','-c',PR_RESTART,str(Path(__file__).resolve().parent),
+                str(Path(directory).resolve()),'crash']
+            result=subprocess.run(args,env=dict(os.environ,TMPDIR=scratch),capture_output=True,timeout=15)
+            self.assertEqual(result.returncode,73,result.stderr)
+            self.assertEqual(list(Path(scratch).iterdir()),[])
+
+    def test_pr_new_ids_after_real_termination_and_completion(self):
+        for mode in ('crash', 'completed'):
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as directory:
+                root = str(Path(directory).resolve())
+                args=[sys.executable,'-B','-c',PR_RESTART,str(Path(__file__).resolve().parent),root]
+                first=subprocess.run(args+[mode],capture_output=True,timeout=15)
+                self.assertEqual(first.returncode,73 if mode=='crash' else 0,first.stderr)
+                second=subprocess.run(args+['recover'],capture_output=True,timeout=15)
+                self.assertEqual(second.returncode,0,second.stderr)
+                self.assertIn(b'RECONCILIATION_REQUIRED',second.stdout)
+                self.assertEqual((Path(root)/'post-count').read_text(),'POST\n')
+
+    def test_pr_controller_contention_then_recovery_no_second_post(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=str(Path(directory).resolve())
+            args=[sys.executable,'-B','-c',PR_RESTART,str(Path(__file__).resolve().parent),root]
+            process=subprocess.Popen(args+['hold'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+            try:
+                self.assertTrue(select.select([process.stdout],[],[],15)[0])
+                self.assertEqual(process.stdout.readline().strip(),b'POST_ENTERED')
+                rival=subprocess.run(args+['recover'],capture_output=True,timeout=15)
+                self.assertIn(b'CONTENDED',rival.stdout)
+                process.communicate(b'continue\n',timeout=15)
+                result=subprocess.run(args+['recover'],capture_output=True,timeout=15)
+                self.assertIn(b'RECONCILIATION_REQUIRED',result.stdout)
+                self.assertEqual((Path(root)/'post-count').read_text(),'POST\n')
+            finally:
+                if process.poll() is None: process.kill()
+                process.communicate(timeout=15)
+
 # The initial RED used H1 RSE admission and demonstrated two actual adapter
 # entries. This final probe exercises the supported coordinated Bridge path.
 RACE = r'''
