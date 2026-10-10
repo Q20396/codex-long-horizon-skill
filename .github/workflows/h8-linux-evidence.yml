@@ -7,6 +7,10 @@ permissions:
   contents: read
 jobs:
   qualification:
+    if: >-
+      github.event.created == true &&
+      github.event.before == '0000000000000000000000000000000000000000' &&
+      github.run_attempt == '1'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:

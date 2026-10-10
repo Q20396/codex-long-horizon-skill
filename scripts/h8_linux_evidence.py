@@ -97,6 +97,8 @@ class Observer:
         def audit(event, args):
             if self.active and os.getpid() == self.pid and event == 'open':
                 try:
+                    if isinstance(args[0], int):
+                        return  # FD-only audit has no trustworthy pathname: UNKNOWN.
                     actual = os.fspath(args[0])
                     if not isinstance(actual, str) or not os.path.isabs(actual):
                         return  # No dir_fd in audit event: never guess its parent.
@@ -170,7 +172,8 @@ def self_test():
             def test_create_and_error(self):
                 with tempfile.TemporaryDirectory(dir=root) as p:
                     fd = os.open(p + '/journal', os.O_CREAT | os.O_RDWR, 0o600)
-                    os.close(fd)
+                    with os.fdopen(fd, 'rb') as stream:
+                        self.assertEqual(stream.read(), b'')
                 with self.assertRaises(FileNotFoundError):
                     tempfile.mkdtemp(dir=root + '/absent')
             def test_skip(self):
@@ -190,9 +193,18 @@ def self_test():
             return r.testsRun, len(r.errors), len(r.failures), [(t.id(), s) for t, s in r.skipped]
         assert identity(baseline) == identity(measured)
         assert baseline.wasSuccessful() and measured.wasSuccessful()
+        assert obs.errors == 0
         assert len([e for e in events if e['kind'] == 'SKIP']) == 1
         assert any(e['kind'] == 'TEMP_CREATED' for e in events)
         assert any(e['kind'] == 'OPEN_PARENT' for e in events)
+        closed = [sys.executable, '-c', 'import os,time; os.close(1); os.close(2); time.sleep(5)']
+        _, state = supervise(closed, root, dict(os.environ), budget=.2)
+        assert state['timed_out'] and state['reap'] == 'REAPED'
+        def broken_read(*args):
+            raise OSError('synthetic read failure')
+        _, state = supervise([sys.executable, '-c', 'print("ready",flush=True); import time; time.sleep(5)'],
+                             root, dict(os.environ), budget=1, read_chunk=broken_read)
+        assert state['supervisor_error'] == 'OSError' and state['reap'] == 'REAPED'
         line('NONINTERFERENCE_PASS', cases=3, skipped=1, scope='synthetic; not whole-suite equivalence')
 
 
@@ -214,6 +226,60 @@ def blob(name, raw):
     for index, offset in enumerate(range(0, len(raw), 3072)):
         line('BLOB', name=name, index=index, base64=base64.b64encode(raw[offset:offset+3072]).decode())
     line('BLOB_END', name=name, bytes=len(raw), sha256=digest)
+
+
+def supervise(args, cwd, env, budget=600, read_chunk=os.read):
+    """Keep captured bytes and bounded failure status even after early pipe EOF."""
+    output = bytearray()
+    state = dict(exit_status=None, timed_out=False, output_overflow=False,
+                 supervisor_error=None, reap='UNKNOWN', cleanup='NOT_STARTED')
+    process = None
+    selector = selectors.DefaultSelector()
+    try:
+        process = subprocess.Popen(args, cwd=cwd, env=env, stdout=subprocess.PIPE,
+                                   stderr=subprocess.STDOUT, start_new_session=True)
+        selector.register(process.stdout, selectors.EVENT_READ)
+        deadline = time.monotonic() + budget
+        while selector.get_map() or process.poll() is None:
+            if time.monotonic() >= deadline:
+                state['timed_out'] = True
+                break
+            for key, _ in selector.select(min(.1, max(0, deadline-time.monotonic()))):
+                chunk = read_chunk(key.fd, 65536)
+                if not chunk:
+                    selector.unregister(key.fileobj)
+                else:
+                    available = LIMIT - len(output)
+                    output.extend(chunk[:available])
+                    if len(chunk) > available:
+                        state['output_overflow'] = True
+                        break
+            if state['output_overflow']:
+                break
+    except Exception as exc:
+        state['supervisor_error'] = type(exc).__name__
+    finally:
+        selector.close()
+        if process is not None:
+            failed = state['timed_out'] or state['output_overflow'] or state['supervisor_error']
+            # Never signal a reaped leader's possibly reused process-group ID.
+            if failed and process.returncode is None:
+                try:
+                    os.killpg(process.pid, signal.SIGKILL)
+                    state['cleanup'] = 'owned group signalled; descendant reaping UNKNOWN'
+                except ProcessLookupError:
+                    state['cleanup'] = 'owned group absent'
+                except OSError:
+                    state['cleanup'] = 'UNKNOWN_SIGNAL_FAILED'
+            else:
+                state['cleanup'] = 'no signal; descendant state UNKNOWN'
+            try:
+                state['exit_status'] = process.wait(timeout=5)
+                state['reap'] = 'REAPED'
+            except subprocess.TimeoutExpired:
+                state['reap'] = 'UNKNOWN'
+            process.stdout.close()
+    return bytes(output), state
 
 
 def run(checkout, control):
@@ -244,46 +310,33 @@ def run(checkout, control):
              path_coverage='TEMP_CREATED is successful creation; OPEN_PARENT is existing parent at absolute open ATTEMPT, not successful effect; relative dir_fd paths UNKNOWN')
         if time.time() - start > 120:
             raise TimeoutError('metadata budget exceeded')
-        process = subprocess.Popen(args, cwd=checkout, env=env, stdout=subprocess.PIPE,
-                                   stderr=subprocess.STDOUT, start_new_session=True)
-        output = bytearray(); timed_out = False; overflow = False
-        selector = selectors.DefaultSelector(); selector.register(process.stdout, selectors.EVENT_READ)
-        deadline = time.monotonic() + 600
-        try:
-            while selector.get_map():
-                if time.monotonic() > deadline or len(output) > LIMIT:
-                    timed_out = time.monotonic() > deadline
-                    overflow = len(output) > LIMIT
-                    os.killpg(process.pid, signal.SIGKILL)
-                    break
-                for key, _ in selector.select(.2):
-                    chunk = os.read(key.fd, 65536)
-                    if not chunk: selector.unregister(key.fileobj)
-                    else: output.extend(chunk)
-            process.wait(timeout=5)
-        finally:
-            selector.close(); process.stdout.close()
-            # Dedicated session belongs only to this test run. No global process kill.
-            try:
-                os.killpg(process.pid, signal.SIGKILL)
-                cleanup = 'remaining owned process group killed; reap of non-child descendants UNKNOWN'
-            except ProcessLookupError:
-                cleanup = 'owned process group absent'
+        output, supervision = supervise(args, checkout, env)
         raw_meta = metadata.read_bytes() if metadata.exists() else b''
         blob('verbose_combined', bytes(output[:LIMIT]))
         blob('metadata', raw_meta[:LIMIT])
-        records = [json.loads(s) for s in raw_meta.splitlines()]
+        parse_error = None
+        try:
+            records = [json.loads(s) for s in raw_meta.splitlines()]
+        except (ValueError, UnicodeError):
+            records = []
+            parse_error = 'INVALID_METADATA'
         results = [r for r in records if r['kind'] == 'RESULT']
         skips = [r for r in records if r['kind'] == 'SKIP']
-        complete = (not timed_out and not overflow and len(raw_meta) <= LIMIT and len(results) == 1
+        complete = (not supervision['timed_out'] and not supervision['output_overflow']
+                    and not supervision['supervisor_error'] and supervision['reap'] == 'REAPED'
+                    and not parse_error and len(raw_meta) <= LIMIT and len(results) == 1
                     and len(skips) == results[0]['skips'] and not results[0]['metadata_incomplete']
                     and results[0]['observation_errors'] == 0)
-        post = checkout_state(checkout)
-        line('END', exit_status=process.returncode, timed_out=timed_out, output_overflow=overflow,
+        try:
+            post = checkout_state(checkout)
+        except Exception as exc:
+            post = dict(error=type(exc).__name__)
+            complete = False
+        line('END', **supervision, parse_error=parse_error,
              evidence='COMPLETE_CHANNELS' if complete else 'EVIDENCE_INCOMPLETE', post=post,
-             result=results, structured_skips=len(skips), cleanup=cleanup,
+             result=results, structured_skips=len(skips),
              remaining_test_entries=len(list(root.iterdir())), end=time.time(), elapsed=time.time()-start)
-        return 0 if complete and process.returncode == 0 else 1
+        return 0 if complete and supervision['exit_status'] == 0 else 1
 
 
 if __name__ == '__main__':
