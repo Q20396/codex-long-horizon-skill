@@ -170,6 +170,24 @@ class RemoteTests(unittest.TestCase):
         self.assertEqual(self.git_service.mutations, 1)
         self.assertEqual(self.git_service.oid, p.expected_local_oid)
 
+    def test_pr_fixed_user_agent_post(self):
+        p = self.setup_pr(); self.prepare([p]); self.execute(p)
+        self.assertEqual(dict(self.provider.requests[0][2]).get('user-agent'),
+            '20396-remote-runtime-binding')
+
+    def test_pr_fixed_user_agent_recovery(self):
+        p = self.setup_pr(); self.prepare([p]); self.provider.lose_response = True
+        self.execute(p); self.execute(p, reconcile=True)
+        self.assertEqual(self.provider.requests[-1][0], 'GET')
+        self.assertEqual(dict(self.provider.requests[-1][2]).get('user-agent'),
+            '20396-remote-runtime-binding')
+        self.assertEqual(sum(r[0] == 'POST' for r in self.provider.requests), 1)
+
+    def test_pr_payload_cannot_override_user_agent(self):
+        for name in ('User-Agent', 'user-agent', 'X-Extra'):
+            with self.subTest(name=name), self.assertRaises(ValueError):
+                replace(self.setup_pr(), headers=((name, 'override'),))
+
     def setup_pr(self):
         self.provider = PRService()
         self.broker.register(self.r.CAPABILITIES[self.r.ActionClass.PR_CREATE],

@@ -544,6 +544,7 @@ class DurableSecurityJournal(InMemorySecurityJournal):
         self._storage = _ref(storage_id)
         self._rows = []
         self._bindings = {}
+        self._binding_metadata = {}
         self._authorizations = {}
         self._attempts = {}
         with storage_owner(self._path, owner):
@@ -693,12 +694,21 @@ class DurableSecurityJournal(InMemorySecurityJournal):
             self._authorizations[entry.action_id] = row['authorization']
             binding = row['binding']
             if binding is not None:
+                metadata = None
+                if type(binding) is dict:
+                    if set(binding) != {'format_version', 'effect_class', 'material_identity_version', 'digests'}:
+                        raise ValueError()
+                    if type(binding['format_version']) is not int or binding['format_version'] != 2:
+                        raise ValueError()
+                    metadata = self._validate_binding_metadata(binding['effect_class'], binding['material_identity_version'])
+                    binding = binding['digests']
                 if type(binding) is not list or len(binding) != 2 or not all(type(v) is str and re.fullmatch('[0-9a-f]{64}', v) for v in binding):
                     raise ValueError()
                 old = self._bindings.get(entry.action_id)
-                if old is not None and old != tuple(binding):
+                if old is not None and (old != tuple(binding) or self._binding_metadata.get(entry.action_id) != metadata):
                     raise ValueError()
                 self._bindings[entry.action_id] = tuple(binding)
+                self._binding_metadata[entry.action_id] = metadata
             elif entry.action_id in self._bindings:
                 raise ValueError()
             self._validate_entry(entry)
@@ -751,13 +761,47 @@ class DurableSecurityJournal(InMemorySecurityJournal):
                 states = [e.state for e in history if e.state not in (JournalState.PROPOSED, JournalState.BLOCKED)]
                 blocked = (JournalState.AUTHORIZED, JournalState.ATTEMPTED,
                     JournalState.UNKNOWN_OUTCOME, JournalState.RECONCILIATION_REQUIRED)
-                if self.owner is not None:
+                if self.owner is not None or self._binding_metadata.get(key) == ('PR_CREATE', 'PR_INTENDED_V1'):
                     blocked += (JournalState.KNOWN_SUCCESS, JournalState.RECONCILED_SUCCESS)
                 if states and states[-1] in blocked:
                     pending.append(key)
             return tuple(pending)
 
-    def bind_material(self, action_id, material, payload):
+    @staticmethod
+    def _validate_binding_metadata(effect_class, version):
+        if type(effect_class) is not str or type(version) is not str:
+            raise ValueError('DURABLE_STATE_UNTRUSTED')
+        try:
+            effect = ActionClass(effect_class)
+        except ValueError:
+            raise ValueError('DURABLE_STATE_UNTRUSTED') from None
+        expected = 'PR_INTENDED_V1' if effect == ActionClass.PR_CREATE else 'EXISTING_V1'
+        if version != expected:
+            raise ValueError('DURABLE_STATE_UNTRUSTED')
+        return (effect_class, version)
+
+    def binding_classification(self):
+        """Bounded, read-only recovered metadata; never infer legacy preimages.
+
+        Caller keeps transaction/ownership through admission. Legacy attempts
+        cannot be attributed to an effect; retain a conservative PR-only fence.
+        Even NOT_APPLIED history needs its original fresh-authorization linkage,
+        which cannot safely be mapped to a new intended PR from opaque hashes.
+        """
+        with self.transaction():
+            self._check()
+            result = []
+            for action_id in dict.fromkeys(e.action_id for e in self._entries):
+                metadata = self._binding_metadata.get(action_id)
+                history = tuple(e for e in self._entries if e.action_id == action_id)
+                barrier = any(e.state not in (JournalState.PROPOSED, JournalState.BLOCKED) for e in history)
+                result.append(dict(action_id=action_id, legacy=metadata is None,
+                    effect_class=metadata[0] if metadata else None,
+                    material_identity_version=metadata[1] if metadata else None,
+                    historical_barrier=barrier))
+            return tuple(result)
+
+    def bind_material(self, action_id, material, payload, *, effect_class, material_identity_version):
         """Trusted Bridge supplies its existing identity; never derive new equivalence."""
         with self.transaction():
             self._check()
@@ -766,10 +810,12 @@ class DurableSecurityJournal(InMemorySecurityJournal):
             if self.material_pending(material):
                 return False
             key = _ref(action_id)
+            metadata = self._validate_binding_metadata(effect_class, material_identity_version)
             old = self._bindings.get(key)
-            if old is not None and old != (material, payload):
+            if old is not None and (old != (material, payload) or self._binding_metadata.get(key) != metadata):
                 raise ValueError('DURABLE_STATE_UNTRUSTED')
             self._bindings[key] = (material, payload)
+            self._binding_metadata[key] = metadata
             return True
 
     def append(self, entry):
@@ -782,6 +828,10 @@ class DurableSecurityJournal(InMemorySecurityJournal):
                     binding=self._bindings.get(entry.action_id),
                     authorization=self._authorizations.get(entry.action_id, _ref(None)),
                     attempt=len(self._rows) + 1 if entry.state == JournalState.PROPOSED else self._attempts.get(entry.action_id))
+                metadata = self._binding_metadata.get(entry.action_id)
+                if metadata is not None:
+                    row['binding'] = dict(format_version=2, effect_class=metadata[0],
+                        material_identity_version=metadata[1], digests=list(row['binding']))
                 if not re.fullmatch(r'sha256:[0-9a-f]{64}', row['authorization']):
                     raise ValueError()
                 row['digest'] = hashlib.sha256(self._encode(row)).hexdigest()

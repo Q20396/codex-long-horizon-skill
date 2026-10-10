@@ -146,6 +146,9 @@ def _material(action, payload):
     # Git discovery and receive-pack requests use this same transport target.
     target = action.target.rstrip('/') if kind == rse.ActionClass.GIT_PUSH else action.target
     common = (kind, target, action.destination)
+    if kind == rse.ActionClass.PR_CREATE:
+        return _digest(('PR_INTENDED_V1', common, tuple((n, getattr(payload, n)) for n in
+            ('provider', 'repository', 'head', 'base', 'title', 'body', 'draft'))))
     names = {
         rse.ActionClass.READ_FILE: (), rse.ActionClass.DELETE_FILE: (), rse.ActionClass.MOVE_FILE: (),
         rse.ActionClass.CREATE_FILE: ('content_bytes',), rse.ActionClass.WRITE_FILE: ('content_bytes',),
@@ -373,8 +376,16 @@ class AgentRuntimeBridge:
         with self._lock:
             if isinstance(binding.journal, rse.DurableSecurityJournal):
                 try:
-                    if not binding.journal.bind_material(p.action_request.action_id, key, p.payload_digest):
-                        return self._denied(p, 'RECONCILIATION_REQUIRED')
+                    with binding.journal.transaction():
+                        if p.action_request.action_class == rse.ActionClass.PR_CREATE and any(
+                                row['legacy'] and row['historical_barrier']
+                                for row in binding.journal.binding_classification()):
+                            return self._denied(p, 'LEGACY_PR_MATERIAL_UNRESOLVED')
+                        if not binding.journal.bind_material(p.action_request.action_id, key, p.payload_digest,
+                                effect_class=p.action_request.action_class.value,
+                                material_identity_version=('PR_INTENDED_V1' if
+                                    p.action_request.action_class == rse.ActionClass.PR_CREATE else 'EXISTING_V1')):
+                            return self._denied(p, 'RECONCILIATION_REQUIRED')
                 except Exception:
                     return self._denied(p, 'DURABLE_STATE_UNTRUSTED')
             if _mutation(p):
@@ -403,6 +414,8 @@ class AgentRuntimeBridge:
             if _mutation(p):
                 if out.receipt.execution_state == 'UNKNOWN_OUTCOME' or out.receipt.reconciliation_state == 'RECONCILIATION_REQUIRED':
                     self._pending[key] = (p.prepared_digest, binding, 'UNKNOWN')
+                elif p.action_request.action_class == rse.ActionClass.PR_CREATE and out.receipt.execution_state == 'KNOWN_SUCCESS':
+                    self._pending[key] = (p.prepared_digest, binding, 'COMPLETED')
                 else:
                     self._pending.pop(key, None)
         return out
@@ -449,7 +462,10 @@ class AgentRuntimeBridge:
                 with self._lock:
                     reservation = self._pending.get(p.material_effect_identity)
                     if reservation == (p.prepared_digest, binding, 'RECONCILING'):
-                        if out is not None and out.receipt.final_disposition in ('RECONCILED_SUCCESS', 'RECONCILED_NOT_APPLIED'):
+                        if (out is not None and out.receipt.final_disposition == 'RECONCILED_SUCCESS'
+                                and p.action_request.action_class == rse.ActionClass.PR_CREATE):
+                            self._pending[p.material_effect_identity] = (p.prepared_digest, binding, 'COMPLETED')
+                        elif out is not None and out.receipt.final_disposition in ('RECONCILED_SUCCESS', 'RECONCILED_NOT_APPLIED'):
                             self._pending.pop(p.material_effect_identity, None)
                         else:
                             self._pending[p.material_effect_identity] = (p.prepared_digest, binding, 'UNKNOWN')

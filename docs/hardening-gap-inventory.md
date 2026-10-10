@@ -152,8 +152,8 @@ not replace restart, coordination, reality or trust work.
 ### G10
 
 - area: Real remote-account validation and credentials.
-- current_state: NOT_RUN — NO_REAL_EXTERNAL_ACCOUNT_E2E; synthetic transports and temporary Git fixtures are the available integration evidence.
-- evidence: `S/remote_runtime_binding.py:HTTPSRemoteTransport`, `NetworkRequestAdapter`, `GitPushAdapter`, `PullRequestCreateAdapter`; `T/test_remote_runtime_binding.py`; `R/remote-runtime-binding.md` validation limits.
+- current_state: PARTIALLY_IMPLEMENTED — H6 offline PR_CREATE qualification harness; NO_REAL_EXTERNAL_ACCOUNT_E2E. Synthetic transports and temporary Git fixtures remain the integration evidence.
+- evidence: `S/remote_runtime_binding.py:HTTPSRemoteTransport`, `NetworkRequestAdapter`, `GitPushAdapter`, `PullRequestCreateAdapter`; `T/test_remote_runtime_binding.py`; `R/remote-runtime-binding.md` validation limits; `scripts/remote_account_qualification.py`, `T/test_remote_account_qualification.py`, `R/h6-real-remote-account-e2e.md`. H6 adds PR intended-effect barriers and strict versioned durable binding/legacy fallback; no real credentials or provider validation.
 - risk_if_unfixed: Production provider API/Git host/PR compatibility, credential issuance/expiry/rotation, provider idempotency and network ambiguity are not established by injected responses or temporary receive-pack. Development GitHub PR operations are not tests of these adapters.
 - hardening_goal: Separately validate each bounded remote effect and credential lifecycle against an explicitly authorized real account, retaining uncertainty evidence.
 - priority: P1.
@@ -163,8 +163,8 @@ not replace restart, coordination, reality or trust work.
 ### G11
 
 - area: Remote target-reality independence and transport assumptions.
-- current_state: BETA — NO_INDEPENDENT_REALITY_SENSOR, NO_REAL_EXTERNAL_ACCOUNT_E2E.
-- evidence: `S/remote_runtime_binding.py:_request`, adapter `_readback` methods and `RemoteRuntimeBinding.reconcile`; effect-specific matrix below; `R/remote-runtime-binding.md` DNS/idempotency limits.
+- current_state: PARTIALLY_IMPLEMENTED — H6 explicit numeric repository/OID assertions and bounded synthetic readback; NO_INDEPENDENT_REALITY_SENSOR, NO_REAL_EXTERNAL_ACCOUNT_E2E.
+- evidence: `S/remote_runtime_binding.py:_request`, adapter `_readback` methods and `RemoteRuntimeBinding.reconcile`; effect-specific matrix below; `R/remote-runtime-binding.md` DNS/idempotency limits; `R/h6-real-remote-account-e2e.md`. Same-provider readback remains non-independent and live DNS/transport deadlines remain blocked.
 - risk_if_unfixed: Same-endpoint assertions/readback are not independent reality; response success is not all-side-effects proof. Origin binding/TLS is not a DNS-rebinding/SSRF sandbox, and synchronous DNS is not proven bounded by the request timeout. An idempotency header does not prove provider behavior.
 - hardening_goal: Define effect-specific independent corroboration and validate real transport/failure boundaries before stronger remote claims.
 - priority: P1.
