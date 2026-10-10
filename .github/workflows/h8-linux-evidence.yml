@@ -2,7 +2,7 @@ name: H8 fixed SHA Linux evidence
 on:
   push:
     branches:
-      - h8-linux-evidence-20261010-once
+      - h8-linux-evidence-20261010-correction-once
 permissions:
   contents: read
 jobs:

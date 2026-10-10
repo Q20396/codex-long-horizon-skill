@@ -136,6 +136,10 @@ def result_class(observer, emit):
 
 
 def suite(root, metadata):
+    # run() fixes cwd to the frozen checkout. Match `python -m unittest`:
+    # replace the external script directory with that absolute working directory.
+    # Do not export PYTHONPATH: tests and isolated children retain their semantics.
+    sys.path[0] = os.path.abspath(os.getcwd())
     fd = os.open(metadata, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     write, fstat = os.write, os.fstat
     incomplete = [False]
@@ -285,7 +289,7 @@ def supervise(args, cwd, env, budget=600, read_chunk=os.read):
 def run(checkout, control):
     start = time.time()
     assert sys.version_info[:3] == (3, 14, 8) and platform.machine() == 'x86_64' and sys.platform == 'linux'
-    assert os.environ.get('GITHUB_REF') == 'refs/heads/h8-linux-evidence-20261010-once'
+    assert os.environ.get('GITHUB_REF') == 'refs/heads/h8-linux-evidence-20261010-correction-once'
     assert os.environ.get('GITHUB_RUN_ATTEMPT') == '1'
     assert git(control, 'rev-parse', 'HEAD') == os.environ['GITHUB_SHA']
     pre = checkout_state(checkout)
