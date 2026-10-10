@@ -174,9 +174,9 @@ not replace restart, coordination, reality or trust work.
 ### G12
 
 - area: Host sensor breadth and operation.
-- current_state: BETA — SINGLE_PLATFORM_ONLY; real macOS registered PROCESS_EXEC with PARTIAL coverage.
-- evidence: `S/host_observer_macos.py:MacOSExecObserver` uses EVFILT_PROC/NOTE_EXEC/EV_ONESHOT with explicit PID registration; `T/test_host_observer_macos.py`; `R/host-observer.md`.
-- risk_if_unfixed: No global discovery, fork/new-PID birth, process-exit sensor, filesystem/network sensor, other-platform backend or daemon/service continuity. PID is a short-session reference, not durable image identity. Absence means NOT_OBSERVED/UNKNOWN, not no effect.
+- current_state: BETA — SINGLE_PLATFORM_ONLY; real macOS registered PROCESS_EXEC and selected repository-only PROCESS_EXIT with PARTIAL coverage. Unselected sensor scopes remain open.
+- evidence: `S/host_observer_macos.py:MacOSExecObserver` uses EVFILT_PROC/NOTE_EXEC/EV_ONESHOT with explicit PID registration; `T/test_host_observer_macos.py`; `R/host-observer.md`. H7 adds `scripts/host_observer_macos_exit.py:MacOSExitObserver`, `T/test_host_observer_macos_exit.py`, native EXIT handoff in `T/test_cross_process_coordination.py`, and `R/h7-selected-host-expansion.md`; new session plus explicit gap, not seamless continuity.
+- risk_if_unfixed: No global discovery, fork/new-PID birth, filesystem/network sensor, other-platform backend or daemon/service continuity. Registered EXIT proves neither exit code, success nor authorship; no installed capability is asserted. PID is a short-session reference, not durable image identity. Absence means NOT_OBSERVED/UNKNOWN, not no effect.
 - hardening_goal: Select only evidence-justified observer extensions after the trust core; preserve partial coverage semantics.
 - priority: P2.
 - recommended_hardening_stage: H7; restart/dedupe belongs earlier in G03, other-platform validation in H8.
