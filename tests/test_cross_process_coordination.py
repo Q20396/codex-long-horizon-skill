@@ -11,10 +11,93 @@ import threading
 from contextlib import contextmanager
 import sys
 import tempfile
+import time
 import unittest
 from unittest.mock import patch
 
 SCRIPTS = Path(__file__).resolve().parents[1] / '.agents/skills/long-horizon-engineering/scripts'
+
+EXIT_HANDOFF = r'''
+import sys,json,select
+from pathlib import Path
+from dataclasses import asdict,replace
+root,repo,mode=sys.argv[1:]
+sys.path[:0]=[repo+'/scripts',repo+'/tests',repo+'/.agents/skills/long-horizon-engineering/scripts']
+from test_host_observer_macos_exit import child
+from host_observer_macos_exit import MacOSExitObserver,OBSERVER_ID,PROVENANCE_REF
+import host_observer as h
+c=h.cet
+try: owner=c.rse.CrossProcessOwner(root)
+except ValueError:
+ print('OWNERSHIP_CONTENDED',flush=True); sys.exit(0)
+try:
+ chain=c.sc.JsonlSecurityChain('chain','install',root+'/chain',create=mode=='first',owner=owner)
+ trace=c.CriticalTrace('trace','install')
+ session='old' if mode in ('first','old') else 'new'
+ try:
+  ing=h.HostObservationIngestor(OBSERVER_ID,PROVENANCE_REF,trace=trace,chain=chain,
+   actor=c.sc.SecurityAuthority('runtime',c.sc.AuthorityRole.RUNTIME,'install'),owner=owner,session_id=session)
+ except ValueError:
+  print('OBSERVER_SESSION_REUSED',flush=True); sys.exit(0)
+ if mode=='recover':
+  prior=h.HostObservation(**json.loads(Path(root+'/observation').read_text()))
+  assert not ing.ingest(prior).accepted
+  assert not ing.ingest(replace(prior,session_id='new')).accepted
+ observer=MacOSExitObserver(session)
+ try:
+  with child() as (pid,release):
+   observer.register(pid); release(); observation=observer.wait_for_exit(3)
+   assert observation is not None
+   result=ing.ingest(observation)
+   assert result.accepted and result.reason=='SEQUENCE_GAP' and result.effective_coverage=='PARTIAL'
+  if mode=='first': Path(root+'/observation').write_text(json.dumps(asdict(observation)))
+ finally: observer.close()
+ print('NATIVE_EXIT NEW_SESSION GAP PARTIAL',flush=True)
+ if mode=='first':
+  assert select.select([sys.stdin],[],[],3)[0], 'controller hold budget exceeded'
+  sys.stdin.readline()
+ assert chain.verify().valid
+finally: owner.close()
+'''
+
+
+@unittest.skipUnless(sys.platform == 'darwin' and hasattr(select, 'kqueue'),
+                     'NOT_RUN_PLATFORM_RESTRICTED: Darwin NOTE_EXIT required')
+class ExitHandoffTests(unittest.TestCase):
+    def test_native_exit_owner_contention_termination_and_fresh_gap(self):
+        # Catch replay admission after abrupt controller death or lost owner fence.
+        started = time.monotonic()
+        # Reserve three seconds for cleanup within the total supervision budget.
+        def budget(limit):
+            remaining = 27 - (time.monotonic() - started)
+            self.assertGreater(remaining, 0, 'H7 supervision budget exhausted')
+            return min(limit, remaining)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            args = [sys.executable, '-B', '-c', EXIT_HANDOFF, str(root), str(SCRIPTS.parents[3])]
+            first = subprocess.Popen(args + ['first'], stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            try:
+                self.assertTrue(select.select([first.stdout], [], [], budget(3))[0])
+                self.assertEqual(first.stdout.readline().strip(), 'NATIVE_EXIT NEW_SESSION GAP PARTIAL')
+                before = (root / 'chain').read_bytes()
+                contender = subprocess.run(args + ['contender'], capture_output=True, text=True, timeout=budget(10))
+                self.assertEqual(contender.returncode, 0, contender.stderr)
+                self.assertEqual(contender.stdout.strip(), 'OWNERSHIP_CONTENDED')
+                self.assertEqual((root / 'chain').read_bytes(), before)
+                first.kill(); first.communicate(timeout=budget(3))
+                self.assertLess(first.returncode, 0)
+                old = subprocess.run(args + ['old'], capture_output=True, text=True, timeout=budget(10))
+                self.assertEqual(old.returncode, 0, old.stderr)
+                self.assertEqual(old.stdout.strip(), 'OBSERVER_SESSION_REUSED')
+                self.assertEqual((root / 'chain').read_bytes(), before)
+                new = subprocess.run(args + ['recover'], capture_output=True, text=True, timeout=budget(10))
+                self.assertEqual(new.returncode, 0, new.stderr)
+                self.assertEqual(new.stdout.strip(), 'NATIVE_EXIT NEW_SESSION GAP PARTIAL')
+            finally:
+                if first.poll() is None: first.kill()
+                first.communicate(timeout=3)
+        self.assertLess(time.monotonic() - started, 30)
 
 PR_RESTART = r'''
 import os,sys,tempfile
