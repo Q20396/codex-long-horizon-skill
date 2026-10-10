@@ -2,6 +2,7 @@
 import unittest
 import json
 import io
+import os
 import subprocess
 import sys
 import time
@@ -16,6 +17,48 @@ import test_agent_runtime_integration as bridge_tests
 
 
 class H6MaterialQualification(unittest.TestCase):
+    def test_created_object_survives_process_crash_and_original_get_recovery(self):
+        code = r'''
+import os,sys,json,tempfile
+from pathlib import Path
+sys.path.insert(0,sys.argv[1])
+from test_remote_account_qualification import H6MaterialQualification
+root=Path(sys.argv[2]); mode=sys.argv[3]; tempfile.tempdir=str(root)
+t=H6MaterialQualification('runTest')
+try:
+ h,m,args,f=t.harness_fixture()
+ m['storage_domain']=str(root/'storage')
+ if mode=='create': (root/'storage').mkdir()
+ else: f.provider.resources=json.loads((root/'objects').read_text())
+ original=args['synthetic_transport'].request
+ def request(method,*a,**kw):
+  if method=='POST':
+   with open(root/'posts','a') as stream: stream.write('POST\n')
+  result=original(method,*a,**kw)
+  if method=='POST':
+   (root/'objects').write_text(json.dumps(f.provider.resources))
+   os._exit(73)
+  return result
+ args['synthetic_transport'].request=request
+ out=h.qualify(m,create=mode=='create',recover=mode=='recover',**args)
+ print(json.dumps(out))
+finally: t.doCleanups()
+'''
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory).resolve()
+            args=[sys.executable,'-B','-c',code,str(Path(__file__).resolve().parent),str(root)]
+            first=subprocess.run(args+['create'],capture_output=True,timeout=15)
+            self.assertEqual(first.returncode,73,first.stderr)
+            self.assertEqual(len(json.loads((root/'objects').read_text())),1)
+            second=subprocess.run(args+['recover'],capture_output=True,timeout=15)
+            self.assertEqual(second.returncode,0,second.stderr)
+            result=json.loads(second.stdout)
+            self.assertEqual(result['status'],'RECONCILED_SUCCESS',result)
+            self.assertEqual((result['posts'],result['gets']),(0,4))
+            self.assertEqual(result['get_readback'][0]['objects'],[{'id':84,'number':42}])
+            self.assertEqual((root/'posts').read_text(),'POST\n')
+        self.assertFalse(root.exists())
+
     def harness_fixture(self):
         bridge_tests.BridgeTests.setUpClass(); self.addCleanup(bridge_tests.BridgeTests.tearDownClass)
         f = bridge_tests.BridgeTests('runTest'); self.addCleanup(f.doCleanups); f.setUp()
@@ -41,7 +84,12 @@ class H6MaterialQualification(unittest.TestCase):
                     return 200, (), json.dumps(dict(id=123,full_name='team/repo')).encode()
                 if '/branches/' in url:
                     return 200, (), json.dumps(dict(commit=dict(sha=('a' if url.endswith('/feature') else 'b')*40))).encode()
-                status, returned, data = f.provider.request(method,url,headers,body,**kw)
+                try:
+                    status, returned, data = f.provider.request(method,url,headers,body,**kw)
+                except TimeoutError:
+                    if method == 'POST' and f.provider.lose_response:
+                        raise h.InjectedObservationLoss() from None
+                    raise
                 value = json.loads(data)
                 for record in value if type(value) is list else [value]:
                     for side in ('head', 'base'):
@@ -65,6 +113,9 @@ class H6MaterialQualification(unittest.TestCase):
         out=h.qualify(m,create=True,**args)
         self.assertEqual(out.get('execution_state'),'KNOWN_SUCCESS',out)
         self.assertEqual(out['posts'],1)
+        self.assertEqual(out['adapter_response']['http_status'],201)
+        self.assertEqual(out['adapter_response']['objects'],[{'id':84,'number':42}])
+        self.assertEqual(out['get_readback'],[])
         out=h.qualify(m,**args)
         self.assertEqual(out['posts'],0)
         for path in (f.root/'journal', f.root/'chain'):
@@ -73,13 +124,18 @@ class H6MaterialQualification(unittest.TestCase):
     def test_harness_unknown_readonly_recovery_and_replacement_credentials(self):
         h,m,args,f = self.harness_fixture()
         f.provider.lose_response=True
-        self.assertEqual(h.qualify(m,create=True,**args)['execution_state'],'UNKNOWN_OUTCOME')
+        lost=h.qualify(m,create=True,**args)
+        self.assertEqual(lost['execution_state'],'UNKNOWN_OUTCOME')
+        self.assertEqual(lost['fault_provenance'],['INJECTED_OBSERVATION_LOSS'])
         args['credential_headers']=(('Authorization','different-synthetic-only'),)
         self.assertEqual(h.qualify(m,**args)['posts'],0)
         out=h.qualify(m,recover=True,**args)
         self.assertEqual(out['status'],'RECONCILED_SUCCESS',out)
         self.assertEqual(out['posts'],0)
         self.assertEqual(out['gets'],4)
+        self.assertEqual(out['get_readback'][0]['objects'],[{'id':84,'number':42}])
+        self.assertEqual(len(out['get_readback'][0]['response_sha256']),64)
+        self.assertNotIn('different-synthetic-only',json.dumps(out))
         self.assertEqual(sum(r[0]=='POST' for r in f.provider.requests),1)
 
     def test_harness_recovery_without_authority_no_io(self):

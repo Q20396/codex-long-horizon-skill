@@ -5,6 +5,7 @@ transport. There is no CLI, ambient credential lookup or import-time activity.
 Synthetic transport is trusted test code, not an isolation boundary.
 """
 import json
+import hashlib
 from contextlib import closing
 import math
 from pathlib import Path
@@ -24,6 +25,10 @@ _FIELDS = frozenset(('schema', 'api_origin', 'repository', 'repository_id', 'hea
 def _require(ok):
     if not ok:
         raise ValueError('QUALIFICATION_REJECTED')
+
+
+class InjectedObservationLoss(Exception):
+    """Trusted synthetic test hook: deliberately withheld observation, not network proof."""
 
 
 def _validate(m, now):
@@ -59,6 +64,9 @@ class _BudgetTransport:
         self.synthetic, self.headers, self.m, self.cancelled = synthetic, headers, manifest, cancelled
         self.check_authority = check_authority
         self.posts = self.gets = self.bytes = 0
+        self.adapter_response = None
+        self.get_readback = []
+        self.fault_provenance = []
         self.start = time.monotonic()
 
     def request(self, method, url, headers, body, *, timeout, response_limit):
@@ -95,8 +103,24 @@ class _BudgetTransport:
                         _require(type(ref.get('repo', {}).get('id')) is int
                             and ref['repo']['id'] == self.m['repository_id']
                             and ref.get('sha') == self.m[side + '_oid'])
+            if '/pulls' in url:
+                objects = []
+                if status in (200, 201):
+                    for record in records[:2]:
+                        if all(type(record.get(k)) is int and record[k] > 0 for k in ('id', 'number')):
+                            objects.append({k:record[k] for k in ('id', 'number')})
+                evidence = dict(http_status=status if type(status) is int else None,
+                    response_sha256=hashlib.sha256(data).hexdigest(), objects=objects,
+                    classification='SYNTHETIC_OBSERVATION_NOT_AUTHORITY',
+                    object_count=len(records) if status in (200, 201) else 0)
+                if method == 'POST': self.adapter_response = evidence
+                else: self.get_readback.append(evidence)
             return status, returned_headers, data
+        except InjectedObservationLoss:
+            self.fault_provenance.append('INJECTED_OBSERVATION_LOSS')
+            raise ValueError('SYNTHETIC_TRANSPORT_UNCERTAIN') from None
         except Exception:
+            self.fault_provenance.append('SYNTHETIC_TRANSPORT_OR_VALIDATION_FAILURE')
             raise ValueError('SYNTHETIC_TRANSPORT_UNCERTAIN') from None
 
 
@@ -113,7 +137,8 @@ def qualify(manifest, *, launch=False, synthetic_transport=None, credential_head
         return {'status': 'NOT_STARTED'}
     report = dict(status='QUALIFICATION_REJECTED', provenance='OFFLINE_SYNTHETIC',
         live_execution='LIVE_EXECUTION_BLOCKED_UNBOUNDED_DNS_OR_TRANSPORT',
-        independent_corroboration='NOT_VALIDATED', posts=0, gets=0)
+        independent_corroboration='NOT_VALIDATED', posts=0, gets=0,
+        adapter_response=None, get_readback=[], fault_provenance=[])
     transport = None
     started = time.monotonic()
     try:
@@ -188,4 +213,6 @@ def qualify(manifest, *, launch=False, synthetic_transport=None, credential_head
     finally:
         if transport is not None:
             report.update(posts=transport.posts, gets=transport.gets)
+            report.update(adapter_response=transport.adapter_response,
+                get_readback=transport.get_readback, fault_provenance=transport.fault_provenance)
     return report

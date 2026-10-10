@@ -17,12 +17,14 @@ from unittest.mock import patch
 SCRIPTS = Path(__file__).resolve().parents[1] / '.agents/skills/long-horizon-engineering/scripts'
 
 PR_RESTART = r'''
-import os,sys
+import os,sys,tempfile
 from pathlib import Path
 sys.path.insert(0,sys.argv[1])
 from test_agent_runtime_integration import BridgeTests
-BridgeTests.setUpClass(); f=BridgeTests('runTest'); f.setUp()
-root,mode=sys.argv[2:4]; f.root=Path(root)
+root,mode=sys.argv[2:4]
+# Parent owns the complete temporary domain, including abrupt-exit residue.
+tempfile.tempdir=root
+BridgeTests.setUpClass(); f=BridgeTests('runTest'); f.setUp(); f.root=Path(root)
 try:
  owner=f.r.CrossProcessOwner(root)
 except ValueError:
@@ -51,6 +53,14 @@ finally:
 
 
 class PRBindingRestartTests(unittest.TestCase):
+    def test_crash_fixture_does_not_leak_outside_parent_domain(self):
+        with tempfile.TemporaryDirectory() as directory, tempfile.TemporaryDirectory() as scratch:
+            args=[sys.executable,'-B','-c',PR_RESTART,str(Path(__file__).resolve().parent),
+                str(Path(directory).resolve()),'crash']
+            result=subprocess.run(args,env=dict(os.environ,TMPDIR=scratch),capture_output=True,timeout=15)
+            self.assertEqual(result.returncode,73,result.stderr)
+            self.assertEqual(list(Path(scratch).iterdir()),[])
+
     def test_pr_new_ids_after_real_termination_and_completion(self):
         for mode in ('crash', 'completed'):
             with self.subTest(mode=mode), tempfile.TemporaryDirectory() as directory:

@@ -47,8 +47,15 @@ Repository and branch GETs establish bounded provider assertions. PR response/
 readback numeric repo IDs and OIDs are also checked; the existing adapter retains
 its exact title/body/marker/branch matching and conservative pagination handling.
 These reads are not an atomic snapshot or independent trust domain.
-Lost synthetic responses are INJECTED_OBSERVATION_LOSS, not a reproduced real
-network outage. Empty/ambiguous/invalid/auth-failed/incomplete readbacks do not
+Deliberately lost observations use the explicit trusted-test
+InjectedObservationLoss exception and report INJECTED_OBSERVATION_LOSS, not a
+reproduced real network outage. Other transport/validation exceptions remain
+SYNTHETIC_TRANSPORT_OR_VALIDATION_FAILURE; no raw exception text is returned.
+Each invocation separately reports adapter_response and get_readback (null/empty
+when not observed), response SHA-256, HTTP status, total object count and at most
+two numeric object IDs/numbers. These are bounded synthetic observations, not
+adapter acceptance or reconciliation authority. Raw bodies/headers are omitted.
+Independent corroboration remains NOT_VALIDATED. Empty/ambiguous/invalid/auth-failed/incomplete readbacks do not
 clear UNKNOWN. No remote cleanup or automatic reconciliation/retry is provided.
 
 ## PR intended-effect identity
@@ -104,6 +111,10 @@ Tests cover headers, payload rejection, PR identity precision, UNKNOWN/completed
 barriers, original-marker reconciliation, durable parsing, real baseline legacy
 fixtures, unchanged legacy bytes, mixed history, old-reader refusal, actual
 process termination/fresh interpreter recovery and controller contention.
+The creation/crash test persists a synthetic provider object before terminating
+the client, then a fresh interpreter uses original-identity GET reconciliation;
+the cumulative POST count remains one. All child temporary resources are under
+the parent's temporary domain, removed by the parent even after abrupt exit.
 Historical fixtures execute git-archived source at the exact base; they are not
 fabricated by the new serializer. Test checkout needs that commit available
 (existing CI fetch-depth=0). Synthetic services never establish real-account E2E.
