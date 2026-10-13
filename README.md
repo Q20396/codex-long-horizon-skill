@@ -23,6 +23,16 @@ wake Codex or guarantee crash recovery.
 > for task-level execution. Current validation uses injected workers, not real
 > models or networked devices; provider deployment remains partial.
 > Validated local execution may reduce OpenAI/Codex cloud-model usage.
+>
+> **Paperclip integration (Experimental)**
+>
+> 20396 is designed to work with Paperclip-managed Codex workers through
+> Paperclip's existing `codex_local` path:
+> `Paperclip → Codex → 20396`. Source-level compatibility has been reviewed,
+> but the end-to-end Linux sandbox and recovery spike is still pending, so this
+> is not yet a production-validated integration. No custom Paperclip adapter or
+> Paperclip dependency is shipped in 20396. Paperclip task assignment does not
+> override 20396 authorization, evidence, recovery, or completion rules.
 
 [Try it](#customer-quick-start) · [Published release](#installation-status) ·
 [Recovery walkthrough](#from-interruption-to-verified-results)
