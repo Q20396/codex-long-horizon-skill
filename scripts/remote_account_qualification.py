@@ -646,7 +646,7 @@ def _validate_live(manifest, preflight, now):
     _validate(check, now)
     _require(type(now) in (int, float) and now >= 0
         and m['expires_at'] - now <= 600
-        and m['get_budget'] <= 10 and m['byte_budget'] <= 262144
+        and m['get_budget'] == 10 and m['byte_budget'] <= 262144
         and 0 < m['time_budget'] <= 30
         and len(m['title'].encode()) <= 128 and len(m['body'].encode()) <= 4096)
     keys = ('repository', 'repository_id', 'head', 'base', 'head_oid', 'base_oid')

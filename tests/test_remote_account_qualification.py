@@ -306,6 +306,37 @@ class CompleteHostOfflineTests(LiveEntryOfflineTests):
 
 
 class HostSafeDiagnosticsTests(LiveEntryOfflineTests):
+    def test_live_fixed_get_budget_rejected_before_capture(self):
+        # Fixed host phases reserve create 8 + recover 2; lower declarations
+        # must never reach credential input, owner construction or dispatch.
+        for mode in ('create', 'recover'):
+            for budget in tuple(range(4, 10)) + (11,):
+                with self.subTest(mode=mode, budget=budget):
+                    m = dict(self.manifest(), get_budget=budget)
+                    with patch.object(self.h.time, 'time', return_value=1), \
+                            patch.object(self.h, '_capture_host', side_effect=RuntimeError('SYNTHETIC_CAPTURE')) as capture, \
+                            patch.object(self.h, '_core_module', side_effect=AssertionError('CORE_NOT_PERMITTED')) as core:
+                        out = self.h.run_live_host(m, mode=mode, launch=True)
+                    self.assertEqual(out['status'], 'LIVE_HOST_BLOCKED')
+                    self.assertEqual((out['gets'], out['posts']), (0, 0))
+                    capture.assert_not_called()
+                    core.assert_not_called()
+        for mode in ('create', 'recover'):
+            with patch.object(self.h.time, 'time', return_value=1), \
+                    patch.object(self.h, '_capture_host', side_effect=RuntimeError('SYNTHETIC_CAPTURE')) as capture, \
+                    patch.object(self.h, '_core_module', side_effect=AssertionError('CORE_NOT_PERMITTED')) as core:
+                out = self.h.run_live_host(self.manifest(), mode=mode, launch=True)
+            capture.assert_called_once()
+            core.assert_not_called()
+            self.assertEqual(out['diagnostics']['primary']['stage'], 'CAPTURE_HOST')
+            self.assertEqual((out['gets'], out['posts']), (0, 0))
+
+    def test_offline_get_budget_range_is_unchanged(self):
+        for budget in range(4, 17):
+            m = dict(self.manifest(), schema='20396.h6.pr-create.v1',
+                credential_source='EXPLICIT_SYNTHETIC_MEMORY', get_budget=budget)
+            self.assertIsNone(self.h._validate(m, 1))
+
     """Synthetic inputs and injected I/O failures only; no real terminal or worker."""
     def capture_fixture(self, **faults):
         from contextlib import contextmanager, ExitStack
