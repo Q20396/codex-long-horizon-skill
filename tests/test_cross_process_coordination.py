@@ -7,6 +7,7 @@ from pathlib import Path
 import subprocess
 import select
 import signal
+import shutil
 import threading
 from contextlib import contextmanager
 import sys
@@ -177,7 +178,7 @@ class PRBindingRestartTests(unittest.TestCase):
 # The initial RED used H1 RSE admission and demonstrated two actual adapter
 # entries. This final probe exercises the supported coordinated Bridge path.
 RACE = r'''
-import os, sys
+import os, sys, select
 sys.path.insert(0, sys.argv[1])
 import agent_runtime_integration as m
 r, sc, cet, local = m.rse, m.sc, m.cet, m.local
@@ -212,7 +213,8 @@ class Adapter(local.FilesystemAdapter):
    child=os.fork()
    if child==0:
     print('CHILD_READY',flush=True)
-    sys.stdin.readline()
+    if not select.select([sys.stdin],[],[],20)[0]: os._exit(74)
+    if os.read(sys.stdin.fileno(),1)!=b'\n': os._exit(74)
     with open(root+'/effect','wb') as stream: stream.write(b'x')
     print('CHILD_DONE',flush=True)
     os._exit(0)
@@ -272,12 +274,29 @@ owner.close()
 
 class CrossProcessTests(unittest.TestCase):
     def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory()
-        self.addCleanup(self.tmp.cleanup)
-        self.root = Path(self.tmp.name).resolve()
+        # No TemporaryDirectory finalizer may remove an uncertain writer's domain.
+        self.root = Path(tempfile.mkdtemp(prefix='cross-process-fixture-')).resolve()
+        self._fixture_retained = False
+        self._fixture_processes = []
+        self.addCleanup(self._cleanup_fixture_root)
         sys.path.insert(0, str(SCRIPTS))
         self.addCleanup(sys.path.remove, str(SCRIPTS))
         self.r = importlib.import_module('runtime_safety_envelope')
+
+    def _retain_fixture(self, process):
+        self._fixture_retained = True
+        self._fixture_processes.append(process)
+
+    def _cleanup_fixture_root(self):
+        # Registered first: normal LIFO still closes test-owned owner objects first.
+        if self._fixture_retained:
+            print('FIXTURE_RETAINED_UNKNOWN', str(self.root))
+            outcome = getattr(self, '_outcome', None)
+            result = getattr(outcome, 'result', None)
+            if result is not None:
+                result.stop()
+            return
+        shutil.rmtree(self.root)
 
     def owner(self):
         self.assertTrue(hasattr(self.r, 'CrossProcessOwner'), 'lifecycle ownership missing')
@@ -287,18 +306,36 @@ class CrossProcessTests(unittest.TestCase):
 
     def script(self, code, *, input=''):
         prefix = 'import os,sys\nsys.path.insert(0,sys.argv[1])\nimport runtime_safety_envelope as r\nroot=sys.argv[2]\n'
+        started = time.monotonic()
         process = subprocess.Popen([sys.executable,'-c',prefix+code,str(SCRIPTS),str(self.root)],
             stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,start_new_session=True)
         try:
             out, error = process.communicate(input,timeout=15)
             self.assertEqual(process.returncode,0,error)
             return out.strip()
-        finally:
+        except subprocess.TimeoutExpired:
+            self._retain_fixture(process)
+            # Only this fixture waits on this exact Popen. None is not an identity
+            # proof: this narrow branch also requires ordinary TimeoutExpired,
+            # default SIGCHLD, sole waiter and a remaining cleanup reserve.
+            # No group/descendant identity is reconstructed, even on timeout.
+            reserve = min(5, 30 - (time.monotonic() - started))
             try:
-                os.killpg(process.pid, signal.SIGKILL)
-            except ProcessLookupError:
+                if (process.returncode is None and reserve > 0
+                        and signal.getsignal(signal.SIGCHLD) == signal.SIG_DFL):
+                    process.kill()
+                    remaining = min(5, 30 - (time.monotonic() - started))
+                    if remaining > 0:
+                        process.communicate(timeout=remaining)
+            except BaseException:
+                # Preserve the original timeout; no repeated kill/drain/escalation.
                 pass
-            process.wait(timeout=10)
+            raise
+        except BaseException:
+            # communicate may have reaped even during KeyboardInterrupt. No signal
+            # privilege is inferred from an interrupted/ambiguous cached status.
+            self._retain_fixture(process)
+            raise
 
     def test_fork_child_cannot_use_owner_or_unlock_parent(self):
         out = self.script('''
@@ -475,26 +512,51 @@ os.waitpid(child,0)
                     self.assertIn('RECONCILIATION_REQUIRED',changed.stdout)
 
     def test_parent_death_effect_child_does_not_hold_lock_or_clear_unknown(self):
+        started = time.monotonic()
+        def budget(limit):
+            remaining = 25 - (time.monotonic() - started)
+            self.assertGreater(remaining, 0, 'fixture action budget exhausted')
+            return min(limit, remaining)
         args=[sys.executable,'-c',RACE,str(SCRIPTS),str(self.root),'A']
         process=subprocess.Popen(args+['parent_death'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,text=True,start_new_session=True)
+        communication_complete = False
         try:
-            self.assertTrue(select.select([process.stdout],[],[],10)[0])
+            self.assertTrue(select.select([process.stdout],[],[],budget(10))[0])
             self.assertEqual(process.stdout.readline().strip(),'CHILD_READY')
-            self.assertEqual(process.wait(timeout=10),73)
-            recovered=subprocess.run(args+['recover'],capture_output=True,text=True,timeout=10)
+            self.assertEqual(process.wait(timeout=budget(10)),73)
+            recovered=subprocess.run(args+['recover'],capture_output=True,text=True,timeout=budget(10))
             self.assertEqual(recovered.returncode,0,recovered.stderr)
             self.assertIn('RECONCILIATION_REQUIRED',recovered.stdout)
             self.assertFalse((self.root/'effect').exists())
-            out,error=process.communicate('\n',timeout=10)
+            # From this call onward release MAY have begun. A failed call never
+            # establishes NOT_APPLIED; do not resend its input during cleanup.
+            out,error=process.communicate('\n',timeout=budget(10))
+            communication_complete = True
             self.assertIn('CHILD_DONE',out)
             self.assertEqual((self.root/'effect').read_bytes(),b'x')
-            recovered=subprocess.run(args+['recover'],capture_output=True,text=True,timeout=10)
+            recovered=subprocess.run(args+['recover'],capture_output=True,text=True,timeout=budget(10))
             self.assertIn('RECONCILIATION_REQUIRED',recovered.stdout)
+        except BaseException:
+            self._retain_fixture(process)
+            raise
         finally:
-            try: os.killpg(process.pid,signal.SIGKILL)
-            except ProcessLookupError: pass
-            process.communicate(timeout=10)
+            # Controller may already be reaped. Never signal its PID/old group.
+            # Fixed child cancels on EOF/invalid byte/20s readiness timeout.
+            if not communication_complete:
+                self._fixture_retained = True
+                try:
+                    if process.stdin is not None:
+                        process.stdin.close()
+                        # Public endpoint only: prevent flush-on-closed and any
+                        # buffered release replay, without mutating Popen internals.
+                        process.stdin = None
+                    reserve = min(5, 30 - (time.monotonic() - started))
+                    if reserve > 0:
+                        process.communicate(timeout=reserve)
+                except BaseException:
+                    # Retain earliest assertion/error/interrupt and uncertain root.
+                    pass
 
     def test_exec_releases_owner_while_new_image_stays_alive(self):
         code='''
@@ -807,3 +869,236 @@ class CoordinatedBridgeTests(unittest.TestCase):
         out = new.ingest(event('new','two'))
         self.assertEqual((out.accepted,out.reason,out.effective_coverage),(True,'SEQUENCE_GAP','PARTIAL'))
         self.assertTrue(self.chain.verify().valid)
+
+
+class FixtureCleanupFakeTests(unittest.TestCase):
+    """Finite fixture safety regressions; no real process/thread/IO/signal.
+
+    Exercise the actual script/parent-death test methods and the actual RACE
+    child branch with fake boundaries. Catch stale group KILL, EOF-as-release,
+    repeated cleanup, masked interrupts and deletion of an uncertain domain.
+    """
+    def child_branch(self, token=b'\n', *, readable=True):
+        import ast
+        from types import SimpleNamespace
+        tree=ast.parse(RACE)
+        adapter=next(n for n in tree.body if isinstance(n,ast.ClassDef) and n.name=='Adapter')
+        run=next(n for n in adapter.body if isinstance(n,ast.FunctionDef) and n.name=='run')
+        branch=next(n for n in run.body if isinstance(n,ast.If) and isinstance(n.test,ast.Compare)
+                    and any(isinstance(v,ast.Constant) and v.value=='parent_death' for v in n.test.comparators))
+        fragment=ast.fix_missing_locations(ast.Module(body=branch.body,type_ignores=[]))
+        trace=[];writes=[];markers=[]
+        class Exit(BaseException):pass
+        def leave(code):trace.append(('exit',code));raise Exit()
+        class Stream:
+            def fileno(self):return 0
+            def readline(self):trace.append(('readline',));return token.decode()
+        class Output:
+            def __enter__(self):return self
+            def __exit__(self,*args):return False
+            def write(self,value):writes.append(value)
+        def select_ready(*args):
+            trace.append(('select',args[2],args[3]));return ([0] if readable else [],[],[])
+        def read(fd,n):trace.append(('read',fd,n));return token
+        scope=dict(os=SimpleNamespace(fork=lambda:0,read=read,_exit=leave),
+            sys=SimpleNamespace(stdin=Stream()),select=SimpleNamespace(select=select_ready),
+            root='/fixture',open=lambda *a,**kw:Output(),
+            print=lambda *a,**kw:markers.append(a[0]))
+        try:exec(compile(fragment,'<frozen-RACE-parent-death>','exec'),scope)
+        except Exit:pass
+        return SimpleNamespace(writes=writes,markers=markers,trace=trace)
+
+    @contextmanager
+    def fixture(self, *, parent=False, outcomes=(), after_reap_error=None,
+                reaped_on_error=False, initial_code=None, kill_error=None,
+                run_error=None, close_error=None, handler=0):
+        from contextlib import ExitStack
+        from types import SimpleNamespace
+        module=sys.modules[__name__];outer=self
+        e=SimpleNamespace(events=[],files={},clock=0.,removed=False,stops=0,
+            cleanup_errors=[],outcomes=list(outcomes),actor_done=False,drained=False)
+        class Root:
+            def __init__(self,name='/fixture'):self.name=name
+            def __truediv__(self,name):return Root(self.name+'/'+name)
+            def __str__(self):return self.name
+            def resolve(self):return self
+            def exists(self):return self.name in e.files
+            def read_bytes(self):return e.files[self.name]
+        root=Root()
+        class Stream:
+            def __init__(self,name):self.name=name;self.closed=False
+            def close(self):
+                e.events.append(('close',self.name))
+                if close_error is not None and self.name=='stdin':raise close_error
+                self.closed=True
+            def readline(self):e.events.append(('ready',));return 'CHILD_READY\n'
+            def fileno(self):return {'stdin':10,'stdout':11,'stderr':12}[self.name]
+        class Process:
+            pid=900000001
+            def __init__(self):
+                self.returncode=initial_code
+                self.stdin=Stream('stdin');self.stdout=Stream('stdout');self.stderr=Stream('stderr')
+                self.input_stream=self.stdin
+            def communicate(self,data=None,timeout=None):
+                e.events.append(('communicate',data,timeout))
+                if parent and not e.actor_done:
+                    actor=outer.child_branch(data.encode() if data is not None else b'')
+                    if actor.writes:e.files['/fixture/effect']=b''.join(actor.writes)
+                    e.events.append(('actor',len(actor.writes),tuple(actor.markers)))
+                    e.actor_done=True
+                if e.outcomes:
+                    error=e.outcomes.pop(0)
+                    if error is not None:
+                        if reaped_on_error:self.returncode=0
+                        raise error
+                self.returncode=73 if parent else 0;e.drained=True
+                self.input_stream.closed=True;self.stdout.closed=True;self.stderr.closed=True
+                if after_reap_error is not None:raise after_reap_error
+                return ('CHILD_DONE\n' if parent and '/fixture/effect' in e.files else '' if parent else 'FORK_SAFE\n','')
+            def wait(self,timeout=None):
+                e.events.append(('wait',timeout));self.returncode=73 if parent else 0;return self.returncode
+            def kill(self):
+                e.events.append(('kill',self.returncode))
+                if kill_error is not None:raise kill_error
+            def poll(self):e.events.append(('poll',));return self.returncode
+        process=Process();e.process=process
+        def remove(*args):e.events.append(('remove',));e.removed=True
+        def run(*args,**kw):
+            e.events.append(('recovery',))
+            if run_error is not None:raise run_error
+            return SimpleNamespace(returncode=0,stdout='RECONCILIATION_REQUIRED\n',stderr='')
+        def stop():e.stops+=1;e.events.append(('stop',))
+        case=CrossProcessTests('runTest')
+        case._outcome=SimpleNamespace(result=SimpleNamespace(stop=stop))
+        with ExitStack() as stack:
+            for obj,key,value in (
+                (module,'tempfile',SimpleNamespace(mkdtemp=lambda **kw:'/fixture',
+                    TemporaryDirectory=lambda:SimpleNamespace(name='/fixture',cleanup=remove))),
+                (module,'Path',lambda *args:root),
+                (module,'shutil',SimpleNamespace(rmtree=remove)),
+                (module,'subprocess',SimpleNamespace(Popen=lambda *a,**kw:process,run=run,PIPE=-1,
+                    TimeoutExpired=subprocess.TimeoutExpired)),
+                (module,'os',SimpleNamespace(killpg=lambda *a:e.events.append(('killpg',*a)))),
+                (module,'signal',SimpleNamespace(SIGKILL=9,SIGCHLD=17,SIG_DFL=0,getsignal=lambda *a:handler)),
+                (module,'time',SimpleNamespace(monotonic=lambda:e.clock)),
+                (module,'select',SimpleNamespace(select=lambda *a:([process.stdout],[],[]))),
+                (module.importlib,'import_module',lambda *a,**kw:SimpleNamespace())):
+                stack.enter_context(patch.object(obj,key,value,create=True))
+            case.setUp()
+            try:yield case,e
+            finally:
+                self.finish(case,e)
+                print('FIXTURE_CASE',json.dumps(dict(test=self.id(),parent=parent,
+                    events=e.events,removed=e.removed,stops=e.stops,
+                    cleanup_errors=[type(v).__name__ for v in e.cleanup_errors]),sort_keys=True))
+
+    def finish(self,case,e):
+        while case._cleanups:
+            fn,args,kw=case._cleanups.pop()
+            try:fn(*args,**kw)
+            except BaseException as error:e.cleanup_errors.append(error)
+
+    def invoke(self,case,*,parent=False):
+        try:
+            return (case.test_parent_death_effect_child_does_not_hold_lock_or_clear_unknown()
+                    if parent else case.script('print("FORK_SAFE")')),None
+        except BaseException as error:return None,error
+
+    def no_group(self,e):
+        self.assertEqual([v for v in e.events if v[0]=='killpg'],[],'POST_REAP_GROUP_SIGNAL')
+
+    def test_f01_success_has_no_post_reap_signal_or_wait(self):
+        with self.fixture() as (case,e):
+            value,error=self.invoke(case);self.assertIsNone(error);self.assertEqual(value,'FORK_SAFE')
+            self.no_group(e)
+            self.assertEqual([v for v in e.events if v[0] in ('kill','wait')],[],'REDUNDANT_POST_REAP_CLEANUP')
+
+    def test_f02_completed_communication_failure_preserves_primary(self):
+        primary=AssertionError('synthetic completed failure')
+        with self.fixture(after_reap_error=primary) as (case,e):
+            _,error=self.invoke(case);self.assertIs(error,primary,'PRIMARY_EXCEPTION_REPLACED')
+            self.no_group(e);self.assertFalse(any(v[0]=='kill' for v in e.events))
+
+    def test_f03_timeout_has_one_owned_direct_cleanup(self):
+        primary=subprocess.TimeoutExpired('synthetic',15)
+        with self.fixture(outcomes=(primary,None)) as (case,e):
+            _,error=self.invoke(case);self.assertIs(error,primary,'PRIMARY_EXCEPTION_REPLACED')
+            self.no_group(e)
+            self.assertEqual(sum(v[0]=='kill' for v in e.events),1,'DIRECT_TIMEOUT_CLEANUP_MISSING')
+            self.assertEqual(sum(v[0]=='communicate' for v in e.events),2,'FINAL_DRAIN_MISSING')
+
+    def test_f04_completed_or_untrusted_timeout_forbids_signal(self):
+        for options in ({'initial_code':0},{'handler':1}):
+            with self.subTest(options=tuple(options)):
+                primary=subprocess.TimeoutExpired('synthetic',15)
+                with self.fixture(outcomes=(primary,),**options) as (case,e):
+                    _,error=self.invoke(case);self.assertIs(error,primary)
+                    self.no_group(e);self.assertFalse(any(v[0]=='kill' for v in e.events),'UNOWNED_SIGNAL')
+                    self.finish(case,e);self.assertFalse(e.removed,'UNCERTAIN_ROOT_REMOVED')
+
+    def test_f05_cleanup_error_keeps_first_error_and_no_retry(self):
+        for kill,drain in ((PermissionError(1,'synthetic'),None),(None,subprocess.TimeoutExpired('synthetic',5))):
+            with self.subTest(kill=type(kill).__name__,drain=type(drain).__name__):
+                primary=subprocess.TimeoutExpired('synthetic',15)
+                with self.fixture(outcomes=(primary,drain),kill_error=kill) as (case,e):
+                    _,error=self.invoke(case);self.assertIs(error,primary,'PRIMARY_EXCEPTION_REPLACED')
+                    self.no_group(e)
+                    self.assertLessEqual(sum(v[0]=='kill' for v in e.events),1)
+                    self.finish(case,e);self.assertFalse(e.removed,'UNCERTAIN_ROOT_REMOVED')
+
+    def test_f06_interrupt_does_not_grant_cleanup_signal(self):
+        for primary in (KeyboardInterrupt('synthetic'),SystemExit(71)):
+            for reaped in (False,True):
+                with self.subTest(interrupt=type(primary).__name__,reaped=reaped):
+                    with self.fixture(outcomes=(primary,),reaped_on_error=reaped) as (case,e):
+                        _,error=self.invoke(case);self.assertIs(error,primary,'PRIMARY_EXCEPTION_REPLACED')
+                        self.no_group(e);self.assertFalse(any(v[0]=='kill' for v in e.events))
+                        self.finish(case,e);self.assertFalse(e.removed,'UNCERTAIN_ROOT_REMOVED')
+
+    def test_f07_parent_death_preserves_recovery_and_release(self):
+        with self.fixture(parent=True) as (case,e):
+            _,error=self.invoke(case,parent=True);self.assertIsNone(error)
+            self.no_group(e);self.assertEqual(e.files['/fixture/effect'],b'x')
+            self.assertEqual(sum(v[0]=='recovery' for v in e.events),2)
+            self.assertEqual(sum(v[0]=='communicate' for v in e.events),1,'REDUNDANT_FINAL_DRAIN')
+            self.assertEqual(sum(v[0]=='wait' for v in e.events),1)
+
+    def test_f08_before_release_failure_cancels_without_effect(self):
+        primary=ValueError('synthetic recovery failure')
+        with self.fixture(parent=True,run_error=primary) as (case,e):
+            _,error=self.invoke(case,parent=True);self.assertIs(error,primary,'PRIMARY_EXCEPTION_REPLACED')
+            self.no_group(e)
+            self.assertNotIn('/fixture/effect',e.files,'EOF_RELEASED_EFFECT')
+            self.assertTrue(e.process.input_stream.closed,'INPUT_NOT_CANCELLED')
+
+    def test_f09_child_requires_exact_token_and_readiness(self):
+        for token,ready in ((b'',True),(b'x',True),(b'\n',False),(b'\n',True)):
+            with self.subTest(token=repr(token),ready=ready):
+                result=self.child_branch(token,readable=ready)
+                self.assertEqual(result.writes,[b'x'] if token==b'\n' and ready else [],'EOF_RELEASED_EFFECT')
+                if not ready:self.assertFalse(any(v[0]=='read' for v in result.trace),'READ_AFTER_TIMEOUT')
+
+    def test_f10_failed_release_is_not_replayed_or_reclassified(self):
+        primary=subprocess.TimeoutExpired('synthetic release',10)
+        with self.fixture(parent=True,outcomes=(primary,None)) as (case,e):
+            _,error=self.invoke(case,parent=True);self.assertIs(error,primary,'PRIMARY_EXCEPTION_REPLACED')
+            self.no_group(e);self.assertEqual(e.files['/fixture/effect'],b'x')
+            self.assertEqual(sum(v[0]=='communicate' and v[1]=='\n' for v in e.events),1,'RELEASE_REPLAYED')
+            self.finish(case,e);self.assertFalse(e.removed,'UNCERTAIN_ROOT_REMOVED')
+
+    def test_f11_uncertain_drain_retains_root_and_stops(self):
+        primary=ValueError('synthetic recovery')
+        with self.fixture(parent=True,run_error=primary,
+                          outcomes=(subprocess.TimeoutExpired('synthetic drain',5),)) as (case,e):
+            _,error=self.invoke(case,parent=True);self.assertIs(error,primary,'PRIMARY_EXCEPTION_REPLACED')
+            self.finish(case,e)
+            self.assertFalse(e.removed,'UNCERTAIN_ROOT_REMOVED');self.assertGreater(e.stops,0,'SUITE_NOT_STOPPED')
+            self.no_group(e)
+
+    def test_f12_normal_root_cleanup_follows_owned_resource_close(self):
+        with self.fixture() as (case,e):
+            case.addCleanup(lambda:e.events.append(('owner_close',)))
+            _,error=self.invoke(case);self.assertIsNone(error)
+            self.finish(case,e);self.assertTrue(e.removed)
+            kinds=[v[0] for v in e.events]
+            self.assertLess(kinds.index('owner_close'),kinds.index('remove'))
