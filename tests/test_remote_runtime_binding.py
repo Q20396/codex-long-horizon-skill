@@ -107,8 +107,8 @@ class PRBoundedTests(unittest.TestCase):
         self.assertTrue(hasattr(self.m, 'PRCreateBoundedHTTPS'), 'PR supervision missing')
         self.root = Path(tempfile.mkdtemp())
         original_init = self.m._PRLaunch.__init__
-        def tracked_init(state, *, request_budget=None):
-            original_init(state, request_budget=request_budget)
+        def tracked_init(state, *, request_budget=None, selected_handle_only=False):
+            original_init(state, request_budget=request_budget, selected_handle_only=selected_handle_only)
             self.launches.append(state)
             self._fixture_budgets.append((state, request_budget))
         for item in (patch.object(self.m,'_PR_CLEANUP',1.0),
