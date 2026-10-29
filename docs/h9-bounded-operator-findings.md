@@ -49,6 +49,45 @@ proof no effect occurred. Coverage, reasons, both refs and evidence refs remain
 visible. No signer trust, freshness, readiness score or retry recommendation.
 Use the core cross-layer reference for source normalization, not this helper.
 
+## Chinese read-only HTML
+
+`render_findings_zh(findings) -> str` adds a standalone Chinese HTML rendering of
+the same explicitly supplied, safe synthetic findings. The caller resolves the
+existing core module exactly as above. The function returns text; it does not
+open a browser, read a journal, collect data, save a file or start a service.
+The existing `render_findings` text API and core verification remain unchanged.
+
+Each finding has three visible sections: **发生什么 → 确认到哪里 → 建议行动**.
+These describe the supplied comparison, not an independently observed execution.
+Technical details and all ten original fields remain in native, initially closed
+`details` elements. Order, duplicates, nulls and evidence references are retained.
+There are no multiple-choice questions, scripts, forms, links, remote assets,
+execution controls or retry buttons. A fixed CSP disallows resource loading;
+only the page's static inline style is enabled. Text labels do not depend on color.
+
+The UI never converts an opaque effect reference into a filename or claims that
+FILE_WRITE means a particular file's contents changed. MATCH is scoped agreement,
+not global safety or proof of success. UNKNOWN emphasizes that an effect may have
+occurred and must not be automatically retried. DIVERGED is a difference between
+records, not evidence of malice, attack, unauthorized execution or causality.
+Source authenticity and freshness remain unverified. Suggested action is limited
+to review by a person who already has the necessary authority; the report grants
+no execution, retry, evidence-access or reconciliation permission.
+
+The HTML renderer first applies the entire existing input/text validation. It
+also rejects HTML exceeding 1 MiB of UTF-8 with the same fixed error, without
+returning partial output. HTML markup adds size, so some inputs accepted by the
+plain renderer can exceed this additional limit. It neither truncates nor weakens
+the existing 1024-finding limit. Raw technical JSON is HTML-escaped inert text.
+
+Automated tests cover the three-section meaning, input-to-detail fidelity,
+duplicates, partial/unknown coverage, empty input, inactive markup, strict
+rejection and the HTML size bound. They do not establish actual browser rendering,
+human understanding or measured operator benefit. Prior guided answers and the
+layout prototype are not independent acceptance of this implementation. A real
+operator evaluation must identify its own source/materials and protocol limits;
+H9 HUMAN BENEFIT remains NOT_VALIDATED and full H9 acceptance is not asserted.
+
 ## Synthetic task and proxy qualification
 
 Before implementation, eight scenarios and literal answers were frozen in

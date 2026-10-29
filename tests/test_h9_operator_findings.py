@@ -226,5 +226,127 @@ with ExitStack() as stack:
         self.assertEqual(result.stdout, '')
 
 
+    def chinese(self, findings):
+        render = getattr(self.presenter, 'render_findings_zh', None)
+        self.assertTrue(callable(render), 'Chinese read-only presentation is missing')
+        return render(findings)
+
+    def chinese_rows(self, page):
+        import html, re
+        return [json.loads(html.unescape(value)) for value in
+                re.findall(r'<pre class="raw">(.*?)</pre>', page, re.S)]
+
+    def visible_chinese(self, page):
+        from html.parser import HTMLParser
+        class Visible(HTMLParser):
+            def __init__(self):
+                super().__init__(); self.hidden = 0; self.text = []
+            def handle_starttag(self, tag, attrs):
+                if tag in ('details', 'style'): self.hidden += 1
+            def handle_endtag(self, tag):
+                if tag in ('details', 'style'): self.hidden -= 1
+            def handle_data(self, value):
+                if not self.hidden: self.text.append(value)
+        parser = Visible(); parser.feed(page)
+        return ' '.join(parser.text)
+
+    def test_chinese_match_is_scoped_not_file_path_or_all_effects(self):
+        page = self.chinese((self.finding(),))
+        visible = self.visible_chinese(page)
+        self.assertIn('发生什么', visible)
+        self.assertIn('确认到哪里', visible)
+        self.assertIn('建议行动', visible)
+        self.assertIn('本次提供的范围内', visible)
+        self.assertIn('不代表全部效果已验证', visible)
+        self.assertNotIn('演示笔记', page)
+        self.assertNotIn('ref:A', visible)
+        self.assertNotIn('文件内容已修改', visible)
+        self.assertIn('不把引用标识解释为文件路径或文件内容', page)
+        self.assertEqual(self.chinese_rows(page), [json.loads(json.dumps(asdict(self.finding())))])
+
+    def test_chinese_unknown_explains_possible_effect_and_no_retry(self):
+        f = self.finding(result='UNKNOWN', reason='TARGET_REALITY_UNKNOWN',
+                         coverage_status='UNKNOWN', compared_effect_ref=None, evidence_refs=())
+        visible = self.visible_chinese(self.chinese((f,)))
+        self.assertIn('效果可能已经发生', visible)
+        self.assertIn('勿自动重试', visible)
+        self.assertIn('不能判定成功、失败或安全', visible)
+
+    def test_chinese_divergence_does_not_assert_malice_or_authority(self):
+        f = self.finding(result='DIVERGED', reason='MATERIAL_EFFECT_DIFFERENCE',
+                         compared_effect_ref='ref:B')
+        visible = self.visible_chinese(self.chinese((f,)))
+        self.assertIn('记录存在具体差异', visible)
+        self.assertIn('不能据此认定恶意、攻击、未经授权或因果关系', visible)
+        self.assertNotIn('另一个文件', visible)
+        self.assertIn('不授予执行、重试或对账权限', visible)
+
+    def test_chinese_all_scenarios_keep_fields_duplicates_and_limits(self):
+        for name, result, reason, coverage, counterpart, refs in SCENARIOS:
+            with self.subTest(scenario=name):
+                f = self.finding(result=result, reason=reason, coverage_status=coverage,
+                                 compared_effect_ref=counterpart, evidence_refs=refs)
+                findings = [f, f] if name == 'duplicate' else [f]
+                before = [asdict(x) for x in findings]
+                page = self.chinese(findings)
+                self.assertEqual(self.chinese_rows(page), json.loads(json.dumps(before)))
+                self.assertEqual([asdict(x) for x in findings], before)
+                visible = self.visible_chinese(page)
+                self.assertIn('来源与新鲜度未验证', visible)
+                self.assertIn('不授予执行、重试或对账权限', visible)
+                if coverage in ('PARTIAL', 'UNKNOWN'):
+                    self.assertIn('覆盖不足或未知', visible)
+                self.assertNotIn('<details open', page)
+        for result, reason in (('MISSING', 'EXPECTED_EFFECT_NOT_OBSERVED'),
+                               ('EXTRA', 'UNEXPECTED_EFFECT_OBSERVED')):
+            f = self.finding(result=result, reason=reason)
+            page = self.chinese((f,))
+            self.assertEqual(self.chinese_rows(page)[0]['result'], result)
+            self.assertIn('不授予执行、重试或对账权限', self.visible_chinese(page))
+        empty = self.chinese(())
+        self.assertIn('未提供检查结果', empty)
+        self.assertIn('不代表没有发生效果', empty)
+        self.assertEqual(self.chinese_rows(empty), [])
+
+    def test_chinese_is_inert_accessible_html_not_execution_ui(self):
+        import builtins, io, os, socket, subprocess
+        from html.parser import HTMLParser
+        f = self.finding()
+        def forbidden(*a, **k): raise AssertionError('unexpected application IO')
+        with ExitStack() as stack:
+            for obj, name in ((builtins,'open'), (io,'open'), (os,'open'),
+                              (socket,'socket'), (subprocess,'Popen')):
+                stack.enter_context(patch.object(obj, name, forbidden))
+            page = self.chinese([f])
+        self.assertIn('lang="zh-CN"', page)
+        self.assertIn('name="viewport"', page)
+        self.assertIn('Content-Security-Policy', page)
+        self.assertIn('default-src', page)
+        class Tags(HTMLParser):
+            def __init__(self): super().__init__(); self.tags=[]; self.attrs=[]
+            def handle_starttag(self,t,a): self.tags.append(t); self.attrs.extend(a)
+        parser=Tags(); parser.feed(page)
+        self.assertNotIn('script', parser.tags)
+        self.assertNotIn('form', parser.tags)
+        self.assertNotIn('iframe', parser.tags)
+        self.assertIn('summary', parser.tags)
+        self.assertFalse(any(k in ('href','src') or k.startswith('on') for k,v in parser.attrs))
+
+    def test_chinese_reuses_strict_input_rejection_and_html_output_cap(self):
+        for bad in (None, {}, 'secret', iter([]), [object()]):
+            with self.subTest(bad_type=type(bad).__name__):
+                with self.assertRaisesRegex(ValueError, '^H9_PRESENTATION_INPUT_INVALID$'):
+                    self.chinese(bad)
+        f = self.finding(); object.__setattr__(f, 'reason', '<script>unsafe</script>')
+        with self.assertRaisesRegex(ValueError, '^H9_PRESENTATION_INPUT_INVALID$'):
+            self.chinese([f])
+        # Raw JSON is text, not HTML; its quotes must be encoded and round-trip.
+        page = self.chinese((self.finding(),))
+        self.assertIn('&quot;action_id&quot;', page)
+        self.assertEqual(self.chinese_rows(page)[0]['effect_ref'], 'ref:A')
+        with self.assertRaisesRegex(ValueError, '^H9_PRESENTATION_INPUT_INVALID$'):
+            self.chinese([self.finding()] * 1024)
+
+
 if __name__ == '__main__':
     unittest.main()
