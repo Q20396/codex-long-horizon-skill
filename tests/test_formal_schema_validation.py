@@ -4,6 +4,7 @@ import importlib.util
 import builtins
 import contextlib
 import io
+import hashlib
 import json
 import os
 import re
@@ -503,6 +504,120 @@ def write_synthetic_evidence(
     return evidence_dir, receipt_path, receipt
 
 
+def release_replay_sha256_fixture(root: Path) -> str:
+    """Test-only single-file digest adapter; not GNU tool qualification."""
+    # No PATH lookup, fake VENV, candidate import, or exported shell function.
+    # The caller supplies the actual checkout (or a private synthetic checkout).
+    code = textwrap.dedent(f'''\
+        import hashlib, os, stat, sys
+        from pathlib import Path
+        root = Path({str(root.resolve())!r})
+        name = ".github/workflows/formal-release-gate.yml"
+        try:
+            if sys.argv[1:] != [name] or Path.cwd() != root:
+                raise ValueError("invocation")
+            path = root / name
+            if path.resolve(strict=True) != path:
+                raise ValueError("path")
+            flags = os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK
+            fd = os.open(path, flags)
+            with os.fdopen(fd, "rb") as source:
+                if not stat.S_ISREG(os.fstat(source.fileno()).st_mode):
+                    raise ValueError("file type")
+                digest = hashlib.sha256(source.read()).hexdigest()
+            print(digest + "  " + name)
+        except (OSError, ValueError):
+            print("release replay digest fixture rejected input", file=sys.stderr)
+            raise SystemExit(2)
+        ''')
+    interpreter = shlex.quote(str(Path(sys.executable).resolve()))
+    return f'sha256sum() {{ {interpreter} -I -S -c {shlex.quote(code)} "$@"; }}\n'
+
+
+class ReleaseReplaySha256FixtureTests(unittest.TestCase):
+    """Catch fake/normalized digests and permissive command/path handling."""
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory(prefix="release-digest-fixture-")
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name).resolve()
+        self.name = ".github/workflows/formal-release-gate.yml"
+        self.path = self.root / self.name
+        self.path.parent.mkdir(parents=True)
+        self.path.write_bytes(b"abc")
+
+    def invoke(self, args, *, cwd=None, pipeline=False):
+        script = release_replay_sha256_fixture(self.root)
+        script += "set -euo pipefail\nsha256sum " + shlex.join(args)
+        if pipeline:
+            script += " | /usr/bin/awk '{print $1}'\nprintf 'UNEXPECTED_SUCCESS\\n'"
+        return subprocess.run(
+            ["/bin/bash", "-c", script], cwd=cwd or self.root,
+            env=dict(os.environ, PATH="/usr/bin:/bin"),
+            stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=10,
+        )
+
+    def test_raw_byte_digest_and_byte_change(self):
+        expected = "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        first = self.invoke([self.name])
+        self.assertEqual(first.returncode, 0, first.stderr)
+        self.assertEqual(first.stdout, expected + "  " + self.name + "\n")
+        self.assertEqual(first.stderr, "")
+        self.path.write_bytes(b"abc\n")
+        changed = self.invoke([self.name])
+        self.assertEqual(changed.returncode, 0, changed.stderr)
+        self.assertEqual(changed.stdout, "edeaaff3f1774ad2888673770c6d64097e391bc362d7d6fb34982ddf0efd18cb  " + self.name + "\n")
+        self.assertNotEqual(first.stdout, changed.stdout)
+
+    def test_invalid_arity_options_and_path_fail_through_pipefail(self):
+        for args in ([], [self.name, self.name], ["--help"],
+                     ["-b", self.name], ["/etc/passwd"], ["../formal-release-gate.yml"]):
+            with self.subTest(args=args):
+                result = self.invoke(args, pipeline=True)
+                self.assertEqual(result.returncode, 2, result.stderr)
+                self.assertEqual(result.stdout, "")
+                self.assertIn("rejected input", result.stderr)
+
+    def test_missing_nonregular_and_symlink_input_fail_closed(self):
+        self.path.unlink()
+        missing = self.invoke([self.name], pipeline=True)
+        self.assertEqual(missing.returncode, 2, missing.stderr)
+        self.assertEqual(missing.stdout, "")
+        self.path.mkdir()
+        directory = self.invoke([self.name], pipeline=True)
+        self.assertEqual(directory.returncode, 2, directory.stderr)
+        self.assertEqual(directory.stdout, "")
+        self.path.rmdir()
+        target = self.root / "other.yml"
+        target.write_bytes(b"abc")
+        self.path.symlink_to(target)
+        symlink = self.invoke([self.name], pipeline=True)
+        self.assertEqual(symlink.returncode, 2, symlink.stderr)
+        self.assertEqual(symlink.stdout, "")
+
+    def test_wrong_cwd_fails_and_child_environment_is_not_extended(self):
+        result = self.invoke([self.name], cwd=self.path.parent, pipeline=True)
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertEqual(result.stdout, "")
+        assertion = 'test "$PATH" = /usr/bin:/bin && ! declare -F sha256sum'
+        for child_path, export_function, expected in (
+            ("/usr/bin:/bin", False, 0),
+            ("/bin", False, 1),
+            ("/usr/bin:/bin", True, 1),
+        ):
+            with self.subTest(path=child_path, export_function=export_function):
+                script = release_replay_sha256_fixture(self.root)
+                if export_function:
+                    script += "export -f sha256sum\n"
+                script += "/bin/bash -c " + shlex.quote(assertion)
+                child = subprocess.run(
+                    ["/bin/bash", "-c", script], cwd=self.root,
+                    env=dict(os.environ, PATH=child_path),
+                    stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=10,
+                )
+                self.assertEqual(child.returncode, expected, child.stderr)
+
+
 class FormalBaselineArchiveLayoutTests(unittest.TestCase):
     workflow_name = "formal-baseline.yml"
     replay_step = "Offline formal replay and readiness audit"
@@ -557,7 +672,11 @@ class FormalBaselineArchiveLayoutTests(unittest.TestCase):
         step = workflow.split(f"      - name: {self.replay_step}\n", 1)[1]
         script = textwrap.dedent(step.split("        run: |\n", 1)[1].split("\n      - name:", 1)[0])
         # Exercise the actual shell routing without formal execution or acquisition.
-        # Only the CLI producer is a fixture; inventory checks use production code.
+        # The CLI producer is a fixture; inventory checks use production code.
+        # On Darwin only, the release replay's one digest invocation uses a
+        # real-byte SHA-256 fixture, not a system GNU-tool qualification.
+        if self.workflow_name == "formal-release-gate.yml" and sys.platform == "darwin":
+            script = release_replay_sha256_fixture(ROOT) + script
         python = self.root / self.venv_name / "bin/python"
         python.parent.mkdir(parents=True)
         python.write_text(
@@ -607,6 +726,8 @@ class FormalBaselineArchiveLayoutTests(unittest.TestCase):
         self.assertEqual(Path(value("--formal-schema-action-provenance-file")), identity)
         self.assertEqual(value("--formal-schema-event-target-sha"), "a" * 40)
         if self.workflow_name == "formal-release-gate.yml":
+            self.assertEqual(value("--formal-schema-workflow-sha256"),
+                             hashlib.sha256((ROOT / ".github/workflows" / self.workflow_name).read_bytes()).hexdigest())
             self.assertEqual(value("--formal-schema-candidate-base"), "b" * 40)
             self.assertEqual(value("--formal-schema-workflow-path"), ".github/workflows/formal-release-gate.yml")
             self.assertEqual(value("--release-state"), "final")
