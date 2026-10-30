@@ -191,3 +191,82 @@ G03/G05 stay `PARTIALLY_IMPLEMENTED`. No exactly-once, cross-journal atomicity,
 tamper-proof storage, independent anchor or production hardening claim is added.
 H5–H9 are not started. Merge, tag, release, deployment and client activation
 are outside this delivery; production hardening is `NOT_COMPLETE`.
+
+
+## Opt-in current-policy guard (repository implementation)
+
+`GuardedCheckpointVerifier(backend, policy, trusted_head=..., provider=...,
+clock=...)` implements the existing verifier protocol while adding an explicit
+current-policy gate. `OpenSSHCheckpointVerifier` remains the legacy static
+snapshot interface, with its old-policy limitation unchanged. Existing v1
+checkpoint payloads and the public-policy schema do not change. Import is inert;
+no caller is automatically switched to the guarded entry.
+
+The trust authority must separately approve a `CurrentPolicyHead` containing:
+
+- `installation_ref`: the explicit scoped installation reference;
+- `purpose`: exactly `20396-security-checkpoint/v1`;
+- `authority_ref`: the independently recognized authority reference;
+- `epoch`: an exact integer, not bool, in `[0, 2**63)`;
+- `policy_reference`: exact `policy_version:canonical-SHA256`;
+- `revision`: an opaque authority state revision;
+- `expires_at`: finite, nonnegative expiry in the explicitly agreed clock domain.
+
+The caller supplies that approved exact head as `trusted_head`, a trusted,
+read-only, zero-argument `provider` returning current head, and an explicit
+trusted `clock` in the same time domain. Missing inputs deny with UNKNOWN; there
+is no default clock, provider discovery, first-use enrollment or fallback to a
+cached/legacy success. A provider asserting a higher epoch, another digest,
+revision, scope, authority or expiry is not sufficient to approve it. Any new
+head requires explicit trusted reconfiguration; verification cannot advance it.
+The reference/purpose/installation binding is the supplied verification context;
+callers must still use core checkpoint/sequence/history APIs with their correct
+expected chain and installation. This generic message verifier does not parse
+arbitrary message bytes to infer a new installation or trust authority.
+
+Before cryptographic assessment, the guard strictly reconstructs typed head
+and policy/key records and checks current head against the approved full pin,
+not only revision or a minimum epoch. Policy canonical reference must match.
+A backward epoch has a fixed rollback denial. Wrong/missing state, invalid
+clock or `now >= expires_at` denies without executing the backend. A valid
+head is read again after the existing mathematical/key-principal assessment;
+all head fields and policy reference must remain identical, the clock cannot
+regress and the head must still be unexpired. A change or unreadable second
+state returns UNKNOWN trust and rejects even when mathematics is VALID.
+This is a bounded before/after observation point, not a promise that the state
+cannot change immediately after return or between equal reads.
+
+The head/provider/clock/caller and host are trusted components. Frozen Python
+records and reconstruction catch malformed or accidentally mutated objects;
+this is not isolation from malicious code in the same interpreter. Provider
+calls must themselves be bounded by the caller's operational envelope; this
+adapter cannot preempt a blocking provider or establish its provenance. Provider
+exceptions are sanitized fixed reasons; KeyboardInterrupt/SystemExit are not
+turned into accepted results. Verification does not call provider writes,
+advance epochs, mutate journals, execute effects, authorize retries or clear
+UNKNOWN barriers.
+
+## Authority state and validation limits
+
+The authority must retain its approved monotonic head outside the caller's
+rollbackable policy/journal domain, publish updates only after its own durable
+transaction and readback succeed, and never serve an old head as a successful
+fallback. This three-file implementation supplies no durable state store,
+fsync transaction, account enrollment, key custody or real provider service.
+If that entire trusted state is rolled back together with the host, local code
+cannot detect it without an independently retained witness or hardware state.
+This guard does not claim whole-host rollback resistance or substitute for H5.
+
+`GuardedPolicyFakeTests` uses synthetic wire-shaped public/signature bytes,
+fake backend/provider/clock and patched verification workspace. No private key
+exists and fake backend success is NOT mathematical crypto evidence. These
+tests cover strict fields, exact pin, lower/conflicting/unapproved higher heads,
+scope/authority mismatch, revocation, freshness and clock changes, two-read
+changes/failure, restart without enrollment, state-unavailable-after-update,
+mutated records, legacy compatibility and absence of execution/provider writes.
+The failed-update case models an unavailable current-head view; it does not test
+an actual durable update or power failure. Existing real integration tests are
+separate and still require their own authorization; they were not rerun for
+this bounded fake-only change. Real trust/custody/lifecycle and actual provider
+persistence remain NOT_VALIDATED. H8's selected-matrix acceptance and consumed
+one-shot permits are unrelated and unchanged.

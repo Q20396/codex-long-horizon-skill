@@ -417,5 +417,246 @@ import checkpoint_crypto
         self.assertLess(time.monotonic() - started, 6)
 
 
+class GuardedPolicyFakeTests(unittest.TestCase):
+    """Pure synthetic protocol evidence; never key generation or real cryptography."""
+    @classmethod
+    def setUpClass(cls):
+        cls.old_path = sys.path[:]
+        cls.old_modules = {n: sys.modules.get(n) for n in
+                           ('checkpoint_crypto', 'signed_checkpoints', 'security_authority_chain')}
+        sys.path[:0] = [str(ROOT / 'scripts'), str(CORE)]
+        cls.m = importlib.import_module('checkpoint_crypto')
+        cls.c = importlib.import_module('signed_checkpoints')
+
+    @classmethod
+    def tearDownClass(cls):
+        sys.path[:] = cls.old_path
+        for name, value in cls.old_modules.items():
+            if value is None: sys.modules.pop(name, None)
+            else: sys.modules[name] = value
+
+    def context(self, manager):
+        value = manager.__enter__()
+        self.addCleanup(manager.__exit__, None, None, None)
+        return value
+
+    def setUp(self):
+        self.assertTrue(hasattr(self.m, 'GuardedCheckpointVerifier'),
+                        'guarded current-policy entry is not implemented')
+        # Wire-shaped public/signature fixtures have no private key and are NOT crypto.
+        import struct
+        def ssh_string(v): return struct.pack('>I', len(v)) + v
+        blob = ssh_string(b'ssh-ed25519') + ssh_string(b'\x01' * 32)
+        public = 'ssh-ed25519 ' + base64.b64encode(blob).decode('ascii')
+        fingerprint = 'SHA256:' + base64.b64encode(hashlib.sha256(blob).digest()).decode().rstrip('=')
+        key = self.m.PolicyKey('A', 'synthetic-A', public, fingerprint, PURPOSE, 'ACTIVE')
+        self.policy = self.m.TrustPolicy(self.m.POLICY_SCHEMA, 'synthetic-policy-1', (key,))
+        raw = (b'SSHSIG' + struct.pack('>I', 1) + ssh_string(blob)
+               + ssh_string(PURPOSE.encode()) + ssh_string(b'') + ssh_string(b'sha512')
+               + ssh_string(ssh_string(b'ssh-ed25519') + ssh_string(b'\x02' * 64)))
+        self.envelope = self.c.SignatureEnvelope(self.c.SignatureAlgorithm.ED25519, 'A', raw)
+        self.backend = self.m.OpenSSHBackend('/synthetic/not-executed')
+        self.head = self.m.CurrentPolicyHead('synthetic-installation', PURPOSE, 'synthetic-authority',
+                                            4, self.policy.reference, 'revision-4', 200.0)
+        self.reads = []
+        def provider():
+            self.reads.append('read')
+            return self.head
+        self.provider = provider
+        self.clock = lambda: 100.0
+        self.fake_run = self.context(patch.object(self.backend, '_run', return_value=(0, b'', b'')))
+        self.context(patch.object(self.m, '_write', return_value='/synthetic/verification-file'))
+        from contextlib import nullcontext
+        self.context(patch.object(self.m, '_workspace', side_effect=lambda: nullcontext('/synthetic')))
+        self.context(patch.object(subprocess, 'Popen', side_effect=AssertionError('subprocess forbidden')))
+
+    def guard(self, **kwargs):
+        values = dict(backend=self.backend, policy=self.policy, trusted_head=self.head,
+                      provider=self.provider, clock=self.clock)
+        values.update(kwargs)
+        return self.m.GuardedCheckpointVerifier(**values)
+
+    def assessment(self, guard=None):
+        return (guard or self.guard()).assess(b'synthetic message', self.envelope)
+
+    def test_missing_state_denies_without_legacy_fallback(self):
+        for field in ('trusted_head', 'provider', 'clock'):
+            with self.subTest(field=field):
+                result = self.assessment(self.guard(**{field: None}))
+                self.assertEqual(result.signer_trust, 'UNKNOWN')
+                self.assertNotEqual(result.cryptographic_validity, 'INVALID')
+        self.fake_run.assert_not_called()
+
+    def test_current_exact_pin_and_two_reads_accept_fake_validity(self):
+        guard = self.guard()
+        result = self.assessment(guard)
+        self.assertEqual((result.cryptographic_validity, result.signer_trust, result.reason),
+                         ('VALID', 'TRUSTED', 'VALID'))
+        self.assertEqual(self.reads, ['read', 'read'])
+        self.assertTrue(guard.verify(b'synthetic message', self.envelope).valid)
+        self.assertFalse(hasattr(guard, 'advance'))
+        self.assertFalse(hasattr(guard, 'retry_authorized'))
+
+    def test_head_strict_types_and_bounds(self):
+        for field, value in [('epoch', True), ('epoch', -1), ('epoch', 2**63),
+                             ('installation_ref', ''), ('purpose', 'git'),
+                             ('authority_ref', 'bad\nvalue'), ('revision', ''),
+                             ('policy_reference', 'synthetic-policy-1:ABC'),
+                             ('expires_at', True), ('expires_at', float('nan')),
+                             ('expires_at', float('inf')), ('expires_at', -1)]:
+            with self.subTest(field=field, value=str(value)):
+                with self.assertRaises(ValueError): replace(self.head, **{field: value})
+
+    def test_provider_none_invalid_and_exceptions_are_unknown(self):
+        def failed(): raise OSError('synthetic private diagnostic must not escape')
+        for provider in (lambda: None, lambda: {}, failed):
+            with self.subTest(provider=provider):
+                result = self.assessment(self.guard(provider=provider))
+                self.assertEqual(result.signer_trust, 'UNKNOWN')
+                self.assertNotIn('private', result.reason)
+        self.fake_run.assert_not_called()
+
+    def test_old_epoch_same_epoch_conflict_and_new_epoch_deny(self):
+        for changed in (replace(self.head, epoch=3), replace(self.head, epoch=5),
+                        replace(self.head, policy_reference='other:' + 'a'*64),
+                        replace(self.head, revision='new-revision')):
+            with self.subTest(changed=changed):
+                result = self.assessment(self.guard(provider=lambda: changed))
+                self.assertNotEqual(result.signer_trust, 'TRUSTED')
+        self.fake_run.assert_not_called()
+
+    def test_scope_authority_and_expiry_mismatch_deny(self):
+        for changed in (replace(self.head, installation_ref='different'),
+                        replace(self.head, authority_ref='different'),
+                        replace(self.head, expires_at=300.0)):
+            result = self.assessment(self.guard(provider=lambda: changed))
+            self.assertEqual(result.signer_trust, 'UNKNOWN')
+        self.fake_run.assert_not_called()
+
+    def test_expired_and_invalid_clocks_deny(self):
+        def failed(): raise OSError('clock unavailable')
+        for clock in (lambda: 200, lambda: 201, lambda: True, lambda: float('nan'),
+                      lambda: float('inf'), lambda: -1, failed):
+            with self.subTest(clock=clock):
+                self.assertEqual(self.assessment(self.guard(clock=clock)).signer_trust, 'UNKNOWN')
+        self.fake_run.assert_not_called()
+
+    def test_snapshot_not_matching_current_head_denied(self):
+        old_policy = replace(self.policy, policy_version='old-policy')
+        result = self.assessment(self.guard(policy=old_policy))
+        self.assertEqual(result.signer_trust, 'UNKNOWN')
+        self.fake_run.assert_not_called()
+
+    def test_revoked_current_policy_never_reenabled_by_old_active_snapshot(self):
+        revoked = replace(self.policy, keys=(replace(self.policy.keys[0], status='REVOKED'),))
+        head = replace(self.head, policy_reference=revoked.reference)
+        result = self.assessment(self.guard(policy=revoked, trusted_head=head, provider=lambda: head))
+        self.assertEqual((result.cryptographic_validity, result.signer_trust), ('VALID', 'UNTRUSTED'))
+        self.fake_run.reset_mock()
+        result = self.assessment(self.guard(trusted_head=head, provider=lambda: head))
+        self.assertEqual(result.signer_trust, 'UNKNOWN')
+        self.fake_run.assert_not_called()
+
+    def test_second_read_checks_every_field_not_only_revision(self):
+        changes = ({'epoch': 5}, {'policy_reference': 'other:' + 'a'*64},
+                   {'authority_ref': 'different'}, {'installation_ref': 'different'},
+                   {'expires_at': 201.0}, {'revision': 'changed'})
+        for change in changes:
+            values = iter([self.head, replace(self.head, **change)])
+            result = self.assessment(self.guard(provider=lambda: next(values)))
+            self.assertEqual(result.cryptographic_validity, 'VALID')
+            self.assertEqual((result.signer_trust, result.reason), ('UNKNOWN', 'CURRENT_POLICY_CHANGED'))
+
+    def test_second_read_failure_preserves_validity_but_rejects_trust(self):
+        values = iter([self.head, None])
+        result = self.assessment(self.guard(provider=lambda: next(values)))
+        self.assertEqual((result.cryptographic_validity, result.signer_trust), ('VALID', 'UNKNOWN'))
+        self.assertFalse(self.guard(provider=lambda: None).verify(b'synthetic message', self.envelope).valid)
+
+    def test_expiry_crossed_during_backend_rejects(self):
+        times = iter([199.0, 200.0])
+        result = self.assessment(self.guard(clock=lambda: next(times)))
+        self.assertEqual((result.cryptographic_validity, result.signer_trust), ('VALID', 'UNKNOWN'))
+
+    def test_clock_regression_during_verification_denies(self):
+        times = iter([100.0, 99.0])
+        result = self.assessment(self.guard(clock=lambda: next(times)))
+        self.assertEqual((result.cryptographic_validity, result.signer_trust), ('VALID', 'UNKNOWN'))
+
+    def test_trusted_pin_is_copied_not_mutable_enrollment(self):
+        guard = self.guard()
+        object.__setattr__(self.head, 'epoch', 5)
+        self.assertFalse(guard.verify(b'synthetic message', self.envelope).valid)
+        self.fake_run.assert_not_called()
+
+    def test_backend_failure_not_accepted_even_with_current_head(self):
+        self.fake_run.side_effect = self.m.BackendFailure('BACKEND_FAILED')
+        result = self.assessment()
+        self.assertEqual((result.cryptographic_validity, result.signer_trust), ('UNKNOWN', 'UNKNOWN'))
+
+    def test_restart_without_pin_does_not_enroll_from_provider(self):
+        self.assertTrue(self.guard().verify(b'synthetic message', self.envelope).valid)
+        guard = self.guard(trusted_head=None)
+        self.assertFalse(guard.verify(b'synthetic message', self.envelope).valid)
+
+    def test_new_epoch_requires_explicit_new_trusted_configuration(self):
+        newer = replace(self.head, epoch=5, revision='revision-5')
+        old = self.guard(provider=lambda: newer)
+        self.assertFalse(old.verify(b'synthetic message', self.envelope).valid)
+        fresh = self.guard(trusted_head=newer, provider=lambda: newer)
+        self.assertTrue(fresh.verify(b'synthetic message', self.envelope).valid)
+
+    def test_unpublished_update_failure_cannot_fallback_to_cached_success(self):
+        def failed_update_view(): raise OSError('synthetic unavailable head after failed update')
+        guard = self.guard()
+        self.assertTrue(guard.verify(b'synthetic message', self.envelope).valid)
+        guard.provider = failed_update_view
+        self.assertFalse(guard.verify(b'synthetic message', self.envelope).valid)
+
+    def test_frozen_head_tampering_is_revalidated(self):
+        malformed = replace(self.head)
+        object.__setattr__(malformed, 'epoch', True)
+        result = self.assessment(self.guard(provider=lambda: malformed))
+        self.assertEqual(result.signer_trust, 'UNKNOWN')
+        self.fake_run.assert_not_called()
+
+    def test_policy_key_tampering_is_revalidated(self):
+        guard = self.guard()
+        object.__setattr__(guard.policy.keys[0], 'status', 'ACTIVE\n')
+        result = self.assessment(guard)
+        self.assertEqual(result.signer_trust, 'UNKNOWN')
+        self.fake_run.assert_not_called()
+
+    def test_provider_mutating_guard_policy_during_crypto_is_not_accepted(self):
+        guard = self.guard()
+        real_fake = self.fake_run.side_effect
+        def mutate(args, data):
+            object.__setattr__(guard.policy, 'policy_version', 'changed')
+            return 0, b'', b''
+        self.fake_run.side_effect = mutate
+        result = self.assessment(guard)
+        self.assertEqual((result.cryptographic_validity, result.signer_trust), ('VALID', 'UNKNOWN'))
+        self.fake_run.side_effect = real_fake
+
+    def test_legacy_semantics_unchanged_and_not_implicitly_guarded(self):
+        legacy = self.m.OpenSSHCheckpointVerifier(self.backend, self.policy)
+        self.assertTrue(legacy.verify(b'synthetic message', self.envelope).valid)
+        unavailable = self.guard(provider=None)
+        self.assertFalse(unavailable.verify(b'synthetic message', self.envelope).valid)
+        self.assertTrue(legacy.verify(b'synthetic message', self.envelope).valid)
+
+    def test_no_provider_writes_or_execution_side_effects(self):
+        class Provider:
+            def __init__(self, head): self.head, self.reads = head, 0
+            def __call__(self): self.reads += 1; return self.head
+            def advance(self): raise AssertionError('must not advance')
+            def write(self): raise AssertionError('must not write')
+        provider = Provider(self.head)
+        guard = self.guard(provider=provider)
+        self.assertTrue(guard.verify(b'synthetic message', self.envelope).valid)
+        self.assertEqual(provider.reads, 2)
+        self.assertIs(guard.provider, provider)
+
+
 if __name__ == '__main__':
     unittest.main()
