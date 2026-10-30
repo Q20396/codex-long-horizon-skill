@@ -15,6 +15,33 @@ permissions, evidence, uncertainty, and the customer's next safe decision
 visible. It does not provide legal or financial advice, hold customer records,
 connect accounts, install domain packs, or execute external actions.
 
+## Authorization Continuity
+
+Reuse explicit, still-valid authorization from the current conversation when
+the action, target, scope and effects are unchanged. Continue necessary approved
+investigation, implementation, validation, repair, review and closeout without
+asking for approve at each phase. A phase change, interruption, resume or
+context compaction does not reset authority.
+
+Read the applicable instructions and existing project state before resuming,
+then reconcile them with the current request and actual repository. Plans,
+suggestions, test results, installation, historical records and status labels
+do not independently grant permission or restore consumed one-shot permits.
+
+Ask only for missing authority or a material change to scope, target or effects.
+Missing necessary evidence, an explicit failure-stop rule or an exhausted
+budget/attempt limit pauses the affected action; continue independent work
+that remains authorized. Do not retry under another job, identity or environment
+to bypass a stop condition. Secrets and separately controlled external effects
+retain their boundaries.
+
+Throughout this skill and its references, an instruction to obtain approval
+means first check whether the exact action is already covered; reuse it if so.
+It never means widening a bounded or one-shot grant. If a reference explicitly
+requires a later decision on a newly frozen object, or the user's grant reserves
+that decision, honor it. One complete grant can cover several specified stages;
+comparison permission alone does not authorize installation or replacement.
+
 ## Example Prompts
 
 - Use the long-horizon-engineering skill. Explore the repository, plan the
@@ -76,7 +103,8 @@ action. Continue independent authorized work; optional missing fields do not
 make an otherwise sufficient intake incomplete. Default to
 read-only analysis, no persistence, no network, no installation, and no
 external action. If the request contains credentials, account data, private
-communications, regulated evidence, or other sensitive material, stop. Never
+communications, regulated evidence, or other sensitive material, pause the
+affected data handling and continue independent authorized work. Never
 upload, paste, sync, transmit, summarize, or place that material in model
 memory. Ask for a non-sensitive substitute or propose a separately installed,
 default-disabled local provider that keeps raw material encrypted and local.
@@ -166,8 +194,9 @@ sandbox and contain no host-visible `SKILL.md`. They remain `sandbox-only`,
 If more than one card matches, ask for clarification. If no card matches, say
 the capability is not declared. Never fetch or auto-load uninstalled code.
 Only a separately installed, locally accessible skill can become callable, and
-installation, provider access, and each high-impact effect require separate
-approval.
+installation, provider access, and each high-impact effect must be covered by
+explicit authorization. One grant may cover the specified effects together;
+a catalog match cannot supply missing authority.
 
 The declared Local Case Evidence Provider and its synthetic pilot are
 non-callable interface evidence. The pilot is `fixture-only`: it cannot connect
@@ -215,7 +244,11 @@ local compute is relevant and requested. Installation/import does not authorize
 hardware inspection, provider installation, model download, inference, network
 access or a node pool. `collect_probe(node_id, consent, reader)` requires explicit
 node inspection consent and a caller-supplied read-only reader. No reader or
-provider recipe ships here. Stop if an approved adapter is unavailable.
+provider recipe ships here. Pause the affected local-compute action if an
+approved adapter is unavailable; continue other authorized work. Hardware
+inspection, download/install, storage, inference, network and costs must each
+be covered, but may be authorized together once for the same fixed scope.
+Installation does not prove qualified local routing or measured cloud savings.
 
 These are synthetic-tested Beta foundations, not production-ready deployment.
 Workers and evidence are trusted caller inputs, not a remote authentication or
@@ -226,8 +259,8 @@ are UNMEASURED. Distributed inference and model sharding are not implemented.
 ## Failure Recovery
 
 If work is interrupted, tests fail unexpectedly, requirements conflict, or the
-repository changes underneath the task, stop and re-establish state before
-editing. Re-read relevant instructions, inspect current files, separate facts
+repository changes underneath the task, pause affected edits and re-establish
+state. Continue independent authorized work while resolving the affected part. Re-read relevant instructions, inspect current files, separate facts
 from assumptions, and continue only after the next safe step is clear.
 
 Do not make behavioral changes based only on assumptions. Verify important
@@ -275,7 +308,7 @@ Produce a short implementation plan when the work is non-trivial. Include:
 - risk areas
 - important assumptions and supporting evidence
 - rollback or containment strategy
-- user confirmation needed before high-risk steps
+- any missing authorization before high-risk steps; do not ask again when covered
 
 For substantial work, also state the Definition of Done, in-scope and
 out-of-scope paths, acceptance criteria and evidence, stop conditions, and the
@@ -287,7 +320,8 @@ the bundled-optional `templates/GOAL_DRIVEN_DELIVERY_CONTRACT.md` <!-- profile-o
 It is an explicit-only thin layer over the
 existing Planner/Builder/Evaluator, implementation-plan, working-state, and
 verification-evidence contracts. Do not create or persist an instance without
-approval for its exact file path, and do not treat it as execution, promotion,
+existing or new explicit authorization for its exact file path, and do not
+treat the record itself as execution, promotion,
 or next-stage authority.
 
 For complex implementation plans, use `templates/implementation-plan.md` when a
@@ -320,7 +354,8 @@ state any remaining gaps.
 ### 6. Debug
 
 When validation fails, read the error, form a hypothesis, make a targeted fix,
-and rerun the relevant check. Avoid blind edits.
+and rerun the relevant check only within the active attempt/budget and
+failure-stop rules. Do not repeat a consumed one-shot run. Avoid blind edits.
 
 ### 7. Summarize
 
@@ -451,7 +486,8 @@ sub-agents, permission tiers, or a self-approving loop. The Planner proposes a
 bounded task contract, the Builder performs only approved work, and the
 Evaluator reviews evidence and reports findings. The Evaluator does not edit,
 approve its own proposal, or authorize push, merge, deployment, publication, or
-other high-impact actions. Human approval remains required for those actions.
+other high-impact actions. Explicit human authorization remains required;
+reuse a valid same-scope grant rather than requesting it again.
 
 ## Routing And Promotion Governance
 
@@ -467,14 +503,15 @@ engine result must be reported separately when that engine is unavailable.
 ## Safe Update / Self-Check Protocol
 
 When the user asks to check for updates, update skills, upgrade skills, or
-compare installed skills with GitHub, first ask for explicit permission to
-access:
+compare installed skills with GitHub, first check for existing explicit
+authorization to access the following source; ask only if missing:
 
 `https://github.com/Q20396/codex-long-horizon-skill`
 
-Explain that this first permission is only for checking updates and temporarily
-downloading or cloning the repository. During the check phase, do not install,
-replace, delete, or modify installed skills.
+If the grant covers comparison only, keep it limited to checking updates and
+necessary temporary retrieval; do not install, replace, delete or modify
+installed skills. A grant that also covers an exact backup-first replacement
+may continue after its specified checks pass; no phase-based reapproval.
 
 After permission, compare installed local skills with the GitHub version.
 
@@ -484,8 +521,9 @@ Installed local paths depend on the installation mode:
 - Codex user-level: `~/.codex/skills/<skill_id>`.
 
 The legacy `~/.agents/skills` layout is not the assumed Codex user-level
-target. Do not infer an installed path: ask for, or inspect only with approval,
-the exact target before comparing or updating it.
+target. Do not infer an installed path: use an already specified target or
+inspect only within existing authorization; ask for the exact missing target
+before comparing or updating it.
 
 Remote repo paths:
 
@@ -506,10 +544,13 @@ Summarize:
 10. the separate `update_installed_skill.py` path required for an approved
     replacement plan
 
-Ask for explicit second approval before applying any update. The comparison
-script cannot apply an update. Use `update_installed_skill.py` for the
-separately approved backup-first replacement flow; it must replace only the
-selected approved skill folder, validate `SKILL.md`, reject duplicated nested
+Before applying an update, verify that explicit authorization covers the
+selected immutable version, exact destination, backup/rollback and replacement
+effects. Ask for that missing scope only; do not demand a second approval
+when the existing grant already covers it. The comparison script cannot apply
+an update. Use `update_installed_skill.py` for the approved backup-first flow;
+it must replace only the selected approved skill folder, validate `SKILL.md`,
+reject duplicated nested
 paths, report exact files changed, and provide rollback instructions.
 
 Never silently update. Never update all skills unless the user explicitly
@@ -528,13 +569,15 @@ evidence, family information, financial account details, identity documents,
 private correspondence, or confidential documents in memory, logs, state files,
 handoff files, commits, public PRs, or examples.
 
-Before reading sensitive materials, tell the user why access is needed, which
+When sensitive read authority is missing or materially changed, tell the user
+why access is needed, which
 files or folders would be read, whether metadata is enough, whether content
 would be quoted, summarized, or recorded, and how sensitive content will be
-minimized or omitted. Wait for explicit approval before reading sensitive
-content.
+minimized or omitted. Obtain the missing explicit authorization before reading;
+do not re-request an existing same-scope sensitive-read grant. Do not widen it.
 
-Ask for confirmation before:
+Check existing authority before the following actions; obtain confirmation only
+for missing or materially changed scope, target or effects:
 
 - reading, modifying, staging, committing, pushing, or summarizing sensitive
   client or confidential materials
@@ -548,7 +591,9 @@ Ask for confirmation before:
   major dependency behavior
 - uploading source material to external providers or tools
 
-If uncertain whether a file or action is sensitive, stop and ask.
+If sensitivity or authority remains materially uncertain after checking
+existing context, pause that action and ask one focused question. Continue
+independent authorized work; do not access secrets to resolve the uncertainty.
 
 ## Final Reporting Contract
 
