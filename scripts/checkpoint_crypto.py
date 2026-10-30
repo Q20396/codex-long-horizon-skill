@@ -470,3 +470,117 @@ class OpenSSHCheckpointVerifier:
         return checkpoints.SignatureVerification(accepted, reason,
             envelope.algorithm if type(envelope) is checkpoints.SignatureEnvelope else None,
             envelope.key_id if type(envelope) is checkpoints.SignatureEnvelope else None)
+
+
+@dataclass(frozen=True, repr=False)
+class CurrentPolicyHead:
+    """Explicit trusted-authority state, not a policy enrollment receipt.
+
+    expires_at and the injected clock use the authority's agreed time domain.
+    This module neither obtains nor persists this state and never advances it.
+    """
+    installation_ref: str
+    purpose: str
+    authority_ref: str
+    epoch: int
+    policy_reference: str
+    revision: str
+    expires_at: float
+
+    def __post_init__(self):
+        if (not _opaque(self.installation_ref) or type(self.purpose) is not str
+                or self.purpose != NAMESPACE or not _opaque(self.authority_ref)
+                or type(self.epoch) is not int or not 0 <= self.epoch < 2**63
+                or type(self.policy_reference) is not str
+                or re.fullmatch(r'[A-Za-z0-9_.-]{1,256}:[0-9a-f]{64}', self.policy_reference) is None
+                or not _opaque(self.revision) or not _head_time(self.expires_at)):
+            raise ValueError('CURRENT_POLICY_HEAD_INVALID')
+
+
+def _head_time(value):
+    return type(value) in (int, float) and 0 <= value <= 2**53 and math.isfinite(value)
+
+
+def _head_copy(head):
+    # Revalidate even frozen typed objects: callers in Python can mutate them.
+    if type(head) is not CurrentPolicyHead:
+        raise ValueError('CURRENT_POLICY_HEAD_INVALID')
+    return CurrentPolicyHead(**vars(head))
+
+
+def _policy_copy(policy):
+    if type(policy) is not TrustPolicy or type(policy.keys) is not tuple:
+        raise PolicyError()
+    keys = []
+    for key in policy.keys:
+        if type(key) is not PolicyKey:
+            raise PolicyError()
+        keys.append(PolicyKey(**vars(key)))
+    return TrustPolicy(policy.schema_version, policy.policy_version, tuple(keys))
+
+
+class GuardedCheckpointVerifier:
+    """Opt-in current-head guard; legacy OpenSSHCheckpointVerifier is unchanged.
+
+    trusted_head is an independently approved exact pin, not a minimum epoch.
+    provider is a trusted read-only zero-argument current-head callable. Explicit
+    reconfiguration by that authority is required for any new epoch/ref/revision.
+    Python callers/provider/backend/clock remain trusted, not sandboxed.
+    """
+    def __init__(self, backend, policy, *, trusted_head=None, provider=None, clock=None):
+        # Reuse the existing backend configuration boundary, without executing it.
+        OpenSSHCheckpointVerifier(backend, policy)
+        self.backend = backend
+        self.policy = _policy_copy(policy) if policy is not None else None
+        self._trusted_head = _head_copy(trusted_head) if trusted_head is not None else None
+        self.provider, self.clock = provider, clock
+
+    def _current(self):
+        if self._trusted_head is None or not callable(self.provider) or not callable(self.clock):
+            return None, None, 'CURRENT_POLICY_UNAVAILABLE'
+        try:
+            pin = _head_copy(self._trusted_head)
+            current = _head_copy(self.provider())
+            now = self.clock()
+            if not _head_time(now):
+                return None, None, 'CURRENT_POLICY_CLOCK_INVALID'
+        except Exception:
+            return None, None, 'CURRENT_POLICY_UNAVAILABLE'
+        if current.epoch < pin.epoch:
+            return None, None, 'CURRENT_POLICY_ROLLBACK'
+        # Compare ALL fields. Revision equality alone is not sufficient.
+        if current != pin:
+            return None, None, 'CURRENT_POLICY_NOT_APPROVED'
+        if now >= current.expires_at:
+            return None, None, 'CURRENT_POLICY_EXPIRED'
+        return current, now, None
+
+    def assess(self, message_bytes, envelope):
+        current, before, failure = self._current()
+        if failure is not None:
+            return SignatureAssessment('NOT_ASSESSED', 'UNKNOWN', failure)
+        try:
+            policy = _policy_copy(self.policy)
+            reference = policy.reference
+        except (ValueError, TypeError, AttributeError):
+            return SignatureAssessment('NOT_ASSESSED', 'UNKNOWN', 'CURRENT_POLICY_SNAPSHOT_INVALID')
+        if reference != current.policy_reference:
+            return SignatureAssessment('NOT_ASSESSED', 'UNKNOWN', 'CURRENT_POLICY_SNAPSHOT_MISMATCH', reference)
+        # The legacy verifier supplies cryptographic assessment, never freshness.
+        result = OpenSSHCheckpointVerifier(self.backend, policy).assess(message_bytes, envelope)
+        after, now, failure = self._current()
+        try:
+            unchanged_policy = _policy_copy(self.policy).reference == reference
+        except (ValueError, TypeError, AttributeError):
+            unchanged_policy = False
+        if failure is not None or after != current or now < before or not unchanged_policy:
+            return SignatureAssessment(result.cryptographic_validity, 'UNKNOWN',
+                                       'CURRENT_POLICY_CHANGED', reference)
+        return result
+
+    def verify(self, message_bytes, envelope):
+        assessment = self.assess(message_bytes, envelope)
+        accepted = assessment.cryptographic_validity == 'VALID' and assessment.signer_trust == 'TRUSTED'
+        return checkpoints.SignatureVerification(accepted, 'VALID' if accepted else assessment.reason,
+            envelope.algorithm if type(envelope) is checkpoints.SignatureEnvelope else None,
+            envelope.key_id if type(envelope) is checkpoints.SignatureEnvelope else None)
