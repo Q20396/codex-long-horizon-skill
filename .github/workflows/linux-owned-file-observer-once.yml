@@ -1,0 +1,113 @@
+name: Single owned Linux file observer
+
+on:
+  push:
+    branches: [codex/linux-owned-observer-once-20261031]
+
+permissions:
+  contents: read
+
+jobs:
+  observe-once:
+    if: >-
+      github.repository == 'Q20396/codex-long-horizon-skill' &&
+      github.event.created == true &&
+      github.event.before == '0000000000000000000000000000000000000000' &&
+      github.run_attempt == 1
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      EXECUTION_SHA: ${{ github.sha }}
+      RUN_ID: ${{ github.run_id }}
+      RUN_ATTEMPT: ${{ github.run_attempt }}
+    steps:
+      - name: Checkout exact execution commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Frozen preconditions, synthetic check, then one owned observation
+        shell: bash
+        run: |
+          set -euo pipefail
+          /usr/bin/python3 -I -S -B - <<'PY'
+          import hashlib, importlib.util, json, os, pathlib, platform, subprocess, sys, time
+          root = pathlib.Path.cwd()
+          packet = {'status': 'NOT_PASS', 'native_state': 'NOT_ATTEMPTED',
+                    'repository': os.environ['GITHUB_REPOSITORY'],
+                    'execution_sha': os.environ['EXECUTION_SHA'],
+                    'run_id': os.environ['RUN_ID'], 'attempt': os.environ['RUN_ATTEMPT'],
+                    'image_version': os.environ.get('ImageVersion', 'UNKNOWN'),
+                    'kernel': platform.release(), 'python': list(sys.version_info[:3])}
+          def need(ok, code):
+              if not ok: raise RuntimeError(code)
+          def git(*args):
+              return subprocess.check_output(['git', *args], text=True).strip()
+          try:
+              need(packet['repository'] == 'Q20396/codex-long-horizon-skill', 'REPOSITORY')
+              need(os.environ['GITHUB_REF'] == 'refs/heads/codex/linux-owned-observer-once-20261031', 'BRANCH')
+              need(packet['attempt'] == '1', 'NO_RERUN')
+              need(platform.machine() == 'x86_64' and os.geteuid() != 0, 'UNPRIVILEGED_X64')
+              need(sys.version_info[:3] == (3, 12, 3), 'PYTHON_VERSION')
+              release = pathlib.Path('/etc/os-release').read_text()
+              need('ID=ubuntu' in release and 'VERSION_ID="24.04"' in release, 'UBUNTU_VERSION')
+              need(git('rev-parse', 'HEAD') == packet['execution_sha'], 'EXECUTION_SHA')
+              baseline = '8333bb2f62df71dbc161d8465ccf9278963fecaa'
+              need(git('rev-parse', 'HEAD^') == baseline, 'BASELINE_PARENT')
+              expected = {
+                  'scripts/linux_owned_file_observer.py': '17f69cca50026f755f79c3e842f4a9af7f36e622b5a5aee93bf536f72a1dfa10',
+                  'tests/test_linux_owned_file_observer.py': '61d91055b27d9e8de3382dd4cc82e9d9039bc4a2492d98b65c9d21558182756d',
+                  'docs/linux-owned-file-observer.md': '773cb39ba9f243c2320aac12ff4be6021a84b859d19bd613f042583992efcfaf',
+              }
+              paths = set(expected) | {'.github/workflows/linux-owned-file-observer-once.yml'}
+              need(set(git('diff', '--name-only', baseline, 'HEAD').splitlines()) == paths, 'FOUR_FILE_SCOPE')
+              for name, digest in expected.items():
+                  need(hashlib.sha256((root/name).read_bytes()).hexdigest() == digest, 'FROZEN_SOURCE')
+              packet['source_sha256'] = expected
+              packet['workflow_sha256'] = hashlib.sha256((root/'.github/workflows/linux-owned-file-observer-once.yml').read_bytes()).hexdigest()
+              scope = pathlib.Path('/proc/sys/kernel/yama/ptrace_scope')
+              need(scope.is_file() and scope.read_text().strip() in ('0', '1'), 'YAMA_POLICY')
+              status = pathlib.Path('/proc/self/status').read_text().splitlines()
+              need([x.split(':',1)[1].strip() for x in status if x.startswith('Seccomp:')] == ['0'], 'SECCOMP_POLICY')
+              tests = subprocess.run(['/usr/bin/python3', '-I', '-S', '-B', '-m', 'unittest', 'discover',
+                                      '-s', 'tests', '-p', 'test_linux_owned_file_observer.py', '-v'],
+                                     capture_output=True, timeout=30)
+              need(len(tests.stdout)+len(tests.stderr) <= 8192, 'SYNTHETIC_OUTPUT_CAP')
+              packet['synthetic'] = {'returncode': tests.returncode, 'stdout': tests.stdout.decode(),
+                                     'stderr': tests.stderr.decode()}
+              need(tests.returncode == 0, 'SYNTHETIC_CHECK_FAILED')
+              spec = importlib.util.spec_from_file_location('owned_observer', root/'scripts/linux_owned_file_observer.py')
+              module = importlib.util.module_from_spec(spec)
+              spec.loader.exec_module(module)
+              packet['native_state'] = 'ENTRY_INVOKED_STATE_UNKNOWN'
+              result, result_path = module.run_owned(root, 'NEW_SINGLE_RUN_GRANTED')
+              raw = result_path.read_bytes()
+              need(len(raw) <= 16384, 'NATIVE_REPORT_CAP')
+              packet['result'] = json.loads(raw)
+              packet['result_bytes'] = len(raw)
+              packet['result_sha256'] = hashlib.sha256(raw).hexdigest()
+              packet['native_state'] = ('TRACER_STARTED' if result['tracing_started'] else
+                  'CHILD_CREATED_NOT_TRACED' if result['child_created'] else 'NO_CHILD_CREATED')
+              packet['status'] = result['status']
+          except BaseException as exc:
+              packet['stop_kind'] = type(exc).__name__
+              if type(exc) is RuntimeError:
+                  codes = {'REPOSITORY','BRANCH','NO_RERUN','UNPRIVILEGED_X64','PYTHON_VERSION',
+                      'UBUNTU_VERSION','EXECUTION_SHA','BASELINE_PARENT','FOUR_FILE_SCOPE',
+                      'FROZEN_SOURCE','YAMA_POLICY','SECCOMP_POLICY','SYNTHETIC_OUTPUT_CAP',
+                      'SYNTHETIC_CHECK_FAILED','NATIVE_REPORT_CAP'}
+                  packet['stop_code'] = str(exc) if str(exc) in codes else 'UNKNOWN_RUNTIME_ERROR'
+              packet['status'] = 'NOT_PASS'
+          payload = json.dumps(packet, separators=(',', ':'), ensure_ascii=True).encode()
+          if len(payload) > 32768:
+              packet['status'] = 'NOT_PASS'
+              payload = json.dumps({'status':'NOT_PASS', 'reason':'LOG_PACKET_CAP',
+                  'unpublished_bytes':len(payload), 'evidence_complete':False}).encode()
+          print('OWNED_EVIDENCE_BYTES=' + str(len(payload)))
+          print('OWNED_EVIDENCE_SHA256=' + hashlib.sha256(payload).hexdigest())
+          print(payload.decode())
+          print('OWNED_EVIDENCE_END')
+          raise SystemExit(0 if packet['status'].startswith('PASS_SELECTED') and len(payload) <= 32768 else 1)
+          PY
