@@ -250,6 +250,16 @@ class TaskEvidence:
             op,domain='access','runtime';extra={'expected_absent':True}
         elif nr == 221:
             need(args[0] in self.fds, 'UNTRACKED_ADVICE_FD');fd_object(args[0],*self.fds[args[0]])
+        elif nr == 17:  # Linux x86_64 pread64: fixed-offset read of pinned runtime only.
+            fd, count, offset = args[0], args[2], args[3]
+            need(fd in self.fds and self.fds[fd][0] == 'runtime', 'RUNTIME_PREAD_FD_ONLY')
+            domain, row = self.fds[fd]
+            fd_object(fd, domain, row)
+            need(0 <= offset <= row['size'] and 0 <= count <= row['size'] - offset,
+                 'RUNTIME_PREAD_EXTENT')
+            op = 'read'
+            extra = {'fd':fd, 'row':row, 'requested_bytes':count,
+                     'read_kind':'POSITIONAL_RUNTIME'}
         elif nr in (0,1,3,8):
             fd=args[0]
             if fd in self.fds:

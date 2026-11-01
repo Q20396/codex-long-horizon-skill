@@ -70,3 +70,10 @@ clone／fork／线程／exec第二次／namespace／共享FD及未知syscall拒�
 ## Bounded compatibility batch diagnostic (2026-11-01)
 
 Unknown calls remain rejected. The report may include only the rejected syscall number, verified Linux x86_64 ABI, ENTRY stage, and fixed UNKNOWN FD-domain. No raw syscall arguments, pointers, buffer values or file content are copied. Until official semantics of the actual number are known, an argument cannot be interpreted as a file descriptor. This diagnostic is not successful access evidence. The batch ledger remains bounded to three new CI runs; old permissions are not restored.
+
+
+## R2 runtime pread64 compatibility (2026-11-02)
+
+Batch R1 captured syscall17 with verified Linux x86_64 ABI. Linux v7.0 syscall_64.tbl names this pread64; Linux man-pages pread(2) states that it reads from an explicit offset without changing file position, and returns actual bytes (possibly short). This does not prove the rejected call used a runtime FD: R1 did not capture arguments. R2 therefore conditionally supports only already tracked, identity-revalidated, pinned read-only runtime FDs, with the requested extent wholly inside the pinned runtime object. Input FD0, stdout/stderr, unknown FDs and outside extents remain rejected. No syscall is added to SAFE, no path is learned and no buffer contents or raw offset are emitted. Result events are marked POSITIONAL_RUNTIME; their bytes never count as input reads/EOF. The unchanged sequential-input read/count/EOF/close/exit/cleanup acceptance still applies.
+
+Primary references: https://raw.githubusercontent.com/torvalds/linux/v7.0/arch/x86/entry/syscalls/syscall_64.tbl ; https://man7.org/linux/man-pages/man2/pread.2.html . These establish interface semantics, not installed-library provenance or a successful R2 run.

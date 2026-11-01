@@ -34,8 +34,8 @@ class TaskTests(unittest.TestCase):
     def test_rejected_nr_abi_without_args_or_content(self):
         marker=93847562
         with self.assertRaisesRegex(M.Rejected,'UNSUPPORTED_SYSCALL'):
-            self.entry(17,[3,marker,832,0,0,0])
-        self.assertEqual(self.e.rejection,{'reason':'UNSUPPORTED_SYSCALL','syscall_nr':17,
+            self.entry(999,[3,marker,832,0,0,0])
+        self.assertEqual(self.e.rejection,{'reason':'UNSUPPORTED_SYSCALL','syscall_nr':999,
             'abi':'LINUX_X86_64','phase':'ENTRY','fd_domain':'UNKNOWN'})
         self.assertNotIn(str(marker),json.dumps(self.e.rejection))
         self.assertEqual(self.e.events,[]);self.assertIsNone(self.e.pending)
@@ -44,6 +44,37 @@ class TaskTests(unittest.TestCase):
         with self.assertRaises(M.Rejected):self.entry(2**40,[0]*6)
         self.assertIsNone(self.e.rejection['syscall_nr'])
         self.assertEqual(self.e.rejection['fd_domain'],'UNKNOWN')
+    def test_runtime_pread_bound_object_and_result_only(self):
+        self.row['size']=4096
+        self.pair(257,[-100,12,os.O_CLOEXEC,0,0,0],3,'/usr/bin/wc')
+        self.pair(17,[3,987654321,8,64,0,0],4)
+        e=self.e.events[-1]
+        self.assertEqual(e['read_kind'],'POSITIONAL_RUNTIME')
+        self.assertEqual(e['retval'],4);self.assertEqual(e['domain'],'runtime')
+        self.assertEqual(self.e.read_bytes,0);self.assertFalse(self.e.eof)
+        self.assertNotIn('987654321',json.dumps(self.e.events))
+        self.assertNotIn('offset',e)
+    def test_runtime_pread_never_input_stdout_or_untracked_fd(self):
+        for fd in (0,1,2,9):
+            with self.subTest(fd=fd),self.assertRaisesRegex(M.Rejected,'RUNTIME_PREAD_FD_ONLY'):
+                self.entry(17,[fd,0,1,0,0,0])
+    def test_runtime_pread_extent_and_failed_return_fail_closed(self):
+        self.row['size']=16
+        self.pair(257,[-100,12,os.O_CLOEXEC,0,0,0],3,'/usr/bin/wc')
+        for count,offset in ((1,17),(9,8),(1,2**64-1)):
+            with self.subTest(count=count,offset=offset),self.assertRaisesRegex(M.Rejected,'RUNTIME_PREAD_EXTENT'):
+                self.entry(17,[3,0,count,offset,0,0])
+        self.entry(17,[3,0,8,0,0,0])
+        with self.assertRaisesRegex(M.Rejected,'TASK_SYSCALL_FAILED'):
+            self.e.exit(-5,1,self.stamp(),lambda *a:None)
+    def test_runtime_pread_object_identity_checked_before_event(self):
+        self.row['size']=16
+        self.pair(257,[-100,12,os.O_CLOEXEC,0,0,0],3,'/usr/bin/wc')
+        before=len(self.e.events)
+        with self.assertRaisesRegex(RuntimeError,'identity-rejected'):
+            self.e.entry(17,[3,0,1,0,0,0],self.stamp(),lambda _:None,
+                Mock(side_effect=RuntimeError('identity-rejected')))
+        self.assertEqual(len(self.e.events),before)
     def test_real_task_argv_not_fixed_synthetic_helper(self):
         self.assertEqual(M.ARGV,['/usr/bin/wc','-l','-c'])
         self.assertIn('os.execve',M.CHILD);self.assertNotIn('synthetic.txt',M.CHILD)
