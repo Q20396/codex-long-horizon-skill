@@ -1,93 +1,71 @@
-# Scoped Linux owned-child file observer — preparation only
+# Linux 文件访问观察：中文使用说明
 
-Status: native NOT_RUN. Synthetic checks do not establish Linux runtime capability.
-Baseline: 8333bb2f62df71dbc161d8465ccf9278963fecaa. DTrace diagnostics remain sealed.
+## 现在能用来做什么
 
-## Selection
+当前已实测的是一个固定自有子进程：在新建的非敏感目录中，打开、读取1字节、关闭，再打开、写入1字节、关闭，最后尝试打开一个不存在的文件。观察器独立记录进程身份、文件路径、操作、观察时间及系统调用返回值，不读取读写缓冲区内容。
 
-Three candidates were considered. macOS EndpointSecurity descendants client removes
-root/TCC requirements for owned descendants, but still needs Apple's ES entitlement;
-that entitlement is not presently established. Its open flags do not prove completed
-reads. macOS eslogger requires root/FDA, lacks a source PID/directory allowlist and is
-not a stable API. Neither satisfies the present permission/scope constraints.
-Linux x86_64 ptrace observes the fixed owned helper's syscall entries and returns
-without root, package installation or file-content collection, conditional on host
-policy. Official support is not runtime verification. See the independent feasibility
-report in the project evidence directory.
+**这不是任意任务入口，也不能监控已运行的其他程序。** 不代表 macOS、全盘监控、防泄漏或云供应商内部监控。GPU／模型部署仍后置。
 
-## Frozen minimal matrix
+历史实际证据：执行提交 `bba11c02a94605ca66baf70fde680da4abd13a3f`，Linux Ubuntu24.04 x64／Python3.12.3，run41190316333，14条真实事件／7组配对，读取与写入各返回1字节，缺失文件返回ENOENT；原子进程退出0，持有FD关闭。实际独立复核通过，证据见项目 `file-access-alternatives-20261031/live-41190316333`。该次许可已消费，不能重跑。
 
-One new non-sensitive directory, one regular synthetic fixture and one absent leaf.
-The fixed helper performs open/read-one-byte/close, open/write-one-byte/close, and an
-absent-file open. Fourteen paired scoped events are required. Open flags mean intent;
-positive read/write return counts confirm only returned/transferred byte counts, not
-content identity, durability, user comprehension or exfiltration. Failed ENOENT open
-is a negative case. Zero-byte operations cannot satisfy the positive matrix.
+本交付候选增加的是只读中文报告展示和本说明，**没有修改已实测的观察器**。历史通过仅绑定历史代码与环境；新展示工具只有合成／静态证据，不能将其称为新一次原生通过。
 
-Missing events, malformed syscall records, unbound FD, unexpected path, unsupported
-file operation, extra process/thread, changed mount namespace, identity change,
-timeout, signal interruption or unresolved cleanup fail closed. Only one initial
-pre-scope unmatched syscall exit may align the SIGSTOP startup; no startup coverage
-is asserted. Exit status zero or an empty directory never substitutes for events.
+## 不运行监控，先查看已有报告
 
-## Identity and limits
+在本项目 checkout 中，用已经取得、明确指定的 `result.json`：
 
-Identity is PID plus /proc start ticks, original unreaped Popen and pidfd. Each stop
-checks one thread and the same mount namespace. Tracked FD generations are bound by
-owned /proc FD readlink/stat to the held fixture device/inode. Paths are fixed
-absolute names with O_NOFOLLOW. No read/write buffers are copied; only bounded path
-arguments for open are read. Observer stop wall/monotonic timestamps are not atomic
-syscall execution timestamps. A cooperative, non-mutating mount/filesystem domain,
-single waiter, no external reaper and no concurrent FD manipulation are required;
-stop status alone is not proof of instantaneous identity.
+```bash
+python3 -I -S -B scripts/show_linux_owned_report.py --report /明确路径/result.json
+```
 
-Only the new fixed helper is supported. Arbitrary applications, shared FD tables,
-file-backed mmap, vector/direct IO, clones, namespace changes and general descendants
-are outside coverage and rejected where observed. This is not all-disk monitoring,
-leak prevention, a production sensor or cloud-provider internal observation.
+该命令只读取这一份报告，不扫描目录、不启动子进程、不导入观察器、不联网。报告必须是普通文件、不是符号链接，大小≤16KiB；同一FD读取前后身份和大小、时间字段不变。格式冲突或读取失败返回1，仅输出固定中文错误，不回显输入原文。没有来源签名／历史哈希／重新验收能力。
 
-## Preparation and future execution
+展示命令退出0只表示读取与展示成功，不把原报告的未通过变成通过。报告自称通过却出现零字节正例、错误负例、异常／未知清理等明确矛盾时拒绝展示，返回1并保留UNKNOWN。
 
-The four new files are the observer, its synthetic test, this document and the
-single-use workflow. No product or original DTrace file is changed. The synthetic
-tests use mocks/owned fixtures only; running the test file does not start ptrace.
+正常展示包括：
 
-Native entry is disabled by default. The authorization argument is a gate, not a
-technical replay-proof permit; the project ledger supplies one-shot dispatch control.
-Do not invoke it until a fresh exact-manifest authorization is granted.
+- “报告自述：选定矩阵通过／未通过”，这是原报告自述，不是重新验收结论。
+- 每条访问的PID、UTC观察时间、文件、操作和结果。
+- “尝试”不表示成功；“成功”不表示一定读写了内容；只有read/write返回正字节数才显示返回字节数。
+- 事件不完整明确提示UNKNOWN；清理状态逐项显示。报告写入尾部始终保留UNKNOWN。
+- 路径中的终端控制符转义显示，不作为命令或标记执行。
 
-Proposed future route: first push a signed four-file commit on
-codex/linux-owned-observer-once-20261031 to the public
-Q20396/codex-long-horizon-skill repository, without merge or PR. A single standard
-Ubuntu 24.04 x64 job (five-minute cap) checks its parent baseline, four-file scope,
-source hashes, Python 3.12.3, nonroot status, Yama 0/1 and Seccomp 0 before one run.
-No install, sudo, artifact, cache or paid storage. Exact runtime availability remains
-unverified; a changed runtime/policy stops rather than substituting an environment.
-Before push, verify public/free standard-runner billing and that other workflows
-cannot trigger. Zero cost is conditional on these preconditions, not guaranteed by
-this local preparation. The workflow cannot be pushed under the present authority.
+示意（仅说明格式，不是新增真实证据）：
 
-Observation software limit: eight seconds; native total target: thirty seconds,
-including a five-second cleanup reserve. Blocking host operations and final report
-write lack a hard upper bound. Own-child SIGKILL is permitted only through a bound
-pidfd, or original unreaped Popen before pidfd acquisition; no process group or
-arbitrary PID kill. EXITKILL and helper parent-death SIGKILL reduce orphan risk but
-are not proof of cleanup. Unconfirmed exit/FD close remains UNKNOWN/NOT_PASS.
+```text
+Linux自有固定任务报告（只读展示，不重新验收）
+报告自述：选定矩阵通过
+事件：14条；配对结构：完整
+2026-10-31 ... UTC | PID ... | 读取 | ".../synthetic.txt" | 成功；返回1字节
+清理：子进程退出=0；pidfd=CLOSED；夹具FD=CLOSED
+```
 
-The future permit is consumed on first workflow trigger, even if preflight fails.
-No rerun, second push, alternate mechanism or automatic retry. Scope and budget
-changes require separate authorization. Existing permits stay consumed.
+## 将来如何启动固定受监控任务
 
-## Evidence
+唯一已有运行入口仍为 `scripts/linux_owned_file_observer.py`。默认拒绝；只有新的精确候选和单次运行授权到位后，才可使用 `--run-owned-once` 及明确授权参数。参数只是派发门禁，不是技术防重放；消费记录由项目状态维护。**当前不要运行，也不要复用旧CI、旧命令或旧许可。**
 
-The native report is created exclusively in the new fixture directory, at most
-16 KiB. CI emits a complete bounded JSON packet (32 KiB) with source/workflow hashes,
-execution SHA, runner/run identity, synthetic checks, actual native events and report
-length/SHA256, followed by an END marker. No artifact/cache upload is configured.
-After a future run, read the CI log once, validate packet length/hash/END marker and
-save it to the evidence domain. Missing/truncated logs or unmatched identity are
-incomplete evidence, not PASS. CI logs do transmit the synthetic non-secret evidence;
-that external action needs the future explicit run authorization.
+启动前检查Linux x86_64、Python≥3.11、内核≥5.3、非root、pidfd能力、默认SIGCHLD及安全输出父目录；主机策略还须允许当前自有child的ptrace。已验证环境为上述精确Ubuntu／Python版本，不承诺其他版本。缺能力直接停止，不安装、提权或切换机制。
 
-Only an actual successful bounded run plus independent evidence review can establish
-selected-matrix acceptance. No native acceptance or project completion is claimed.
+入口只创建一个原Popen自有固定helper及项目examples下独占的新 `linux-owned-*` 目录，只有 `synthetic.txt` 与 `absent.txt` 两条授权leaf。普通文件O_NOFOLLOW，FD代际与设备／inode绑定；无相对路径／任意命令／任意PID参数。访问缺失、身份不符、不支持的操作或信号均失败关闭。
+
+观察软件上限8秒、程序软件目标30秒、预留5秒清理。唯一waiter、原Popen／已绑定pidfd，必要时最多一次kill，剩余预算内最多2秒wait；不操作任意PID或进程组。EXITKILL及parent-death信号只是安全措施，不替代退出收据。无法确认清理保持UNKNOWN／NOT_PASS。
+
+保留原结果文件，不覆盖或删除；返回的 `result_path` 即报告位置。只有读回完整报告、核对版本／哈希／事件与清理，再有独立证据复核，才能判定该次有界验收。绿色CI和展示文字不能代替这些步骤。
+
+## 时间与覆盖限制
+
+时间来自观察器在syscall entry/exit停止点读取的monotonic与wall时钟，不是访问发生瞬间的原子时间。进程暂停不自动证明瞬间身份；/proc的同namespace及FD对象核对仍依赖合作文件系统、单线程、无并发mount／rename／FD变更及无外部reaper。
+
+read/write返回值仅证明返回／传输字节数，不证明内容身份、持久化或外传。启动前访问、任意应用、共享FD、file-backed mmap、向量IO、克隆／后代和namespace变更不在覆盖范围；列明的不支持操作被拒绝。缺失事件不能按无访问处理。
+
+## 通用任务入口：仅设计，尚未实现
+
+把固定helper换成客户命令会扩大范围：一般程序可能启动前已访问文件，使用相对路径、动态库、线程、后代、共享FD及其他IO。当前的两leaf白名单和14事件矩阵不能套用于一般任务；不能只增加一个 `--command` 就称已交付。
+
+最小后续设计应先限定一个具体、可审阅的自有任务和非敏感目录，明确只读／写入范围、启动追踪点、路径与FD规则、支持的系统调用、后代策略及预期事件。随后另批该扩展的实现和真实验证，独立检查实际证据。本轮不实现任意命令执行，不扫描用户目录，不用固定合成任务替代客户任务验收。
+
+## 当前交付与下一步
+
+本轮仅本地准备：中文说明、只读展示工具及其合成测试。没有新的真实运行／CI／提交／推送／安装或部署。原单次workflow和观察器字节保持不变；旧workflow绑定旧doc哈希，不能用它验证本候选或在旧分支再推送。
+
+若只交付上述固定范围的查看功能，下一步仅需批准精确三文件候选的交付（签名提交／专用新分支首次推送），不需要重新运行监控。任何CI、PR、合并、部署或新真实运行仍需对应授权。若目标是客户自己的真实工作任务，须先确认上一节的范围扩展，不能从本说明推导权限。
