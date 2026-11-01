@@ -225,6 +225,7 @@ class TaskEvidence:
         self.fds = {0:('data', None)}; self.exec_seen = False; self.exec_event = False
         self.read_bytes = 0; self.reads = 0; self.eof = False; self.closed = False
         self.alignment = False; self.seen_entry = False
+        self.rejection = None
 
     def emit(self, op, phase, domain, stamp, **kw):
         need(len(self.events) < 96, 'EVENT_CAP')
@@ -277,7 +278,12 @@ class TaskEvidence:
                      'UNAPPROVED_METADATA_PATH')
                 if args[0] in self.fds:fd_object(args[0],*self.fds[args[0]])
         else:
-            need(nr in SAFE, 'UNSUPPORTED_SYSCALL')
+            if nr not in SAFE:
+                # Number/ABI only. Unknown semantics cannot classify raw arguments as FDs.
+                self.rejection = {'reason':'UNSUPPORTED_SYSCALL',
+                    'syscall_nr':nr if type(nr) is int and 0 <= nr < 2**32 else None,
+                    'abi':'LINUX_X86_64', 'phase':'ENTRY', 'fd_domain':'UNKNOWN'}
+                raise Rejected('UNSUPPORTED_SYSCALL')
         self.pending={'nr':nr,'operation':op,'domain':domain,'extra':extra}
         if op:self.emit(op,'ATTEMPT',domain,stamp,**{k:v for k,v in extra.items() if k!='row'})
 
@@ -397,6 +403,7 @@ def run_task(directory, leaf, runtime_file, permit, project=None):
     if trace is not None:
         result['events']=trace.events;result['observed_read_bytes']=trace.read_bytes
         result['exec_identity_verified']=trace.exec_event
+        result['rejection']=trace.rejection
     if any(x in ('UNKNOWN','CLOSE_UNKNOWN') for x in result['cleanup'].values()):
         result['status']='NOT_PASS';result.setdefault('reason','CLEANUP_UNKNOWN')
     try:

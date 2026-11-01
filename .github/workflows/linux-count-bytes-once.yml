@@ -1,10 +1,10 @@
-name: Count bytes once - explicitly approved first push
+name: Count bytes bounded batch - R1 number diagnostic
 
-# Preparation only. A future signed commit and first push need separate approval.
+# Approved bounded batch; every new candidate uses a new marker and charged ledger slot.
 # A new branch-only workflow is not assumed dispatchable from workflow_dispatch.
 on:
   push:
-    branches: [codex/linux-count-bytes-once-20261101]
+    branches: [codex/linux-count-bytes-batch-20261101]
 
 permissions:
   contents: read
@@ -16,7 +16,7 @@ jobs:
       github.event.repository.private == false &&
       github.event.created == true &&
       github.event.before == '0000000000000000000000000000000000000000' &&
-      github.event.head_commit.message == 'COUNT_BYTES_ONCE_APPROVED_20261101' &&
+      github.event.head_commit.message == 'COUNT_BYTES_BATCH_20261101_R1_DIAGNOSTIC' &&
       github.run_attempt == 1
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -39,13 +39,13 @@ jobs:
           /usr/bin/python3 -I -S -B - <<'PY'
           import hashlib, importlib.util, json, os, pathlib, platform, signal, stat, subprocess, sys, tempfile, time
           ROOT = pathlib.Path.cwd()
-          BASE = '8a051239c834ee918a997ca9b1acc3c82b25e93b'
-          BRANCH = 'refs/heads/codex/linux-count-bytes-once-20261101'
+          BASE = 'cdf97da71afc37cc2e0167ac9bfaa6bfc9d7fa9d'
+          BRANCH = 'refs/heads/codex/linux-count-bytes-batch-20261101'
           WORKFLOW = '.github/workflows/linux-count-bytes-once.yml'
           EXPECTED = {
-              'scripts/linux_task_file_observer.py': '414605dc54071f1cae5884c90634e647f53619174240829fcb269be0193b59a4',
-              'tests/test_linux_task_file_observer.py': 'cdf77d7e2c307c956bb6aa90bf09331e02612ac6ffed69c80eae1acc600c3f3a',
-              'docs/linux-task-file-observer.md': '52f5359f881de9e5b51f89b6dae05e316831e97c9e780a4129c045f1687a5694',
+              'scripts/linux_task_file_observer.py': 'd47450f0268a39018e4f94b5721ef698f54c07366dabbb886777e889cccf07e9',
+              'tests/test_linux_task_file_observer.py': '417a7250eb27e134f73f0fd802c08d5fb18420123bb8a6cc572d09e399aa5a34',
+              'docs/linux-task-file-observer.md': 'ca4f8e95f16ef3b200f30f9d1d70cbb0229cf35d7cf962e3d01020fdee9fb685',
               'scripts/show_linux_owned_report.py': '5fd9ca0d84152485e94136ad893569adbb63602e06f59bd6ed8b7629a4f59fc7',
               'tests/test_show_linux_owned_report.py': 'b6fc1a74af6d898b088ad368c8cbbdceef11f39c8a799c62f1165c1842e9f2d2',
           }
@@ -144,7 +144,8 @@ jobs:
               need(command(['/usr/bin/git','rev-parse','HEAD']) == packet['execution_sha'], 'EXECUTION_SHA')
               need(command(['/usr/bin/git','rev-parse','HEAD^']) == BASE, 'BASE_PARENT')
               need(set(command(['/usr/bin/git','diff','--name-only',BASE,'HEAD']).splitlines())
-                   == set(EXPECTED) | {WORKFLOW}, 'EXACT_SIX_FILE_DIFF')
+                   == {'scripts/linux_task_file_observer.py','tests/test_linux_task_file_observer.py',
+                   'docs/linux-task-file-observer.md',WORKFLOW}, 'EXACT_SIX_FILE_DIFF')
               for name, digest in EXPECTED.items():
                   need(hashlib.sha256((ROOT/name).read_bytes()).hexdigest() == digest, 'FIVE_FILE_BINDING')
               need(hashlib.sha256((ROOT/'scripts/linux_owned_file_observer.py').read_bytes()).hexdigest()

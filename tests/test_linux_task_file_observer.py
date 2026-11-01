@@ -31,6 +31,19 @@ class TaskTests(unittest.TestCase):
         if size:self.pair(0,[0,999,size,0,0,0],size)
         self.pair(0,[0,999,100,0,0,0],0)
         self.pair(3,[0,0,0,0,0,0],0)
+    def test_rejected_nr_abi_without_args_or_content(self):
+        marker=93847562
+        with self.assertRaisesRegex(M.Rejected,'UNSUPPORTED_SYSCALL'):
+            self.entry(17,[3,marker,832,0,0,0])
+        self.assertEqual(self.e.rejection,{'reason':'UNSUPPORTED_SYSCALL','syscall_nr':17,
+            'abi':'LINUX_X86_64','phase':'ENTRY','fd_domain':'UNKNOWN'})
+        self.assertNotIn(str(marker),json.dumps(self.e.rejection))
+        self.assertEqual(self.e.events,[]);self.assertIsNone(self.e.pending)
+    def test_no_rejection_metadata_before_unknown_and_bounded_nr(self):
+        self.assertIsNone(self.e.rejection)
+        with self.assertRaises(M.Rejected):self.entry(2**40,[0]*6)
+        self.assertIsNone(self.e.rejection['syscall_nr'])
+        self.assertEqual(self.e.rejection['fd_domain'],'UNKNOWN')
     def test_real_task_argv_not_fixed_synthetic_helper(self):
         self.assertEqual(M.ARGV,['/usr/bin/wc','-l','-c'])
         self.assertIn('os.execve',M.CHILD);self.assertNotIn('synthetic.txt',M.CHILD)

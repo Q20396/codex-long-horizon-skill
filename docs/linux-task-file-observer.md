@@ -65,3 +65,8 @@ clone／fork／线程／exec第二次／namespace／共享FD及未知syscall拒�
 最小未来验证设计：一个标准Ubuntu24.04 x64 job≤5分钟，无安装／提权／artifact/cache，费用上限0；新单次批次最多3案（自有非敏感普通输入、零字节边界、前置拒绝），每案观察≤8秒／程序目标30秒，累计含留证≤120秒，任一失败即停止后续、不重试。计数任务仍是真实系统程序，但这些自建输入只验证机制，不能冒称客户真实文件任务验收。
 
 目前不能给出可执行真实命令：runtime清单尚未取得，且本轮无CI控制变更／提交推送授权。下一项必要追加范围是一个专用CI控制文件（本轮五文件外），用于固定路径资格采集和三案单次验证；应先冻结该控制文件及资格路径／alias清单并独立审阅，再申请对应签名提交、首次推送及一次job。不是请求泛泛继续研究，不先启动或自动发现路径。若用户已有获准Linux域，可直接提供非秘密runtime清单及其来源，不索密码或token。
+
+
+## Bounded compatibility batch diagnostic (2026-11-01)
+
+Unknown calls remain rejected. The report may include only the rejected syscall number, verified Linux x86_64 ABI, ENTRY stage, and fixed UNKNOWN FD-domain. No raw syscall arguments, pointers, buffer values or file content are copied. Until official semantics of the actual number are known, an argument cannot be interpreted as a file descriptor. This diagnostic is not successful access evidence. The batch ledger remains bounded to three new CI runs; old permissions are not restored.
