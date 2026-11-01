@@ -133,5 +133,46 @@ class ViewerTests(unittest.TestCase):
         self.assertNotIn('linux_owned_file_observer',M.__dict__)
 
 
+class TaskViewerTests(unittest.TestCase):
+    def report(self):
+        events=[]
+        for seq,(op,domain,ret) in enumerate([('exec','runtime',0),('read','data',3),('read','data',0),('close','data',0)],1):
+            a=dict(pid=41,start_ticks=101,syscall_seq=seq,operation=op,domain=domain,
+                   path='/owned/x' if domain=='data' else 'APPROVED_RUNTIME_OBJECT',phase='ATTEMPT',
+                   observed_monotonic_ns=seq*2,observed_wall_ns=1700000000000000000+seq*2)
+            if domain=='data':a['fd']=0
+            if op=='read':a['requested_bytes']=3
+            b=dict(a,phase='RESULT',retval=ret,success=True,confirmed_positive_bytes=op=='read' and ret>0,
+                   observed_monotonic_ns=seq*2+1,observed_wall_ns=a['observed_wall_ns']+1)
+            events.extend([a,b])
+        return dict(source='LINUX_COUNT_BYTES_TASK_V1',schema_version=1,task='count-bytes',
+                    scope='ONE_INPUT_DIRECT_CHILD_NO_DESCENDANTS',status='PASS_SELECTED_COUNT_BYTES_TASK_WITH_LIMITS',
+                    input_path='/owned/x',events=events,identity={'pid':41,'start_ticks':101},
+                    input_size=3,observed_read_bytes=3,task_reported_bytes=3,exec_identity_verified=True,
+                    contents_collected=False,all_descendants_or_all_files=False,
+                    time_semantics='OBSERVER_ENTRY_EXIT_STOP_TIMES_NOT_ATOMIC_ACCESS_TIME',
+                    cleanup={'returncode':0,'kill':False,'pidfd':'CLOSED','input_fd':'CLOSED','stdout':'CLOSED'})
+    def test_task_report_versioned_and_old_still_works(self):
+        self.assertIn('客户文件字节统计',M.render_report(self.report()))
+        self.assertIn('自有固定任务',M.render_report(fixture()))
+    def test_task_count_conflict_cannot_display_pass(self):
+        for key,val in [('task_reported_bytes',4),('observed_read_bytes',0),('exec_identity_verified',False)]:
+            r=self.report();r[key]=val
+            with self.subTest(key=key),self.assertRaises(M.InvalidReport):M.render_report(r)
+    def test_task_missing_data_or_cleanup_unknown_rejected(self):
+        r=self.report();r['cleanup']['input_fd']='CLOSE_UNKNOWN'
+        with self.assertRaises(M.InvalidReport):M.render_report(r)
+        r=self.report();r['events'].pop()
+        with self.assertRaises(M.InvalidReport):M.render_report(r)
+    def test_failed_task_partial_record_stays_unknown(self):
+        r=self.report();r['status']='NOT_PASS';r['events']=[];r['observed_read_bytes']=None;r['cleanup']={}
+        self.assertIn('缺失或不完整，保持UNKNOWN',M.render_report(r))
+    def test_task_expanded_scope_or_unknown_domain_rejected(self):
+        r=self.report();r['scope']='ALL_FILES'
+        with self.assertRaises(M.InvalidReport):M.render_report(r)
+        r=self.report();r['events'][0]['domain']='secret'
+        with self.assertRaises(M.InvalidReport):M.render_report(r)
+
+
 if __name__ == '__main__':
     unittest.main()
