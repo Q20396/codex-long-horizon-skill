@@ -1,170 +1,35 @@
 # 20396
 
-**Long-Horizon Engineering for Codex**
+**Long-Horizon Engineering for Codex · 让长任务接得上、结果查得到。**
 
-**Long tasks survive the chat.**
+20396 是一个 Codex skill，适合代码迁移、大型重构、复杂排错和多步骤 PR。
+它帮助你保留目标、已核验的进度、证据和剩余工作；中断后先核对现状，再继续已授权任务。
+它不是自动唤醒服务，安装后也不会自行扫描设备或启动监控。
 
-Resume the work. Verify the evidence.
-
-A Codex skill for migrations, large refactors, difficult debugging and multi-step
-PRs. It keeps **goal, verified progress, evidence, required remaining work and
-authority** explicit, so resumption starts with what can actually be verified.
-
-Long-running coding tasks can lose their goal, repeat checked work, mistake
-progress for completion, or resume from stale state. 20396 provides instructions
-for avoiding these failures—not an autonomous runtime or a reliability guarantee.
-Recovery needs approved persisted state and a fresh repository check; 20396 cannot
-wake Codex or guarantee crash recovery.
-
-> **New — [Local Compute Orchestration (Beta)](#local-compute-orchestration-beta)**
->
-> 20396 includes executable foundations for routing bounded work to qualified
-> local-model workers and coordinating independently qualified device identities
-> for task-level execution. Current validation uses injected workers, not real
-> models or networked devices; provider deployment remains partial.
-> Validated local execution may reduce OpenAI/Codex cloud-model usage.
-
-[Try it](#customer-quick-start) · [Published release](#installation-status) ·
-[Recovery walkthrough](#from-interruption-to-verified-results)
+[快速开始](#customer-quick-start) · [安装与版本](#installation-status) ·
+[本地模型能力](#local-compute-orchestration-beta) · [隐私访问说明](#privacy-observation-scope)
 
 ## Customer Quick Start
 
-### Runtime Safety Envelope — Experimental Foundation
+已安装后，在 Codex 中粘贴并替换下面的路径和目标：
 
-20396 includes an experimental vendor-independent [Runtime Safety Envelope
-foundation](.agents/skills/long-horizon-engineering/references/runtime-safety-envelope.md)
-that separates AI action proposals from policy, authorization, capabilities,
-side-effect reconciliation and security receipts. Phase 1 tests exercise the
-Python kernel using fake adapters. The separately constructed Phase 2A local
-binding below is opt-in; nothing is activated by installation or import.
-No host sandbox, kernel security, packet firewall or provider-internal security
-guarantee is implied. This is source-branch functionality, not a v0.7.0 release claim.
+```text
+使用 long-horizon-engineering skill（20396）。
+目标：修复 <具体问题>，并用相关检查验证结果。
+范围：<项目绝对路径>，仅使用非秘密源码和合成数据。
+允许：读取该项目、必要的局部修改、离线检查，以及在项目内保存进度和证据。
+禁止：联网、安装依赖、提交、推送、合并和部署。
+在这些边界内连续完成排查、修复和验证；不要因阶段切换重复要求 approve。
+遇到缺少必要材料、新的外部影响或明确停止条件时，只暂停受影响的动作。
+```
 
-### Security Authority and Verifiable Security Chain — Experimental
+首次使用时，把**项目路径、目标、允许动作和禁止动作**一次说清。
+如果你已明确授权相同范围，20396 会直接继续；计划、测试通过或安装成功本身不会新增权限。
+只想先看方案，可说 **“Start with intake only”**；只想只读检查，可明确禁止写入和执行。
+尚未安装请先看[安装与版本](#installation-status)，无需先运行实验模块。
 
-The [Phase 1.25 foundation](.agents/skills/long-horizon-engineering/references/security-authority-chain.md)
-adds scoped management checks, bounded Break Glass records and deterministic
-SHA-256 linked history for policy, authorization, authority and RSE receipt digests.
-Tests use synthetic data, in-memory storage and explicitly selected temporary
-JSONL files. Phase 1.25 itself adds no runtime binding or Paperclip dependency.
-The chain is **tamper-evident, not tamper-proof**: without a separately retained
-trusted head, valid tail truncation or whole-chain replacement cannot be detected.
-Actor authentication is a trusted-host responsibility; the separate Phase 1.75
-checkpoint contract below accepts host-supplied verification and anchor evidence.
-This is source-branch functionality, not a published-release or deployment claim.
-
-### Token Accountability — Experimental Foundation
-
-The [Phase 1.35 foundation](.agents/skills/long-horizon-engineering/references/token-accountability.md)
-represents model usage by project/task/run, checks nested budget contracts and
-identifies deterministic anomalies such as unattributed, post-completion or
-unreconciled-retry usage. Provider-unreported metrics remain UNKNOWN; reported
-and estimated costs are separate. An anomaly is not evidence of theft or intent.
-No real provider/runtime binding, live quota enforcement or background monitoring
-is implemented. This is source-branch functionality, not a deployment claim.
-
-### Signed Checkpoints — Experimental Foundation
-
-20396 includes an experimental signed-checkpoint contract that can bind a verified
-Security Chain prefix to trusted external signature verification and independently
-retained anchor evidence supplied by a trusted host integration. It detects
-rollback or replacement only when that trusted evidence survives independently.
-The module does not manage private keys or contact an anchor service. Real crypto,
-key custody and external publication remain host responsibilities; synthetic tests
-do not establish those properties. See [signed checkpoint boundaries](.agents/skills/long-horizon-engineering/references/signed-checkpoints.md).
-
-### Critical Execution Trace — Experimental Foundation
-
-The [Phase 1.5 foundation](.agents/skills/long-horizon-engineering/references/critical-execution-trace.md)
-compares declared effects with caller-supplied adapter observations, validates
-parent/child traces and reports bounded deterministic causal risk candidates.
-It can anchor evidence digests in the existing Security Chain. Adapter observations
-are not independent host evidence; even COMPLETE means caller-attested coverage.
-No host/kernel/syscall observer, malware or intent classification, background
-monitoring or automatic enforcement is implemented by this trace foundation.
-This is source-branch functionality, not a published-release or deployment claim.
-
-### Trusted Local Runtime Binding — Experimental / Same Process
-
-The opt-in [Phase 2A binding](.agents/skills/long-horizon-engineering/references/runtime-binding.md)
-routes bounded regular-file operations, explicitly allowlisted processes and local
-Git exact staging/commit through existing RSE governance. Payload digests must be
-bound before authorization; a Git commit additionally binds the exact staged tree,
-parent and message, rejecting changed tree/parent before commit. Adapters report their own observed boundaries to CET
-and seal evidence digests, not raw file contents or process output, in the chain.
-
-This is **not an OS sandbox, host observer or network containment**. Allowlisting
-a process does not reveal or constrain all its internal effects. Unsupported safe
-filesystem primitives fail closed; no universal race-free guarantee is made.
-UNKNOWN outcomes block blind retries within the same process, not across crashes.
-Phase 2A has no network, Git push, GitHub, deployment, installation, secret-store,
-Paperclip, Codex-hook or Local Compute adapter. Nothing registers or executes on
-import. These are source-branch capabilities, not published-release claims.
-
-### Bounded Remote Effect Binding — Experimental / Same Process
-
-The separate opt-in [Phase 2B binding](.agents/skills/long-horizon-engineering/references/remote-runtime-binding.md)
-adds bounded HTTPS requests, exact single-branch fast-forward Git updates and
-GitHub-compatible PR creation through existing RSE authority. Destination,
-payload and old/new Git state are committed before authorization. Credentials
-are supplied by trusted host transport code, not discovered or included in model
-payloads. Redirects are disabled and TLS verification remains enabled.
-
-UNKNOWN blocks blind mutation retries in the same journal process; bounded
-readback may remain inconclusive. This is **not exactly-once, crash-durable
-execution, a secret manager, a network sandbox or independent host observation**.
-No PR merge/update, release/deploy, package installation, SSH, Paperclip,
-Codex runtime hook or Local Compute integration is added. Installing/importing
-the module activates nothing; no real external account mutation is used in tests.
-
-### Agent Runtime Integration — Experimental Foundation
-
-20396 can translate bounded agent action proposals into existing governed
-ActionRequest and Phase 2A/2B payload contracts, then route explicitly authorized
-actions through the existing RSE-controlled execution path.
-
-Agent/model output remains untrusted proposal data. The bridge does not let a
-model self-authorize, self-grant capabilities, directly invoke effect adapters,
-or bypass an unresolved UNKNOWN mutation by issuing a cosmetically new proposal.
-
-Duplicate-effect suppression is same-process and same-bridge only; this is not
-crash-durable agent orchestration, a Host Observer, OS sandbox, or proprietary
-Codex interception layer.
-
-### Host Observation — Experimental Evidence Foundation
-
-20396 can ingest bounded observations from an explicitly trusted host evidence
-source and represent them separately from model declarations, adapter observations
-and reconciliation evidence.
-
-The foundation defines evidence provenance, ordering, scoped coverage and explicit
-action correlation. Missing host evidence does not prove an effect did not occur.
-
-### Real Host Observation — Experimental macOS Slice
-
-An experimental macOS backend uses kqueue EVFILT_PROC / NOTE_EXEC for explicitly
-registered processes. PROCESS_EXEC means the registered PID executed a new program
-image; coverage is PARTIAL. It does not represent fork/new-PID creation, application
-success or complete process lifecycle coverage.
-
-The native event becomes an existing HostObservation, then HOST_OBSERVED CET and
-bounded Security Chain evidence through the existing ingestor. Registration is
-one-shot, the wait is finite and the caller closes the session. No command line or
-environment is collected. No daemon, global process monitor, enforcement layer,
-polling fallback, kernel-truth guarantee or automatic reconciliation is included.
-
-### Cross-Layer Verification — Experimental
-
-20396 can deterministically compare bounded evidence across model declarations,
-RSE authorization, adapter observations, host observations and trusted
-target-reality evidence for one action at a time.
-
-The verifier produces MATCH, MISSING, EXTRA, DIVERGED, UNKNOWN and NOT_OBSERVED.
-It is read-only: findings are not persisted or written back to the Security Chain,
-and verification does not authorize, execute, enforce or automatically reconcile
-anything. See the [normalization and coverage contract](.agents/skills/long-horizon-engineering/references/cross-layer-verification.md).
-
-**Already installed?** Start with a non-sensitive repository and a bounded task:
+<details>
+<summary>Read-only English example / 只读示例</summary>
 
 ```text
 Use the long-horizon-engineering skill.
@@ -174,15 +39,13 @@ Inspect that approved repository read-only, define acceptance checks,
 and propose the smallest plan. Do not edit or make external calls.
 ```
 
-Expect a plain-language customer outcome, the proposed scope and permissions,
-and the checks that would demonstrate success. Then authorize only the work
-you want performed. A plan or a passing check is not approval to push or merge.
-After approval, ask Codex to continue required authorized work against those
-criteria; changed scope or effects need a new decision, unchanged authority does not.
+Expect a plain-language customer outcome and evidence-backed checks.
+[客户提示词](prompts/customer-guided-decision.md) · [使用示例](docs/customer-guided-workflow.md)
 
-For guided decision support, say “Start with intake only” using the [customer prompt](prompts/customer-guided-decision.md)
-and [walkthrough](docs/customer-guided-workflow.md). New installation needs the
-version and target checks below; reading the [examples](examples/) needs no installation.
+</details>
+
+两项可选方向：授权后评估本地模型是否适合你的任务；在已接入的观察范围内报告事件和证据。
+下面分别说明已实现接口、已有验证和仍需补齐的部分，不能把产品目标当作已经部署的能力。
 
 ## Installation Status
 
@@ -361,8 +224,186 @@ validation are **NOT_RUN**. Cloud-usage reduction is **UNMEASURED**. Once a loca
 path is validated, suitable workloads **may reduce OpenAI/Codex cloud-model
 usage**; no token savings or hardware compatibility is guaranteed.
 
+### 授权、检测与实际安装
+
+| 环节 | 当前实现与证据 |
+|---|---|
+| 设备信息读取 | `collect_probe(node_id, consent, reader)` 先检查已授权节点，再调用接入方提供的只读 reader。允许字段包括系统/架构、CPU/SoC、内存、加速器/显存、剩余磁盘、运行器版本和已有模型；应只读取客户本次批准的必要字段，不读取文件正文或设备序列号。reader 本身受信，字段过滤不保证它没有额外读取。 |
+| GPU 与兼容性判断 | 已实现按提供的资源、候选配置和资格证据做有限判断。当前源码没有自带 GPU 探测 reader 或真实 provider/model 安装配方；不能承诺新装后自动识别所有 GPU。 |
+| 下载和安装 | 已有精确 effect/命令绑定、预算和恢复接口；真实下载源、模型/许可、安装路径、下载量、峰值磁盘、网络与费用须在授权中明确。接口存在不等于真实安装完成。 |
+| 运行和任务路由 | 已有注入式 worker 的调度与策略校验；真实模型推理、硬件资格和端到端客户部署尚未验证。安装成功与实际把任务交给本地模型是两个状态。 |
+
+一次授权若已包含上述具体范围和效果，可以连续执行，不因检测→安装→验证的阶段切换再问 approve。
+缺 reader、配方或资格证据时暂停受影响动作；不代装依赖或自行扩大网络、存储、费用权限。
+符合条件的任务改由本地模型处理后，**可能减少云端 token 使用，实际收益需验证**。
+本版本没有实测节省比例，也不保证安装模型本身就减少使用量。
+
 See the [implementation report and claim evidence](LOCAL_COMPUTE_ORCHESTRATION_IMPLEMENTATION_REPORT.md)
 for synthetic coverage, adapter requirements and remaining work.
+
+## Privacy Observation Scope
+
+面向使用云端 AI 的客户，目标是说明“哪些获准对象有访问或操作证据”。
+**当前还不是安装后自动运行的全盘隐私监控服务。** 观察器运行在客户明确授权、实际接入的主机上，
+不在云端模型供应商内部；不能看到其内部处理，也不能保证资料不外泄。
+
+| 已有机制 | 可以报告什么 | 不能据此推断什么 |
+|---|---|---|
+| 受信 host 事件接入 | 明确来源、会话、序号、时间、事件类型、动作/目标引用、可选摘要及覆盖状态；需接入真实传感器。 | caller 提供的数据不自动成为独立的系统访问证据。 |
+| macOS 明确注册的 PID | one-shot `NOTE_EXEC`，以及仓库内[选定 `NOTE_EXIT` 扩展](docs/h7-selected-host-expansion.md)。已有合成与选定原生验证，范围以各报告为准。 | 进程执行/退出不证明读取了某个私密文件，不涵盖全部后代、命令内容或全部副作用。 |
+| [指定本地文件核对](docs/h3-independent-target-reality.md) | 在获准根目录、身份和大小限制内核对指定普通文件的元数据/摘要；这是主动读取，须事先授权。 | 核对结果不证明此前哪个进程访问了文件，也不是私密目录访问历史。 |
+| 跨层比较与[只读中文展示](docs/h9-bounded-operator-findings.md) | 转述已提供的结果、原因、覆盖范围和证据引用，提醒负责人核查。 | 展示/观察本身不能阻止读取、上传或泄漏，也不授予自动重试权限。 |
+
+只有观察来源实际提供并可靠绑定某个文件的访问事件，才可报告该范围内的“被触碰”；
+当前进程事件不能替代该文件证据。Linux 已选测试的外部观察记录是验证证据，未装成客户常驻监控器。
+无事件仍可能是未覆盖或未知；观察到访问也不等于上传或泄漏。
+
+接入前应明确设备、进程、目录、事件、时限和报告去向。默认以不含个人信息的对象引用、
+动作类别及必要摘要报告，路径按授权脱敏；不为演示采集私密正文、口令或凭据。
+现有受控执行接口只会拒绝经其接线的未授权请求，不构成系统级访问拦截或云端防泄漏。
+
+## Experimental Foundations
+
+<details>
+<summary>实验模块、开发者接口与证据边界</summary>
+
+### Runtime Safety Envelope — Experimental Foundation
+
+20396 includes an experimental vendor-independent [Runtime Safety Envelope
+foundation](.agents/skills/long-horizon-engineering/references/runtime-safety-envelope.md)
+that separates AI action proposals from policy, authorization, capabilities,
+side-effect reconciliation and security receipts. Phase 1 tests exercise the
+Python kernel using fake adapters. The separately constructed Phase 2A local
+binding below is opt-in; nothing is activated by installation or import.
+No host sandbox, kernel security, packet firewall or provider-internal security
+guarantee is implied. This is source-branch functionality, not a v0.7.0 release claim.
+
+### Security Authority and Verifiable Security Chain — Experimental
+
+The [Phase 1.25 foundation](.agents/skills/long-horizon-engineering/references/security-authority-chain.md)
+adds scoped management checks, bounded Break Glass records and deterministic
+SHA-256 linked history for policy, authorization, authority and RSE receipt digests.
+Tests use synthetic data, in-memory storage and explicitly selected temporary
+JSONL files. Phase 1.25 itself adds no runtime binding or Paperclip dependency.
+The chain is **tamper-evident, not tamper-proof**: without a separately retained
+trusted head, valid tail truncation or whole-chain replacement cannot be detected.
+Actor authentication is a trusted-host responsibility; the separate Phase 1.75
+checkpoint contract below accepts host-supplied verification and anchor evidence.
+This is source-branch functionality, not a published-release or deployment claim.
+
+### Token Accountability — Experimental Foundation
+
+The [Phase 1.35 foundation](.agents/skills/long-horizon-engineering/references/token-accountability.md)
+represents model usage by project/task/run, checks nested budget contracts and
+identifies deterministic anomalies such as unattributed, post-completion or
+unreconciled-retry usage. Provider-unreported metrics remain UNKNOWN; reported
+and estimated costs are separate. An anomaly is not evidence of theft or intent.
+No real provider/runtime binding, live quota enforcement or background monitoring
+is implemented. This is source-branch functionality, not a deployment claim.
+
+### Signed Checkpoints — Experimental Foundation
+
+20396 includes an experimental signed-checkpoint contract that can bind a verified
+Security Chain prefix to trusted external signature verification and independently
+retained anchor evidence supplied by a trusted host integration. It detects
+rollback or replacement only when that trusted evidence survives independently.
+The module does not manage private keys or contact an anchor service. Real crypto,
+key custody and external publication remain host responsibilities; synthetic tests
+do not establish those properties. See [signed checkpoint boundaries](.agents/skills/long-horizon-engineering/references/signed-checkpoints.md).
+
+### Critical Execution Trace — Experimental Foundation
+
+The [Phase 1.5 foundation](.agents/skills/long-horizon-engineering/references/critical-execution-trace.md)
+compares declared effects with caller-supplied adapter observations, validates
+parent/child traces and reports bounded deterministic causal risk candidates.
+It can anchor evidence digests in the existing Security Chain. Adapter observations
+are not independent host evidence; even COMPLETE means caller-attested coverage.
+No host/kernel/syscall observer, malware or intent classification, background
+monitoring or automatic enforcement is implemented by this trace foundation.
+This is source-branch functionality, not a published-release or deployment claim.
+
+### Trusted Local Runtime Binding — Experimental / Same Process
+
+The opt-in [Phase 2A binding](.agents/skills/long-horizon-engineering/references/runtime-binding.md)
+routes bounded regular-file operations, explicitly allowlisted processes and local
+Git exact staging/commit through existing RSE governance. Payload digests must be
+bound before authorization; a Git commit additionally binds the exact staged tree,
+parent and message, rejecting changed tree/parent before commit. Adapters report their own observed boundaries to CET
+and seal evidence digests, not raw file contents or process output, in the chain.
+
+This is **not an OS sandbox, host observer or network containment**. Allowlisting
+a process does not reveal or constrain all its internal effects. Unsupported safe
+filesystem primitives fail closed; no universal race-free guarantee is made.
+UNKNOWN outcomes block blind retries within the same process, not across crashes.
+Phase 2A has no network, Git push, GitHub, deployment, installation, secret-store,
+Paperclip, Codex-hook or Local Compute adapter. Nothing registers or executes on
+import. These are source-branch capabilities, not published-release claims.
+
+### Bounded Remote Effect Binding — Experimental / Same Process
+
+The separate opt-in [Phase 2B binding](.agents/skills/long-horizon-engineering/references/remote-runtime-binding.md)
+adds bounded HTTPS requests, exact single-branch fast-forward Git updates and
+GitHub-compatible PR creation through existing RSE authority. Destination,
+payload and old/new Git state are committed before authorization. Credentials
+are supplied by trusted host transport code, not discovered or included in model
+payloads. Redirects are disabled and TLS verification remains enabled.
+
+UNKNOWN blocks blind mutation retries in the same journal process; bounded
+readback may remain inconclusive. This is **not exactly-once, crash-durable
+execution, a secret manager, a network sandbox or independent host observation**.
+No PR merge/update, release/deploy, package installation, SSH, Paperclip,
+Codex runtime hook or Local Compute integration is added. Installing/importing
+the module activates nothing; no real external account mutation is used in tests.
+
+### Agent Runtime Integration — Experimental Foundation
+
+20396 can translate bounded agent action proposals into existing governed
+ActionRequest and Phase 2A/2B payload contracts, then route explicitly authorized
+actions through the existing RSE-controlled execution path.
+
+Agent/model output remains untrusted proposal data. The bridge does not let a
+model self-authorize, self-grant capabilities, directly invoke effect adapters,
+or bypass an unresolved UNKNOWN mutation by issuing a cosmetically new proposal.
+
+Duplicate-effect suppression is same-process and same-bridge only; this is not
+crash-durable agent orchestration, a Host Observer, OS sandbox, or proprietary
+Codex interception layer.
+
+### Host Observation — Experimental Evidence Foundation
+
+20396 can ingest bounded observations from an explicitly trusted host evidence
+source and represent them separately from model declarations, adapter observations
+and reconciliation evidence.
+
+The foundation defines evidence provenance, ordering, scoped coverage and explicit
+action correlation. Missing host evidence does not prove an effect did not occur.
+
+### Real Host Observation — Experimental macOS Slice
+
+An experimental macOS backend uses kqueue EVFILT_PROC / NOTE_EXEC for explicitly
+registered processes. PROCESS_EXEC means the registered PID executed a new program
+image; coverage is PARTIAL. It does not represent fork/new-PID creation, application
+success or complete process lifecycle coverage.
+
+The native event becomes an existing HostObservation, then HOST_OBSERVED CET and
+bounded Security Chain evidence through the existing ingestor. Registration is
+one-shot, the wait is finite and the caller closes the session. No command line or
+environment is collected. No daemon, global process monitor, enforcement layer,
+polling fallback, kernel-truth guarantee or automatic reconciliation is included.
+
+### Cross-Layer Verification — Experimental
+
+20396 can deterministically compare bounded evidence across model declarations,
+RSE authorization, adapter observations, host observations and trusted
+target-reality evidence for one action at a time.
+
+The verifier produces MATCH, MISSING, EXTRA, DIVERGED, UNKNOWN and NOT_OBSERVED.
+It is read-only: findings are not persisted or written back to the Security Chain,
+and verification does not authorize, execute, enforce or automatically reconcile
+anything. See the [normalization and coverage contract](.agents/skills/long-horizon-engineering/references/cross-layer-verification.md).
+
+
+</details>
 
 ## Design references
 
@@ -613,8 +654,9 @@ installation as a shortcut. Follow [INSTALL.md](INSTALL.md) and
 Project skills use `.agents/skills/<skill_id>`; user-level skills use
 `~/.codex/skills/<skill_id>`. Verify installed files, discovery and loading separately.
 
-Updates are manual, comparison-only first, and require separate approval for
-backup-first replacement. No automatic background update or mutable-ref upgrade.
+Updates are explicit and comparison-first. Backup-first replacement needs
+authority for the exact version, target and effects; reuse an existing approval
+that already covers them, otherwise obtain it before replacement. No automatic background update or mutable-ref upgrade.
 See [UPGRADE_GUIDE.md](UPGRADE_GUIDE.md) for current release checks.
 
 The legacy self-check is for the legacy/project-style `.agents/skills` layout;
