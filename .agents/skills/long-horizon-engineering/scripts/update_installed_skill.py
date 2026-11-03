@@ -4194,6 +4194,48 @@ def update_skill(
     print("Source-package checks should be run from the skill source repository.")
 
 
+def local_assist_offer(skill_root: Path, model_id: str) -> dict[str, object]:
+    """Offer explicit customer preparation; no hardware or runtime activation."""
+    entry = str(skill_root / "scripts" / "local_model_assist.py")
+    return {
+        "feature": "本地算力辅助（Beta）",
+        "state": "OPT_IN_REQUIRED",
+        "setup_entry_argv": [sys.executable, "-I", "-B", entry, "setup"],
+        "setup_required_arguments": ["--disk-root"],
+        "status_argv": [sys.executable, "-I", "-B", entry, "status"],
+        "prepare_argv": [sys.executable, "-I", "-B", entry, "prepare", "--model-id", model_id],
+        "installer_opt_in_flag": "--local-assist",
+        "notice": "Preparation only. Hardware inspection, download, installation and inference each require explicit scope; no silent cloud fallback.",
+        "decline_behavior": "KEEP_20396_AND_CODEX_UNCHANGED",
+        "probe_started": False,
+        "runtime_started": False,
+    }
+
+
+def prepare_local_assist(skill_root: Path, model_id: str) -> dict[str, object]:
+    """Opt-in preparation after a successful publish; failure keeps the skill.
+
+    No grant, probe, download, inference or configuration flag is passed. Raw
+    child output is never copied into updater output or recovery receipts.
+    """
+    entry = skill_root / "scripts" / "local_model_assist.py"
+    if entry.is_symlink() or not entry.is_file():
+        return {"state": "NOT_READY", "reason": "ENTRY_UNAVAILABLE"}
+    try:
+        result = subprocess.run(
+            [sys.executable, "-I", "-B", str(entry), "prepare", "--model-id", model_id],
+            stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL, check=False, timeout=10,
+        )
+    except subprocess.TimeoutExpired:
+        return {"state": "NOT_READY", "reason": "PREPARE_TIMEOUT"}
+    except OSError:
+        return {"state": "NOT_READY", "reason": "PREPARE_UNAVAILABLE"}
+    return {"state": "PREPARED" if result.returncode == 0 else "NOT_READY",
+            "reason": "EXPLICIT_PREPARE_ONLY" if result.returncode == 0 else "PREPARE_FAILED",
+            "model_id": model_id, "runtime_started": False}
+
+
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
@@ -4241,11 +4283,20 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="List skills that can be updated, then exit.",
     )
+    parser.add_argument("--local-assist", action="store_true",
+                        help="After successful --apply, explicitly prepare local compute; no activation.")
+    parser.add_argument("--local-assist-model", choices=(
+        "qwen3.5:4b", "qwen3.8:27b", "deepseek-r1:8b"))
     return parser.parse_args(argv)
 
 
 def main(argv: Sequence[str] | None = None) -> None:
     args = parse_args(argv)
+    if args.local_assist and (not args.apply or args.skill != ["long-horizon-engineering"]
+                             or args.list_skills):
+        raise SystemExit("ERROR: --local-assist requires --apply and exactly --skill long-horizon-engineering.")
+    if args.local_assist_model is not None and not args.local_assist:
+        raise SystemExit("ERROR: --local-assist-model requires --local-assist.")
     if args.list_skills:
         for skill in ALLOWED_SKILLS:
             print(skill)
@@ -4281,6 +4332,14 @@ def main(argv: Sequence[str] | None = None) -> None:
             args.apply,
             args.allow_remove_extra_files,
         )
+        if args.apply and skill == "long-horizon-engineering":
+            offer = local_assist_offer(target_plan.target,
+                                       args.local_assist_model or "qwen3.5:4b")
+            print("Local compute offer: " + json.dumps(offer, sort_keys=True, ensure_ascii=True))
+        if args.local_assist:
+            handoff = prepare_local_assist(target_plan.target,
+                                          args.local_assist_model or "qwen3.5:4b")
+            print("Local compute handoff: " + json.dumps(handoff, sort_keys=True))
 
 
 if __name__ == "__main__":

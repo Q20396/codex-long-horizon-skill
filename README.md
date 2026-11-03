@@ -1,5 +1,7 @@
 # 20396
 
+**客户版本：20396（Beta）。** 机器使用的 skill 名称与路径保持 `long-horizon-engineering` 不变。
+
 **Long-Horizon Engineering for Codex · 让长任务接得上、结果查得到。**
 
 20396 是一个 Codex skill，适合代码迁移、大型重构、复杂排错和多步骤 PR。
@@ -180,6 +182,8 @@ AI video remains an **optional bundled sibling skill**, not 20396's primary iden
 
 ## Local Compute Orchestration (Beta)
 
+**本地算力辅助（Beta）**：当前本地候选增加已打包的显式适配入口；不是安装/升级后自动部署模型的完整功能。以下英文标题及锚点保留兼容。
+
 20396 includes an optional experimental local-compute orchestration layer as
 [packaged Python APIs](.agents/skills/long-horizon-engineering/scripts/local_compute_pool.py)
 in the published v0.7.0 default Skill inventory. It is not automatically
@@ -229,14 +233,83 @@ usage**; no token savings or hardware compatibility is guaranteed.
 | 环节 | 当前实现与证据 |
 |---|---|
 | 设备信息读取 | `collect_probe(node_id, consent, reader)` 先检查已授权节点，再调用接入方提供的只读 reader。允许字段包括系统/架构、CPU/SoC、内存、加速器/显存、剩余磁盘、运行器版本和已有模型；应只读取客户本次批准的必要字段，不读取文件正文或设备序列号。reader 本身受信，字段过滤不保证它没有额外读取。 |
-| GPU 与兼容性判断 | 已实现按提供的资源、候选配置和资格证据做有限判断。当前源码没有自带 GPU 探测 reader 或真实 provider/model 安装配方；不能承诺新装后自动识别所有 GPU。 |
+| GPU 与兼容性判断 | 已实现按提供的资源、候选配置和资格证据做有限判断。新增授权后调用的部分 Linux/NVIDIA 与 Apple 元数据 reader，AMD 与 Windows 完整探测尚缺；没有真实 provider/model 安装配方，不能承诺自动识别所有 GPU。 |
 | 下载和安装 | 已有精确 effect/命令绑定、预算和恢复接口；真实下载源、模型/许可、安装路径、下载量、峰值磁盘、网络与费用须在授权中明确。接口存在不等于真实安装完成。 |
-| 运行和任务路由 | 已有注入式 worker 的调度与策略校验；真实模型推理、硬件资格和端到端客户部署尚未验证。安装成功与实际把任务交给本地模型是两个状态。 |
+| 运行和任务路由 | 已增加 Ollama 回环 worker、精确版本/模型digest检查及显式工具CLI，复用既有池与token账。仅mock HTTP合成验证；真实推理、客户硬件资格和端到端部署未验证，桌面默认模型不变。 |
 
 一次授权若已包含上述具体范围和效果，可以连续执行，不因检测→安装→验证的阶段切换再问 approve。
 缺 reader、配方或资格证据时暂停受影响动作；不代装依赖或自行扩大网络、存储、费用权限。
 符合条件的任务改由本地模型处理后，**可能减少云端 token 使用，实际收益需验证**。
 本版本没有实测节省比例，也不保证安装模型本身就减少使用量。
+
+截至2026-11-03：已有客户引导、准确隔离CLI、部分平台reader、Ollama worker及用量适配，尚未发布。自有安装/升级默认展示可选启用及授权入口；固定Darwin文件部署、原账本所有权保存/恢复、受控启动与卸载已有代码和合成覆盖。实际发行包仅下载核验及只读检查，没有安装执行。质量资格桥仅支持客户明确标准的精确JSON输入/输出，未作真实推理或Codex会话验证。NVIDIA、AMD、Apple Silicon（含Mac Studio）端到端未实测，正常流程仍为 OPENAI_ONLY，**节省效果未验证**。
+本候选仅允许将日志摘要、差异分类等有外部资格记录的任务交给本地辅助服务；本地失败默认停止，不未经授权静默切换云端。LOCAL_ONLY 原始输入及派生输出均不得自动回传云端。
+Codex CLI 的本地 provider 是另一种显式会话选择，不代表安装本 skill 后当前 Codex 桌面模型会自动被替换。
+
+### 显式客户入口（本地候选，未发布）
+
+20396自有装配器与升级器在成功安装/升级后默认输出 `local_assist_offer`（Beta名称、准确安装路径命令及授权说明），不默认启用。显式 `--local-assist` 才自动调用已安装的准备入口。可选 `--local-assist-model` 仅选择既有目录中的模型。它不是平台市场自动钩子，不授权硬件探测、下载或推理；准备失败保留已完成的20396安装。其他安装方式可由客户明确调用：
+
+```text
+python3 -I -B <已安装Skill绝对路径>/scripts/local_model_assist.py status
+python3 -I -B <已安装Skill绝对路径>/scripts/local_model_assist.py prepare --model-id qwen3.5:4b
+python3 -I -B <已安装Skill绝对路径>/scripts/local_model_assist.py setup --disk-root <客户批准的绝对路径>
+python3 -I -B <已安装Skill绝对路径>/scripts/local_model_assist.py deployment-plan --install-root <客户私有安装根绝对路径>
+```
+
+`status`、`prepare`和`deployment-plan`均无硬件/网络/安装效果。`setup`要求客户本机终端，先询问是否启用，再单独询问元数据读取权限；拒绝时不调用reader。同意后才检查并推荐，不把同意读取变成下载或推理授权。`prepare --existing-state <获准状态JSON>`仅评估复用声明，不凭此产生资格或授权。版本/配方变化、授权过期须更新对应范围同意；pending UNKNOWN不自动重试。
+
+`probe`需本机授权文件和明确磁盘根；仅在客户实际同意后调用。Linux/NVIDIA及Apple字段解析有合成覆盖；Apple可用量是free+speculative保守瞬时快照，不是保留的VRAM；AMD/Windows完整reader不足保持UNKNOWN。外部探测命令只支持现有POSIX有界管道；缺工具不安装，原句柄清理不明即停止。
+
+`assist`经Codex现有执行工具显式调用CLI，必须有当前运行时/模型pin、已验证Node/任务资格记录、精确数据文件范围授权及明确`--return-to-cloud`许可；默认不读输入、不推理。该显式命令是实际可执行接线代码，当前只用mock验证，无真实Codex模型会话证据。LOCAL_ONLY结果只能由声明本地输出边界的Python caller处理，不能经该CLI stdout回传云端。授权/资格文件是受信host提供的声明，不是加密认证或自动资格生成；不得为通过而手工伪填probed/runtime_validated。
+
+HTTP仅限127.0.0.1、禁环境代理和重定向、版本/digest初末核查；持有服务的客户还必须确认本地模型及NO_CLOUD等配置。该声明和API快照不能证明系统网络隔离。客户端异常会锁为UNKNOWN；失败没有cloud_worker，不静默转云，不承诺取消服务端推理已经完成。当前caller须串行控制同一设备并复用UNKNOWN状态；一次CLI一个任务，不提供跨进程容量预留或技术防重放。
+
+`-I` 保留隔离模式；入口只绑定已安装脚本的准确目录，不依赖当前目录或PYTHONPATH。两种临时安装布局均测试上述准确命令，不用测试进程注入搜索路径代替。
+
+生命周期只操作明确授权、独占创建且身份仍匹配的材料。固定Ollama v0.40.13 Darwin包长度186689993B、SHA256及59项归档清单已只读核验，展开量608745773B。代码手动解包固定文件/目录/安全相对链接，保留许可证，不使用extractall。没有在本机安装或启动实际程序；版本与签名信任不由包结构或哈希代证。
+
+`deploy-files`接通 `PinnedStage` 的下载→运行时文件安装→固定模型文件注册，要求准确 `--install-root`、`--lifecycle-consent-file`、`--budget-file`及另行读取授权 `--grant-file`；启动前核客户Darwin≥14、架构与资源。不凭计划输出授权。下载含runtime及所选模型的全部config/layers；预算同时计暂存、展开、模型副本、既有占用和journal，阶段不重置。仅为已核runtime开放GitHub到release-assets.githubusercontent.com的一次HTTPS跳转，其他未审重定向拒绝；未真实下载模型。各文件结果标UNVALIDATED，不启动服务或产生任务资格。
+
+受信host可在同一控制器内调用 `OwnedOllamaService`，持有另行绑定的start-service/stop-service授权，核文件收据后执行准确自有 `ollama serve`，使用私有HOME/TMP/模型根、127.0.0.1及进程级NO_CLOUD，不改全局配置。`stop`只清理原句柄，后代仍UNKNOWN；直接进程退出不能证明所有runner已闲置，不可据此自动卸载。模型注册使用现有固定manifest/blob布局，不另造运行时。
+
+未知部分下载及所有权不自动重试/接管/删除。所有权快照存入现有DurableJournal，不增账本，最多256项、整个journal≤1MiB；只含固定相对文件名、身份/摘要、版本pin和活动状态，不存正文、密码或PID。恢复须新鲜有效的restore授权、准确私有根及逐原件核验，保留原预算消耗和PENDING，记录存在不构成修改/删除权限。旧账本无快照时不接管原资源。
+
+`ownership-status`及`upgrade-check`接受与部署相同的根、模型、lifecycle授权和预算参数，核验相同pin的自建材料。`deploy-files`遇既有账本时必须有restore/save授权，完整核验后零下载复用；不同pin要求新独占根，保留旧安装，不原地覆盖客户版本。`uninstall`还要求明确卸载/save权限和可靠的本次 `--idle-confirmed`；曾启动或活动未知时另须confirm-idle范围。这是可信host提供的当前闲置声明，不是账本或直接进程退出证明，无法可靠确认时禁止执行。
+
+删除前先将原账本owned快照标UNKNOWN，成功后保存剩余树；失败/崩溃不留下可盲用的旧有效清单。身份、摘要、目录、关闭状态变化均拒绝，预算和UNKNOWN不清零。仅删除20396创建并重新核验的资源，客户原有Ollama、模型、自定义配置不接管；旧记录或未知资源保留。
+
+`serve-session`在恢复核验后，读取另行绑定的 `--service-consent-file`，通过 `--session-seconds`（≤300且满足剩余共享预算）启动受控前台会话；到时或Control+C只清理原句柄，不跨命令采用数字PID。启动前持久记录POSSIBLY_ACTIVE，退出仅记DIRECT_EXIT_DESCENDANTS_UNKNOWN，后代未知不伪装成闲置。不是常驻后台服务，也不修改系统服务或Codex默认配置。源码改变、活动不明或原预算不足时失败停止。
+
+`inspect-runtime`可在inspect-runtime许可下只读核客户已有Ollama版本和模型digest，不收养或修改该服务，仍要求任务资格。原 `qualify`公开格式样例始终qualified=false。新增 `--quality-case-file`、`--qualification-output`路径后，须先绑定输入与评分标准文件的qualify权限、再读取正文；原生probe与原生推理按客户明确的预期JSON完全匹配时，才在私有位置独占写入短期精确输入资格记录。合成/注入客户端不生成真实Node；这不是一般任务类别胜任证明，也不是人工评分或任意自然语言质量评估器。
+
+新记录绑定输入SHA、标准SHA、模型/版本、数据范围及到期；`assist`在读正文前核范围，读后核实际SHA，派发再次核验，实际新答案也必须符合原标准才释放，不能拿同路径的新正文或随机新答案复用资格。接口可由Codex执行工具显式调用，stdout现在包含原账本规范化usage；缺失计数保留UNKNOWN。完整OpenAI宿主用量采集、通用自动路由、常驻服务及各平台原生验证未实现或未实测，不宣称节省；没有开发者硬件不妨碍代码与夹具工作。
+
+
+### 客户续行向导（Beta，本地候选）
+
+自有安装/升级成功的 `local_assist_offer` 提供准确 `prepare_argv`；执行准备命令后，`guide.wizard_argv` 给出当前已安装入口。它不是市场自动弹窗，也不会在安装时扫描设备。先阅读权限，再在客户自己的终端启动：
+
+```text
+python3 -I -B <已安装Skill绝对路径>/scripts/local_model_assist.py wizard --wizard-phase plan --disk-root <获准磁盘目录绝对路径> --install-root <20396专用私有安装根绝对路径>
+```
+
+`plan` 先确认启用、再单独确认读取硬件元数据；拒绝不探测、不生成部署权限。推荐不足时跳过，保留20396和Codex原功能。向导沿用同一推荐模型，展示精确下载/磁盘预算和已有配置限制；另行明确同意后，才保存有限、私有、绑定该根/模型的授权记录，并返回下一阶段的完整参数数组。有效且同范围的旧授权可复用，过期/变更不能静默继承。不要自行省略或重建返回的参数。
+
+`deploy` 只在客户执行返回命令后复用原部署器：固定版本下载、核验和文件安装；相同pin自有安装通过原journal重核后零下载复用。未知、冲突或失败停止，不覆盖客户配置，不将文件安装标为模型验证通过。已有客户Ollama仅按原inspect接口核查，不接管或停止；向导不覆盖它的模型/运行时。
+
+`session` 使用返回的准确命令，并补客户授权的 `--input-file <绝对路径>` 和 `--quality-case-file <预期JSON标准绝对路径>`。这是精确输入验证，不是通用评分。向导对服务启动、输入/标准读取、验证推理及结果回到Codex分别说明和取得同意，不要求客户手造JSON，不由记录推定当前权限。只有原生验证通过才产生短期精确资格；合成测试永不生成真实资格。
+
+启动前拒绝已占用的本地端口；启动后最多3轮只读版本/模型就绪检查（最多6次GET），仅连接拒绝可在原期限内继续，不重试推理。端口检查和原句柄存活是合作宿主观察，不是原子端口归属证明。人工同意均在服务启动前完成。
+
+服务会话保持前台且有界（`--session-seconds`≤300并满足原共享预算）；显示的完整 `assist` 参数数组供客户在获准Codex会话的执行工具中明确调用。向导不会启动Codex、改默认模型或自动转云。必须在服务会话仍活跃、资格及授权仍有效时调用；会话结束不能继续使用过期命令。输出返回Codex可能进入其云端上下文，拒绝回传就不发此调用。完成或失败后仅清理原句柄，后代仍UNKNOWN，不据此自动卸载。预算不足或身份变化停止，不自行延长。
+
+恢复入口为同一向导的 `--wizard-phase recovery`，复用已有根、lifecycle和budget参数；先重新核查原记录及自有文件。未知/部分失败不自动修复或删除，仅提供核查交接。已知且重新核验的自有安装，客户独立确认闲置并明确批准卸载后，才生成准确的原 `uninstall` 命令及有限权限；仍由客户明确执行，不覆盖或接管其他资源。
+
+拒绝、条件不足及待补任务参数均给固定状态/下一阶段，不代表验收通过。失败退出后先核原journal的PENDING/UNKNOWN；不重试未知操作、不删除未知资源。恢复仍需当前有效权限及文件核验，曾启动资源还须可靠闲置确认。当前仅支持既定macOS配方；Windows/AMD等不因此完成。真实模型部署、推理、Codex会话与token节省仍未验证。
+
+
+
 
 See the [implementation report and claim evidence](LOCAL_COMPUTE_ORCHESTRATION_IMPLEMENTATION_REPORT.md)
 for synthetic coverage, adapter requirements and remaining work.

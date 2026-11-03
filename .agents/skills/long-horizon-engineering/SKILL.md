@@ -231,6 +231,8 @@ below.
 
 ## Local Compute Orchestration (Beta, opt-in)
 
+客户名称统一为 **本地算力辅助（Beta）**；20396客户版本标Beta，机器标识/frontmatter/接口及本节旧锚点不改。20396自有装配/升级成功后默认展示可选启用/授权offer；显式--local-assist才调用准备入口，平台市场无通用hook。setup在本地终端分别询问启用和元数据读取；拒绝零探测。固定Darwin资产59项清单已只读核验，安全解包/离线模型注册/同次卸载回滚/自有服务句柄生命周期有合成覆盖，没有安装运行实际包。NVIDIA/AMD/Apple Silicon/Mac Studio端到端、任务质量及节省均未验证。
+
 The default v0.7.0 package includes `scripts/local_compute_deployment.py` and
 `scripts/local_compute_pool.py`. They are the single implementation source,
 available relative to this installed SKILL.md; no repository clone is needed.
@@ -243,12 +245,29 @@ Normal workflow remains OPENAI_ONLY. Do not import or invoke these APIs unless
 local compute is relevant and requested. Installation/import does not authorize
 hardware inspection, provider installation, model download, inference, network
 access or a node pool. `collect_probe(node_id, consent, reader)` requires explicit
-node inspection consent and a caller-supplied read-only reader. No reader or
-provider recipe ships here. Pause the affected local-compute action if an
-approved adapter is unavailable; continue other authorized work. Hardware
+node inspection consent and a caller-supplied read-only reader. The opt-in local_model_assist.py supplies partial metadata readers and a
+loopback Ollama worker and a fixed Darwin owned-file installation recipe. Pause the affected
+local-compute action if a qualified adapter or fact is unavailable; continue other authorized work. Hardware
 inspection, download/install, storage, inference, network and costs must each
 be covered, but may be authorized together once for the same fixed scope.
 Installation does not prove qualified local routing or measured cloud savings.
+
+Use the installed `scripts/local_model_assist.py status` or `prepare` explicit entry for new/upgrade planning; these have no hardware, network or install effects. No plugin install/upgrade hook is registered by this candidate. Do not probe this developer's computer, install a runtime or run inference merely because implementation is requested. Customer hardware absence does not block code/mock work.
+
+`deployment-plan` is effect-free. `deploy-files` requires separately bound lifecycle consent, a budget and probe authority before native platform/resource checks or effects. It downloads only pinned runtime/config/layers, installs the exact reviewed runtime tree and private legacy Ollama model manifest/blob layout, and leaves all runtime/task results UNVALIDATED. Runtime staging may follow only the one observed GitHub release-assets HTTPS edge; other redirects fail closed. Never execute these actions on the developer's computer under implementation-only authority.
+
+Ownership facts now use the existing DurableJournal (<=256 entries, whole file <=1MiB), not another ledger. Fresh restore authority, root identity, version/pins, every file/link/hash and remaining budget must be checked. A legacy record cannot adopt customer resources; UNKNOWN/pending and consumed reservations are never reset. Same-pin upgrade reuse downloads nothing; different pins use a new private root and retain the original. Uninstall first marks owned state UNKNOWN, then records remaining files only after success.
+
+`serve-session` exposes restored owned service start and original-handle stop in a bounded foreground session, with separately bound start/stop authority, private HOME/TMP/MODELS, loopback and NO_CLOUD. Persist POSSIBLY_ACTIVE before launching; direct reaping records descendant UNKNOWN, never idle. `uninstall` requires fresh delete/save authority and reliable host idle confirmation; previous activity/legacy UNKNOWN also requires confirm-idle scope. This is a cooperative-host assertion, not independent process evidence; never infer it from the record or direct exit. No PID adoption or permanent daemon is installed.
+
+The original public fixed-format `qualify` smoke check remains qualified=false. With separately authorized input/criteria files, native probe and native inference, the exact-JSON qualification bridge can write a private short-lived schema2 record only for those input bytes, criteria, version/model and data scope. Injected/synthetic clients never mint native qualification. `assist` checks scope before reading and actual input hash before dispatch; a new answer must still satisfy the criteria before release. No class-wide competence follows from one case. Archive verification, installation, runtime start and token savings remain separate acceptance states.
+
+Codex can explicitly invoke the CLI tool; its default model is unchanged. Normalized local usage is returned, missing counts UNKNOWN. Automatic desktop-wide routing, complete hosted-token acquisition, generic human/natural-language grading and permanent service supervision are not implemented; actual customer/native/Codex and same-quality cloud comparisons remain untested. Do not describe those gaps as merely missing developer hardware or create false qualification to bypass them.
+
+Before `probe`, obtain the exact node/field/disk-scope consent; missing AMD/Windows/available-resource facts remain UNKNOWN. Before `assist`, a trusted host must supply the current qualified Node record, exact runtime/model/task/data binding and explicit result-return permission. Do not mint Node booleans from a nonempty reference. This is a cooperative-host assertion boundary, not identity authentication. LOCAL_ONLY output may only be released to a local caller; the CLI return-to-cloud path requires separate scope and binds the input path. Never inject cloud_worker on local failure.
+
+Use existing deployment/pool/token-accountability modules, not duplicate cores. Runtime metadata/known install declarations are not real health or task qualification. Explicit project-owned install/update handoff runs prepare only, retaining -I isolation and leaving a completed skill installation intact on feature failure. Lifecycle staging/cleanup must retain exact consent, immutable pins, ownership and UNKNOWN; staging is not installation. No Codex default/provider configuration is changed. Caller must serialize device use and retain UNKNOWN state; one-shot CLI is not durable anti-replay or cross-process GPU reservation. Token comparison remains scoped and requires complete same-task/same-cloud-model quality evidence; absent counts are UNKNOWN, all return/retry/review calls count and negative benefit is reported.
+
 
 These are synthetic-tested Beta foundations, not production-ready deployment.
 Workers and evidence are trusted caller inputs, not a remote authentication or
@@ -619,3 +638,26 @@ Mention unresolved concerns, safety boundaries, and review focus.
 ### Next Step
 
 Give one recommended next step when useful.
+
+
+### 客户续行向导（Beta，本地候选）
+
+自有安装/升级成功的 `local_assist_offer` 提供准确 `prepare_argv`；执行准备命令后，`guide.wizard_argv` 给出当前已安装入口。它不是市场自动弹窗，也不会在安装时扫描设备。先阅读权限，再在客户自己的终端启动：
+
+```text
+python3 -I -B <已安装Skill绝对路径>/scripts/local_model_assist.py wizard --wizard-phase plan --disk-root <获准磁盘目录绝对路径> --install-root <20396专用私有安装根绝对路径>
+```
+
+`plan` 先确认启用、再单独确认读取硬件元数据；拒绝不探测、不生成部署权限。推荐不足时跳过，保留20396和Codex原功能。向导沿用同一推荐模型，展示精确下载/磁盘预算和已有配置限制；另行明确同意后，才保存有限、私有、绑定该根/模型的授权记录，并返回下一阶段的完整参数数组。有效且同范围的旧授权可复用，过期/变更不能静默继承。不要自行省略或重建返回的参数。
+
+`deploy` 只在客户执行返回命令后复用原部署器：固定版本下载、核验和文件安装；相同pin自有安装通过原journal重核后零下载复用。未知、冲突或失败停止，不覆盖客户配置，不将文件安装标为模型验证通过。已有客户Ollama仅按原inspect接口核查，不接管或停止；向导不覆盖它的模型/运行时。
+
+`session` 使用返回的准确命令，并补客户授权的 `--input-file <绝对路径>` 和 `--quality-case-file <预期JSON标准绝对路径>`。这是精确输入验证，不是通用评分。向导对服务启动、输入/标准读取、验证推理及结果回到Codex分别说明和取得同意，不要求客户手造JSON，不由记录推定当前权限。只有原生验证通过才产生短期精确资格；合成测试永不生成真实资格。
+
+启动前拒绝已占用的本地端口；启动后最多3轮只读版本/模型就绪检查（最多6次GET），仅连接拒绝可在原期限内继续，不重试推理。端口检查和原句柄存活是合作宿主观察，不是原子端口归属证明。人工同意均在服务启动前完成。
+
+服务会话保持前台且有界（`--session-seconds`≤300并满足原共享预算）；显示的完整 `assist` 参数数组供客户在获准Codex会话的执行工具中明确调用。向导不会启动Codex、改默认模型或自动转云。必须在服务会话仍活跃、资格及授权仍有效时调用；会话结束不能继续使用过期命令。输出返回Codex可能进入其云端上下文，拒绝回传就不发此调用。完成或失败后仅清理原句柄，后代仍UNKNOWN，不据此自动卸载。预算不足或身份变化停止，不自行延长。
+
+恢复入口为同一向导的 `--wizard-phase recovery`，复用已有根、lifecycle和budget参数；先重新核查原记录及自有文件。未知/部分失败不自动修复或删除，仅提供核查交接。已知且重新核验的自有安装，客户独立确认闲置并明确批准卸载后，才生成准确的原 `uninstall` 命令及有限权限；仍由客户明确执行，不覆盖或接管其他资源。
+
+拒绝、条件不足及待补任务参数均给固定状态/下一阶段，不代表验收通过。失败退出后先核原journal的PENDING/UNKNOWN；不重试未知操作、不删除未知资源。恢复仍需当前有效权限及文件核验，曾启动资源还须可靠闲置确认。当前仅支持既定macOS配方；Windows/AMD等不因此完成。真实模型部署、推理、Codex会话与token节省仍未验证。

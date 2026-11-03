@@ -250,5 +250,207 @@ class DeploymentTests(unittest.TestCase):
                 self.assertEqual(journal.load('a')['state'], 'APPLIED')
 
 
+class OwnedFilesJournalTests(unittest.TestCase):
+    """Only private temporary metadata; no real runtime/model/file contents."""
+    setUpClass = DeploymentTests.__dict__['setUpClass']
+
+    def snapshot(self):
+        pin = 'a' * 64
+        return {'schema': 1, 'binding': 'b'*64, 'root_binding': 'c'*64,
+                'runtime_pin': pin, 'model_pin': 'd'*64,
+                'root_identity': {'dev': 1, 'ino': 2}, 'io_state': 'CONFIRMED',
+                'blobs': {pin: {'name': pin+'.blob', 'device': 1, 'inode': 3,
+                    'bytes': 4, 'complete': True, 'sha256': pin, 'size': 4,
+                    'mtime_ns': 5, 'ctime_ns': 6, 'close_confirmed': True}},
+                'runtime': {'name': None, 'complete': False, 'tree': {}},
+                'model': {'name': None, 'complete': False, 'tree': {}}}
+
+    def test_owned_snapshot_roundtrip_deepcopy_and_budget_pending_unchanged(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)/'node.json'
+            with self.m.DurableJournal(path, 'a') as journal:
+                journal({'state':'PENDING','effect':'e'*64,'download_gb':7,
+                         'peak_disk_gb':8,'iterations':4,'restarts':2,'elapsed_seconds':9})
+                previous = journal.load('a')
+                self.assertIsNone(journal.load_owned_files('a'))
+                owned = self.snapshot(); journal.save_owned_files('a', owned)
+                owned['root_identity']['ino'] = 99
+                restored = journal.load_owned_files('a')
+                self.assertEqual(restored['root_identity']['ino'],2)
+                restored['root_identity']['ino'] = 98
+                self.assertEqual(journal.load_owned_files('a')['root_identity']['ino'],2)
+                for key, value in previous.items():
+                    self.assertEqual(journal.load('a')[key],value)
+            with self.m.DurableJournal(path,'a') as journal:
+                self.assertEqual(journal.load_owned_files('a'),self.snapshot())
+                self.assertEqual(journal.load('a')['state'],'PENDING')
+                self.assertEqual(journal.load('a')['iterations'],4)
+
+    def test_invalid_types_paths_fields_and_counts_refused_before_write(self):
+        variants = []
+        for key, value in [('schema',True),('schema',-0.0),('binding','bad'),
+                           ('io_state',False),('unexpected','secret')]:
+            v=self.snapshot();v[key]=value;variants.append(v)
+        for key,value in [('dev',True),('ino',-1),('ino',-0.0)]:
+            v=self.snapshot();v['root_identity'][key]=value;variants.append(v)
+        for key,value in [('name','/private/file'),('name','../file'),('complete',1),
+                           ('bytes',True),('size',-0.0),('pid',123),('close_confirmed',0)]:
+            v=self.snapshot();next(iter(v['blobs'].values()))[key]=value;variants.append(v)
+        v=self.snapshot();v['runtime']['name']='/'+'a'*64+'.runtime';variants.append(v)
+        v=self.snapshot();v['blobs']={format(i,'064x'):{**next(iter(v['blobs'].values())),
+            'name':format(i,'064x')+'.blob','sha256':format(i,'064x')} for i in range(257)};variants.append(v)
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)/'node.json'
+            with self.m.DurableJournal(path,'a') as journal:
+                for variant in variants:
+                    with self.subTest(variant=str(variant)[:90]):
+                        with self.assertRaises(ValueError):journal.save_owned_files('a',variant)
+                        self.assertFalse(path.exists())
+                with self.assertRaises(ValueError):journal.save_owned_files('wrong',self.snapshot())
+
+    def test_unknown_io_retains_incomplete_receipt_without_promoting_authority(self):
+        v=self.snapshot();v['io_state']='UNKNOWN'
+        r=next(iter(v['blobs'].values()));r.update(name='a'*64+'.blob.part',complete=False,close_confirmed=False)
+        for k in ('size','mtime_ns','ctime_ns'):r.pop(k)
+        with tempfile.TemporaryDirectory() as directory:
+            with self.m.DurableJournal(Path(directory)/'node.json','a') as journal:
+                journal.save_owned_files('a',v)
+                self.assertEqual(journal.load_owned_files('a')['io_state'],'UNKNOWN')
+                v['io_state']='CONFIRMED'
+                with self.assertRaises(ValueError):journal.save_owned_files('a',v)
+
+    def test_tree_receipts_relative_parent_link_and_exact_kind(self):
+        v=self.snapshot();pin=v['runtime_pin']
+        base={'device':1,'inode':9,'size':0,'mtime_ns':5,'ctime_ns':6,'mode':0o700,'kind':0o040000}
+        v['runtime']={'name':pin+'.runtime','complete':True,'tree':{
+            '':base,'lib':dict(base,inode=10),'lib/engine':dict(base,inode=11,size=2,
+                mode=0o755,kind=0o100000,sha256='f'*64,close_confirmed=True),
+            'lib/link':dict(base,inode=12,mode=0o777,kind=0o120000,target='engine')}}
+        with tempfile.TemporaryDirectory() as directory:
+            with self.m.DurableJournal(Path(directory)/'node.json','a') as journal:
+                journal.save_owned_files('a',v)
+                for path,key,value in [('lib/engine','kind',True),('lib/link','target','../engine'),
+                                       ('lib/engine','close_confirmed',False)]:
+                    import copy
+                    bad=copy.deepcopy(v);bad['runtime']['tree'][path][key]=value
+                    with self.assertRaises(ValueError):journal.save_owned_files('a',bad)
+                bad=copy.deepcopy(v);del bad['runtime']['tree']['lib']
+                with self.assertRaises(ValueError):journal.save_owned_files('a',bad)
+
+    def test_failure_is_unknown_and_counters_not_reset_or_retried(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)/'node.json'
+            with self.m.DurableJournal(path,'a') as journal:
+                journal({'iterations':3,'download_gb':5})
+                original=path.read_bytes()
+                with patch.object(self.m.os,'replace',side_effect=OSError('synthetic')) as replace:
+                    with self.assertRaisesRegex(RuntimeError,'journal persistence unknown'):
+                        journal.save_owned_files('a',self.snapshot())
+                    self.assertEqual(replace.call_count,1)
+                    with self.assertRaises(RuntimeError):journal.save_owned_files('a',self.snapshot())
+                    self.assertEqual(replace.call_count,1)
+                self.assertEqual(path.read_bytes(),original)
+                self.assertEqual(journal.load('a')['state'],'PENDING')
+                self.assertEqual(journal.load('a')['iterations'],3)
+                self.assertEqual(journal.load('a')['download_gb'],5)
+                with self.assertRaises(RuntimeError):journal.load_owned_files('a')
+            # Failed media cannot be promised to store a failure marker; this old
+            # complete disk snapshot has no ownership and never grants adoption.
+            with self.m.DurableJournal(path,'a') as journal:
+                self.assertIsNone(journal.load_owned_files('a'))
+                self.assertEqual(journal.load('a')['iterations'],3)
+
+    def test_persisted_invalid_snapshot_rejected_on_constructor(self):
+        import json
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)/'node.json'
+            with self.m.DurableJournal(path,'a') as journal:
+                journal.save_owned_files('a',self.snapshot())
+            data=json.loads(path.read_text());data['owned_files']['root_identity']['dev']=True
+            path.write_text(json.dumps(data))
+            with self.assertRaises(ValueError):self.m.DurableJournal(path,'a')
+
+    def test_combined_journal_size_cap_includes_ownership(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)/'node.json'
+            with self.m.DurableJournal(path,'a') as journal:
+                journal._snapshot['existing_test_padding']='x'*(1024*1024)
+                with self.assertRaisesRegex(ValueError,'journal too large'):
+                    journal.save_owned_files('a',self.snapshot())
+                self.assertFalse(path.exists())
+
+    def test_entry_limit_counts_all_trees_and_blobs_together(self):
+        v=self.snapshot(); template=next(iter(v['blobs'].values()))
+        v['blobs']={format(i,'064x'):{**template,'name':format(i,'064x')+'.blob',
+            'sha256':format(i,'064x')} for i in range(256)}
+        with tempfile.TemporaryDirectory() as directory:
+            with self.m.DurableJournal(Path(directory)/'node.json','a') as journal:
+                journal.save_owned_files('a',v)
+                v['runtime']={'name':v['runtime_pin']+'.runtime.part','complete':False,
+                    'tree':{'':{'device':1,'inode':9,'size':0,'mtime_ns':5,
+                                'ctime_ns':6,'mode':0o700,'kind':0o040000}}}
+                with self.assertRaises(ValueError):journal.save_owned_files('a',v)
+                self.assertEqual(len(journal.load_owned_files('a')['blobs']),256)
+
+    def test_directory_sync_failure_does_not_claim_durable_success(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)/'node.json'
+            with self.m.DurableJournal(path,'a') as journal:
+                journal({'iterations':2,'elapsed_seconds':7})
+                with patch.object(self.m.os,'fsync',side_effect=[None,OSError('synthetic')]):
+                    with self.assertRaisesRegex(RuntimeError,'journal persistence unknown'):
+                        journal.save_owned_files('a',self.snapshot())
+                self.assertEqual(journal.load('a')['state'],'PENDING')
+                self.assertEqual(journal.load('a')['iterations'],2)
+                self.assertEqual(journal.load('a')['elapsed_seconds'],7)
+                with self.assertRaises(RuntimeError):journal.load_owned_files('a')
+                # Atomic replacement may already have occurred. This on-disk
+                # metadata is not evidence of successful sync or authorization.
+                self.assertTrue(path.exists())
+
+    def test_negative_zero_integer_on_disk_rejected_without_normalization(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)/'node.json'
+            with self.m.DurableJournal(path,'a') as journal:
+                journal.save_owned_files('a',self.snapshot())
+            text=path.read_text().replace('"dev": 1','"dev": -0')
+            self.assertNotEqual(text,path.read_text())
+            path.write_text(text)
+            with self.assertRaisesRegex(ValueError,'noncanonical journal integer'):
+                self.m.DurableJournal(path,'a')
+
+    def test_optional_activity_fixed_states_and_legacy_absence(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with self.m.DurableJournal(Path(directory)/'node.json','a') as journal:
+                original=self.snapshot();journal.save_owned_files('a',original)
+                self.assertNotIn('activity',journal.load_owned_files('a'))
+                for activity in ('NEVER_STARTED','POSSIBLY_ACTIVE','DIRECT_EXIT_DESCENDANTS_UNKNOWN'):
+                    value={**original,'activity':activity};journal.save_owned_files('a',value)
+                    self.assertEqual(journal.load_owned_files('a')['activity'],activity)
+                for activity in ('IDLE','UNKNOWN','STOPPED',True,None,1,{'pid':123}):
+                    with self.assertRaises(ValueError):
+                        journal.save_owned_files('a',{**original,'activity':activity})
+                self.assertEqual(journal.load_owned_files('a')['activity'],'DIRECT_EXIT_DESCENDANTS_UNKNOWN')
+
+    def test_close_failure_consumes_fd_before_attempt_and_never_retries(self):
+        from unittest.mock import patch
+        import os
+        with tempfile.TemporaryDirectory() as directory:
+            journal=self.m.DurableJournal(Path(directory)/'node.json','a')
+            original_fd=journal._fd
+            try:
+                with patch.object(self.m.os,'close',side_effect=OSError('synthetic ambiguous close')) as close:
+                    with self.assertRaises(OSError):journal.close()
+                    self.assertTrue(journal._closed);self.assertIsNone(journal._fd)
+                    journal.close();self.assertEqual(close.call_args_list[0].args,(original_fd,))
+                    self.assertEqual(close.call_count,1)
+                with self.assertRaises(ValueError):journal.load('a')
+            finally:
+                # Mock did not really close; test owns and releases original FD.
+                os.close(original_fd)
+
+
 if __name__ == '__main__':
     unittest.main()
