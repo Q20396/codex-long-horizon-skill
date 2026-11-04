@@ -383,6 +383,48 @@ def assemble(
         raise
 
 
+def local_assist_offer(skill_root: Path, model_id: str) -> dict[str, object]:
+    """Present an installed entry without executing it or reading device state."""
+    entry = str(skill_root / "scripts" / "local_model_assist.py")
+    return {
+        "feature": "本地算力辅助（Beta）",
+        "state": "OPT_IN_REQUIRED",
+        "setup_entry_argv": [sys.executable, "-I", "-B", entry, "setup"],
+        "setup_required_arguments": ["--disk-root"],
+        "status_argv": [sys.executable, "-I", "-B", entry, "status"],
+        "prepare_argv": [sys.executable, "-I", "-B", entry, "prepare", "--model-id", model_id],
+        "installer_opt_in_flag": "--local-assist",
+        "notice": "Preparation only. Hardware inspection, download, installation and inference each require explicit scope; no silent cloud fallback.",
+        "decline_behavior": "KEEP_20396_AND_CODEX_UNCHANGED",
+        "probe_started": False,
+        "runtime_started": False,
+    }
+
+
+def prepare_local_assist(skill_root: Path, model_id: str) -> dict[str, object]:
+    """Explicit post-install preparation only; never probe or activate a model.
+
+    Failure is isolated from the completed skill installation. Child output is
+    intentionally not relayed: this channel only reports fixed, non-secret state.
+    """
+    entry = skill_root / "scripts" / "local_model_assist.py"
+    if entry.is_symlink() or not entry.is_file():
+        return {"state": "NOT_READY", "reason": "ENTRY_UNAVAILABLE"}
+    try:
+        result = subprocess.run(
+            [sys.executable, "-I", "-B", str(entry), "prepare", "--model-id", model_id],
+            stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL, check=False, timeout=10,
+        )
+    except subprocess.TimeoutExpired:
+        return {"state": "NOT_READY", "reason": "PREPARE_TIMEOUT"}
+    except OSError:
+        return {"state": "NOT_READY", "reason": "PREPARE_UNAVAILABLE"}
+    return {"state": "PREPARED" if result.returncode == 0 else "NOT_READY",
+            "reason": "EXPLICIT_PREPARE_ONLY" if result.returncode == 0 else "PREPARE_FAILED",
+            "model_id": model_id, "runtime_started": False}
+
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--profile", required=True)
@@ -392,11 +434,21 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--source-tree")
     parser.add_argument("--verify-source-identity", action="store_true")
     parser.add_argument("--apply", action="store_true")
+    parser.add_argument("--local-assist", action="store_true",
+                        help="After successful --apply, explicitly prepare local compute; no hardware or model activation.")
+    parser.add_argument("--local-assist-model", choices=(
+        "qwen3.5:4b", "qwen3.8:27b", "deepseek-r1:8b"))
     return parser.parse_args(argv)
 
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
+    if args.local_assist and not args.apply:
+        print("ERROR: --local-assist requires --apply", file=sys.stderr)
+        return 2
+    if args.local_assist_model is not None and not args.local_assist:
+        print("ERROR: --local-assist-model requires --local-assist", file=sys.stderr)
+        return 2
     if args.apply and args.output_root is None:
         print("ERROR: --apply requires --output-root", file=sys.stderr)
         return 2
@@ -441,6 +493,16 @@ def main(argv: list[str] | None = None) -> int:
             result["output_root"] = str(args.output_root.expanduser().resolve())
             if receipt is not None:
                 result["artifact_tree_sha256"] = receipt["artifact_tree_sha256"]
+            if LHE_PREFIX + "SKILL.md" in paths:
+                result["local_assist_offer"] = local_assist_offer(
+                    args.output_root.expanduser().resolve() / LHE_PREFIX,
+                    args.local_assist_model or "qwen3.5:4b",
+                )
+            if args.local_assist:
+                result["local_assist_handoff"] = prepare_local_assist(
+                    args.output_root.expanduser().resolve() / LHE_PREFIX,
+                    args.local_assist_model or "qwen3.5:4b",
+                )
         print(json.dumps(result, indent=2, sort_keys=True))
         return 0
     except ProfileError as error:

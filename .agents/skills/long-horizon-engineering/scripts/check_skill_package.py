@@ -235,6 +235,8 @@ INSTALLED_REQUIRED_FILES = [
     ".agents/skills/long-horizon-engineering/scripts/audit_skill_descriptions.py",
     ".agents/skills/long-horizon-engineering/scripts/local_compute_deployment.py",
     ".agents/skills/long-horizon-engineering/scripts/local_compute_pool.py",
+    ".agents/skills/long-horizon-engineering/scripts/local_model_assist.py",
+    ".agents/skills/long-horizon-engineering/references/local-model-assist-catalog.json",
     ".agents/skills/long-horizon-engineering/scripts/runtime_safety_envelope.py",
     ".agents/skills/long-horizon-engineering/references/runtime-safety-envelope.md",
     ".agents/skills/long-horizon-engineering/scripts/security_authority_chain.py",

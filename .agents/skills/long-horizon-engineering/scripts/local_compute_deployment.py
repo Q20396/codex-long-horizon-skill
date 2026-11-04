@@ -353,10 +353,95 @@ class DeploymentRunner:
         return results
 
 
+def _owned_files_snapshot(value):
+    """Validate bounded non-authoritative ownership metadata, never paths/payloads."""
+    def check(ok):
+        if not ok:
+            raise ValueError('invalid owned files snapshot')
+    def integer(v):
+        return type(v) is int and 0 <= v <= (1 << 64) - 1
+    def digest(v):
+        return type(v) is str and re.fullmatch('[0-9a-f]{64}', v) is not None
+    def relative(v, empty=False):
+        return (type(v) is str and len(v) <= 256 and
+                ((empty and v == '') or (v and not v.startswith('/') and
+                 all(re.fullmatch('[A-Za-z0-9_.-]{1,128}', x) and x not in {'.', '..'}
+                     for x in v.split('/')) and len(v.split('/')) <= 8)))
+    required = {'schema', 'binding', 'root_binding', 'runtime_pin', 'model_pin',
+                'root_identity', 'io_state', 'blobs', 'runtime', 'model'}
+    check(type(value) is dict and required <= set(value) <= required | {'activity'})
+    if 'activity' in value:
+        check(type(value['activity']) is str and value['activity'] in {
+            'NEVER_STARTED', 'POSSIBLY_ACTIVE', 'DIRECT_EXIT_DESCENDANTS_UNKNOWN'})
+    # Absence is deliberately preserved: callers must treat legacy activity as
+    # UNKNOWN, never infer idle from a record or store/reuse a process ID.
+    check(type(value['schema']) is int and value['schema'] == 1)
+    check(all(digest(value[k]) for k in ('binding', 'root_binding', 'runtime_pin', 'model_pin')))
+    identity = value['root_identity']
+    check(type(identity) is dict and set(identity) == {'dev', 'ino'} and
+          all(integer(x) for x in identity.values()))
+    check(type(value['io_state']) is str and value['io_state'] in {'CONFIRMED', 'UNKNOWN'})
+    blobs = value['blobs']
+    check(type(blobs) is dict and len(blobs) <= 256)
+    count = len(blobs)
+    for pin, receipt in blobs.items():
+        check(digest(pin) and type(receipt) is dict)
+        required = {'name', 'device', 'inode', 'bytes', 'complete', 'sha256', 'close_confirmed'}
+        check(required <= set(receipt) <= required | {'size', 'mtime_ns', 'ctime_ns'})
+        check(type(receipt['name']) is str and receipt['name'] in {pin + '.blob', pin + '.blob.part'} and receipt['sha256'] == pin)
+        check(type(receipt['complete']) is bool and type(receipt['close_confirmed']) is bool)
+        check(all(integer(receipt[k]) for k in set(receipt) & {
+            'device', 'inode', 'bytes', 'size', 'mtime_ns', 'ctime_ns'}))
+        if receipt['complete']:
+            check({'size', 'mtime_ns', 'ctime_ns'} <= set(receipt) and
+                  receipt['close_confirmed'] and receipt['name'] == pin + '.blob' and
+                  receipt['size'] == receipt['bytes'])
+        if value['io_state'] == 'CONFIRMED':
+            check(receipt['close_confirmed'])
+    for key, suffix, pin_key in (('runtime', '.runtime', 'runtime_pin'), ('model', '.models', 'model_pin')):
+        part = value[key]
+        check(type(part) is dict and set(part) == {'name', 'complete', 'tree'})
+        check(type(part['complete']) is bool and type(part['tree']) is dict)
+        tree = part['tree']; count += len(tree)
+        check(count <= 256)
+        name = part['name']; pin = value[pin_key]
+        check(name is None or (type(name) is str and name in {pin + suffix, pin + suffix + '.part'}))
+        check((name is not None and '' in tree) or (name is None and not tree and not part['complete']))
+        if part['complete']:
+            check(name == pin + suffix)
+        for path, receipt in tree.items():
+            check(relative(path, empty=True) and type(receipt) is dict)
+            required = {'device', 'inode', 'size', 'mtime_ns', 'ctime_ns', 'mode', 'kind'}
+            check(required <= set(receipt) <= required | {'sha256', 'target', 'close_confirmed'})
+            check(all(integer(receipt[k]) for k in required))
+            check(receipt['mode'] <= 0o777 and receipt['kind'] in {0o100000, 0o040000, 0o120000})
+            if 'close_confirmed' in receipt:
+                check(type(receipt['close_confirmed']) is bool)
+            if 'sha256' in receipt:
+                check(digest(receipt['sha256']))
+            if 'target' in receipt:
+                check(relative(receipt['target']) and '/' not in receipt['target'])
+            if receipt['kind'] == 0o100000:
+                check('target' not in receipt)
+                if part['complete'] or value['io_state'] == 'CONFIRMED':
+                    check('sha256' in receipt and receipt.get('close_confirmed') is True)
+            elif receipt['kind'] == 0o120000:
+                check('target' in receipt and 'sha256' not in receipt and path != '')
+            else:
+                check('target' not in receipt and 'sha256' not in receipt)
+            if path == '':
+                check(receipt['kind'] == 0o040000)
+            elif '/' in path:
+                parent = path.rsplit('/', 1)[0]
+                check(parent in tree and tree[parent].get('kind') == 0o040000)
+    return json.loads(json.dumps(value, allow_nan=False))
+
+
 class DurableJournal:
     """POSIX exclusive-owner atomic JSON journal in an explicitly approved path.
 
-    No commands, model names, payloads, credentials or argv are persisted. Node
+    No commands, absolute user paths, payloads, credentials or argv are persisted.
+    Bounded relative owned-file names and hashes are metadata, not authority. Node
     identity is hashed; effect fingerprints refer back to current approved plans.
     The parent directory must be trusted/private and on a local filesystem with
     working flock, atomic rename and fsync. A journal is not approval evidence.
@@ -370,6 +455,7 @@ class DurableJournal:
         self._mutex = threading.RLock()
         self._closed = False
         self._claimed = False
+        self._write_failed = False
         lock_path = self.path.with_name(self.path.name + '.lock')
         self._fd = os.open(lock_path, os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600)
         try:
@@ -383,9 +469,17 @@ class DurableJournal:
             if self.path.exists():
                 if self.path.stat().st_size > 1024 * 1024:
                     raise ValueError('journal too large')
-                self._snapshot = json.loads(self.path.read_text())
+                def parse_integer(text):
+                    if text == '-0':
+                        raise ValueError('noncanonical journal integer')
+                    return int(text)
+                self._snapshot = json.loads(self.path.read_text(), parse_int=parse_integer)
                 if self._snapshot.get('node_key') != self.node_key:
                     raise ValueError('journal node mismatch')
+                if 'owned_files' in self._snapshot:
+                    _owned_files_snapshot(self._snapshot['owned_files'])
+                    if self._snapshot.get('owned_files_state') not in {'RECORDED', 'UNKNOWN'}:
+                        raise ValueError('invalid owned files state')
             else:
                 self._snapshot = {'node_key': self.node_key, 'state': 'CLEAN',
                                   'download_gb': 0, 'peak_disk_gb': 0,
@@ -399,6 +493,23 @@ class DurableJournal:
             if self._closed or hashlib.sha256(node_id.encode()).hexdigest() != self.node_key:
                 raise ValueError('journal unavailable or node mismatch')
             return json.loads(json.dumps(self._snapshot))
+
+    def load_owned_files(self, node_id):
+        """Return copied metadata only; caller must recheck authority and filesystem."""
+        with self._mutex:
+            snapshot = self.load(node_id)
+            if snapshot.get('owned_files_state') == 'UNKNOWN':
+                raise RuntimeError('owned files persistence unknown')
+            value = snapshot.get('owned_files')
+            return None if value is None else _owned_files_snapshot(value)
+
+    def save_owned_files(self, node_id, value):
+        """Persist ownership facts in the existing journal without resetting budget."""
+        with self._mutex:
+            self.load(node_id)
+            owned = _owned_files_snapshot(value)
+            snapshot = self._snapshot | {'owned_files': owned, 'owned_files_state': 'RECORDED'}
+            self._persist(snapshot)
 
     def claim_owner(self):
         """Prevent two controllers from holding stale snapshots in one process."""
@@ -427,31 +538,50 @@ class DurableJournal:
                 if not isinstance(disk, dict) or not all(isinstance(k, str) and re.fullmatch('[0-9a-f]{64}', k) and _number(v) for k, v in disk.items()):
                     raise ValueError('invalid node disk snapshot')
             snapshot = self._snapshot | event
-            encoded = json.dumps(snapshot, sort_keys=True, allow_nan=False).encode()
-            if len(encoded) > 1024 * 1024:
-                raise ValueError('journal too large')
+            self._persist(snapshot)
+
+    def _persist(self, snapshot):
+        if self._write_failed:
+            raise RuntimeError('journal persistence unknown')
+        encoded = json.dumps(snapshot, sort_keys=True, allow_nan=False).encode()
+        if len(encoded) > 1024 * 1024:
+            raise ValueError('journal too large')
+        temporary = None
+        try:
             fd, temporary = tempfile.mkstemp(prefix='.deployment-', dir=self.path.parent)
+            with os.fdopen(fd, 'wb') as output:
+                output.write(encoded)
+                output.flush()
+                os.fsync(output.fileno())
+            os.replace(temporary, self.path)
+            directory_fd = os.open(self.path.parent, os.O_RDONLY)
             try:
-                with os.fdopen(fd, 'wb') as output:
-                    output.write(encoded)
-                    output.flush()
-                    os.fsync(output.fileno())
-                os.replace(temporary, self.path)
-                directory_fd = os.open(self.path.parent, os.O_RDONLY)
-                try:
-                    os.fsync(directory_fd)
-                finally:
-                    os.close(directory_fd)
-                self._snapshot = snapshot
+                os.fsync(directory_fd)
             finally:
-                if os.path.exists(temporary):
+                os.close(directory_fd)
+            self._snapshot = snapshot
+        except Exception:
+            # Storage failure can prevent a durable failure marker too. Do not
+            # promise one; block this live journal, retain prior facts/counters,
+            # and require filesystem re-verification after any later reopen.
+            self._write_failed = True
+            self._snapshot = self._snapshot | {'state': 'PENDING', 'owned_files_state': 'UNKNOWN'}
+            raise RuntimeError('journal persistence unknown') from None
+        finally:
+            if temporary is not None and os.path.exists(temporary):
+                try:
                     os.unlink(temporary)
+                except OSError:
+                    self._write_failed = True
+                    self._snapshot = self._snapshot | {'state': 'PENDING', 'owned_files_state': 'UNKNOWN'}
+                    raise RuntimeError('journal persistence unknown') from None
 
     def close(self):
         with self._mutex:
             if not self._closed:
-                os.close(self._fd)
+                closing_fd, self._fd = self._fd, None
                 self._closed = True
+                os.close(closing_fd)
 
     def __enter__(self):
         return self

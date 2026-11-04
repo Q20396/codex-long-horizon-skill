@@ -1,0 +1,597 @@
+{
+  "schema_version": 1,
+  "name": "本地算力辅助（Beta）",
+  "as_of": "2026-11-03",
+  "runtime": {
+    "provider": "ollama",
+    "version": "0.40.13",
+    "license": "MIT",
+    "source": "https://github.com/ollama/ollama",
+    "commit": "04088e7c9d41cba5d33bafbf788d87a465c79d5b",
+    "installation": "OWNED_FILES_IMPLEMENTED_SYNTHETIC_TESTED_REAL_NOT_RUN",
+    "lifecycle": {
+      "project_installer_handoff": "DEFAULT_OFFER_EXPLICIT_PREPARE",
+      "asset_staging": "PINNED_SYNTHETIC_TESTED_ONLY",
+      "owned_stage_cleanup": "SAME_SESSION_ONLY",
+      "archive_layout": "FIXED_RELEASE_METADATA_VERIFIED",
+      "runtime_start": "OWNED_HANDLE_API_SYNTHETIC_TESTED_REAL_NOT_RUN",
+      "model_registration_uninstall": "OFFLINE_OWNED_FILES_SYNTHETIC_TESTED_REAL_NOT_RUN",
+      "real_qualification": "NOT_RUN",
+      "runtime_file_install": "FIXED_ARCHIVE_RECIPE_SYNTHETIC_TESTED",
+      "cross_session_recovery": "NOT_IMPLEMENTED"
+    },
+    "local_environment": {
+      "OLLAMA_NO_CLOUD": "1",
+      "OLLAMA_HOST": "127.0.0.1:11434"
+    },
+    "darwin_asset": {
+      "name": "ollama-darwin.tgz",
+      "bytes": 186689993,
+      "sha256": "bae29252232b9e1358cf5801a7d65a07442af18fb5467cb68c7fc3711f59c511",
+      "members": [
+        {
+          "name": "ollama",
+          "size": 77644752,
+          "type": "0",
+          "mode": "0o755",
+          "linkname": ""
+        },
+        {
+          "name": "llama-server",
+          "size": 19724368,
+          "type": "0",
+          "mode": "0o755",
+          "linkname": ""
+        },
+        {
+          "name": "llama-quantize",
+          "size": 11675840,
+          "type": "0",
+          "mode": "0o755",
+          "linkname": ""
+        },
+        {
+          "name": "libggml-blas.so",
+          "size": 52560,
+          "type": "0",
+          "mode": "0o644",
+          "linkname": ""
+        },
+        {
+          "name": "libggml-cpu-alderlake.so",
+          "size": 1558704,
+          "type": "0",
+          "mode": "0o644",
+          "linkname": ""
+        },
+        {
+          "name": "libggml-cpu-cannonlake.so",
+          "size": 1831120,
+          "type": "0",
+          "mode": "0o644",
+          "linkname": ""
+        },
+        {
+          "name": "libggml-cpu-cascadelake.so",
+          "size": 1803616,
+          "type": "0",
+          "mode": "0o644",
+          "linkname": ""
+        },
+        {
+          "name": "libggml-cpu-cooperlake.so",
+          "size": 1799616,
+          "type": "0",
+          "mode": "0o644",
+          "linkname": ""
+        },
+        {
+          "name": "libggml-cpu-haswell.so",
+          "size": 1566960,
+          "type": "0",
+          "mode": "0o644",
+          "linkname": ""
+        },
+        {
+          "name": "libggml-cpu-icelake.so",
+          "size": 1811888,
+          "type": "0",
+          "mode": "0o644",
+          "linkname": ""
+        },
+        {
+          "name": "libggml-cpu-ivybridge.so",
+          "size": 1411200,
+          "type": "0",
+          "mode": "0o644",
+          "linkname": ""
+        },
+        {
+          "name": "libggml-cpu-piledriver.so",
+          "size": 1419360,
+          "type": "0",
+          "mode": "0o644",
+          "linkname": ""
+        },
+        {
+          "name": "libggml-cpu-sandybridge.so",
+          "size": 1426832,
+          "type": "0",
+          "mode": "0o644",
+          "linkname": ""
+        },
+        {
+          "name": "libggml-cpu-sapphirerapids.so",
+          "size": 2042512,
+          "type": "0",
+          "mode": "0o644",
+          "linkname": ""
+        },
+        {
+          "name": "libggml-cpu-skylakex.so",
+          "size": 1822880,
+          "type": "0",
+          "mode": "0o644",
+          "linkname": ""
+        },
+        {
+          "name": "libggml-cpu-sse42.so",
+          "size": 1061328,
+          "type": "0",
+          "mode": "0o644",
+          "linkname": ""
+        },
+        {
+          "name": "libggml-cpu-x64.so",
+          "size": 1073712,
+          "type": "0",
+          "mode": "0o644",
+          "linkname": ""
+        },
+        {
+          "name": "libggml-cpu-zen4.so",
+          "size": 1807872,
+          "type": "0",
+          "mode": "0o644",
+          "linkname": ""
+        },
+        {
+          "name": "libggml-base.0.28.0.dylib",
+          "size": 794896,
+          "type": "0",
+          "mode": "0o755",
+          "linkname": ""
+        },
+        {
+          "name": "libggml-base.0.dylib",
+          "size": 0,
+          "type": "2",
+          "mode": "0o755",
+          "linkname": "libggml-base.0.28.0.dylib"
+        },
+        {
+          "name": "libggml-base.dylib",
+          "size": 0,
+          "type": "2",
+          "mode": "0o755",
+          "linkname": "libggml-base.0.dylib"
+        },
+        {
+          "name": "libggml.0.28.0.dylib",
+          "size": 57728,
+          "type": "0",
+          "mode": "0o755",
+          "linkname": ""
+        },
+        {
+          "name": "libggml.0.dylib",
+          "size": 0,
+          "type": "2",
+          "mode": "0o755",
+          "linkname": "libggml.0.28.0.dylib"
+        },
+        {
+          "name": "libggml.dylib",
+          "size": 0,
+          "type": "2",
+          "mode": "0o755",
+          "linkname": "libggml.0.dylib"
+        },
+        {
+          "name": "libllama-common.0.8.0.dylib",
+          "size": 5631392,
+          "type": "0",
+          "mode": "0o755",
+          "linkname": ""
+        },
+        {
+          "name": "libllama-common.0.dylib",
+          "size": 0,
+          "type": "2",
+          "mode": "0o755",
+          "linkname": "libllama-common.0.8.0.dylib"
+        },
+        {
+          "name": "libllama-common.dylib",
+          "size": 0,
+          "type": "2",
+          "mode": "0o755",
+          "linkname": "libllama-common.0.dylib"
+        },
+        {
+          "name": "libllama-quantize-impl.dylib",
+          "size": 89984,
+          "type": "0",
+          "mode": "0o755",
+          "linkname": ""
+        },
+        {
+          "name": "libllama-server-impl.dylib",
+          "size": 4057776,
+          "type": "0",
+          "mode": "0o755",
+          "linkname": ""
+        },
+        {
+          "name": "libllama.0.8.0.dylib",
+          "size": 4213616,
+          "type": "0",
+          "mode": "0o755",
+          "linkname": ""
+        },
+        {
+          "name": "libllama.0.dylib",
+          "size": 0,
+          "type": "2",
+          "mode": "0o755",
+          "linkname": "libllama.0.8.0.dylib"
+        },
+        {
+          "name": "libllama.dylib",
+          "size": 0,
+          "type": "2",
+          "mode": "0o755",
+          "linkname": "libllama.0.dylib"
+        },
+        {
+          "name": "libmtmd.0.8.0.dylib",
+          "size": 1764384,
+          "type": "0",
+          "mode": "0o755",
+          "linkname": ""
+        },
+        {
+          "name": "libmtmd.0.dylib",
+          "size": 0,
+          "type": "2",
+          "mode": "0o755",
+          "linkname": "libmtmd.0.8.0.dylib"
+        },
+        {
+          "name": "libmtmd.dylib",
+          "size": 0,
+          "type": "2",
+          "mode": "0o755",
+          "linkname": "libmtmd.0.dylib"
+        },
+        {
+          "name": "CPP_HTTPLIB_LICENSE",
+          "size": 1075,
+          "type": "0",
+          "mode": "0o644",
+          "linkname": ""
+        },
+        {
+          "name": "DLPACK_LICENSE",
+          "size": 11345,
+          "type": "0",
+          "mode": "0o644",
+          "linkname": ""
+        },
+        {
+          "name": "FMT_LICENSE",
+          "size": 1431,
+          "type": "0",
+          "mode": "0o644",
+          "linkname": ""
+        },
+        {
+          "name": "GO_LICENSE",
+          "size": 163159,
+          "type": "0",
+          "mode": "0o644",
+          "linkname": ""
+        },
+        {
+          "name": "LLAMA_CPP_LICENSE",
+          "size": 1078,
+          "type": "0",
+          "mode": "0o644",
+          "linkname": ""
+        },
+        {
+          "name": "LLAMA_CPP_VENDORS_LICENSE",
+          "size": 7257,
+          "type": "0",
+          "mode": "0o644",
+          "linkname": ""
+        },
+        {
+          "name": "MLX_C_LICENSE",
+          "size": 1067,
+          "type": "0",
+          "mode": "0o644",
+          "linkname": ""
+        },
+        {
+          "name": "MLX_LICENSE",
+          "size": 1066,
+          "type": "0",
+          "mode": "0o644",
+          "linkname": ""
+        },
+        {
+          "name": "PICOJSON_LICENSE",
+          "size": 1414,
+          "type": "0",
+          "mode": "0o644",
+          "linkname": ""
+        },
+        {
+          "name": "XGRAMMAR_LICENSE",
+          "size": 11357,
+          "type": "0",
+          "mode": "0o644",
+          "linkname": ""
+        },
+        {
+          "name": "XGRAMMAR_NOTICE",
+          "size": 54,
+          "type": "0",
+          "mode": "0o644",
+          "linkname": ""
+        },
+        {
+          "name": "mlx_metal_v3",
+          "size": 0,
+          "type": "5",
+          "mode": "0o755",
+          "linkname": ""
+        },
+        {
+          "name": "mlx_metal_v3/libmlx.dylib",
+          "size": 49811136,
+          "type": "0",
+          "mode": "0o755",
+          "linkname": ""
+        },
+        {
+          "name": "mlx_metal_v3/._mlx.metallib",
+          "size": 9663,
+          "type": "0",
+          "mode": "0o644",
+          "linkname": ""
+        },
+        {
+          "name": "mlx_metal_v3/mlx.metallib",
+          "size": 152283104,
+          "type": "0",
+          "mode": "0o644",
+          "linkname": ""
+        },
+        {
+          "name": "mlx_metal_v3/libmlxc.dylib",
+          "size": 2063280,
+          "type": "0",
+          "mode": "0o755",
+          "linkname": ""
+        },
+        {
+          "name": "mlx_metal_v3/libollama_xgrammar.dylib",
+          "size": 5192592,
+          "type": "0",
+          "mode": "0o755",
+          "linkname": ""
+        },
+        {
+          "name": "mlx_metal_v4",
+          "size": 0,
+          "type": "5",
+          "mode": "0o755",
+          "linkname": ""
+        },
+        {
+          "name": "mlx_metal_v4/libjaccl.dylib",
+          "size": 2137056,
+          "type": "0",
+          "mode": "0o755",
+          "linkname": ""
+        },
+        {
+          "name": "mlx_metal_v4/libmlx.dylib",
+          "size": 21550752,
+          "type": "0",
+          "mode": "0o755",
+          "linkname": ""
+        },
+        {
+          "name": "mlx_metal_v4/._mlx.metallib",
+          "size": 9663,
+          "type": "0",
+          "mode": "0o644",
+          "linkname": ""
+        },
+        {
+          "name": "mlx_metal_v4/mlx.metallib",
+          "size": 223822800,
+          "type": "0",
+          "mode": "0o644",
+          "linkname": ""
+        },
+        {
+          "name": "mlx_metal_v4/libmlxc.dylib",
+          "size": 1030976,
+          "type": "0",
+          "mode": "0o755",
+          "linkname": ""
+        },
+        {
+          "name": "mlx_metal_v4/libollama_xgrammar.dylib",
+          "size": 2489552,
+          "type": "0",
+          "mode": "0o755",
+          "linkname": ""
+        }
+      ],
+      "unpacked_bytes": 608745773,
+      "layout_evidence": "HASH_AND_ARCHIVE_METADATA_VERIFIED_NOT_EXECUTED"
+    }
+  },
+  "models": [
+    {
+      "id": "qwen3.5:4b",
+      "provider": "ollama",
+      "provider_version": "0.40.13",
+      "official_model": "Qwen/Qwen3.5-4B",
+      "revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+      "model_license": "apache-2.0",
+      "quantizer": "Ollama registry",
+      "quantization": "Q4_K_M",
+      "manifest_sha256": "d8b0f5e9760cd1682034f292d7ef72ec46f432149be0df7574bf2d6e92e38c04",
+      "layers": [
+        {
+          "digest": "sha256:e56a899b1540860385465756dd308c84417410b94dbc1c380adffd20a921ca60",
+          "size": 675569120
+        },
+        {
+          "digest": "sha256:a9d0a3e1d8c91732a3812becd31f8d4a8ff57414903f226306069f0437e2ac50",
+          "size": 2648593216
+        },
+        {
+          "digest": "sha256:b507b9c2f6ca642bffcd06665ea7c91f235fd32daeefdf875a0f938db05fb315",
+          "size": 13
+        },
+        {
+          "digest": "sha256:50cbab8a892c5f2993b8c7351a99182507472def3b1374558308605d99b86b32",
+          "size": 11343
+        },
+        {
+          "digest": "sha256:9371364b27a52acac9d87f88bd93c9db1174d8d6ec57f6888925cdc1788871ff",
+          "size": 65
+        }
+      ],
+      "download_bytes": 3324173934,
+      "memory_gb": 9,
+      "disk_gb": 10,
+      "task_classes": [
+        "diff-classification",
+        "log-summary",
+        "test-failure-summary"
+      ],
+      "status": "UNQUALIFIED",
+      "estimate_context_tokens": 8192,
+      "platform_validation": "NOT_RUN",
+      "manifest_json": "{\"schemaVersion\":2,\"mediaType\":\"application/vnd.docker.distribution.manifest.v2+json\",\"config\":{\"mediaType\":\"application/vnd.docker.container.image.v1+json\",\"digest\":\"sha256:788a4d94bc3f431ac0cd067005be4b838a09330427962952420b05d10ecf84db\",\"size\":177},\"layers\":[{\"mediaType\":\"application/vnd.ollama.image.projector\",\"digest\":\"sha256:e56a899b1540860385465756dd308c84417410b94dbc1c380adffd20a921ca60\",\"size\":675569120,\"from\":\"mmproj.gguf\"},{\"mediaType\":\"application/vnd.ollama.image.model\",\"digest\":\"sha256:a9d0a3e1d8c91732a3812becd31f8d4a8ff57414903f226306069f0437e2ac50\",\"size\":2648593216,\"from\":\"model.gguf\"},{\"mediaType\":\"application/vnd.ollama.image.template\",\"digest\":\"sha256:b507b9c2f6ca642bffcd06665ea7c91f235fd32daeefdf875a0f938db05fb315\",\"size\":13},{\"mediaType\":\"application/vnd.ollama.image.license\",\"digest\":\"sha256:50cbab8a892c5f2993b8c7351a99182507472def3b1374558308605d99b86b32\",\"size\":11343},{\"mediaType\":\"application/vnd.ollama.image.params\",\"digest\":\"sha256:9371364b27a52acac9d87f88bd93c9db1174d8d6ec57f6888925cdc1788871ff\",\"size\":65}],\"runner\":\"llamacpp\",\"format\":\"gguf\"}",
+      "config_blob": {
+        "digest": "sha256:788a4d94bc3f431ac0cd067005be4b838a09330427962952420b05d10ecf84db",
+        "size": 177
+      }
+    },
+    {
+      "id": "qwen3.8:27b",
+      "provider": "ollama",
+      "provider_version": "0.40.13",
+      "official_model": "Qwen/Qwen3.8-27B",
+      "revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+      "model_license": "apache-2.0",
+      "quantizer": "Ollama registry",
+      "quantization": "Q4_K_M",
+      "manifest_sha256": "aaee06c39dcf2437cde036998d960e1fc1494b8191be7cc9657d01e509097813",
+      "layers": [
+        {
+          "digest": "sha256:ac3714bfdddeca31351f2752bf1a63f266f4df87c0b68c895e44945ca704448e",
+          "size": 931146016
+        },
+        {
+          "digest": "sha256:f5f1dd8920d417aac2718b0bda3403da274301efdd6760b4f0f4b864ff2ad57d",
+          "size": 16810714464
+        },
+        {
+          "digest": "sha256:4c6a8e842ef0d8504549facfb03f1273a8d0022991519bc1888522cc1a5517d1",
+          "size": 11345
+        },
+        {
+          "digest": "sha256:906ee87bde6cff7bf3c3b1550f55cbbec261e027187fbb9f511f908ffc418334",
+          "size": 114
+        }
+      ],
+      "download_bytes": 17741872154,
+      "memory_gb": 30,
+      "disk_gb": 40,
+      "task_classes": [
+        "diff-classification",
+        "log-summary",
+        "test-failure-summary"
+      ],
+      "status": "UNQUALIFIED",
+      "estimate_context_tokens": 8192,
+      "platform_validation": "NOT_RUN",
+      "manifest_json": "{\"schemaVersion\":2,\"mediaType\":\"application/vnd.docker.distribution.manifest.v2+json\",\"config\":{\"mediaType\":\"application/vnd.docker.container.image.v1+json\",\"digest\":\"sha256:492b2922d38e553cabc2d319345644ed482874fbf5e5c9e4495cbf8e17b0cf5f\",\"size\":215},\"layers\":[{\"mediaType\":\"application/vnd.ollama.image.projector\",\"digest\":\"sha256:ac3714bfdddeca31351f2752bf1a63f266f4df87c0b68c895e44945ca704448e\",\"size\":931146016,\"from\":\"qwen3.8:27b-q4_K_M\"},{\"mediaType\":\"application/vnd.ollama.image.model\",\"digest\":\"sha256:f5f1dd8920d417aac2718b0bda3403da274301efdd6760b4f0f4b864ff2ad57d\",\"size\":16810714464,\"from\":\"qwen3.8:27b-q4_K_M\"},{\"mediaType\":\"application/vnd.ollama.image.license\",\"digest\":\"sha256:4c6a8e842ef0d8504549facfb03f1273a8d0022991519bc1888522cc1a5517d1\",\"size\":11345,\"from\":\"qwen3.8:27b-q4_K_M\"},{\"mediaType\":\"application/vnd.ollama.image.params\",\"digest\":\"sha256:906ee87bde6cff7bf3c3b1550f55cbbec261e027187fbb9f511f908ffc418334\",\"size\":114}],\"runner\":\"llamacpp\",\"format\":\"gguf\"}",
+      "config_blob": {
+        "digest": "sha256:492b2922d38e553cabc2d319345644ed482874fbf5e5c9e4495cbf8e17b0cf5f",
+        "size": 215
+      }
+    },
+    {
+      "id": "deepseek-r1:8b",
+      "provider": "ollama",
+      "provider_version": "0.40.13",
+      "official_model": "deepseek-ai/DeepSeek-R1-0528-Qwen3-8B",
+      "revision": "6e8885a6ff5c1dc5201574c8fd700323f23c25fa",
+      "model_license": "mit",
+      "quantizer": "Ollama registry",
+      "quantization": "Q4_K_M",
+      "manifest_sha256": "6995872bfe4c521a67b32da386cd21d5c6e819b6e0d62f79f64ec83be99f5763",
+      "layers": [
+        {
+          "digest": "sha256:e6a7edc1a4d7d9b2de136a221a57336b76316cfe53a252aeba814496c5ae439d",
+          "size": 5225373760
+        },
+        {
+          "digest": "sha256:c5ad996bda6eed4df6e3b605a9869647624851ac248209d22fd5e2c0cc1121d3",
+          "size": 556
+        },
+        {
+          "digest": "sha256:6e4c38e1172f42fdbff13edf9a7a017679fb82b0fde415a3e8b3c31c6ed4a4e4",
+          "size": 1065
+        },
+        {
+          "digest": "sha256:ed8474dc73db8ca0d85c1958c91c3a444e13a469c2efb10cd777ca9baeaddcb7",
+          "size": 179
+        }
+      ],
+      "download_bytes": 5225376047,
+      "memory_gb": 12,
+      "disk_gb": 15,
+      "task_classes": [
+        "log-summary",
+        "test-failure-summary"
+      ],
+      "status": "UNQUALIFIED",
+      "estimate_context_tokens": 8192,
+      "platform_validation": "NOT_RUN",
+      "manifest_json": "{\"schemaVersion\":2,\"mediaType\":\"application/vnd.docker.distribution.manifest.v2+json\",\"config\":{\"mediaType\":\"application/vnd.docker.container.image.v1+json\",\"digest\":\"sha256:f64cd5418e4b038ef90cf5fab6eb7ce6ae8f18909416822751d3b9fca827c2ab\",\"size\":487},\"layers\":[{\"mediaType\":\"application/vnd.ollama.image.model\",\"digest\":\"sha256:e6a7edc1a4d7d9b2de136a221a57336b76316cfe53a252aeba814496c5ae439d\",\"size\":5225373760},{\"mediaType\":\"application/vnd.ollama.image.template\",\"digest\":\"sha256:c5ad996bda6eed4df6e3b605a9869647624851ac248209d22fd5e2c0cc1121d3\",\"size\":556},{\"mediaType\":\"application/vnd.ollama.image.license\",\"digest\":\"sha256:6e4c38e1172f42fdbff13edf9a7a017679fb82b0fde415a3e8b3c31c6ed4a4e4\",\"size\":1065},{\"mediaType\":\"application/vnd.ollama.image.params\",\"digest\":\"sha256:ed8474dc73db8ca0d85c1958c91c3a444e13a469c2efb10cd777ca9baeaddcb7\",\"size\":179}]}",
+      "config_blob": {
+        "digest": "sha256:f64cd5418e4b038ef90cf5fab6eb7ce6ae8f18909416822751d3b9fca827c2ab",
+        "size": 487
+      }
+    }
+  ],
+  "notices": [
+    "Third-party runtime MIT; preserve its copyright/license and dependency notices.",
+    "Qwen model Apache-2.0 notices retained; DeepSeek MIT and Qwen3-base notices apply.",
+    "Metadata is not binary verification, human approval or model task qualification.",
+    "No model weights or runtime code are included.",
+    "Memory/disk are conservative estimates, not measured compatibility."
+  ]
+}
