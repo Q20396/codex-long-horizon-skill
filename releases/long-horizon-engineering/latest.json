@@ -1,11 +1,11 @@
 {
   "skill_id": "long-horizon-engineering",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "repo": "https://github.com/Q20396/codex-long-horizon-skill",
   "path": ".agents/skills/long-horizon-engineering",
   "channel": "stable",
   "released": true,
-  "release_date": "2026-10-03",
+  "release_date": "2026-11-04",
   "risk": "reviewed",
   "summary": [
     "Packaged opt-in Local Compute Orchestration (Beta) from a single implementation source; real provider/model/multi-node validation remains NOT_RUN.",

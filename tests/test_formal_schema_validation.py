@@ -705,7 +705,7 @@ class FormalBaselineArchiveLayoutTests(unittest.TestCase):
                    GITHUB_WORKFLOW_SHA="a" * 40, RUNNER_IDENTITY=str(identity),
                    FIXTURE_ARGS=str(self.root / "args.json"),
                    FIXTURE_UNITTEST=str(self.root / "unittest.json"),
-                   RELEASE_VERSION="0.7.0", CANDIDATE_BASE="b" * 40,
+                   RELEASE_VERSION="0.8.0", CANDIDATE_BASE="b" * 40,
                    FORMAL_EVENT_TARGET_SHA="a" * 40,
                    FORMAL_REPOSITORY="Q20396/codex-long-horizon-skill",
                    PYTHONDONTWRITEBYTECODE="1")
@@ -763,9 +763,9 @@ class FormalReleaseGateArchiveLayoutTests(FormalBaselineArchiveLayoutTests):
     replay_step = "Run offline final formal replay"
     upload_step = "Upload retained formal evidence"
     raw_name = "formal-schema-evidence-123-1"
-    report_name = "lhe-v0.7.0-formal-schema-pip-report.json"
-    venv_name = "lhe-v0.7.0-formal-venv"
-    identity_name = "lhe-v0.7.0-runner-identity.json"
+    report_name = "lhe-v0.8.0-formal-schema-pip-report.json"
+    venv_name = "lhe-v0.8.0-formal-venv"
+    identity_name = "lhe-v0.8.0-runner-identity.json"
 
 
 class FormalSchemaStaticTests(unittest.TestCase):
