@@ -1,5 +1,31 @@
 # Plugin Installation
 
+## v0.8.0 source release contract — 本地算力辅助（Beta）
+
+The source contract targets v0.8.0. Publication, signed-tag identity and isolated
+marketplace resolution remain separate gates; this branch does not establish
+that customers can already install that release. Latest actually published
+stable remains v0.7.0 until those gates complete. Do not run a v0.8.0 install
+command before verifying its published immutable tag and exact source.
+
+The v0.8.0 source includes the #191 helper and model catalog, plus the explicit
+20396 installer/updater offer. `--local-assist` invokes preparation only.
+Marketplace installation is not a proven automatic setup hook, and Skill
+installation does not switch Codex models. Real macOS deployment, inference
+and Codex sessions remain NOT_RUN; token savings are UNVERIFIED. Other
+platform capabilities are not expanded by this release contract.
+
+After publication verification only, use the immutable version selector:
+`codex plugin marketplace add Q20396/codex-long-horizon-skill --ref v0.8.0`.
+The source marketplace policy is `AVAILABLE`; it is not publication evidence.
+
+After publication verification, register the reviewed v0.8.0 tag explicitly;
+a registration pinned to v0.7.0 does not automatically advance. Preserve customer
+configuration and review the exact updater target and retained backup before
+any separately authorized replacement. On conflicts or UNKNOWN, stop. Rollback
+requires current ownership/identity and permission checks; never move old tags
+or overwrite an active model/customer configuration.
+
 This repository can be used in two ways:
 
 - As a Codex plugin for reusable distribution.

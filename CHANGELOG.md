@@ -2,6 +2,15 @@
 
 All notable changes to this project are summarized here.
 
+## 0.8.0 - 2026-11-04
+
+- Added consent-bound local compute assistance (Beta) installation/upgrade handoff,
+  fixed Ollama lifecycle, ownership restoration and explicit Codex tool commands.
+- Retained real deployment/inference/Codex session NOT_RUN and unverified token savings.
+- Included prior merged Linux owned-task and documentation improvements; limited
+  Linux evidence does not establish macOS/arbitrary-process/global privacy monitoring.
+- Advanced only release metadata and corresponding checks; no model is bundled.
+
 ## 0.7.0 - 2026-10-03
 
 - Consolidated public brand as 20396; internal identifiers remain unchanged.

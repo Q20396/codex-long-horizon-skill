@@ -30,7 +30,8 @@ class InstallationPathGuidanceContractTests(unittest.TestCase):
         self.assertIn("legacy/project-style `.agents/skills` layout", README)
         self.assertIn("`--target-skill-dir` updater flow", README)
         self.assertIn("--installed-root ~/.codex/skills", README)
-        self.assertIn("--ref v0.7.0", README)
+        self.assertIn("--ref v0.8.0", README)
+        self.assertIn("Latest actually published", README)
 
     def test_upgrade_example_binds_current_immutable_release(self):
         for document in (README, UPGRADE):
